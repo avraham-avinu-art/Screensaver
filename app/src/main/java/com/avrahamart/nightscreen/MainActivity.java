@@ -241,26 +241,23 @@ public class MainActivity extends Activity {
         clockBlock.setOrientation(LinearLayout.VERTICAL);
         clockBlock.setGravity(Gravity.CENTER_HORIZONTAL);
 
-        timeText = textView("--:--", getInt("clockDateSize", 84), Color.rgb(247, 247, 247));
+        timeText = textView("--:--", getInt("clockDateSize", 72), Color.rgb(247, 247, 247));
         timeText.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
         timeText.setGravity(Gravity.CENTER);
-        timeText.setSingleLine(true);
-        timeText.setIncludeFontPadding(false);
-        int initialClockSize = getInt("clockDateSize", 84);
-        int initialClockHeight = Math.max(dp(74), dp(initialClockSize + 28));
+        timeText.setIncludeFontPadding(true);
+        int initialClockSize = getInt("clockDateSize", 72);
+        int initialClockHeight = Math.max(dp(62), dp(initialClockSize + 20));
         clockBlock.addView(timeText, new LinearLayout.LayoutParams(-1, initialClockHeight));
 
         gregorianText = textView("", 22, dateTextColor);
         gregorianText.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         gregorianText.setGravity(Gravity.CENTER);
-        gregorianText.setSingleLine(true);
-        gregorianText.setEllipsize(TextUtils.TruncateAt.END);
-        gregorianText.setIncludeFontPadding(false);
-        int initialDateHeight = Math.max(dp(30), dp(Math.round(initialClockSize * 0.42f)));
+        gregorianText.setIncludeFontPadding(true);
+        int initialDateHeight = Math.max(dp(24), dp(Math.round(initialClockSize * 0.45f)));
         gregorianText.setTextDirection(View.TEXT_DIRECTION_ANY_RTL);
         LinearLayout.LayoutParams gregorianParams =
                 new LinearLayout.LayoutParams(-1, initialDateHeight);
-        gregorianParams.topMargin = dp(12);
+        gregorianParams.topMargin = dp(2);
         clockBlock.addView(gregorianText, gregorianParams);
 
         hebrewText = textView("", 22, dateTextColor);
@@ -268,12 +265,10 @@ public class MainActivity extends Activity {
         hebrewText.setGravity(Gravity.CENTER);
         hebrewText.setTextDirection(View.TEXT_DIRECTION_ANY_RTL);
         hebrewText.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-        hebrewText.setSingleLine(true);
-        hebrewText.setEllipsize(TextUtils.TruncateAt.END);
-        hebrewText.setIncludeFontPadding(false);
+        hebrewText.setIncludeFontPadding(true);
         clockBlock.addView(hebrewText, new LinearLayout.LayoutParams(-1, initialDateHeight));
 
-        int initialClockBlockHeight = initialClockHeight + initialDateHeight * 2 + dp(12);
+        int initialClockBlockHeight = initialClockHeight + initialDateHeight * 2 + dp(2);
         stage.addView(clockBlock, new FrameLayout.LayoutParams(-1, initialClockBlockHeight, Gravity.TOP | Gravity.CENTER_HORIZONTAL));
 
         LinearLayout mediaHolder = new LinearLayout(this);
@@ -398,13 +393,18 @@ public class MainActivity extends Activity {
         mediaTitle.setVisibility(View.VISIBLE);
         mediaTitle.setGravity(Gravity.CENTER);
         mediaTitle.setSingleLine(true);
-        mediaTitle.setIncludeFontPadding(false);
+        mediaTitle.setIncludeFontPadding(true);
+        mediaTitle.addOnLayoutChangeListener((view, left, top, right, bottom,
+                                              oldLeft, oldTop, oldRight, oldBottom) -> {
+            if ((right - left) != (oldRight - oldLeft)) {
+                mediaTitle.post(() -> updateTitleMarqueeIfNeeded());
+            }
+        });
         mediaDetails = textView("", 17, Color.rgb(175, 175, 175));
         mediaDetails.setVisibility(View.INVISIBLE);
         mediaDetails.setGravity(Gravity.CENTER);
         mediaDetails.setSingleLine(true);
-        mediaDetails.setEllipsize(TextUtils.TruncateAt.END);
-        mediaDetails.setIncludeFontPadding(false);
+        mediaDetails.setIncludeFontPadding(true);
         mediaProgressText = textView("", 12, Color.WHITE);
         mediaProgressText.setVisibility(View.GONE);
 
@@ -462,13 +462,13 @@ public class MainActivity extends Activity {
         totalParams.leftMargin = dp(4);
         mediaProgressRow.addView(mediaTotalText, totalParams);
 
-        // Artist first, then song title, followed immediately by the position row.
-        LinearLayout.LayoutParams detailsParams = new LinearLayout.LayoutParams(-1, dp(30));
-        mediaMirror.addView(mediaDetails, detailsParams);
-
+        // Version 2.4 order: song title first, artist directly below, then progress.
         LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(-1, dp(30));
         titleParams.topMargin = dp(0);
         mediaMirror.addView(mediaTitle, titleParams);
+
+        LinearLayout.LayoutParams detailsParams = new LinearLayout.LayoutParams(-1, dp(30));
+        mediaMirror.addView(mediaDetails, detailsParams);
 
         LinearLayout.LayoutParams progressParams = new LinearLayout.LayoutParams(-1, dp(28));
         progressParams.topMargin = dp(0);
@@ -528,7 +528,7 @@ public class MainActivity extends Activity {
 
         e.putInt("fontColor", getInt("fontColor", dateTextColor));
         e.putInt("fontSize", getInt("fontSize", 17));
-        e.putInt("clockDateSize", getInt("clockDateSize", 84));
+        e.putInt("clockDateSize", getInt("clockDateSize", 72));
         e.putInt("playerSize", getInt("playerSize", 17));
         e.putInt("fontWeight", getInt("fontWeight", 1));
         e.putString("fontFamily", getString("fontFamily", "sans-serif"));
@@ -569,16 +569,24 @@ public class MainActivity extends Activity {
             e.putString("clockDatePosition", getString("clockDatePosition", "upper"));
             e.putString("playerPosition", getString("playerPosition", "bottom"));
         }
-        if (!getBool("clockSizesV2Applied", false)) {
-            int previousClockSize = getInt("clockDateSize", 72);
-            int enlargedClockSize;
-            if (previousClockSize == 38) enlargedClockSize = 48;
-            else if (previousClockSize == 48) enlargedClockSize = 60;
-            else if (previousClockSize == 60) enlargedClockSize = 72;
-            else if (previousClockSize == 72) enlargedClockSize = 84;
-            else enlargedClockSize = previousClockSize;
-            e.putInt("clockDateSize", enlargedClockSize);
-            e.putBoolean("clockSizesV2Applied", true);
+        if (!getBool("clockSizesV24Restored", false)) {
+            // The 2.6 presets were each one step larger than the original 2.4 presets.
+            // Convert only installations that went through that migration; keep original 2.4 values.
+            boolean hadClockSize = prefs.contains("clockDateSize");
+            int savedClockSize = getInt("clockDateSize", 72);
+            boolean wasExpandedByV2 = getBool("clockSizesV2Applied", false);
+            if (hadClockSize && (wasExpandedByV2 || savedClockSize == 84)) {
+                if (savedClockSize == 48 && wasExpandedByV2) {
+                    e.putInt("clockDateSize", 38);
+                } else if (savedClockSize == 60 && wasExpandedByV2) {
+                    e.putInt("clockDateSize", 48);
+                } else if (savedClockSize == 72 && wasExpandedByV2) {
+                    e.putInt("clockDateSize", 60);
+                } else if (savedClockSize == 84) {
+                    e.putInt("clockDateSize", 72);
+                }
+            }
+            e.putBoolean("clockSizesV24Restored", true);
         }
         e.commit();
     }
@@ -651,7 +659,7 @@ public class MainActivity extends Activity {
 
         int color = getInt("fontColor", dateTextColor);
         int size = getInt("fontSize", 17);
-        int clockDateSize = getInt("clockDateSize", 84);
+        int clockDateSize = getInt("clockDateSize", 72);
         int playerSize = getInt("playerSize", 17);
         int weight = getInt("fontWeight", 1);
         String fontFamily = getString("fontFamily", "sans-serif");
@@ -676,7 +684,7 @@ public class MainActivity extends Activity {
         gregorianText.setTextColor(color);
         hebrewText.setTextColor(color);
         timeText.setTextColor(color);
-        float dateSize = dateFontSizeForClockPreset(clockDateSize);
+        float dateSize = Math.max(14f, clockDateSize * 0.30f);
         gregorianText.setTextSize(dateSize);
         hebrewText.setTextSize(dateSize);
         timeText.setTextSize(clockDateSize);
@@ -684,27 +692,13 @@ public class MainActivity extends Activity {
         hebrewText.setTypeface(tf);
         timeText.setTypeface(tf);
 
-        // Prefer the user's selected sizes, but scale down only as much as needed on
-        // narrow screens or with larger system font scaling. This prevents clipped text.
-        timeText.setAutoSizeTextTypeUniformWithConfiguration(
-                36, Math.max(36, clockDateSize), 1,
-                android.util.TypedValue.COMPLEX_UNIT_SP);
-        int maxDateSp = Math.max(14, (int) Math.ceil(dateSize));
-        gregorianText.setAutoSizeTextTypeUniformWithConfiguration(
-                14, maxDateSp, 1, android.util.TypedValue.COMPLEX_UNIT_SP);
-        hebrewText.setAutoSizeTextTypeUniformWithConfiguration(
-                14, maxDateSp, 1, android.util.TypedValue.COMPLEX_UNIT_SP);
-
-        // Measure the actual text metrics in pixels (including user font scaling).
-        // This prevents date/time rows from being clipped on large text settings.
-        int clockH = measuredLineHeight(timeText, 2, 56);
-        int dateH = Math.max(
-                measuredLineHeight(gregorianText, 0, 28),
-                measuredLineHeight(hebrewText, 0, 28));
+        // Match version 2.4: size the text rows from the selected preset instead of
+        // capping them at a fixed height and letting autosizing shrink the clock.
+        int clockH = Math.max(dp(62), dp(clockDateSize + 20));
+        int dateH = Math.max(dp(24), dp(Math.round(clockDateSize * 0.45f)));
         boolean showGregorian = getBool("showGregorian", true);
         boolean showHebrew = getBool("showHebrew", true);
         int visibleDates = (showGregorian ? 1 : 0) + (showHebrew ? 1 : 0);
-        int dateGap = visibleDates > 0 ? dp(2) : 0;
 
         LinearLayout.LayoutParams tp = (LinearLayout.LayoutParams) timeText.getLayoutParams();
         tp.height = clockH;
@@ -722,7 +716,7 @@ public class MainActivity extends Activity {
         if (clockParent instanceof LinearLayout) {
             LinearLayout cb = (LinearLayout) clockParent;
             FrameLayout.LayoutParams cp = (FrameLayout.LayoutParams) cb.getLayoutParams();
-            cp.height = clockH + visibleDates * dateH + dateGap;
+            cp.height = clockH + visibleDates * dateH + (visibleDates > 0 ? dp(2) : 0);
             cb.setLayoutParams(cp);
             cb.requestLayout();
         }
@@ -733,9 +727,7 @@ public class MainActivity extends Activity {
             mediaProgressText.setTypeface(tf);
             mediaTitle.setTextSize(playerSize);
             mediaDetails.setTextSize(playerSize);
-            int textRowHeight = Math.max(
-                    measuredLineHeight(mediaTitle, 8, 30),
-                    measuredLineHeight(mediaDetails, 8, 30));
+            int textRowHeight = Math.max(dp(30), dp(playerSize + 12));
             if (mediaTitle.getLayoutParams() != null) {
                 mediaTitle.getLayoutParams().height = textRowHeight;
                 mediaTitle.requestLayout();
@@ -745,6 +737,9 @@ public class MainActivity extends Activity {
                 mediaDetails.requestLayout();
             }
             mediaProgressText.setTextSize(Math.max(10, playerSize - 4));
+            // Re-measure after a preset change; otherwise a longer title may stay clipped
+            // because its old (smaller) font previously fit on one line.
+            mediaTitle.post(() -> updateTitleMarqueeIfNeeded());
 
             // Scale the control buttons together with the selected player size.
             float scale = Math.max(0.72f, Math.min(1.45f, playerSize / 17f));

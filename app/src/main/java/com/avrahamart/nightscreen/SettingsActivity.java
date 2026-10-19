@@ -63,6 +63,7 @@ public class SettingsActivity extends Activity {
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        root.setTextDirection(View.TEXT_DIRECTION_RTL);
         root.setBackgroundColor(SURFACE);
         root.setPadding(dp(16), dp(8), dp(16), dp(12));
 
@@ -94,6 +95,7 @@ public class SettingsActivity extends Activity {
         content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
         content.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        content.setTextDirection(View.TEXT_DIRECTION_RTL);
         scroll.addView(content, new ScrollView.LayoutParams(-1, -2));
         root.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1f));
 
@@ -157,7 +159,7 @@ public class SettingsActivity extends Activity {
         LinearLayout clock = addCard(content, "תצוגת שעון ותאריך");
         addSpinner(clock, "גודל",
                 new String[]{"קטן", "בינוני", "גדול", "גדול מאוד"},
-                new String[]{"48", "60", "72", "84"}, "clockDateSize");
+                new String[]{"38", "48", "60", "72"}, "clockDateSize");
         addSpinner(clock, "מיקום",
                 new String[]{"הכי למעלה", "ברבע העליון", "באמצע המסך"},
                 new String[]{"top", "upper", "middle"}, "clockDatePosition");
@@ -189,6 +191,7 @@ public class SettingsActivity extends Activity {
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
         card.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        card.setTextDirection(View.TEXT_DIRECTION_RTL);
         card.setPadding(dp(14), dp(8), dp(14), dp(12));
 
         GradientDrawable bg = new GradientDrawable();
@@ -217,6 +220,7 @@ public class SettingsActivity extends Activity {
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
         row.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        row.setTextDirection(View.TEXT_DIRECTION_RTL);
         row.setPadding(dp(4), 0, dp(4), 0);
 
         TextView text = textView(label, 15, ON_SURFACE);
@@ -225,6 +229,7 @@ public class SettingsActivity extends Activity {
         row.addView(text, new LinearLayout.LayoutParams(0, dp(48), 1f));
 
         Switch toggle = new Switch(this);
+        toggle.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         toggle.setShowText(false);
         toggle.setChecked(getBool(key, defaultValue));
         if (Build.VERSION.SDK_INT >= 21) {
@@ -243,7 +248,7 @@ public class SettingsActivity extends Activity {
         }
         LinearLayout.LayoutParams switchParams =
                 new LinearLayout.LayoutParams(dp(58), dp(48));
-        switchParams.leftMargin = dp(4);
+        switchParams.rightMargin = dp(4);
         row.addView(toggle, switchParams);
 
         toggle.setOnCheckedChangeListener((button, checked) -> {
@@ -259,17 +264,21 @@ public class SettingsActivity extends Activity {
     private void addSpinner(LinearLayout card, String label, String[] names,
                             String[] values, String key) {
         LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
         row.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        row.setTextDirection(View.TEXT_DIRECTION_RTL);
         row.setPadding(dp(4), dp(2), dp(4), dp(2));
 
         TextView l = textView(label, 14, Color.rgb(52, 58, 79));
         l.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         l.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
+        l.setTextDirection(View.TEXT_DIRECTION_RTL);
         row.addView(l, new LinearLayout.LayoutParams(0, dp(42), 1f));
 
         Spinner spinner = new Spinner(this);
         spinner.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        spinner.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(
                 this, android.R.layout.simple_spinner_item, names) {
             @Override public View getView(int position, View convertView,
@@ -335,7 +344,7 @@ public class SettingsActivity extends Activity {
     private void styleSpinnerText(TextView view, boolean selected) {
         view.setTextColor(ON_SURFACE);
         view.setTextSize(14);
-        view.setGravity(Gravity.CENTER);
+        view.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         view.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         view.setTextDirection(View.TEXT_DIRECTION_RTL);
         view.setSingleLine(true);
