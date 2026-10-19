@@ -304,7 +304,7 @@ public class MainActivity extends Activity {
             FrameLayout.LayoutParams cp = (FrameLayout.LayoutParams) clockBlock.getLayoutParams();
             int clockH = clockBlock.getMeasuredHeight();
             if ("upper".equals(clockPos)) {
-                cp.topMargin = Math.max(0, Math.round(h * 0.25f - clockH / 2f));
+                cp.topMargin = Math.max(0, Math.round(h * 0.25f));
             } else if ("middle".equals(clockPos)) {
                 cp.topMargin = Math.max(0, Math.round(h * 0.50f - clockH / 2f));
             } else {
@@ -697,25 +697,25 @@ public class MainActivity extends Activity {
 
         // Measure the actual text metrics in pixels (including user font scaling).
         // This prevents date/time rows from being clipped on large text settings.
-        int clockH = measuredLineHeight(timeText, 10, 56);
+        int clockH = measuredLineHeight(timeText, 2, 56);
         int dateH = Math.max(
-                measuredLineHeight(gregorianText, 8, 28),
-                measuredLineHeight(hebrewText, 8, 28));
+                measuredLineHeight(gregorianText, 0, 28),
+                measuredLineHeight(hebrewText, 0, 28));
         boolean showGregorian = getBool("showGregorian", true);
         boolean showHebrew = getBool("showHebrew", true);
         int visibleDates = (showGregorian ? 1 : 0) + (showHebrew ? 1 : 0);
-        int dateGap = visibleDates > 0 ? dp(8) : 0;
+        int dateGap = 0;
 
         LinearLayout.LayoutParams tp = (LinearLayout.LayoutParams) timeText.getLayoutParams();
         tp.height = clockH;
         timeText.setLayoutParams(tp);
         LinearLayout.LayoutParams gp = (LinearLayout.LayoutParams) gregorianText.getLayoutParams();
         gp.height = dateH;
-        gp.topMargin = showGregorian ? dp(8) : 0;
+        gp.topMargin = showGregorian ? dp(2) : 0;
         gregorianText.setLayoutParams(gp);
         LinearLayout.LayoutParams hp = (LinearLayout.LayoutParams) hebrewText.getLayoutParams();
         hp.height = dateH;
-        hp.topMargin = (!showGregorian && showHebrew) ? dp(8) : 0;
+        hp.topMargin = (!showGregorian && showHebrew) ? dp(2) : 0;
         hebrewText.setLayoutParams(hp);
 
         View clockParent = (View) timeText.getParent();
