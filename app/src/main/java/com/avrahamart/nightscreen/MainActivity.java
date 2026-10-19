@@ -857,6 +857,7 @@ public class MainActivity extends Activity {
     }
 
     private int dateClockGapDp(int clockSize) {
+        if (clockSize >= 84) return 6;
         return clockSize >= 72 ? 5 : 4;
     }
 
