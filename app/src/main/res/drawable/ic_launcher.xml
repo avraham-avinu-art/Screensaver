@@ -27,10 +27,21 @@
         android:pathData="M59,54 A5,5 0,1 1,49 54 A5,5 0,1 1,59 54" />
     <path
         android:fillColor="#DFFBFF"
-        android:pathData="M78,26 L85,24 L85,34 C85,37 83,39 80,39 C77,40 74,38 75,35 C75,33 78,32 81,33 L81,29 L78,30 Z" />
+        android:pathData="M72,38 C72,35 76,33 79,34 C82,35 81,39 78,41 C75,43 72,41 72,38 Z" />
     <path
-        android:fillColor="#DFFBFF"
-        android:pathData="M81,26 L85,25 L85,29 L81,30 Z" />
+        android:fillColor="#00000000"
+        android:strokeColor="#DFFBFF"
+        android:strokeWidth="1.7"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M80,36 L80,23 L90,21 L90,34" />
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#DFFBFF"
+        android:strokeWidth="1.7"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M80,23 C86,23 90,26 90,30" />
     <path
         android:fillColor="#7CE5F4"
         android:pathData="M54,13 L58,17 L54,21 L50,17 Z" />
