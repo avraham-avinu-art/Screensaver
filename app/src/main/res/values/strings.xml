@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="screen_lock_admin_description">מאפשר לשומר מסך לנעול את המסך בתום זמן הפעילות שנבחר, כדי לכבות אותו בזמן.</string>
+</resources>
