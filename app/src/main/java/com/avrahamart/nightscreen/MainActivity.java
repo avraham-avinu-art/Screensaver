@@ -294,7 +294,7 @@ public class MainActivity extends Activity {
         gregorianText.setTextDirection(View.TEXT_DIRECTION_ANY_RTL);
         LinearLayout.LayoutParams gregorianParams =
                 new LinearLayout.LayoutParams(-1, initialDateHeight);
-        gregorianParams.topMargin = dp(4);
+        gregorianParams.topMargin = dp(dateClockGapDp(initialClockSize));
         clockBlock.addView(gregorianText, gregorianParams);
 
         hebrewText = textView("", 22, dateTextColor);
@@ -765,11 +765,11 @@ public class MainActivity extends Activity {
         timeText.setLayoutParams(tp);
         LinearLayout.LayoutParams gp = (LinearLayout.LayoutParams) gregorianText.getLayoutParams();
         gp.height = dateH;
-        gp.topMargin = showGregorian ? dp(4) : 0;
+        gp.topMargin = showGregorian ? dp(dateClockGapDp(clockDateSize)) : 0;
         gregorianText.setLayoutParams(gp);
         LinearLayout.LayoutParams hp = (LinearLayout.LayoutParams) hebrewText.getLayoutParams();
         hp.height = dateH;
-        hp.topMargin = (!showGregorian && showHebrew) ? dp(4) : 0;
+        hp.topMargin = (!showGregorian && showHebrew) ? dp(dateClockGapDp(clockDateSize)) : 0;
         hebrewText.setLayoutParams(hp);
 
         View clockParent = (View) timeText.getParent();
@@ -854,6 +854,10 @@ public class MainActivity extends Activity {
             }
         }
 
+    }
+
+    private int dateClockGapDp(int clockSize) {
+        return clockSize >= 72 ? 5 : 4;
     }
 
     private float dateTextSizeForClockPreset(int clockSize) {

@@ -65,7 +65,7 @@ public class SettingsActivity extends Activity {
         root.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         root.setTextDirection(View.TEXT_DIRECTION_RTL);
         root.setBackgroundColor(SURFACE);
-        root.setPadding(dp(16), dp(8), dp(16), dp(12));
+        root.setPadding(dp(24), dp(8), dp(24), dp(12));
 
         LinearLayout header = new LinearLayout(this);
         header.setOrientation(LinearLayout.VERTICAL);
@@ -138,9 +138,9 @@ public class SettingsActivity extends Activity {
         addCheck(display, "תאריך לועזי", "showGregorian", true);
         addCheck(display, "נגן", "showPlayer", true);
         addSpinner(display, "זמן פעילות",
-                new String[]{"ללא כיבוי", "דקה אחת", "5 דקות",
-                        "לפי הגדרת המסך במכשיר", "ללא כיבוי כשנמצא בטעינה"},
-                new String[]{"0", "1", "5", "device", "charging"}, "screenSaverDuration");
+                new String[]{"דקה אחת", "חמש דקות", "ללא כיבוי",
+                        "ללא כיבוי בטעינה", "לפי המכשיר"},
+                new String[]{"1", "5", "0", "charging", "device"}, "screenSaverDuration");
 
         if (!hasNotificationAccess()) {
             notificationAccessCard = addNotificationAccessCard(content);
@@ -210,11 +210,10 @@ public class SettingsActivity extends Activity {
 
         TextView heading = textView(title, 17, Color.rgb(49, 58, 92));
         heading.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        heading.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        // Use physical gravity so "end" cannot resolve to the left in an RTL card.
-        heading.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
+        heading.setGravity(Gravity.CENTER);
+        heading.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         heading.setTextDirection(View.TEXT_DIRECTION_RTL);
-        heading.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        heading.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
         heading.setPadding(dp(2), 0, dp(2), 0);
         card.addView(heading, new LinearLayout.LayoutParams(-1, dp(36)));
         return card;
