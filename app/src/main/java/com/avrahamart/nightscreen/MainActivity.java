@@ -51,9 +51,6 @@ import java.util.Locale;
 public class MainActivity extends Activity {
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Runnable autoOffRunnable = this::enterDisplaySleepMode;
-    private final Runnable hideSettingsButtonRunnable = () -> {
-        if (settingsButton != null) settingsButton.setVisibility(View.GONE);
-    };
     private boolean screenSleepPending = false;
     private float brightnessBeforeSleep = Float.NaN;
     private final Calendar now = Calendar.getInstance();
@@ -66,6 +63,9 @@ public class MainActivity extends Activity {
     private final int dateTextColor = Color.rgb(220, 220, 220);
     private SharedPreferences prefs;
     private TextView settingsButton;
+    private final Runnable hideSettingsButtonRunnable = () -> {
+        if (settingsButton != null) settingsButton.setVisibility(View.GONE);
+    };
     private LinearLayout currentSettingsCard;
     private boolean settingsDialogOpen = false;
     private FrameLayout stageView;
