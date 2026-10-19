@@ -686,6 +686,17 @@ public class MainActivity extends Activity {
         hebrewText.setTypeface(tf);
         timeText.setTypeface(tf);
 
+        // Prefer the user's selected sizes, but scale down only as much as needed on
+        // narrow screens or with larger system font scaling. This prevents clipped text.
+        timeText.setAutoSizeTextTypeUniformWithConfiguration(
+                36, Math.max(36, clockDateSize), 1,
+                android.util.TypedValue.COMPLEX_UNIT_SP);
+        int maxDateSp = Math.max(14, (int) Math.ceil(dateSize));
+        gregorianText.setAutoSizeTextTypeUniformWithConfiguration(
+                14, maxDateSp, 1, android.util.TypedValue.COMPLEX_UNIT_SP);
+        hebrewText.setAutoSizeTextTypeUniformWithConfiguration(
+                14, maxDateSp, 1, android.util.TypedValue.COMPLEX_UNIT_SP);
+
         // Measure the actual text metrics in pixels (including user font scaling).
         // This prevents date/time rows from being clipped on large text settings.
         int clockH = measuredLineHeight(timeText, 10, 56);
