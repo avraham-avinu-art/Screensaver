@@ -1037,7 +1037,7 @@ public class MainActivity extends Activity {
         }
     }
 
-    private MediaController selectPlayableSession(    private MediaController selectPlayableSession(List<MediaController> sessions) {
+    private MediaController selectPlayableSession(List<MediaController> sessions) {
         if (sessions == null || sessions.isEmpty()) return null;
 
         for (MediaController controller : sessions) {
