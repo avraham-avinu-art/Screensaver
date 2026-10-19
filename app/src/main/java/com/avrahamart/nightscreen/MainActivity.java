@@ -5,6 +5,9 @@ import android.animation.ObjectAnimator;
 import android.app.NotificationManager;
 import android.app.AlertDialog;
 import android.content.SharedPreferences;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.IntentFilter;
 import android.graphics.drawable.GradientDrawable;
 import android.text.TextUtils;
 import android.widget.CheckBox;
@@ -26,6 +29,8 @@ import android.media.session.MediaSessionManager;
 import android.media.session.PlaybackState;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.BatteryManager;
+import android.os.PowerManager;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.Gravity;
@@ -51,8 +56,24 @@ import java.util.Locale;
 public class MainActivity extends Activity {
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Runnable autoOffRunnable = this::enterDisplaySleepMode;
+    // True only after the selected activity duration expires. The screen brightness
+    // is deliberately not overridden: Android must own its normal timeout and lock.
     private boolean screenSleepPending = false;
-    private float brightnessBeforeSleep = Float.NaN;
+    private boolean deviceEventsRegistered = false;
+    private LinearLayout settingsContainer;
+    private LinearLayout notificationAccessCard;
+    private final BroadcastReceiver deviceStateReceiver = new BroadcastReceiver() {
+        @Override public void onReceive(Context context, Intent intent) {
+            if (intent == null || intent.getAction() == null) return;
+            String action = intent.getAction();
+            if (Intent.ACTION_POWER_CONNECTED.equals(action)
+                    || Intent.ACTION_POWER_DISCONNECTED.equals(action)) {
+                scheduleAutoOff();
+            } else if (Intent.ACTION_SCREEN_ON.equals(action) && screenSleepPending) {
+                wakeSaverDisplay();
+            }
+        }
+    };
     private final Calendar now = Calendar.getInstance();
     private final SimpleDateFormat numericDateFormat =
             new SimpleDateFormat("dd.MM.yyyy", Locale.US);
@@ -125,14 +146,23 @@ public class MainActivity extends Activity {
     }
 
     @Override
+    protected void onStart() {
+        super.onStart();
+        registerDeviceStateReceiver();
+    }
+
+    @Override
     protected void onResume() {
         super.onResume();
         try {
             if (screenSleepPending) {
-                wakeSaverDisplay();
+                if (isScreenInteractive()) wakeSaverDisplay();
+                else getWindow().clearFlags(
+                        android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
             } else {
                 scheduleAutoOff();
             }
+            updateNotificationAccessCardVisibility();
             hideSystemUi();
             handler.removeCallbacks(ticker);
             handler.post(ticker);
@@ -149,6 +179,12 @@ public class MainActivity extends Activity {
         unregisterActiveSessionsListener();
         detachMediaController();
         super.onPause();
+    }
+
+    @Override
+    protected void onStop() {
+        unregisterDeviceStateReceiver();
+        super.onStop();
     }
 
     @Override
@@ -186,16 +222,6 @@ public class MainActivity extends Activity {
         settingsParams.topMargin = dp(12);
         stage.addView(settingsButton, settingsParams);
 
-        stage.setOnTouchListener((v, event) -> {
-            if (event.getAction() == android.view.MotionEvent.ACTION_DOWN) {
-                if (screenSleepPending) wakeSaverDisplay();
-                if (event.getY() <= stage.getHeight() / 2f) {
-                    showSettingsButtonForTenSeconds();
-                }
-            }
-            return false;
-        });
-
         LinearLayout clockBlock = new LinearLayout(this);
         clockBlockView = clockBlock;
         clockBlock.setOrientation(LinearLayout.VERTICAL);
@@ -206,18 +232,18 @@ public class MainActivity extends Activity {
         timeText.setGravity(Gravity.CENTER);
         timeText.setIncludeFontPadding(true);
         int initialClockSize = getInt("clockDateSize", 72);
-        int initialClockHeight = Math.max(dp(62), dp(initialClockSize + 20));
+        int initialClockHeight = Math.max(dp(74), dp(initialClockSize + 28));
         clockBlock.addView(timeText, new LinearLayout.LayoutParams(-1, initialClockHeight));
 
         gregorianText = textView("", 22, dateTextColor);
         gregorianText.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         gregorianText.setGravity(Gravity.CENTER);
         gregorianText.setIncludeFontPadding(true);
-        int initialDateHeight = Math.max(dp(24), dp(Math.round(initialClockSize * 0.45f)));
+        int initialDateHeight = Math.max(dp(30), dp(Math.round(initialClockSize * 0.42f)));
         gregorianText.setTextDirection(View.TEXT_DIRECTION_ANY_RTL);
         LinearLayout.LayoutParams gregorianParams =
                 new LinearLayout.LayoutParams(-1, initialDateHeight);
-        gregorianParams.topMargin = dp(6);
+        gregorianParams.topMargin = dp(12);
         clockBlock.addView(gregorianText, gregorianParams);
 
         hebrewText = textView("", 22, dateTextColor);
@@ -228,7 +254,7 @@ public class MainActivity extends Activity {
         hebrewText.setIncludeFontPadding(true);
         clockBlock.addView(hebrewText, new LinearLayout.LayoutParams(-1, initialDateHeight));
 
-        int initialClockBlockHeight = initialClockHeight + initialDateHeight * 2 + dp(6);
+        int initialClockBlockHeight = initialClockHeight + initialDateHeight * 2 + dp(12);
         stage.addView(clockBlock, new FrameLayout.LayoutParams(-1, initialClockBlockHeight, Gravity.TOP | Gravity.CENTER_HORIZONTAL));
 
         LinearLayout mediaHolder = new LinearLayout(this);
@@ -237,7 +263,7 @@ public class MainActivity extends Activity {
         mediaHolder.setGravity(Gravity.CENTER_HORIZONTAL);
         stage.addView(mediaHolder, new FrameLayout.LayoutParams(-1, -2));
 
-        buildMediaSetup(mediaHolder);
+        // Notification permission guidance now lives only in Settings.
         buildSystemMediaMirror(mediaHolder);
 
         stage.post(() -> {
@@ -512,6 +538,17 @@ public class MainActivity extends Activity {
         e.putInt("buttonColor", getInt("buttonColor", Color.rgb(45,45,45)));
         e.putInt("buttonBorderColor", getInt("buttonBorderColor", Color.rgb(110,110,110)));
         e.putString("screenSaverDuration", getString("screenSaverDuration", "0"));
+        if (!getBool("clockSizesV2Applied", false)) {
+            int previousClockSize = getInt("clockDateSize", 72);
+            int enlargedClockSize;
+            if (previousClockSize == 38) enlargedClockSize = 48;
+            else if (previousClockSize == 48) enlargedClockSize = 60;
+            else if (previousClockSize == 60) enlargedClockSize = 72;
+            else if (previousClockSize == 72) enlargedClockSize = 84;
+            else enlargedClockSize = previousClockSize;
+            e.putInt("clockDateSize", enlargedClockSize);
+            e.putBoolean("clockSizesV2Applied", true);
+        }
         if (!getBool("defaultLayoutV4Applied", false)) {
             // Apply the requested defaults once to existing installations too.
             // Do not overwrite these pending editor values with the old preference values.
@@ -603,8 +640,8 @@ public class MainActivity extends Activity {
         gregorianText.setTextColor(color);
         hebrewText.setTextColor(color);
         timeText.setTextColor(color);
-        gregorianText.setTextSize(Math.max(14, clockDateSize * 0.30f));
-        hebrewText.setTextSize(Math.max(14, clockDateSize * 0.30f));
+        gregorianText.setTextSize(Math.max(18, clockDateSize * 0.34f));
+        hebrewText.setTextSize(Math.max(18, clockDateSize * 0.34f));
         timeText.setTextSize(clockDateSize);
         gregorianText.setTypeface(tf);
         hebrewText.setTypeface(tf);
@@ -613,20 +650,20 @@ public class MainActivity extends Activity {
         View clockParent = (View) timeText.getParent();
         if (clockParent instanceof LinearLayout) {
             LinearLayout cb = (LinearLayout) clockParent;
-            int clockH = Math.max(dp(62), dp(clockDateSize + 20));
-            int dateH = Math.max(dp(24), dp(Math.round(clockDateSize * 0.45f)));
+            int clockH = Math.max(dp(74), dp(clockDateSize + 28));
+            int dateH = Math.max(dp(30), dp(Math.round(clockDateSize * 0.42f)));
             LinearLayout.LayoutParams tp = (LinearLayout.LayoutParams) timeText.getLayoutParams();
             tp.height = clockH;
             timeText.setLayoutParams(tp);
             LinearLayout.LayoutParams gp = (LinearLayout.LayoutParams) gregorianText.getLayoutParams();
             gp.height = dateH;
-            gp.topMargin = dp(6);
+            gp.topMargin = dp(12);
             gregorianText.setLayoutParams(gp);
             LinearLayout.LayoutParams hp = (LinearLayout.LayoutParams) hebrewText.getLayoutParams();
             hp.height = dateH;
             hebrewText.setLayoutParams(hp);
             FrameLayout.LayoutParams cp = (FrameLayout.LayoutParams) cb.getLayoutParams();
-            cp.height = clockH + dateH * 2 + dp(6);
+            cp.height = clockH + dateH * 2 + dp(12);
             cb.setLayoutParams(cp);
         }
 
@@ -720,72 +757,140 @@ public class MainActivity extends Activity {
     private void scheduleAutoOff() {
         handler.removeCallbacks(autoOffRunnable);
 
-        if (screenSleepPending) {
-            getWindow().clearFlags(
-                    android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-            return;
-        }
-
         String value = getString("screenSaverDuration", "0");
+        screenSleepPending = false;
+
+        // "Device timeout" delegates sleep and lock entirely to Android.
         if ("device".equals(value)) {
-            // Let Android apply the screen timeout configured by the user in device settings.
             getWindow().clearFlags(
                     android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
             return;
         }
 
-        getWindow().addFlags(
-                android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        // The charging option keeps the display awake only while power is connected.
+        if ("charging".equals(value)) {
+            if (isDeviceCharging()) {
+                getWindow().addFlags(
+                        android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            } else {
+                getWindow().clearFlags(
+                        android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            }
+            return;
+        }
+
         long minutes = 0L;
         try { minutes = Long.parseLong(value); } catch (Throwable ignored) {}
-        if (minutes > 0L) handler.postDelayed(autoOffRunnable, minutes * 60_000L);
+        if (minutes <= 0L) {
+            getWindow().addFlags(
+                    android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            return;
+        }
+
+        // Keep the saver visible for the chosen activity duration. When it expires,
+        // stop requesting the screen to stay on so the device's own timeout can dim,
+        // turn the display off and lock normally.
+        getWindow().addFlags(
+                android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        handler.postDelayed(autoOffRunnable, minutes * 60_000L);
     }
 
     private void enterDisplaySleepMode() {
         if (isFinishing() || screenSleepPending) return;
         screenSleepPending = true;
         handler.removeCallbacks(autoOffRunnable);
-
-        // Do not finish the Activity: keep the saver alive while allowing the display
-        // to sleep. A black/zero-brightness window is used until Android wakes it again.
+        // Do not finish the Activity and do not override window brightness.
+        // Android is now free to dim, switch off and lock using its regular policy.
         getWindow().clearFlags(
                 android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        android.view.WindowManager.LayoutParams attributes = getWindow().getAttributes();
-        brightnessBeforeSleep = attributes.screenBrightness;
-        attributes.screenBrightness = 0.0f;
-        getWindow().setAttributes(attributes);
+    }
+
+    private boolean isDeviceCharging() {
+        try {
+            Intent battery = registerReceiver(null,
+                    new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+            if (battery == null) return false;
+            int plugged = battery.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0);
+            int status = battery.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
+            return plugged != 0
+                    || status == BatteryManager.BATTERY_STATUS_CHARGING
+                    || status == BatteryManager.BATTERY_STATUS_FULL;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    private boolean isScreenInteractive() {
+        try {
+            PowerManager power = (PowerManager) getSystemService(POWER_SERVICE);
+            return power != null && power.isInteractive();
+        } catch (Throwable ignored) {
+            return true;
+        }
+    }
+
+    private void registerDeviceStateReceiver() {
+        if (deviceEventsRegistered) return;
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(Intent.ACTION_POWER_CONNECTED);
+        filter.addAction(Intent.ACTION_POWER_DISCONNECTED);
+        filter.addAction(Intent.ACTION_SCREEN_ON);
+        try {
+            if (Build.VERSION.SDK_INT >= 33) {
+                registerReceiver(deviceStateReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+            } else {
+                registerReceiver(deviceStateReceiver, filter);
+            }
+            deviceEventsRegistered = true;
+        } catch (Throwable ignored) {
+            deviceEventsRegistered = false;
+        }
+    }
+
+    private void unregisterDeviceStateReceiver() {
+        if (!deviceEventsRegistered) return;
+        try { unregisterReceiver(deviceStateReceiver); } catch (Throwable ignored) {}
+        deviceEventsRegistered = false;
     }
 
     private void wakeSaverDisplay() {
         if (!screenSleepPending) return;
         screenSleepPending = false;
-        android.view.WindowManager.LayoutParams attributes = getWindow().getAttributes();
-        attributes.screenBrightness = Float.isNaN(brightnessBeforeSleep)
-                ? android.view.WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
-                : brightnessBeforeSleep;
-        getWindow().setAttributes(attributes);
-        brightnessBeforeSleep = Float.NaN;
         scheduleAutoOff();
-        showSettingsButtonForTenSeconds();
+        showSettingsButtonForFiveSeconds();
         if (stageView != null) {
             stageView.post(() -> updateScreenPositions(
                     stageView, clockBlockView, mediaHolderView));
         }
     }
 
-    private void showSettingsButtonForTenSeconds() {
+    private void showSettingsButtonForFiveSeconds() {
         if (settingsButton == null || settingsDialogOpen) return;
         handler.removeCallbacks(hideSettingsButtonRunnable);
         settingsButton.setVisibility(View.VISIBLE);
-        settingsButton.setAlpha(0.48f);
-        handler.postDelayed(hideSettingsButtonRunnable, 10_000L);
+        settingsButton.setAlpha(0.58f);
+        handler.postDelayed(hideSettingsButtonRunnable, 5_000L);
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(android.view.MotionEvent event) {
+        if (event.getAction() == android.view.MotionEvent.ACTION_DOWN) {
+            if (screenSleepPending) wakeSaverDisplay();
+            if (stageView != null && stageView.getHeight() > 0) {
+                float localY = event.getY() - stageView.getTop();
+                if (localY >= 0 && localY <= stageView.getHeight() / 2f) {
+                    showSettingsButtonForFiveSeconds();
+                }
+            }
+        }
+        return super.dispatchTouchEvent(event);
     }
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if (screenSleepPending) wakeSaverDisplay();
         if (keyCode != KeyEvent.KEYCODE_BACK) {
-            showSettingsButtonForTenSeconds();
+            showSettingsButtonForFiveSeconds();
         }
         return super.onKeyDown(keyCode, event);
     }
@@ -803,11 +908,11 @@ public class MainActivity extends Activity {
 
             LinearLayout box = new LinearLayout(this);
             box.setOrientation(LinearLayout.VERTICAL);
-            box.setPadding(dp(10), dp(8), dp(10), dp(12));
-            box.setBackgroundColor(Color.rgb(248, 249, 251));
-            int contentWidth = Math.min(
-                    Math.max(dp(1), getResources().getDisplayMetrics().widthPixels - dp(24)),
-                    dp(560));
+            box.setPadding(dp(8), dp(8), dp(8), dp(12));
+            box.setBackgroundColor(Color.rgb(237, 241, 247));
+            int availableContentWidth = getResources().getDisplayMetrics().widthPixels - dp(80);
+            int contentWidth = Math.max(dp(220),
+                    Math.min(availableContentWidth, dp(440)));
             scroll.addView(box, new FrameLayout.LayoutParams(
                     contentWidth, LinearLayout.LayoutParams.WRAP_CONTENT,
                     Gravity.TOP | Gravity.CENTER_HORIZONTAL));
@@ -824,9 +929,13 @@ public class MainActivity extends Activity {
             addCheck(s1, "תאריך לועזי", "showGregorian", true);
             addCheck(s1, "נגן", "showPlayer", true);
             addSpinner(s1, "זמן פעילות",
-                    new String[]{"ללא כיבוי","דקה אחת","5 דקות","לפי הגדרת המסך במכשיר"},
-                    new String[]{"0","1","5","device"}, "screenSaverDuration");
+                    new String[]{"ללא כיבוי","דקה אחת","5 דקות","לפי הגדרת המסך במכשיר","ללא כיבוי כשנמצא בטעינה"},
+                    new String[]{"0","1","5","device","charging"}, "screenSaverDuration");
+            if (!hasNotificationAccess()) {
+                notificationAccessCard = addNotificationAccessCard(box);
+            }
 
+            settingsContainer = box;
             LinearLayout s2 = addCard(box, "גופן");
             addSpinner(s2, "צבע",
                     new String[]{"לבן","אפור בהיר","אפור","כחול עדין"},
@@ -841,7 +950,7 @@ public class MainActivity extends Activity {
             LinearLayout s3 = addCard(box, "תצוגת שעון ותאריך");
             addSpinner(s3, "גודל",
                     new String[]{"קטן","בינוני","גדול","גדול מאוד"},
-                    new String[]{"38","48","60","72"}, "clockDateSize");
+                    new String[]{"48","60","72","84"}, "clockDateSize");
             addSpinner(s3, "מיקום",
                     new String[]{"הכי למעלה","ברבע העליון","באמצע המסך"},
                     new String[]{"top","upper","middle"}, "clockDatePosition");
@@ -922,7 +1031,7 @@ public class MainActivity extends Activity {
                 window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN);
                 window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
                 window.setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(
-                        Color.rgb(248, 249, 251)));
+                        Color.rgb(237, 241, 247)));
                 window.setStatusBarColor(Color.BLACK);
                 window.setNavigationBarColor(Color.BLACK);
 
@@ -952,24 +1061,77 @@ public class MainActivity extends Activity {
     private LinearLayout addCard(LinearLayout parent, String title) {
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
-        card.setPadding(dp(12), dp(6), dp(12), dp(8));
+        card.setPadding(dp(10), dp(7), dp(10), dp(9));
 
         GradientDrawable bg = new GradientDrawable();
-        bg.setColor(Color.WHITE);
-        bg.setCornerRadius(dp(14));
-        bg.setStroke(dp(1), Color.rgb(225, 228, 234));
+        bg.setColor(Color.rgb(255, 255, 255));
+        bg.setCornerRadius(dp(12));
+        bg.setStroke(dp(1), Color.rgb(137, 153, 174));
         card.setBackground(bg);
+        if (Build.VERSION.SDK_INT >= 21) card.setElevation(dp(2));
 
         LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
         p.setMargins(dp(2), dp(5), dp(2), dp(5));
         parent.addView(card, p);
 
-        TextView titleView = textView(title, 18, Color.rgb(35, 39, 48));
-        titleView.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        TextView titleView = textView(title, 18, Color.rgb(24, 39, 58));
+        titleView.setGravity(Gravity.CENTER);
         titleView.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
         card.addView(titleView, new LinearLayout.LayoutParams(-1, dp(38)));
         return card;
+    }
+
+    private LinearLayout addNotificationAccessCard(LinearLayout parent) {
+        LinearLayout card = addCard(parent, "גישה להתראות");
+        TextView message = textView(
+                "כדי להציג את נגן המערכת, יש לאפשר גישה להתראות.",
+                14, Color.rgb(37, 48, 63));
+        message.setGravity(Gravity.CENTER);
+        message.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        message.setTextDirection(View.TEXT_DIRECTION_RTL);
+        message.setLineSpacing(dp(2), 1.0f);
+        LinearLayout.LayoutParams messageParams =
+                new LinearLayout.LayoutParams(-1, dp(48));
+        card.addView(message, messageParams);
+
+        Button grant = new Button(this);
+        grant.setText("פתיחת הגדרות הרשאה");
+        grant.setTextColor(Color.WHITE);
+        grant.setTextSize(14);
+        grant.setGravity(Gravity.CENTER);
+        grant.setAllCaps(false);
+        grant.setMinWidth(0);
+        grant.setMinHeight(0);
+        grant.setPadding(dp(14), 0, dp(14), 0);
+        GradientDrawable grantBg = new GradientDrawable();
+        grantBg.setColor(Color.rgb(39, 76, 117));
+        grantBg.setCornerRadius(dp(14));
+        grantBg.setStroke(dp(1), Color.rgb(80, 118, 162));
+        grant.setBackground(grantBg);
+        LinearLayout.LayoutParams grantParams =
+                new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.WRAP_CONTENT, dp(42));
+        grantParams.gravity = Gravity.CENTER_HORIZONTAL;
+        grantParams.topMargin = dp(5);
+        card.addView(grant, grantParams);
+        grant.setOnClickListener(v -> openNotificationAccessSettings());
+        return card;
+    }
+
+    private void updateNotificationAccessCardVisibility() {
+        boolean hasAccess = hasNotificationAccess();
+        if (hasAccess) {
+            if (notificationAccessCard != null
+                    && notificationAccessCard.getParent() instanceof android.view.ViewGroup) {
+                ((android.view.ViewGroup) notificationAccessCard.getParent())
+                        .removeView(notificationAccessCard);
+            }
+            notificationAccessCard = null;
+        } else if (settingsDialogOpen && settingsContainer != null
+                && notificationAccessCard == null) {
+            notificationAccessCard = addNotificationAccessCard(settingsContainer);
+        }
     }
 
     private void addSection(LinearLayout b, String title) {
@@ -1006,7 +1168,7 @@ public class MainActivity extends Activity {
         x.setText(s);
         x.setTextColor(Color.rgb(35, 38, 45));
         x.setTextSize(15);
-        x.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        x.setGravity(Gravity.CENTER);
         x.setPadding(dp(2), 0, dp(2), 0);
         x.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         x.setShowText(false);
@@ -1017,7 +1179,11 @@ public class MainActivity extends Activity {
                 applySettings();
             } catch (Throwable ignored) {}
         });
-        settingsTarget(b).addView(x, new LinearLayout.LayoutParams(-1, dp(42)));
+        LinearLayout row = new LinearLayout(this);
+        row.setGravity(Gravity.CENTER);
+        row.addView(x, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT, dp(42)));
+        settingsTarget(b).addView(row, new LinearLayout.LayoutParams(-1, dp(42)));
     }
 
     private void addSpinner(LinearLayout b, String label, String[] names,
@@ -1025,38 +1191,38 @@ public class MainActivity extends Activity {
         LinearLayout row = new LinearLayout(this);
         row.setGravity(Gravity.CENTER_VERTICAL);
 
-        TextView l = textView(label, 16, Color.rgb(45, 48, 55));
-        l.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        row.addView(l, new LinearLayout.LayoutParams(0, dp(34), 1f));
+        TextView l = textView(label, 15, Color.rgb(30, 41, 56));
+        l.setGravity(Gravity.CENTER);
+        row.addView(l, new LinearLayout.LayoutParams(0, dp(38), 1f));
 
         Spinner sp = new Spinner(this);
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(
                 this, android.R.layout.simple_spinner_item, names) {
             @Override public View getView(int position, View convertView, android.view.ViewGroup parent) {
                 TextView v = (TextView) super.getView(position, convertView, parent);
-                v.setTextColor(Color.rgb(35, 38, 45));
+                v.setTextColor(Color.rgb(28, 38, 52));
                 v.setTextSize(14);
-                v.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+                v.setGravity(Gravity.CENTER);
                 v.setPadding(dp(8), 0, dp(8), 0);
                 return v;
             }
             @Override public View getDropDownView(int position, View convertView, android.view.ViewGroup parent) {
                 TextView v = new TextView(MainActivity.this);
                 v.setText(names[position]);
-                v.setTextColor(Color.rgb(35, 38, 45));
+                v.setTextColor(Color.rgb(28, 38, 52));
                 v.setTextSize(14);
-                v.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+                v.setGravity(Gravity.CENTER);
                 v.setPadding(dp(10), 0, dp(10), 0);
-                v.setBackgroundColor(Color.WHITE);
+                v.setBackgroundColor(Color.rgb(247, 249, 252));
                 v.setMinHeight(dp(32));
                 return v;
             }
         };
         sp.setAdapter(adapter);
         GradientDrawable spinnerBg = new GradientDrawable();
-        spinnerBg.setColor(Color.WHITE);
-        spinnerBg.setCornerRadius(dp(8));
-        spinnerBg.setStroke(dp(1), Color.rgb(205, 209, 216));
+        spinnerBg.setColor(Color.rgb(247, 249, 252));
+        spinnerBg.setCornerRadius(dp(9));
+        spinnerBg.setStroke(dp(1), Color.rgb(112, 131, 155));
         sp.setBackground(spinnerBg);
 
         int ix = 0;
@@ -1131,7 +1297,7 @@ public class MainActivity extends Activity {
                 });
 
 
-        row.addView(sp, new LinearLayout.LayoutParams(dp(160), dp(38)));
+        row.addView(sp, new LinearLayout.LayoutParams(dp(144), dp(42)));
         b.addView(row);
     }
 
@@ -1540,7 +1706,8 @@ public class MainActivity extends Activity {
     }
 
     private void showMediaSetup() {
-        if (mediaSetup != null) mediaSetup.setVisibility(View.VISIBLE);
+        // Do not show permission prompts on the saver screen.
+        hideMediaSetup();
     }
 
     private void hideMediaSetup() {
@@ -1776,7 +1943,7 @@ public class MainActivity extends Activity {
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
-        if (hasFocus && screenSleepPending) {
+        if (hasFocus && screenSleepPending && isScreenInteractive()) {
             wakeSaverDisplay();
         }
         if (hasFocus && !settingsDialogOpen) {
