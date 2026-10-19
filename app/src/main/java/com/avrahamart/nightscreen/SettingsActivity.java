@@ -69,19 +69,19 @@ public class SettingsActivity extends Activity {
 
         LinearLayout header = new LinearLayout(this);
         header.setOrientation(LinearLayout.VERTICAL);
-        header.setGravity(Gravity.RIGHT);
+        header.setGravity(Gravity.CENTER);
         header.setPadding(dp(4), dp(4), dp(4), dp(10));
 
         TextView title = textView("הגדרות", 26, ON_SURFACE);
         title.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-        title.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        title.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
+        title.setGravity(Gravity.CENTER);
+        title.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         title.setTextDirection(View.TEXT_DIRECTION_RTL);
         header.addView(title, new LinearLayout.LayoutParams(-1, dp(40)));
 
         TextView subtitle = textView("התאמה אישית של השעון, התאריך והנגן", 14, MUTED);
-        subtitle.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        subtitle.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
+        subtitle.setGravity(Gravity.CENTER);
+        subtitle.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         subtitle.setTextDirection(View.TEXT_DIRECTION_RTL);
         header.addView(subtitle, new LinearLayout.LayoutParams(-1, dp(26)));
         root.addView(header, new LinearLayout.LayoutParams(-1, -2));
