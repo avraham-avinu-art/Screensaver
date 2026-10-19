@@ -50,9 +50,12 @@ import java.util.Locale;
 
 public class MainActivity extends Activity {
     private final Handler handler = new Handler(Looper.getMainLooper());
-    private final Runnable autoOffRunnable = () -> {
-        try { finishAndRemoveTask(); } catch (Throwable ignored) { finish(); }
+    private final Runnable autoOffRunnable = this::enterDisplaySleepMode;
+    private final Runnable hideSettingsButtonRunnable = () -> {
+        if (settingsButton != null) settingsButton.setVisibility(View.GONE);
     };
+    private boolean screenSleepPending = false;
+    private float brightnessBeforeSleep = Float.NaN;
     private final Calendar now = Calendar.getInstance();
     private final SimpleDateFormat numericDateFormat =
             new SimpleDateFormat("dd.MM.yyyy", Locale.US);
@@ -109,7 +112,7 @@ public class MainActivity extends Activity {
             getWindow().setFlags(
                     android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN,
                     android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN);
-            getWindow().addFlags(
+            getWindow().clearFlags(
                     android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
             hideSystemUi();
             buildUi();
@@ -125,6 +128,11 @@ public class MainActivity extends Activity {
     protected void onResume() {
         super.onResume();
         try {
+            if (screenSleepPending) {
+                wakeSaverDisplay();
+            } else {
+                scheduleAutoOff();
+            }
             hideSystemUi();
             handler.removeCallbacks(ticker);
             handler.post(ticker);
@@ -147,6 +155,7 @@ public class MainActivity extends Activity {
     protected void onDestroy() {
         handler.removeCallbacks(ticker);
         handler.removeCallbacks(autoOffRunnable);
+        handler.removeCallbacks(hideSettingsButtonRunnable);
         unregisterActiveSessionsListener();
         stopTitleMarquee();
         detachMediaController();
@@ -166,15 +175,26 @@ public class MainActivity extends Activity {
         root.addView(stage, new LinearLayout.LayoutParams(-1, 0, 1f));
 
         settingsButton = textView("⚙", 20, Color.WHITE);
-        settingsButton.setAlpha(0.20f);
+        settingsButton.setAlpha(0.48f);
         settingsButton.setGravity(Gravity.CENTER);
+        settingsButton.setVisibility(View.GONE);
         settingsButton.setContentDescription("הגדרות");
         settingsButton.setOnClickListener(v -> showSettings());
         FrameLayout.LayoutParams settingsParams = new FrameLayout.LayoutParams(
                 dp(30), dp(34), Gravity.TOP | Gravity.LEFT);
         settingsParams.leftMargin = dp(2);
-        settingsParams.topMargin = 0;
+        settingsParams.topMargin = dp(12);
         stage.addView(settingsButton, settingsParams);
+
+        stage.setOnTouchListener((v, event) -> {
+            if (event.getAction() == android.view.MotionEvent.ACTION_DOWN) {
+                if (screenSleepPending) wakeSaverDisplay();
+                if (event.getY() <= stage.getHeight() / 2f) {
+                    showSettingsButtonForTenSeconds();
+                }
+            }
+            return false;
+        });
 
         LinearLayout clockBlock = new LinearLayout(this);
         clockBlockView = clockBlock;
@@ -194,7 +214,11 @@ public class MainActivity extends Activity {
         gregorianText.setGravity(Gravity.CENTER);
         gregorianText.setIncludeFontPadding(true);
         int initialDateHeight = Math.max(dp(24), dp(Math.round(initialClockSize * 0.45f)));
-        clockBlock.addView(gregorianText, new LinearLayout.LayoutParams(-1, initialDateHeight));
+        gregorianText.setTextDirection(View.TEXT_DIRECTION_ANY_RTL);
+        LinearLayout.LayoutParams gregorianParams =
+                new LinearLayout.LayoutParams(-1, initialDateHeight);
+        gregorianParams.topMargin = dp(6);
+        clockBlock.addView(gregorianText, gregorianParams);
 
         hebrewText = textView("", 22, dateTextColor);
         hebrewText.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
@@ -204,7 +228,7 @@ public class MainActivity extends Activity {
         hebrewText.setIncludeFontPadding(true);
         clockBlock.addView(hebrewText, new LinearLayout.LayoutParams(-1, initialDateHeight));
 
-        int initialClockBlockHeight = initialClockHeight + initialDateHeight * 2;
+        int initialClockBlockHeight = initialClockHeight + initialDateHeight * 2 + dp(6);
         stage.addView(clockBlock, new FrameLayout.LayoutParams(-1, initialClockBlockHeight, Gravity.TOP | Gravity.CENTER_HORIZONTAL));
 
         LinearLayout mediaHolder = new LinearLayout(this);
@@ -274,13 +298,13 @@ public class MainActivity extends Activity {
         mediaSetup.setVisibility(View.GONE);
 
         TextView message = textView(
-                "יש לאפשר גישה להתראות כדי להציג את נגן המערכת",
-                14, Color.rgb(205, 205, 205));
-        message.setGravity(Gravity.CENTER_VERTICAL | Gravity.RIGHT);
+                "יש לאפשר גישה להתראות\nכדי להציג את נגן המערכת",
+                14, Color.rgb(215, 220, 228));
+        message.setGravity(Gravity.CENTER);
         message.setTextDirection(View.TEXT_DIRECTION_RTL);
-        message.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
-        message.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        message.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         message.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        message.setLineSpacing(dp(2), 1.0f);
         message.setSingleLine(false);
         message.setMaxLines(2);
         message.setEllipsize(null);
@@ -294,8 +318,14 @@ public class MainActivity extends Activity {
         TextView openSettings = mediaButton("הפעל");
         openSettings.setTextSize(14);
         openSettings.setTextColor(Color.WHITE);
-        openSettings.setBackgroundColor(Color.rgb(48, 48, 48));
+        GradientDrawable accessButtonBackground = new GradientDrawable();
+        accessButtonBackground.setColor(Color.rgb(47, 83, 125));
+        accessButtonBackground.setCornerRadius(dp(16));
+        accessButtonBackground.setStroke(dp(1), Color.rgb(94, 137, 184));
+        openSettings.setBackground(accessButtonBackground);
         openSettings.setGravity(Gravity.CENTER);
+        openSettings.setPadding(dp(10), 0, dp(10), 0);
+        openSettings.setElevation(dp(2));
         openSettings.setOnClickListener(v -> openNotificationAccessSettings());
         mediaSetup.addView(openSettings, new LinearLayout.LayoutParams(dp(76), dp(46)));
 
@@ -551,9 +581,19 @@ public class MainActivity extends Activity {
         int clockDateSize = getInt("clockDateSize", 72);
         int playerSize = getInt("playerSize", 17);
         int weight = getInt("fontWeight", 1);
-        Typeface tf = Typeface.create(
-                getString("fontFamily", "sans-serif"),
-                weight == 2 ? Typeface.BOLD : Typeface.NORMAL);
+        String fontFamily = getString("fontFamily", "sans-serif");
+        Typeface tf;
+        if (weight == 2) {
+            tf = Typeface.create(fontFamily, Typeface.BOLD);
+        } else if (weight == 1 && "sans-serif".equals(fontFamily)) {
+            // Android's sans-serif default and sans-serif-medium are distinct weights.
+            tf = Typeface.create("sans-serif-medium", Typeface.NORMAL);
+        } else if (weight == 1) {
+            // For other families, make the medium choice visibly heavier than regular.
+            tf = Typeface.create(fontFamily, Typeface.BOLD);
+        } else {
+            tf = Typeface.create(fontFamily, Typeface.NORMAL);
+        }
 
         gregorianText.setVisibility(
                 getBool("showGregorian", true) ? View.VISIBLE : View.GONE);
@@ -580,12 +620,13 @@ public class MainActivity extends Activity {
             timeText.setLayoutParams(tp);
             LinearLayout.LayoutParams gp = (LinearLayout.LayoutParams) gregorianText.getLayoutParams();
             gp.height = dateH;
+            gp.topMargin = dp(6);
             gregorianText.setLayoutParams(gp);
             LinearLayout.LayoutParams hp = (LinearLayout.LayoutParams) hebrewText.getLayoutParams();
             hp.height = dateH;
             hebrewText.setLayoutParams(hp);
             FrameLayout.LayoutParams cp = (FrameLayout.LayoutParams) cb.getLayoutParams();
-            cp.height = clockH + dateH * 2;
+            cp.height = clockH + dateH * 2 + dp(6);
             cb.setLayoutParams(cp);
         }
 
@@ -678,10 +719,74 @@ public class MainActivity extends Activity {
 
     private void scheduleAutoOff() {
         handler.removeCallbacks(autoOffRunnable);
+
+        if (screenSleepPending) {
+            getWindow().clearFlags(
+                    android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            return;
+        }
+
         String value = getString("screenSaverDuration", "0");
+        if ("device".equals(value)) {
+            // Let Android apply the screen timeout configured by the user in device settings.
+            getWindow().clearFlags(
+                    android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            return;
+        }
+
+        getWindow().addFlags(
+                android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         long minutes = 0L;
         try { minutes = Long.parseLong(value); } catch (Throwable ignored) {}
         if (minutes > 0L) handler.postDelayed(autoOffRunnable, minutes * 60_000L);
+    }
+
+    private void enterDisplaySleepMode() {
+        if (isFinishing() || screenSleepPending) return;
+        screenSleepPending = true;
+        handler.removeCallbacks(autoOffRunnable);
+
+        // Do not finish the Activity: keep the saver alive while allowing the display
+        // to sleep. A black/zero-brightness window is used until Android wakes it again.
+        getWindow().clearFlags(
+                android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        android.view.WindowManager.LayoutParams attributes = getWindow().getAttributes();
+        brightnessBeforeSleep = attributes.screenBrightness;
+        attributes.screenBrightness = 0.0f;
+        getWindow().setAttributes(attributes);
+    }
+
+    private void wakeSaverDisplay() {
+        if (!screenSleepPending) return;
+        screenSleepPending = false;
+        android.view.WindowManager.LayoutParams attributes = getWindow().getAttributes();
+        attributes.screenBrightness = Float.isNaN(brightnessBeforeSleep)
+                ? android.view.WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+                : brightnessBeforeSleep;
+        getWindow().setAttributes(attributes);
+        brightnessBeforeSleep = Float.NaN;
+        scheduleAutoOff();
+        if (stageView != null) {
+            stageView.post(() -> updateScreenPositions(
+                    stageView, clockBlockView, mediaHolderView));
+        }
+    }
+
+    private void showSettingsButtonForTenSeconds() {
+        if (settingsButton == null || settingsDialogOpen) return;
+        handler.removeCallbacks(hideSettingsButtonRunnable);
+        settingsButton.setVisibility(View.VISIBLE);
+        settingsButton.setAlpha(0.48f);
+        handler.postDelayed(hideSettingsButtonRunnable, 10_000L);
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (screenSleepPending) wakeSaverDisplay();
+        if (keyCode != KeyEvent.KEYCODE_BACK) {
+            showSettingsButtonForTenSeconds();
+        }
+        return super.onKeyDown(keyCode, event);
     }
 
     private void showSettings() {
@@ -692,12 +797,19 @@ public class MainActivity extends Activity {
             scroll.setFillViewport(true);
             scroll.setVerticalScrollBarEnabled(true);
             scroll.setOverScrollMode(View.OVER_SCROLL_ALWAYS);
+            scroll.setBackgroundColor(Color.rgb(248, 249, 251));
+            scroll.setClipToPadding(false);
 
             LinearLayout box = new LinearLayout(this);
             box.setOrientation(LinearLayout.VERTICAL);
             box.setPadding(dp(10), dp(8), dp(10), dp(12));
             box.setBackgroundColor(Color.rgb(248, 249, 251));
-            scroll.addView(box);
+            int contentWidth = Math.min(
+                    Math.max(dp(240), getResources().getDisplayMetrics().widthPixels - dp(24)),
+                    dp(560));
+            scroll.addView(box, new FrameLayout.LayoutParams(
+                    contentWidth, LinearLayout.LayoutParams.WRAP_CONTENT,
+                    Gravity.TOP | Gravity.CENTER_HORIZONTAL));
 
             TextView h = textView("הגדרות", 22, Color.rgb(25, 28, 35));
             h.setGravity(Gravity.CENTER);
@@ -711,8 +823,8 @@ public class MainActivity extends Activity {
             addCheck(s1, "תאריך לועזי", "showGregorian", true);
             addCheck(s1, "נגן", "showPlayer", true);
             addSpinner(s1, "זמן פעילות",
-                    new String[]{"ללא כיבוי","1 דקות","5 דקות"},
-                    new String[]{"0","1","5"}, "screenSaverDuration");
+                    new String[]{"ללא כיבוי","דקה אחת","5 דקות","לפי הגדרת המסך במכשיר"},
+                    new String[]{"0","1","5","device"}, "screenSaverDuration");
 
             LinearLayout s2 = addCard(box, "גופן");
             addSpinner(s2, "צבע",
@@ -825,7 +937,7 @@ public class MainActivity extends Activity {
                     }
                 }
 
-                int width = Math.min(getResources().getDisplayMetrics().widthPixels - dp(16), dp(600));
+                int width = getResources().getDisplayMetrics().widthPixels;
                 int height = Math.min(getResources().getDisplayMetrics().heightPixels - dp(16), dp(820));
                 window.setLayout(width, height);
             }
@@ -1054,7 +1166,7 @@ public class MainActivity extends Activity {
     private void updateClock() {
         now.setTimeInMillis(System.currentTimeMillis());
         timeText.setText(numericTime());
-        gregorianText.setText(hebrewWeekday() + " · " +
+        gregorianText.setText(hebrewWeekday() + " " +
                 numericDateFormat.format(now.getTime()));
 
         try {
@@ -1063,7 +1175,13 @@ public class MainActivity extends Activity {
             formatter.setHebrewFormat(true);
             formatter.setUseGershGershayim(true);
             formatter.setUseLongHebrewYears(false);
-            hebrewText.setText(formatter.format(jewishDate));
+            String formattedHebrewDate = formatter.format(jewishDate)
+                    .replace("\u05F3", "'")
+                    .replace("\u05F4", "\"")
+                    .replace("’", "'")
+                    .replace("”", "\"")
+                    .replace("“", "\"");
+            hebrewText.setText(formattedHebrewDate);
         } catch (Throwable t) {
             hebrewText.setText("");
         }
@@ -1077,12 +1195,12 @@ public class MainActivity extends Activity {
 
     private String hebrewWeekday() {
         switch (now.get(Calendar.DAY_OF_WEEK)) {
-            case Calendar.SUNDAY: return "יום א";
-            case Calendar.MONDAY: return "יום ב";
-            case Calendar.TUESDAY: return "יום ג";
-            case Calendar.WEDNESDAY: return "יום ד";
-            case Calendar.THURSDAY: return "יום ה";
-            case Calendar.FRIDAY: return "יום ו";
+            case Calendar.SUNDAY: return "יום א'";
+            case Calendar.MONDAY: return "יום ב'";
+            case Calendar.TUESDAY: return "יום ג'";
+            case Calendar.WEDNESDAY: return "יום ד'";
+            case Calendar.THURSDAY: return "יום ה'";
+            case Calendar.FRIDAY: return "יום ו'";
             default: return "יום שבת";
         }
     }
