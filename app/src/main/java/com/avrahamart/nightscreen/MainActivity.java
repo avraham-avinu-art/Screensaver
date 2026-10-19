@@ -116,6 +116,26 @@ public class MainActivity extends Activity {
     private MediaSessionManager.OnActiveSessionsChangedListener activeSessionsListener;
     private boolean activeSessionsListenerRegistered = false;
     private boolean progressHidePending = false;
+    private boolean previousButtonHidePending = false;
+    private boolean nextButtonHidePending = false;
+    private final Runnable hidePreviousButtonIfStillUnsupported = () -> {
+        previousButtonHidePending = false;
+        if (mediaPrev == null || mediaController == null) return;
+        PlaybackState currentState = mediaController.getPlaybackState();
+        if (currentState == null
+                || (currentState.getActions() & PlaybackState.ACTION_SKIP_TO_PREVIOUS) == 0L) {
+            mediaPrev.setVisibility(View.GONE);
+        }
+    };
+    private final Runnable hideNextButtonIfStillUnsupported = () -> {
+        nextButtonHidePending = false;
+        if (mediaNext == null || mediaController == null) return;
+        PlaybackState currentState = mediaController.getPlaybackState();
+        if (currentState == null
+                || (currentState.getActions() & PlaybackState.ACTION_SKIP_TO_NEXT) == 0L) {
+            mediaNext.setVisibility(View.GONE);
+        }
+    };
     private final Runnable hideProgressRowAfterMetadataChange = () -> {
         progressHidePending = false;
         if (mediaProgressRow == null) return;
@@ -217,6 +237,8 @@ public class MainActivity extends Activity {
         handler.removeCallbacks(autoOffRunnable);
         handler.removeCallbacks(hideSettingsButtonRunnable);
         handler.removeCallbacks(hideProgressRowAfterMetadataChange);
+        handler.removeCallbacks(hidePreviousButtonIfStillUnsupported);
+        handler.removeCallbacks(hideNextButtonIfStillUnsupported);
         unregisterActiveSessionsListener();
         stopTitleMarquee();
         detachMediaController();
@@ -835,28 +857,13 @@ public class MainActivity extends Activity {
     }
 
     private float dateTextSizeForClockPreset(int clockSize) {
-        switch (clockSize) {
-            case 48: return 14f;
-            case 60: return 14.4f;
-            case 72: return 18f;
-            case 84: return 21.6f;
-            // Retain sensible dimensions for a stale preference during migration.
-            case 38: return 14f;
-            default: return Math.max(14f, clockSize * 0.30f);
-        }
+        // The Hebrew and Gregorian dates are always exactly 30% of the selected clock size.
+        return clockSize * 0.30f;
     }
 
     private int dateRowHeightForClockPreset(int clockSize) {
-        int dateBasisSize;
-        switch (clockSize) {
-            case 48: dateBasisSize = 38; break;
-            case 60: dateBasisSize = 48; break;
-            case 72: dateBasisSize = 60; break;
-            case 84: dateBasisSize = 72; break;
-            case 38: dateBasisSize = 38; break;
-            default: dateBasisSize = clockSize; break;
-        }
-        return Math.max(dp(24), dp(Math.round(dateBasisSize * 0.45f)));
+        // Keep enough height for the larger date text without changing the surrounding layout.
+        return Math.max(dp(24), dp(Math.round(clockSize * 0.45f)));
     }
 
     private void applyMediaFrame(boolean hasActiveSong) {
@@ -1467,12 +1474,26 @@ public class MainActivity extends Activity {
             if (mediaPlayPause.getDrawable() != null) mediaPlayPause.getDrawable().setTint(mediaColor);
 
             long actions = state.getActions();
-            mediaPrev.setVisibility(
-                    (actions & PlaybackState.ACTION_SKIP_TO_PREVIOUS) != 0
-                            ? View.VISIBLE : View.GONE);
-            mediaNext.setVisibility(
-                    (actions & PlaybackState.ACTION_SKIP_TO_NEXT) != 0
-                            ? View.VISIBLE : View.GONE);
+
+            if ((actions & PlaybackState.ACTION_SKIP_TO_PREVIOUS) != 0L) {
+                handler.removeCallbacks(hidePreviousButtonIfStillUnsupported);
+                previousButtonHidePending = false;
+                mediaPrev.setVisibility(View.VISIBLE);
+            } else if (mediaPrev.getVisibility() == View.VISIBLE && !previousButtonHidePending) {
+                // Some players briefly clear action flags while changing tracks.
+                previousButtonHidePending = true;
+                handler.postDelayed(hidePreviousButtonIfStillUnsupported, 1500L);
+            }
+
+            if ((actions & PlaybackState.ACTION_SKIP_TO_NEXT) != 0L) {
+                handler.removeCallbacks(hideNextButtonIfStillUnsupported);
+                nextButtonHidePending = false;
+                mediaNext.setVisibility(View.VISIBLE);
+            } else if (mediaNext.getVisibility() == View.VISIBLE && !nextButtonHidePending) {
+                // Avoid a one-frame disappearance during a track hand-off.
+                nextButtonHidePending = true;
+                handler.postDelayed(hideNextButtonIfStillUnsupported, 1500L);
+            }
 
             applyMediaFrame(true);
             mediaMirror.setVisibility(getBool("showPlayer", true) ? View.VISIBLE : View.GONE);

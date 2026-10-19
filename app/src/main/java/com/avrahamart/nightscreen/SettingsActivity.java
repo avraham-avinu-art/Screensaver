@@ -69,18 +69,20 @@ public class SettingsActivity extends Activity {
 
         LinearLayout header = new LinearLayout(this);
         header.setOrientation(LinearLayout.VERTICAL);
-        header.setGravity(Gravity.CENTER);
+        header.setGravity(Gravity.RIGHT);
         header.setPadding(dp(4), dp(4), dp(4), dp(10));
 
-        TextView title = textView("הגדרות", 25, ON_SURFACE);
+        TextView title = textView("הגדרות", 26, ON_SURFACE);
         title.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-        title.setGravity(Gravity.CENTER);
-        title.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        title.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        title.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
+        title.setTextDirection(View.TEXT_DIRECTION_RTL);
         header.addView(title, new LinearLayout.LayoutParams(-1, dp(40)));
 
-        TextView subtitle = textView("התאמה אישית של השעון, התאריך והנגן", 13, MUTED);
-        subtitle.setGravity(Gravity.CENTER);
-        subtitle.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        TextView subtitle = textView("התאמה אישית של השעון, התאריך והנגן", 14, MUTED);
+        subtitle.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        subtitle.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
+        subtitle.setTextDirection(View.TEXT_DIRECTION_RTL);
         header.addView(subtitle, new LinearLayout.LayoutParams(-1, dp(26)));
         root.addView(header, new LinearLayout.LayoutParams(-1, -2));
 
@@ -104,7 +106,7 @@ public class SettingsActivity extends Activity {
         Button done = new Button(this);
         done.setText("סיום ושמירה");
         done.setAllCaps(false);
-        done.setTextSize(15);
+        done.setTextSize(16);
         done.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         done.setTextColor(Color.WHITE);
         done.setMinWidth(0);
@@ -206,9 +208,10 @@ public class SettingsActivity extends Activity {
         params.setMargins(0, dp(5), 0, dp(5));
         parent.addView(card, params);
 
-        TextView heading = textView(title, 16, Color.rgb(49, 58, 92));
+        TextView heading = textView(title, 17, Color.rgb(49, 58, 92));
         heading.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         heading.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
+        heading.setTextDirection(View.TEXT_DIRECTION_RTL);
         heading.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         heading.setPadding(dp(2), 0, dp(2), 0);
         card.addView(heading, new LinearLayout.LayoutParams(-1, dp(36)));
@@ -224,7 +227,7 @@ public class SettingsActivity extends Activity {
         row.setTextDirection(View.TEXT_DIRECTION_RTL);
         row.setPadding(dp(4), 0, dp(4), 0);
 
-        TextView text = textView(label, 15, ON_SURFACE);
+        TextView text = textView(label, 16, ON_SURFACE);
         text.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         text.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
         row.addView(text, new LinearLayout.LayoutParams(0, dp(48), 1f));
@@ -249,6 +252,7 @@ public class SettingsActivity extends Activity {
         }
         LinearLayout.LayoutParams switchParams =
                 new LinearLayout.LayoutParams(dp(58), dp(48));
+        switchParams.leftMargin = dp(12);
         switchParams.rightMargin = dp(4);
         row.addView(toggle, 0, switchParams);
 
@@ -272,7 +276,7 @@ public class SettingsActivity extends Activity {
         row.setTextDirection(View.TEXT_DIRECTION_RTL);
         row.setPadding(dp(4), dp(2), dp(4), dp(2));
 
-        TextView l = textView(label, 14, Color.rgb(52, 58, 79));
+        TextView l = textView(label, 15, Color.rgb(52, 58, 79));
         l.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         l.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
         l.setTextDirection(View.TEXT_DIRECTION_RTL);
@@ -307,6 +311,7 @@ public class SettingsActivity extends Activity {
         spinner.setSelection(selected, false);
         LinearLayout.LayoutParams spinnerParams =
                 new LinearLayout.LayoutParams(dp(158), dp(44));
+        spinnerParams.leftMargin = dp(12);
         spinnerParams.rightMargin = dp(6);
         row.addView(spinner, 0, spinnerParams);
         card.addView(row, new LinearLayout.LayoutParams(-1, dp(48)));
@@ -354,7 +359,7 @@ public class SettingsActivity extends Activity {
 
     private void styleSpinnerText(TextView view, boolean selected) {
         view.setTextColor(ON_SURFACE);
-        view.setTextSize(14);
+        view.setTextSize(15);
         view.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         view.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         view.setTextDirection(View.TEXT_DIRECTION_RTL);
@@ -393,7 +398,7 @@ public class SettingsActivity extends Activity {
         LinearLayout card = addCard(parent, "גישה להתראות");
         TextView message = textView(
                 "כדי להציג את נגן המערכת, יש לאפשר גישה להתראות.",
-                14, ON_SURFACE);
+                15, ON_SURFACE);
         message.setGravity(Gravity.CENTER);
         message.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         message.setTextDirection(View.TEXT_DIRECTION_RTL);
@@ -434,7 +439,7 @@ public class SettingsActivity extends Activity {
         TextView explanation = textView(
                 "כדי לנעול ולכבות את המסך מיד בתום הזמן שנבחר, יש להפעיל הרשאת נעילת מסך. "
                 + "ההרשאה משמשת לנעילת המסך בלבד.",
-                13, MUTED);
+                14, MUTED);
         explanation.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         explanation.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
         explanation.setTextDirection(View.TEXT_DIRECTION_RTL);
@@ -538,7 +543,7 @@ public class SettingsActivity extends Activity {
         Button button = new Button(this);
         button.setText(text);
         button.setAllCaps(false);
-        button.setTextSize(14);
+        button.setTextSize(15);
         button.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         button.setTextColor(Color.WHITE);
         button.setMinWidth(0);
