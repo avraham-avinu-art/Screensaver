@@ -68,7 +68,9 @@ public class MainActivity extends Activity {
             String action = intent.getAction();
             if (Intent.ACTION_POWER_CONNECTED.equals(action)
                     || Intent.ACTION_POWER_DISCONNECTED.equals(action)) {
-                scheduleAutoOff();
+                if ("charging".equals(getString("screenSaverDuration", "0"))) {
+                    scheduleAutoOff();
+                }
             } else if (Intent.ACTION_SCREEN_ON.equals(action) && screenSleepPending) {
                 wakeSaverDisplay();
             }
@@ -538,17 +540,6 @@ public class MainActivity extends Activity {
         e.putInt("buttonColor", getInt("buttonColor", Color.rgb(45,45,45)));
         e.putInt("buttonBorderColor", getInt("buttonBorderColor", Color.rgb(110,110,110)));
         e.putString("screenSaverDuration", getString("screenSaverDuration", "0"));
-        if (!getBool("clockSizesV2Applied", false)) {
-            int previousClockSize = getInt("clockDateSize", 72);
-            int enlargedClockSize;
-            if (previousClockSize == 38) enlargedClockSize = 48;
-            else if (previousClockSize == 48) enlargedClockSize = 60;
-            else if (previousClockSize == 60) enlargedClockSize = 72;
-            else if (previousClockSize == 72) enlargedClockSize = 84;
-            else enlargedClockSize = previousClockSize;
-            e.putInt("clockDateSize", enlargedClockSize);
-            e.putBoolean("clockSizesV2Applied", true);
-        }
         if (!getBool("defaultLayoutV4Applied", false)) {
             // Apply the requested defaults once to existing installations too.
             // Do not overwrite these pending editor values with the old preference values.
@@ -559,6 +550,17 @@ public class MainActivity extends Activity {
         } else {
             e.putString("clockDatePosition", getString("clockDatePosition", "upper"));
             e.putString("playerPosition", getString("playerPosition", "bottom"));
+        }
+        if (!getBool("clockSizesV2Applied", false)) {
+            int previousClockSize = getInt("clockDateSize", 72);
+            int enlargedClockSize;
+            if (previousClockSize == 38) enlargedClockSize = 48;
+            else if (previousClockSize == 48) enlargedClockSize = 60;
+            else if (previousClockSize == 60) enlargedClockSize = 72;
+            else if (previousClockSize == 72) enlargedClockSize = 84;
+            else enlargedClockSize = previousClockSize;
+            e.putInt("clockDateSize", enlargedClockSize);
+            e.putBoolean("clockSizesV2Applied", true);
         }
         e.commit();
     }
@@ -1021,6 +1023,8 @@ public class MainActivity extends Activity {
                 refreshSystemMediaMirror();
                 scheduleAutoOff();
                 settingsDialogOpen = false;
+                settingsContainer = null;
+                notificationAccessCard = null;
                 getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN);
                 hideSystemUi();
             });
