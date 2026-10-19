@@ -28,7 +28,6 @@ import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.app.admin.DevicePolicyManager;
 
 public class SettingsActivity extends Activity {
     private static final int REQUEST_ENABLE_SCREEN_LOCK_ADMIN = 8142;
@@ -53,7 +52,7 @@ public class SettingsActivity extends Activity {
         prefs = getSharedPreferences("settings", MODE_PRIVATE);
 
         Window window = getWindow();
-        window.clearFlags(WindowManagerFlags.FULLSCREEN);
+        window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN);
         window.setStatusBarColor(SURFACE);
         window.setNavigationBarColor(SURFACE);
         window.getDecorView().setSystemUiVisibility(
@@ -605,10 +604,4 @@ public class SettingsActivity extends Activity {
         return Math.round(value * getResources().getDisplayMetrics().density);
     }
 
-    private static final class WindowManagerFlags {
-        static final int FULLSCREEN = WindowManagerFlags.FLAG_FULLSCREEN();
-        private static int FLAG_FULLSCREEN() {
-            return android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN;
-        }
-    }
 }
