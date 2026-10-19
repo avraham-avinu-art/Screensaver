@@ -1,0 +1,614 @@
+package com.avrahamart.nightscreen;
+
+import android.app.Activity;
+import android.app.NotificationManager;
+import android.app.admin.DevicePolicyManager;
+import android.content.ActivityNotFoundException;
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.res.ColorStateList;
+import android.graphics.Color;
+import android.graphics.Typeface;
+import android.graphics.drawable.GradientDrawable;
+import android.os.Build;
+import android.os.Bundle;
+import android.provider.Settings;
+import android.view.Gravity;
+import android.view.View;
+import android.view.Window;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.CompoundButton;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
+import android.widget.Spinner;
+import android.widget.Switch;
+import android.widget.TextView;
+import android.widget.Toast;
+import android.app.admin.DevicePolicyManager;
+
+public class SettingsActivity extends Activity {
+    private static final int REQUEST_ENABLE_SCREEN_LOCK_ADMIN = 8142;
+    private static final int SURFACE = Color.rgb(247, 248, 252);
+    private static final int ON_SURFACE = Color.rgb(36, 41, 59);
+    private static final int MUTED = Color.rgb(100, 106, 127);
+    private static final int OUTLINE = Color.rgb(205, 210, 226);
+    private static final int ACCENT = Color.rgb(58, 76, 160);
+
+    private SharedPreferences prefs;
+    private LinearLayout content;
+    private LinearLayout notificationAccessCard;
+    private LinearLayout screenLockAdminCard;
+    private LinearLayout currentCard;
+    private DevicePolicyManager devicePolicyManager;
+    private ComponentName screenLockAdminComponent;
+    private final int dateTextColor = Color.rgb(220, 220, 220);
+
+    @Override
+    protected void onCreate(Bundle state) {
+        super.onCreate(state);
+        prefs = getSharedPreferences("settings", MODE_PRIVATE);
+
+        Window window = getWindow();
+        window.clearFlags(WindowManagerFlags.FULLSCREEN);
+        window.setStatusBarColor(SURFACE);
+        window.setNavigationBarColor(SURFACE);
+        window.getDecorView().setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+                        | View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
+        window.getDecorView().setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        root.setBackgroundColor(SURFACE);
+        root.setPadding(dp(16), dp(8), dp(16), dp(12));
+
+        LinearLayout header = new LinearLayout(this);
+        header.setOrientation(LinearLayout.VERTICAL);
+        header.setGravity(Gravity.CENTER);
+        header.setPadding(dp(4), dp(4), dp(4), dp(10));
+
+        TextView title = textView("הגדרות", 25, ON_SURFACE);
+        title.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        title.setGravity(Gravity.CENTER);
+        title.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        header.addView(title, new LinearLayout.LayoutParams(-1, dp(40)));
+
+        TextView subtitle = textView("התאמה אישית של השעון, התאריך והנגן", 13, MUTED);
+        subtitle.setGravity(Gravity.CENTER);
+        subtitle.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        header.addView(subtitle, new LinearLayout.LayoutParams(-1, dp(26)));
+        root.addView(header, new LinearLayout.LayoutParams(-1, -2));
+
+        ScrollView scroll = new ScrollView(this);
+        scroll.setFillViewport(false);
+        scroll.setVerticalScrollBarEnabled(true);
+        scroll.setOverScrollMode(View.OVER_SCROLL_IF_CONTENT_SCROLLS);
+        scroll.setClipToPadding(false);
+        scroll.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        scroll.setPadding(0, dp(2), 0, dp(8));
+
+        content = new LinearLayout(this);
+        content.setOrientation(LinearLayout.VERTICAL);
+        content.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        scroll.addView(content, new ScrollView.LayoutParams(-1, -2));
+        root.addView(scroll, new LinearLayout.LayoutParams(0, 0, 1f));
+
+        buildSettingsCards();
+
+        Button done = new Button(this);
+        done.setText("סיום ושמירה");
+        done.setAllCaps(false);
+        done.setTextSize(15);
+        done.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        done.setTextColor(Color.WHITE);
+        done.setMinWidth(0);
+        done.setMinHeight(0);
+        done.setPadding(dp(24), 0, dp(24), 0);
+        done.setBackground(pillBackground(ACCENT, dp(24)));
+        done.setElevation(dp(2));
+        LinearLayout.LayoutParams doneParams =
+                new LinearLayout.LayoutParams(-1, dp(50));
+        doneParams.topMargin = dp(8);
+        root.addView(done, doneParams);
+        done.setOnClickListener(v -> finish());
+
+        setContentView(root);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (content != null) {
+            updateNotificationAccessCardVisibility();
+            updateScreenLockAdminCardVisibility();
+        }
+    }
+
+    private void buildSettingsCards() {
+        LinearLayout display = addCard(content, "תצוגה במסך");
+        addCheck(display, "תאריך עברי", "showHebrew", true);
+        addCheck(display, "תאריך לועזי", "showGregorian", true);
+        addCheck(display, "נגן", "showPlayer", true);
+        addSpinner(display, "זמן פעילות",
+                new String[]{"ללא כיבוי", "דקה אחת", "5 דקות",
+                        "לפי הגדרת המסך במכשיר", "ללא כיבוי כשנמצא בטעינה"},
+                new String[]{"0", "1", "5", "device", "charging"}, "screenSaverDuration");
+
+        if (!hasNotificationAccess()) {
+            notificationAccessCard = addNotificationAccessCard(content);
+        }
+        updateScreenLockAdminCardVisibility();
+
+        LinearLayout font = addCard(content, "גופן");
+        addSpinner(font, "צבע",
+                new String[]{"לבן", "אפור בהיר", "אפור", "כחול עדין"},
+                new String[]{"white", "light", "gray", "blue"}, "fontColor");
+        addSpinner(font, "עובי",
+                new String[]{"רגיל", "בינוני", "מודגש"},
+                new String[]{"0", "1", "2"}, "fontWeight");
+        addSpinner(font, "סוג",
+                new String[]{"Sans", "Monospace", "Serif"},
+                new String[]{"sans-serif", "monospace", "serif"}, "fontFamily");
+
+        LinearLayout clock = addCard(content, "תצוגת שעון ותאריך");
+        addSpinner(clock, "גודל",
+                new String[]{"קטן", "בינוני", "גדול", "גדול מאוד"},
+                new String[]{"48", "60", "72", "84"}, "clockDateSize");
+        addSpinner(clock, "מיקום",
+                new String[]{"הכי למעלה", "ברבע העליון", "באמצע המסך"},
+                new String[]{"top", "upper", "middle"}, "clockDatePosition");
+
+        LinearLayout player = addCard(content, "תצוגת הנגן");
+        addCheck(player, "פרטי אמן", "showDetails", getBool("showDetails", true));
+        addCheck(player, "שורת מיקום + זמן", "showProgress", true);
+        addSpinner(player, "גודל הנגן",
+                new String[]{"קטן", "בינוני", "גדול", "גדול מאוד"},
+                new String[]{"14", "17", "20", "23"}, "playerSize");
+        addSpinner(player, "מיקום הנגן",
+                new String[]{"ברבע התחתון", "הכי למטה"},
+                new String[]{"lower", "bottom"}, "playerPosition");
+
+        LinearLayout frame = addCard(content, "מסגרת לנגן");
+        addCheck(frame, "הצג מסגרת", "frameEnabled", false);
+        addSpinner(frame, "צבע מסגרת",
+                new String[]{"לבן", "אפור", "אפור בהיר", "כסף"},
+                new String[]{"white", "gray", "light", "silver"}, "frameColor");
+        addSpinner(frame, "עובי מסגרת",
+                new String[]{"דקה", "בינונית", "עבה"},
+                new String[]{"1", "2", "3"}, "frameWidth");
+        addSpinner(frame, "עיגול פינות",
+                new String[]{"ישר", "עדין", "מעוגל"},
+                new String[]{"0", "10", "20"}, "frameRadius");
+    }
+
+    private LinearLayout addCard(LinearLayout parent, String title) {
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        card.setPadding(dp(14), dp(8), dp(14), dp(12));
+
+        GradientDrawable bg = new GradientDrawable();
+        bg.setColor(Color.WHITE);
+        bg.setCornerRadius(dp(20));
+        bg.setStroke(dp(1), OUTLINE);
+        card.setBackground(bg);
+        if (Build.VERSION.SDK_INT >= 21) card.setElevation(dp(1));
+
+        LinearLayout.LayoutParams params =
+                new LinearLayout.LayoutParams(-1, -2);
+        params.setMargins(0, dp(5), 0, dp(5));
+        parent.addView(card, params);
+
+        TextView heading = textView(title, 16, Color.rgb(49, 58, 92));
+        heading.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        heading.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
+        heading.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        heading.setPadding(dp(2), 0, dp(2), 0);
+        card.addView(heading, new LinearLayout.LayoutParams(-1, dp(36)));
+        return card;
+    }
+
+    private void addCheck(LinearLayout card, String label, String key, boolean defaultValue) {
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        row.setPadding(dp(4), 0, dp(4), 0);
+
+        TextView text = textView(label, 15, ON_SURFACE);
+        text.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        text.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
+        row.addView(text, new LinearLayout.LayoutParams(0, dp(48), 1f));
+
+        Switch toggle = new Switch(this);
+        toggle.setShowText(false);
+        toggle.setChecked(getBool(key, defaultValue));
+        if (Build.VERSION.SDK_INT >= 21) {
+            toggle.setThumbTintList(new ColorStateList(
+                    new int[][]{
+                            new int[]{android.R.attr.state_checked},
+                            new int[]{}
+                    },
+                    new int[]{ACCENT, Color.rgb(238, 239, 244)}));
+            toggle.setTrackTintList(new ColorStateList(
+                    new int[][]{
+                            new int[]{android.R.attr.state_checked},
+                            new int[]{}
+                    },
+                    new int[]{Color.rgb(173, 183, 232), Color.rgb(194, 198, 211)}));
+        }
+        LinearLayout.LayoutParams switchParams =
+                new LinearLayout.LayoutParams(dp(58), dp(48));
+        switchParams.leftMargin = dp(4);
+        row.addView(toggle, switchParams);
+
+        toggle.setOnCheckedChangeListener((button, checked) -> {
+            try {
+                prefs.edit().putBoolean(key, checked).apply();
+            } catch (Throwable ignored) {
+            }
+        });
+        row.setOnClickListener(v -> toggle.setChecked(!toggle.isChecked()));
+        card.addView(row, new LinearLayout.LayoutParams(-1, dp(48)));
+    }
+
+    private void addSpinner(LinearLayout card, String label, String[] names,
+                            String[] values, String key) {
+        LinearLayout row = new LinearLayout(this);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        row.setPadding(dp(4), dp(2), dp(4), dp(2));
+
+        TextView l = textView(label, 14, Color.rgb(52, 58, 79));
+        l.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        l.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
+        row.addView(l, new LinearLayout.LayoutParams(0, dp(42), 1f));
+
+        Spinner spinner = new Spinner(this);
+        spinner.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>(
+                this, android.R.layout.simple_spinner_item, names) {
+            @Override public View getView(int position, View convertView,
+                                          android.view.ViewGroup parent) {
+                TextView view = (TextView) super.getView(position, convertView, parent);
+                styleSpinnerText(view, true);
+                return view;
+            }
+
+            @Override public View getDropDownView(int position, View convertView,
+                                                  android.view.ViewGroup parent) {
+                TextView view = new TextView(SettingsActivity.this);
+                view.setText(names[position]);
+                styleSpinnerText(view, false);
+                return view;
+            }
+        };
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinner.setAdapter(adapter);
+        spinner.setPadding(dp(6), 0, dp(6), 0);
+        spinner.setBackground(roundOutline(Color.rgb(249, 249, 253), dp(12), OUTLINE));
+
+        int selected = selectedIndex(key, values);
+        spinner.setSelection(selected, false);
+        LinearLayout.LayoutParams spinnerParams =
+                new LinearLayout.LayoutParams(dp(158), dp(44));
+        spinnerParams.rightMargin = dp(6);
+        row.addView(spinner, spinnerParams);
+        card.addView(row, new LinearLayout.LayoutParams(-1, dp(48)));
+
+        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            private boolean first = true;
+            @Override public void onItemSelected(AdapterView<?> parent, View view,
+                                                 int position, long id) {
+                if (first) {
+                    first = false;
+                    return;
+                }
+                try {
+                    String value = values[position];
+                    SharedPreferences.Editor editor = prefs.edit();
+                    if ("fontColor".equals(key) || "frameColor".equals(key)) {
+                        editor.putInt(key, colorValue(value));
+                    } else if ("fontWeight".equals(key) || "clockDateSize".equals(key)
+                            || "playerSize".equals(key) || "frameWidth".equals(key)
+                            || "frameRadius".equals(key)) {
+                        editor.putInt(key, Integer.parseInt(value));
+                    } else {
+                        editor.putString(key, value);
+                    }
+                    editor.apply();
+
+                    if ("screenSaverDuration".equals(key)) {
+                        updateScreenLockAdminCardVisibility();
+                    }
+                } catch (Throwable ignored) {
+                }
+            }
+            @Override public void onNothingSelected(AdapterView<?> parent) {}
+        });
+    }
+
+    private void styleSpinnerText(TextView view, boolean selected) {
+        view.setTextColor(ON_SURFACE);
+        view.setTextSize(14);
+        view.setGravity(Gravity.CENTER);
+        view.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        view.setTextDirection(View.TEXT_DIRECTION_RTL);
+        view.setSingleLine(true);
+        view.setPadding(dp(8), 0, dp(8), 0);
+        if (!selected) {
+            view.setMinHeight(dp(44));
+            view.setBackgroundColor(Color.WHITE);
+        }
+    }
+
+    private int selectedIndex(String key, String[] values) {
+        int index = 0;
+        if ("fontColor".equals(key) || "frameColor".equals(key)) {
+            int stored = getInt(key, colorValue(values[0]));
+            for (int i = 0; i < values.length; i++) {
+                if (colorValue(values[i]) == stored) return i;
+            }
+        } else if ("fontWeight".equals(key) || "clockDateSize".equals(key)
+                || "playerSize".equals(key) || "frameWidth".equals(key)
+                || "frameRadius".equals(key)) {
+            int stored = getInt(key, parse(values[0], 0));
+            for (int i = 0; i < values.length; i++) {
+                if (parse(values[i], Integer.MIN_VALUE) == stored) return i;
+            }
+        } else {
+            String stored = getString(key, values[0]);
+            for (int i = 0; i < values.length; i++) {
+                if (values[i].equals(stored)) return i;
+            }
+        }
+        return index;
+    }
+
+    private LinearLayout addNotificationAccessCard(LinearLayout parent) {
+        LinearLayout card = addCard(parent, "גישה להתראות");
+        TextView message = textView(
+                "כדי להציג את נגן המערכת, יש לאפשר גישה להתראות.",
+                14, ON_SURFACE);
+        message.setGravity(Gravity.CENTER);
+        message.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        message.setTextDirection(View.TEXT_DIRECTION_RTL);
+        message.setLineSpacing(dp(2), 1f);
+        card.addView(message, new LinearLayout.LayoutParams(-1, dp(48)));
+
+        Button grant = makeActionButton("פתיחת הגדרות הרשאה");
+        LinearLayout.LayoutParams params =
+                new LinearLayout.LayoutParams(-2, dp(44));
+        params.gravity = Gravity.CENTER_HORIZONTAL;
+        params.topMargin = dp(5);
+        card.addView(grant, params);
+        grant.setOnClickListener(v -> openNotificationAccessSettings());
+        return card;
+    }
+
+    private void updateNotificationAccessCardVisibility() {
+        if (hasNotificationAccess()) {
+            removeCard(notificationAccessCard);
+            notificationAccessCard = null;
+        } else if (notificationAccessCard == null && content != null) {
+            notificationAccessCard = addNotificationAccessCard(content);
+        }
+    }
+
+    private void updateScreenLockAdminCardVisibility() {
+        if (content == null) return;
+        String duration = getString("screenSaverDuration", "0");
+        boolean needsAdmin = "1".equals(duration) || "5".equals(duration);
+        if (!needsAdmin || isScreenLockAdminActive()) {
+            removeCard(screenLockAdminCard);
+            screenLockAdminCard = null;
+            return;
+        }
+        if (screenLockAdminCard != null) return;
+
+        screenLockAdminCard = addCard(content, "כיבוי מדויק בתום זמן הפעילות");
+        TextView explanation = textView(
+                "כדי לנעול ולכבות את המסך מיד בתום הזמן שנבחר, יש להפעיל הרשאת נעילת מסך. "
+                + "ההרשאה משמשת לנעילת המסך בלבד.",
+                13, MUTED);
+        explanation.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        explanation.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
+        explanation.setTextDirection(View.TEXT_DIRECTION_RTL);
+        explanation.setLineSpacing(dp(2), 1f);
+        LinearLayout.LayoutParams explanationParams =
+                new LinearLayout.LayoutParams(-1, -2);
+        explanationParams.bottomMargin = dp(8);
+        screenLockAdminCard.addView(explanation, explanationParams);
+
+        Button enable = makeActionButton("הפעל הרשאת נעילת מסך");
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-2, dp(44));
+        params.gravity = Gravity.CENTER_HORIZONTAL;
+        screenLockAdminCard.addView(enable, params);
+        enable.setOnClickListener(v -> requestScreenLockAdmin());
+    }
+
+    private boolean hasNotificationAccess() {
+        ComponentName component = new ComponentName(
+                this, SystemMediaNotificationListener.class);
+        try {
+            if (Build.VERSION.SDK_INT >= 27) {
+                NotificationManager manager =
+                        (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+                return manager != null
+                        && manager.isNotificationListenerAccessGranted(component);
+            }
+        } catch (Throwable ignored) {
+        }
+        try {
+            String enabled = Settings.Secure.getString(
+                    getContentResolver(), "enabled_notification_listeners");
+            return enabled != null && enabled.contains(component.flattenToString());
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    private void openNotificationAccessSettings() {
+        try {
+            startActivity(new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS));
+        } catch (ActivityNotFoundException ignored) {
+            Toast.makeText(this, "לא ניתן לפתוח את הגדרות ההתראות במכשיר.",
+                    Toast.LENGTH_LONG).show();
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private boolean isScreenLockAdminActive() {
+        try {
+            if (devicePolicyManager == null) {
+                devicePolicyManager = (DevicePolicyManager) getSystemService(
+                        Context.DEVICE_POLICY_SERVICE);
+            }
+            if (screenLockAdminComponent == null) {
+                screenLockAdminComponent = new ComponentName(
+                        this, ScreenLockAdminReceiver.class);
+            }
+            return devicePolicyManager != null
+                    && devicePolicyManager.isAdminActive(screenLockAdminComponent);
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    private void requestScreenLockAdmin() {
+        try {
+            if (screenLockAdminComponent == null) {
+                screenLockAdminComponent = new ComponentName(
+                        this, ScreenLockAdminReceiver.class);
+            }
+            Intent intent = new Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN);
+            intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, screenLockAdminComponent);
+            intent.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION,
+                    "הרשאה זו משמשת רק לנעילת המסך בתום זמן הפעילות שבחרת.");
+            startActivityForResult(intent, REQUEST_ENABLE_SCREEN_LOCK_ADMIN);
+        } catch (Throwable ex) {
+            Toast.makeText(this, "לא ניתן לפתוח את הרשאת נעילת המסך.",
+                    Toast.LENGTH_LONG).show();
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQUEST_ENABLE_SCREEN_LOCK_ADMIN) {
+            updateScreenLockAdminCardVisibility();
+            if (isScreenLockAdminActive()) {
+                Toast.makeText(this, "הרשאת נעילת המסך הופעלה.",
+                        Toast.LENGTH_LONG).show();
+            }
+        }
+    }
+
+    private void removeCard(LinearLayout card) {
+        if (card != null && card.getParent() instanceof android.view.ViewGroup) {
+            ((android.view.ViewGroup) card.getParent()).removeView(card);
+        }
+    }
+
+    private Button makeActionButton(String text) {
+        Button button = new Button(this);
+        button.setText(text);
+        button.setAllCaps(false);
+        button.setTextSize(14);
+        button.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        button.setTextColor(Color.WHITE);
+        button.setMinWidth(0);
+        button.setMinHeight(0);
+        button.setPadding(dp(18), 0, dp(18), 0);
+        button.setBackground(pillBackground(ACCENT, dp(22)));
+        if (Build.VERSION.SDK_INT >= 21) button.setElevation(dp(1));
+        return button;
+    }
+
+    private GradientDrawable pillBackground(int color, int radius) {
+        GradientDrawable bg = new GradientDrawable();
+        bg.setColor(color);
+        bg.setCornerRadius(radius);
+        return bg;
+    }
+
+    private GradientDrawable roundOutline(int color, int radius, int strokeColor) {
+        GradientDrawable bg = pillBackground(color, radius);
+        bg.setStroke(dp(1), strokeColor);
+        return bg;
+    }
+
+    private int colorValue(String value) {
+        if ("white".equals(value)) return Color.WHITE;
+        if ("light".equals(value)) return Color.argb(102, 220, 220, 220);
+        if ("gray".equals(value)) return Color.GRAY;
+        if ("blue".equals(value)) return Color.rgb(120, 165, 205);
+        if ("slate".equals(value)) return Color.rgb(100, 125, 150);
+        if ("silver".equals(value)) return Color.rgb(155, 165, 175);
+        if ("purple".equals(value)) return Color.rgb(145, 130, 165);
+        if ("gold".equals(value)) return Color.rgb(190, 165, 105);
+        return Color.WHITE;
+    }
+
+    private boolean getBool(String key, boolean fallback) {
+        try {
+            Object value = prefs.getAll().get(key);
+            if (value instanceof Boolean) return (Boolean) value;
+            if (value instanceof String) return Boolean.parseBoolean((String) value);
+            if (value instanceof Number) return ((Number) value).intValue() != 0;
+        } catch (Throwable ignored) {
+        }
+        return fallback;
+    }
+
+    private int getInt(String key, int fallback) {
+        try {
+            Object value = prefs.getAll().get(key);
+            if (value instanceof Number) return ((Number) value).intValue();
+            if (value instanceof String) return Integer.parseInt((String) value);
+            if (value instanceof Boolean) return ((Boolean) value) ? 1 : 0;
+        } catch (Throwable ignored) {
+        }
+        return fallback;
+    }
+
+    private String getString(String key, String fallback) {
+        try {
+            Object value = prefs.getAll().get(key);
+            return value == null ? fallback : String.valueOf(value);
+        } catch (Throwable ignored) {
+        }
+        return fallback;
+    }
+
+    private int parse(String value, int fallback) {
+        try { return Integer.parseInt(value); }
+        catch (Throwable ignored) { return fallback; }
+    }
+
+    private TextView textView(String text, float size, int color) {
+        TextView view = new TextView(this);
+        view.setText(text);
+        view.setTextSize(size);
+        view.setTextColor(color);
+        view.setTextDirection(View.TEXT_DIRECTION_RTL);
+        view.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        return view;
+    }
+
+    private int dp(int value) {
+        return Math.round(value * getResources().getDisplayMetrics().density);
+    }
+
+    private static final class WindowManagerFlags {
+        static final int FULLSCREEN = WindowManagerFlags.FLAG_FULLSCREEN();
+        private static int FLAG_FULLSCREEN() {
+            return android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN;
+        }
+    }
+}
