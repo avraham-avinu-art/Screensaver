@@ -393,7 +393,6 @@ public class MainActivity extends Activity {
         mediaTitle.setVisibility(View.VISIBLE);
         mediaTitle.setGravity(Gravity.CENTER);
         mediaTitle.setSingleLine(true);
-        mediaTitle.setEllipsize(TextUtils.TruncateAt.MARQUEE);
         mediaTitle.setIncludeFontPadding(false);
         mediaDetails = textView("", 17, Color.rgb(175, 175, 175));
         mediaDetails.setVisibility(View.INVISIBLE);
@@ -458,13 +457,13 @@ public class MainActivity extends Activity {
         totalParams.leftMargin = dp(4);
         mediaProgressRow.addView(mediaTotalText, totalParams);
 
-        // Artist first, then song title, followed immediately by the position row.
-        LinearLayout.LayoutParams detailsParams = new LinearLayout.LayoutParams(-1, dp(30));
-        mediaMirror.addView(mediaDetails, detailsParams);
-
+        // Song title first, artist directly below it, then the position row.
         LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(-1, dp(30));
         titleParams.topMargin = dp(0);
         mediaMirror.addView(mediaTitle, titleParams);
+
+        LinearLayout.LayoutParams detailsParams = new LinearLayout.LayoutParams(-1, dp(30));
+        mediaMirror.addView(mediaDetails, detailsParams);
 
         LinearLayout.LayoutParams progressParams = new LinearLayout.LayoutParams(-1, dp(28));
         progressParams.topMargin = dp(0);
@@ -483,11 +482,11 @@ public class MainActivity extends Activity {
         controlAreaParams.gravity = Gravity.CENTER_HORIZONTAL;
         controlAreaParams.topMargin = dp(-5);
 
-        // Physical order: Next on the left, Play/Pause in the center, Previous on the right.
+        // Right: Next; center: Play/Pause; left: Previous.
         mediaNext = mediaIconButton(R.drawable.media_next, "הבא");
-        mediaNext.setOnClickListener(v -> sendPrevious());
+        mediaNext.setOnClickListener(v -> sendNext());
         FrameLayout.LayoutParams nextParams =
-                new FrameLayout.LayoutParams(buttonSize, buttonSize, Gravity.LEFT | Gravity.CENTER_VERTICAL);
+                new FrameLayout.LayoutParams(buttonSize, buttonSize, Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         controls.addView(mediaNext, nextParams);
 
         mediaPlayPause = mediaIconButton(R.drawable.media_play, "נגן");
@@ -497,9 +496,9 @@ public class MainActivity extends Activity {
         controls.addView(mediaPlayPause, playParams);
 
         mediaPrev = mediaIconButton(R.drawable.media_previous, "הקודם");
-        mediaPrev.setOnClickListener(v -> sendNext());
+        mediaPrev.setOnClickListener(v -> sendPrevious());
         FrameLayout.LayoutParams prevParams =
-                new FrameLayout.LayoutParams(buttonSize, buttonSize, Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+                new FrameLayout.LayoutParams(buttonSize, buttonSize, Gravity.LEFT | Gravity.CENTER_VERTICAL);
         controls.addView(mediaPrev, prevParams);
 
         mediaMirror.addView(controls, controlAreaParams);
@@ -1791,7 +1790,7 @@ public class MainActivity extends Activity {
             if (duration > 0) position = Math.min(position, duration);
             boolean showDetails = getBool("showDetails", true);
             mediaDetails.setText(lastArtist);
-            mediaDetails.setVisibility(showDetails && !lastArtist.isEmpty() ? View.VISIBLE : View.INVISIBLE);
+            mediaDetails.setVisibility(showDetails && !lastArtist.isEmpty() ? View.VISIBLE : View.GONE);
             boolean showProgress = getBool("showProgress", false) && duration > 0;
             mediaProgressRow.setVisibility(showProgress ? View.VISIBLE : View.GONE);
             mediaSeekBar.setVisibility(showProgress ? View.VISIBLE : View.GONE);
