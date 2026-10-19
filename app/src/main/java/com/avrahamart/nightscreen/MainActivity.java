@@ -61,7 +61,6 @@ public class MainActivity extends Activity {
     private long settingsOpenedElapsedRealtime = 0L;
     private DevicePolicyManager devicePolicyManager;
     private ComponentName screenLockAdminComponent;
-    private static final int REQUEST_ENABLE_SCREEN_LOCK_ADMIN = 8142;
     private final BroadcastReceiver deviceStateReceiver = new BroadcastReceiver() {
         @Override public void onReceive(Context context, Intent intent) {
             if (intent == null || intent.getAction() == null) return;
@@ -930,7 +929,7 @@ public class MainActivity extends Activity {
         }
     }
 
-    private boolean isDeviceCharging() {    private boolean isDeviceCharging() {
+    private boolean isDeviceCharging() {
         try {
             Intent battery = registerReceiver(null,
                     new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
