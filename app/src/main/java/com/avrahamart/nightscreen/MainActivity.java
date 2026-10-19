@@ -67,6 +67,7 @@ public class MainActivity extends Activity {
     private long activityDeadlineElapsedRealtime = 0L;
     private String lastScheduledDurationValue = null;
     private boolean screenDurationChangedInSettings = false;
+    private long settingsOpenedElapsedRealtime = 0L;
     private LinearLayout settingsContainer;
     private LinearLayout notificationAccessCard;
     private final BroadcastReceiver deviceStateReceiver = new BroadcastReceiver() {
@@ -805,6 +806,9 @@ public class MainActivity extends Activity {
 
     private void scheduleAutoOff(boolean restartCountdown) {
         handler.removeCallbacks(autoOffRunnable);
+        if (settingsDialogOpen && !restartCountdown) {
+            return;
+        }
         String value = getString("screenSaverDuration", "0");
         boolean settingChanged = !value.equals(lastScheduledDurationValue);
         if (settingChanged) {
@@ -1114,6 +1118,8 @@ public class MainActivity extends Activity {
             final AlertDialog dialog = new MaterialAlertDialogBuilder(this).setView(scroll).create();
             done.setOnClickListener(v -> dialog.dismiss());
             settingsDialogOpen = true;
+            settingsOpenedElapsedRealtime = SystemClock.elapsedRealtime();
+            handler.removeCallbacks(autoOffRunnable);
 
             // The Activity itself is fullscreen/immersive. A child Dialog can inherit
             // that window state on some Android/OEM versions, which steals the top-edge
@@ -1135,6 +1141,14 @@ public class MainActivity extends Activity {
 
             dialog.setOnDismissListener(d -> {
                 boolean restartCountdown = screenDurationChangedInSettings || screenSleepPending;
+                long nowElapsed = SystemClock.elapsedRealtime();
+                if (!restartCountdown && settingsOpenedElapsedRealtime > 0L
+                        && activityDeadlineElapsedRealtime > 0L) {
+                    // Settings time does not consume the selected saver display duration.
+                    activityDeadlineElapsedRealtime += Math.max(
+                            0L, nowElapsed - settingsOpenedElapsedRealtime);
+                }
+                settingsOpenedElapsedRealtime = 0L;
                 settingsDialogOpen = false;
                 settingsContainer = null;
                 notificationAccessCard = null;
