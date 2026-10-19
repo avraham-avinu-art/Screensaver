@@ -857,8 +857,8 @@ public class MainActivity extends Activity {
     }
 
     private float dateTextSizeForClockPreset(int clockSize) {
-        // The Hebrew and Gregorian dates are always exactly 30% of the selected clock size.
-        return clockSize * 0.30f;
+        // The Hebrew and Gregorian dates are always exactly 28% of the selected clock size.
+        return clockSize * 0.28f;
     }
 
     private int dateRowHeightForClockPreset(int clockSize) {
