@@ -310,13 +310,22 @@ public class SettingsActivity extends Activity {
         card.addView(row, new LinearLayout.LayoutParams(-1, dp(48)));
 
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            private boolean first = true;
+            private boolean initialSelectionPending = true;
+            private int lastHandledPosition = selected;
+
             @Override public void onItemSelected(AdapterView<?> parent, View view,
                                                  int position, long id) {
-                if (first) {
-                    first = false;
-                    return;
+                // Ignore only the actual initial selection event. If Android delays that
+                // event until the user taps, do not swallow the user's first real change.
+                if (initialSelectionPending) {
+                    initialSelectionPending = false;
+                    if (position == selected) {
+                        lastHandledPosition = position;
+                        return;
+                    }
                 }
+                if (position == lastHandledPosition) return;
+                lastHandledPosition = position;
                 try {
                     String value = values[position];
                     SharedPreferences.Editor editor = prefs.edit();
