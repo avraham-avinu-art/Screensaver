@@ -4,18 +4,12 @@ import android.app.Activity;
 import android.animation.ObjectAnimator;
 import android.app.NotificationManager;
 import android.app.admin.DevicePolicyManager;
-import androidx.appcompat.app.AlertDialog;
 import android.content.SharedPreferences;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.IntentFilter;
 import android.graphics.drawable.GradientDrawable;
 import android.text.TextUtils;
-import android.widget.CheckBox;
-import android.widget.ScrollView;
-import android.widget.Button;
-import android.widget.Spinner;
-import android.widget.ArrayAdapter;
 import android.content.ActivityNotFoundException;
 import android.content.ComponentName;
 import android.content.Intent;
@@ -46,9 +40,6 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.android.material.button.MaterialButton;
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
-import com.google.android.material.materialswitch.MaterialSwitch;
 
 import com.kosherjava.zmanim.hebrewcalendar.HebrewDateFormatter;
 import com.kosherjava.zmanim.hebrewcalendar.JewishDate;
@@ -67,14 +58,9 @@ public class MainActivity extends Activity {
     private boolean deviceEventsRegistered = false;
     private long activityDeadlineElapsedRealtime = 0L;
     private String lastScheduledDurationValue = null;
-    private boolean screenDurationChangedInSettings = false;
     private long settingsOpenedElapsedRealtime = 0L;
-    private LinearLayout settingsContainer;
-    private LinearLayout notificationAccessCard;
-    private LinearLayout screenLockAdminCard;
     private DevicePolicyManager devicePolicyManager;
     private ComponentName screenLockAdminComponent;
-    private static final int REQUEST_ENABLE_SCREEN_LOCK_ADMIN = 8142;
     private final BroadcastReceiver deviceStateReceiver = new BroadcastReceiver() {
         @Override public void onReceive(Context context, Intent intent) {
             if (intent == null || intent.getAction() == null) return;
@@ -102,7 +88,6 @@ public class MainActivity extends Activity {
     private final Runnable hideSettingsButtonRunnable = () -> {
         if (settingsButton != null) settingsButton.setVisibility(View.GONE);
     };
-    private LinearLayout currentSettingsCard;
     private boolean settingsDialogOpen = false;
     private FrameLayout stageView;
     private LinearLayout clockBlockView;
@@ -170,6 +155,21 @@ public class MainActivity extends Activity {
     protected void onResume() {
         super.onResume();
         try {
+            if (settingsDialogOpen) {
+                String activeDuration = getString("screenSaverDuration", "0");
+                boolean durationWasChanged = lastScheduledDurationValue != null
+                        && !activeDuration.equals(lastScheduledDurationValue);
+                long nowElapsed = SystemClock.elapsedRealtime();
+                if (!durationWasChanged && settingsOpenedElapsedRealtime > 0L
+                        && activityDeadlineElapsedRealtime > 0L) {
+                    activityDeadlineElapsedRealtime += Math.max(
+                            0L, nowElapsed - settingsOpenedElapsedRealtime);
+                }
+                settingsDialogOpen = false;
+                settingsOpenedElapsedRealtime = 0L;
+                applySettings();
+            }
+
             if (screenSleepPending) {
                 if (isScreenInteractive()) wakeSaverDisplay();
                 else getWindow().clearFlags(
@@ -177,9 +177,7 @@ public class MainActivity extends Activity {
             } else {
                 scheduleAutoOff();
             }
-            updateNotificationAccessCardVisibility();
-            updateScreenLockAdminCardVisibility();
-            if (!settingsDialogOpen) hideSystemUi();
+            hideSystemUi();
             handler.removeCallbacks(ticker);
             handler.post(ticker);
             registerActiveSessionsListener();
@@ -306,7 +304,7 @@ public class MainActivity extends Activity {
             FrameLayout.LayoutParams cp = (FrameLayout.LayoutParams) clockBlock.getLayoutParams();
             int clockH = clockBlock.getMeasuredHeight();
             if ("upper".equals(clockPos)) {
-                cp.topMargin = Math.max(0, Math.round(h * 0.25f - clockH / 2f));
+                cp.topMargin = Math.max(0, Math.round(h * 0.25f));
             } else if ("middle".equals(clockPos)) {
                 cp.topMargin = Math.max(0, Math.round(h * 0.50f - clockH / 2f));
             } else {
@@ -464,13 +462,13 @@ public class MainActivity extends Activity {
         totalParams.leftMargin = dp(4);
         mediaProgressRow.addView(mediaTotalText, totalParams);
 
-        // Song title first, artist directly below it, then the position row.
+        // Artist first, then song title, followed immediately by the position row.
+        LinearLayout.LayoutParams detailsParams = new LinearLayout.LayoutParams(-1, dp(30));
+        mediaMirror.addView(mediaDetails, detailsParams);
+
         LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(-1, dp(30));
         titleParams.topMargin = dp(0);
         mediaMirror.addView(mediaTitle, titleParams);
-
-        LinearLayout.LayoutParams detailsParams = new LinearLayout.LayoutParams(-1, dp(30));
-        mediaMirror.addView(mediaDetails, detailsParams);
 
         LinearLayout.LayoutParams progressParams = new LinearLayout.LayoutParams(-1, dp(28));
         progressParams.topMargin = dp(0);
@@ -489,11 +487,11 @@ public class MainActivity extends Activity {
         controlAreaParams.gravity = Gravity.CENTER_HORIZONTAL;
         controlAreaParams.topMargin = dp(-5);
 
-        // Right: Next; center: Play/Pause; left: Previous.
+        // Physical order: Next on the left, Play/Pause in the center, Previous on the right.
         mediaNext = mediaIconButton(R.drawable.media_next, "הבא");
-        mediaNext.setOnClickListener(v -> sendNext());
+        mediaNext.setOnClickListener(v -> sendPrevious());
         FrameLayout.LayoutParams nextParams =
-                new FrameLayout.LayoutParams(buttonSize, buttonSize, Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+                new FrameLayout.LayoutParams(buttonSize, buttonSize, Gravity.LEFT | Gravity.CENTER_VERTICAL);
         controls.addView(mediaNext, nextParams);
 
         mediaPlayPause = mediaIconButton(R.drawable.media_play, "נגן");
@@ -503,9 +501,9 @@ public class MainActivity extends Activity {
         controls.addView(mediaPlayPause, playParams);
 
         mediaPrev = mediaIconButton(R.drawable.media_previous, "הקודם");
-        mediaPrev.setOnClickListener(v -> sendPrevious());
+        mediaPrev.setOnClickListener(v -> sendNext());
         FrameLayout.LayoutParams prevParams =
-                new FrameLayout.LayoutParams(buttonSize, buttonSize, Gravity.LEFT | Gravity.CENTER_VERTICAL);
+                new FrameLayout.LayoutParams(buttonSize, buttonSize, Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         controls.addView(mediaPrev, prevParams);
 
         mediaMirror.addView(controls, controlAreaParams);
@@ -699,25 +697,25 @@ public class MainActivity extends Activity {
 
         // Measure the actual text metrics in pixels (including user font scaling).
         // This prevents date/time rows from being clipped on large text settings.
-        int clockH = measuredLineHeight(timeText, 10, 56);
+        int clockH = measuredLineHeight(timeText, 2, 56);
         int dateH = Math.max(
-                measuredLineHeight(gregorianText, 8, 28),
-                measuredLineHeight(hebrewText, 8, 28));
+                measuredLineHeight(gregorianText, 0, 28),
+                measuredLineHeight(hebrewText, 0, 28));
         boolean showGregorian = getBool("showGregorian", true);
         boolean showHebrew = getBool("showHebrew", true);
         int visibleDates = (showGregorian ? 1 : 0) + (showHebrew ? 1 : 0);
-        int dateGap = visibleDates > 0 ? dp(8) : 0;
+        int dateGap = visibleDates > 0 ? dp(2) : 0;
 
         LinearLayout.LayoutParams tp = (LinearLayout.LayoutParams) timeText.getLayoutParams();
         tp.height = clockH;
         timeText.setLayoutParams(tp);
         LinearLayout.LayoutParams gp = (LinearLayout.LayoutParams) gregorianText.getLayoutParams();
         gp.height = dateH;
-        gp.topMargin = showGregorian ? dp(8) : 0;
+        gp.topMargin = showGregorian ? dp(2) : 0;
         gregorianText.setLayoutParams(gp);
         LinearLayout.LayoutParams hp = (LinearLayout.LayoutParams) hebrewText.getLayoutParams();
         hp.height = dateH;
-        hp.topMargin = (!showGregorian && showHebrew) ? dp(8) : 0;
+        hp.topMargin = (!showGregorian && showHebrew) ? dp(2) : 0;
         hebrewText.setLayoutParams(hp);
 
         View clockParent = (View) timeText.getParent();
@@ -931,93 +929,6 @@ public class MainActivity extends Activity {
         }
     }
 
-    private void requestScreenLockAdmin() {
-        if (isScreenLockAdminActive()) {
-            updateScreenLockAdminCardVisibility();
-            return;
-        }
-        try {
-            if (screenLockAdminComponent == null) {
-                screenLockAdminComponent = new ComponentName(
-                        this, ScreenLockAdminReceiver.class);
-            }
-            Intent intent = new Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN);
-            intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, screenLockAdminComponent);
-            intent.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION,
-                    "הרשאה זו משמשת רק לכיבוי ונעילת המסך בתום זמן הפעילות שבחרת. "
-                    + "לא נעשה בה שימוש למחיקת מידע או לשינוי נתונים במכשיר.");
-            startActivityForResult(intent, REQUEST_ENABLE_SCREEN_LOCK_ADMIN);
-        } catch (Throwable ex) {
-            Toast.makeText(this,
-                    "לא ניתן לפתוח את מסך הרשאת נעילת המסך במכשיר הזה.",
-                    Toast.LENGTH_LONG).show();
-        }
-    }
-
-    private void updateScreenLockAdminCardVisibility() {
-        if (settingsContainer == null) return;
-        String duration = getString("screenSaverDuration", "0");
-        boolean needsExactLock = "1".equals(duration) || "5".equals(duration);
-        if (!needsExactLock || isScreenLockAdminActive()) {
-            if (screenLockAdminCard != null
-                    && screenLockAdminCard.getParent() instanceof android.view.ViewGroup) {
-                ((android.view.ViewGroup) screenLockAdminCard.getParent())
-                        .removeView(screenLockAdminCard);
-            }
-            screenLockAdminCard = null;
-            return;
-        }
-        if (screenLockAdminCard != null) return;
-
-        screenLockAdminCard = addCard(settingsContainer, "כיבוי מדויק בתום זמן הפעילות");
-        TextView explanation = textView(
-                "כדי לנעול ולכבות את המסך מיד בתום הזמן שנבחר, יש להפעיל הרשאת נעילת מסך. "
-                + "ההרשאה משמשת לנעילת המסך בלבד.",
-                13, Color.rgb(75, 80, 103));
-        explanation.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        explanation.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
-        explanation.setLineSpacing(dp(2), 1.0f);
-        LinearLayout.LayoutParams explanationParams =
-                new LinearLayout.LayoutParams(-1, LinearLayout.LayoutParams.WRAP_CONTENT);
-        explanationParams.bottomMargin = dp(8);
-        screenLockAdminCard.addView(explanation, explanationParams);
-
-        MaterialButton enable = new MaterialButton(this);
-        enable.setText("הפעל הרשאת נעילת מסך");
-        enable.setTextSize(14);
-        enable.setTextColor(Color.WHITE);
-        enable.setMinWidth(0);
-        enable.setMinHeight(0);
-        enable.setInsetTop(0);
-        enable.setInsetBottom(0);
-        enable.setCornerRadius(dp(20));
-        enable.setBackgroundTintList(android.content.res.ColorStateList.valueOf(
-                Color.rgb(58, 76, 160)));
-        LinearLayout.LayoutParams enableParams =
-                new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.WRAP_CONTENT, dp(42));
-        enableParams.gravity = Gravity.CENTER_HORIZONTAL;
-        screenLockAdminCard.addView(enable, enableParams);
-        enable.setOnClickListener(v -> requestScreenLockAdmin());
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == REQUEST_ENABLE_SCREEN_LOCK_ADMIN) {
-            if (isScreenLockAdminActive()) {
-                Toast.makeText(this,
-                        "הרשאת נעילת המסך הופעלה. זמן הפעילות יכבה את המסך בתום הזמן שנבחר.",
-                        Toast.LENGTH_LONG).show();
-            } else {
-                Toast.makeText(this,
-                        "לא הופעלה הרשאת נעילת מסך; המכשיר ישתמש בזמן הכיבוי הרגיל שלו.",
-                        Toast.LENGTH_LONG).show();
-            }
-            updateScreenLockAdminCardVisibility();
-        }
-    }
-
     private boolean isDeviceCharging() {
         try {
             Intent battery = registerReceiver(null,
@@ -1109,483 +1020,21 @@ public class MainActivity extends Activity {
     }
 
     private void showSettings() {
+        if (settingsDialogOpen) return;
+        if (prefs == null) initSettings();
+
+        settingsDialogOpen = true;
+        settingsOpenedElapsedRealtime = SystemClock.elapsedRealtime();
+        handler.removeCallbacks(autoOffRunnable);
         try {
-            if (prefs == null) initSettings();
-
-            ScrollView scroll = new ScrollView(this);
-            scroll.setFillViewport(true);
-            scroll.setVerticalScrollBarEnabled(true);
-            scroll.setOverScrollMode(View.OVER_SCROLL_ALWAYS);
-            scroll.setBackgroundColor(Color.TRANSPARENT);
-            scroll.setClipToPadding(false);
-            scroll.setPadding(0, dp(8), 0, dp(8));
-
-            LinearLayout box = new LinearLayout(this);
-            box.setOrientation(LinearLayout.VERTICAL);
-            box.setPadding(dp(14), dp(12), dp(14), dp(16));
-            GradientDrawable settingsSurface = new GradientDrawable();
-            settingsSurface.setColor(Color.rgb(247, 248, 252));
-            settingsSurface.setCornerRadius(dp(26));
-            settingsSurface.setStroke(dp(1), Color.rgb(222, 226, 238));
-            box.setBackground(settingsSurface);
-            if (Build.VERSION.SDK_INT >= 21) box.setElevation(dp(3));
-            int availableContentWidth = getResources().getDisplayMetrics().widthPixels - dp(24);
-            int contentWidth = Math.max(dp(240),
-                    Math.min(availableContentWidth, dp(460)));
-            scroll.addView(box, new FrameLayout.LayoutParams(
-                    contentWidth, LinearLayout.LayoutParams.WRAP_CONTENT,
-                    Gravity.TOP | Gravity.CENTER_HORIZONTAL));
-
-            TextView h = textView("הגדרות", 24, Color.rgb(28, 35, 54));
-            h.setGravity(Gravity.CENTER);
-            h.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-            box.addView(h, new LinearLayout.LayoutParams(-1, dp(38)));
-
-            TextView subtitle = textView(
-                    "התאמה אישית של השעון, התאריך והנגן",
-                    13, Color.rgb(103, 110, 128));
-            subtitle.setGravity(Gravity.CENTER);
-            subtitle.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-            LinearLayout.LayoutParams subtitleParams = new LinearLayout.LayoutParams(-1, dp(24));
-            subtitleParams.bottomMargin = dp(10);
-            box.addView(subtitle, subtitleParams);
-
-            // Each section is a single Card-like container. Every relevant row is
-            // added inside that same container, so nothing belongs outside its frame.
-            LinearLayout s1 = addCard(box, "תצוגה במסך");
-            addCheck(s1, "תאריך עברי", "showHebrew", true);
-            addCheck(s1, "תאריך לועזי", "showGregorian", true);
-            addCheck(s1, "נגן", "showPlayer", true);
-            addSpinner(s1, "זמן פעילות",
-                    new String[]{"ללא כיבוי","דקה אחת","5 דקות","לפי הגדרת המסך במכשיר","ללא כיבוי כשנמצא בטעינה"},
-                    new String[]{"0","1","5","device","charging"}, "screenSaverDuration");
-            if (!hasNotificationAccess()) {
-                notificationAccessCard = addNotificationAccessCard(box);
-            }
-
-            settingsContainer = box;
-            updateScreenLockAdminCardVisibility();
-            LinearLayout s2 = addCard(box, "גופן");
-            addSpinner(s2, "צבע",
-                    new String[]{"לבן","אפור בהיר","אפור","כחול עדין"},
-                    new String[]{"white","light","gray","blue"}, "fontColor");
-            addSpinner(s2, "עובי",
-                    new String[]{"רגיל","בינוני","מודגש"},
-                    new String[]{"0","1","2"}, "fontWeight");
-            addSpinner(s2, "סוג",
-                    new String[]{"Sans","Monospace","Serif"},
-                    new String[]{"sans-serif","monospace","serif"}, "fontFamily");
-
-            LinearLayout s3 = addCard(box, "תצוגת שעון ותאריך");
-            addSpinner(s3, "גודל",
-                    new String[]{"קטן","בינוני","גדול","גדול מאוד"},
-                    new String[]{"48","60","72","84"}, "clockDateSize");
-            addSpinner(s3, "מיקום",
-                    new String[]{"הכי למעלה","ברבע העליון","באמצע המסך"},
-                    new String[]{"top","upper","middle"}, "clockDatePosition");
-
-            LinearLayout s4 = addCard(box, "תצוגת הנגן");
-            addCheck(s4, "פרטי אמן", "showDetails", getBool("showDetails", true));
-            addCheck(s4, "שורת מיקום + זמן", "showProgress", true);
-            addSpinner(s4, "גודל הנגן",
-                    new String[]{"קטן","בינוני","גדול","גדול מאוד"},
-                    new String[]{"14","17","20","23"}, "playerSize");
-            addSpinner(s4, "מיקום הנגן",
-                    new String[]{"ברבע התחתון","הכי למטה"},
-                    new String[]{"lower","bottom"}, "playerPosition");
-
-            LinearLayout s5 = addCard(box, "מסגרת לנגן");
-            addCheck(s5, "הצג מסגרת", "frameEnabled", false);
-            addSpinner(s5, "צבע מסגרת",
-                    new String[]{"לבן","אפור","אפור בהיר","כסף"},
-                    new String[]{"white","gray","light","silver"}, "frameColor");
-            addSpinner(s5, "עובי מסגרת",
-                    new String[]{"דקה","בינונית","עבה"},
-                    new String[]{"1","2","3"}, "frameWidth");
-            addSpinner(s5, "עיגול פינות",
-                    new String[]{"ישר","עדין","מעוגל"},
-                    new String[]{"0","10","20"}, "frameRadius");
-
-            MaterialButton done = new MaterialButton(this);
-            done.setText("סיום ושמירה");
-            done.setTextColor(Color.WHITE);
-            done.setTextSize(15);
-            done.setMinWidth(0);
-            done.setMinHeight(0);
-            done.setPadding(dp(22), 0, dp(22), 0);
-            done.setInsetTop(0);
-            done.setInsetBottom(0);
-            done.setCornerRadius(dp(22));
-            done.setBackgroundTintList(android.content.res.ColorStateList.valueOf(
-                    Color.rgb(58, 76, 160)));
-            done.setRippleColor(android.content.res.ColorStateList.valueOf(
-                    Color.rgb(105, 120, 197)));
-            LinearLayout.LayoutParams doneParams =
-                    new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(46));
-            doneParams.gravity = Gravity.CENTER_HORIZONTAL;
-            doneParams.topMargin = dp(6);
-            box.addView(done, doneParams);
-
-            final AlertDialog dialog = new MaterialAlertDialogBuilder(this).setView(scroll).create();
-            done.setOnClickListener(v -> dialog.dismiss());
-            settingsDialogOpen = true;
-            settingsOpenedElapsedRealtime = SystemClock.elapsedRealtime();
-            handler.removeCallbacks(autoOffRunnable);
-
-            // The Activity itself is fullscreen/immersive. A child Dialog can inherit
-            // that window state on some Android/OEM versions, which steals the top-edge
-            // notification-shade gesture. Temporarily make the Activity a normal window
-            // before showing the settings dialog, then restore fullscreen after dismissal.
-            getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN);
-            getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
-            getWindow().getDecorView().setSystemUiVisibility(0);
-            if (Build.VERSION.SDK_INT >= 30) {
-                android.view.WindowInsetsController activityController =
-                        getWindow().getDecorView().getWindowInsetsController();
-                if (activityController != null) {
-                    activityController.show(android.view.WindowInsets.Type.statusBars()
-                            | android.view.WindowInsets.Type.navigationBars());
-                    activityController.setSystemBarsBehavior(
-                            android.view.WindowInsetsController.BEHAVIOR_DEFAULT);
-                }
-            }
-
-            dialog.setOnDismissListener(d -> {
-                boolean restartCountdown = screenDurationChangedInSettings || screenSleepPending;
-                long nowElapsed = SystemClock.elapsedRealtime();
-                if (!restartCountdown && settingsOpenedElapsedRealtime > 0L
-                        && activityDeadlineElapsedRealtime > 0L) {
-                    // Settings time does not consume the selected saver display duration.
-                    activityDeadlineElapsedRealtime += Math.max(
-                            0L, nowElapsed - settingsOpenedElapsedRealtime);
-                }
-                settingsOpenedElapsedRealtime = 0L;
-                settingsDialogOpen = false;
-                settingsContainer = null;
-                notificationAccessCard = null;
-                screenLockAdminCard = null;
-                screenDurationChangedInSettings = false;
-
-                applySettings();
-                refreshSystemMediaMirror();
-                if (screenSleepPending) {
-                    wakeSaverDisplay();
-                } else {
-                    scheduleAutoOff(restartCountdown);
-                }
-                getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN);
-                hideSystemUi();
-            });
-
-            dialog.show();
-            if (dialog.getWindow() != null) {
-                android.view.Window window = dialog.getWindow();
-                window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN);
-                window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
-                window.setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(
-                        Color.TRANSPARENT));
-                window.setStatusBarColor(Color.BLACK);
-                window.setNavigationBarColor(Color.BLACK);
-
-                // Never request fullscreen/immersive flags on the settings dialog.
-                // The system owns the top edge, allowing the notification shade gesture.
-                window.getDecorView().setSystemUiVisibility(0);
-                if (Build.VERSION.SDK_INT >= 30) {
-                    android.view.WindowInsetsController controller =
-                            window.getDecorView().getWindowInsetsController();
-                    if (controller != null) {
-                        controller.show(android.view.WindowInsets.Type.statusBars()
-                                | android.view.WindowInsets.Type.navigationBars());
-                        controller.setSystemBarsBehavior(
-                                android.view.WindowInsetsController.BEHAVIOR_DEFAULT);
-                    }
-                }
-
-                int width = Math.max(dp(280),
-                        getResources().getDisplayMetrics().widthPixels - dp(16));
-                int height = Math.max(dp(420),
-                        Math.min(getResources().getDisplayMetrics().heightPixels - dp(96), dp(780)));
-                window.setLayout(width, height);
-                window.addFlags(android.view.WindowManager.LayoutParams.FLAG_DIM_BEHIND);
-                android.view.WindowManager.LayoutParams windowParams = window.getAttributes();
-                windowParams.dimAmount = 0.42f;
-                window.setAttributes(windowParams);
-            }
+            startActivity(new Intent(this, SettingsActivity.class));
         } catch (Throwable t) {
-            showFatalError(t);
+            settingsDialogOpen = false;
+            settingsOpenedElapsedRealtime = 0L;
+            scheduleAutoOff(false);
+            android.widget.Toast.makeText(
+                    this, "לא ניתן לפתוח את מסך ההגדרות.", android.widget.Toast.LENGTH_LONG).show();
         }
-    }
-
-    private LinearLayout addCard(LinearLayout parent, String title) {
-        LinearLayout card = new LinearLayout(this);
-        card.setOrientation(LinearLayout.VERTICAL);
-        card.setPadding(dp(14), dp(8), dp(14), dp(12));
-
-        GradientDrawable bg = new GradientDrawable();
-        bg.setColor(Color.WHITE);
-        bg.setCornerRadius(dp(20));
-        bg.setStroke(dp(1), Color.rgb(222, 226, 238));
-        card.setBackground(bg);
-        if (Build.VERSION.SDK_INT >= 21) card.setElevation(dp(1));
-
-        LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        p.setMargins(0, dp(5), 0, dp(5));
-        parent.addView(card, p);
-
-        TextView titleView = textView(title, 16, Color.rgb(49, 58, 92));
-        titleView.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        titleView.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
-        titleView.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-        titleView.setPadding(dp(2), 0, dp(2), 0);
-        card.addView(titleView, new LinearLayout.LayoutParams(-1, dp(36)));
-        return card;
-    }
-
-    private LinearLayout addNotificationAccessCard(LinearLayout parent) {
-        LinearLayout card = addCard(parent, "גישה להתראות");
-        TextView message = textView(
-                "כדי להציג את נגן המערכת, יש לאפשר גישה להתראות.",
-                14, Color.rgb(37, 48, 63));
-        message.setGravity(Gravity.CENTER);
-        message.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-        message.setTextDirection(View.TEXT_DIRECTION_RTL);
-        message.setLineSpacing(dp(2), 1.0f);
-        LinearLayout.LayoutParams messageParams =
-                new LinearLayout.LayoutParams(-1, dp(48));
-        card.addView(message, messageParams);
-
-        MaterialButton grant = new MaterialButton(this);
-        grant.setText("פתיחת הגדרות הרשאה");
-        grant.setTextColor(Color.WHITE);
-        grant.setTextSize(14);
-        grant.setGravity(Gravity.CENTER);
-        grant.setAllCaps(false);
-        grant.setMinWidth(0);
-        grant.setMinHeight(0);
-        grant.setPadding(dp(14), 0, dp(14), 0);
-        grant.setInsetTop(0);
-        grant.setInsetBottom(0);
-        grant.setCornerRadius(dp(20));
-        grant.setBackgroundTintList(android.content.res.ColorStateList.valueOf(
-                Color.rgb(58, 76, 160)));
-        LinearLayout.LayoutParams grantParams =
-                new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.WRAP_CONTENT, dp(42));
-        grantParams.gravity = Gravity.CENTER_HORIZONTAL;
-        grantParams.topMargin = dp(5);
-        card.addView(grant, grantParams);
-        grant.setOnClickListener(v -> openNotificationAccessSettings());
-        return card;
-    }
-
-    private void updateNotificationAccessCardVisibility() {
-        boolean hasAccess = hasNotificationAccess();
-        if (hasAccess) {
-            if (notificationAccessCard != null
-                    && notificationAccessCard.getParent() instanceof android.view.ViewGroup) {
-                ((android.view.ViewGroup) notificationAccessCard.getParent())
-                        .removeView(notificationAccessCard);
-            }
-            notificationAccessCard = null;
-        } else if (settingsDialogOpen && settingsContainer != null
-                && notificationAccessCard == null) {
-            notificationAccessCard = addNotificationAccessCard(settingsContainer);
-        }
-    }
-
-    private void addSection(LinearLayout b, String title) {
-        LinearLayout card = new LinearLayout(this);
-        card.setOrientation(LinearLayout.VERTICAL);
-        card.setPadding(dp(10), dp(6), dp(10), dp(6));
-
-        GradientDrawable bg = new GradientDrawable();
-        bg.setColor(Color.WHITE);
-        bg.setCornerRadius(dp(14));
-        bg.setStroke(dp(1), Color.rgb(222, 226, 232));
-        card.setBackground(bg);
-        if (Build.VERSION.SDK_INT >= 21) card.setElevation(dp(2));
-
-        LinearLayout.LayoutParams cp = new LinearLayout.LayoutParams(
-                -1, LinearLayout.LayoutParams.WRAP_CONTENT);
-        cp.bottomMargin = dp(10);
-        b.addView(card, cp);
-
-        TextView v = textView(title, 17, Color.rgb(55, 82, 112));
-        v.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        v.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
-        v.setPadding(dp(4), 0, dp(4), 0);
-        card.addView(v, new LinearLayout.LayoutParams(-1, dp(34)));
-        currentSettingsCard = card;
-    }
-
-    private LinearLayout settingsTarget(LinearLayout fallback) {
-        return currentSettingsCard != null ? currentSettingsCard : fallback;
-    }
-
-    private void addCheck(LinearLayout b, String label, String key, boolean defaultValue) {
-        LinearLayout row = new LinearLayout(this);
-        row.setOrientation(LinearLayout.HORIZONTAL);
-        row.setGravity(Gravity.CENTER_VERTICAL);
-        row.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        row.setPadding(dp(4), 0, dp(4), 0);
-
-        TextView text = textView(label, 15, Color.rgb(36, 41, 59));
-        text.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        text.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
-        LinearLayout.LayoutParams textParams = new LinearLayout.LayoutParams(0, dp(48), 1f);
-        row.addView(text, textParams);
-
-        MaterialSwitch toggle = new MaterialSwitch(this);
-        toggle.setChecked(getBool(key, defaultValue));
-        toggle.setShowText(false);
-        LinearLayout.LayoutParams switchParams = new LinearLayout.LayoutParams(dp(58), dp(48));
-        switchParams.leftMargin = dp(4);
-        row.addView(toggle, switchParams);
-
-        toggle.setOnCheckedChangeListener((button, checked) -> {
-            try {
-                prefs.edit().putBoolean(key, checked).commit();
-                applySettings();
-            } catch (Throwable ignored) {
-            }
-        });
-        row.setOnClickListener(v -> toggle.setChecked(!toggle.isChecked()));
-        settingsTarget(b).addView(row, new LinearLayout.LayoutParams(-1, dp(48)));
-    }
-
-    private void addSpinner(LinearLayout b, String label, String[] names,
-                            String[] vals, String key) {
-        LinearLayout row = new LinearLayout(this);
-        row.setGravity(Gravity.CENTER_VERTICAL);
-        row.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        row.setPadding(dp(4), dp(2), dp(4), dp(2));
-
-        TextView l = textView(label, 14, Color.rgb(52, 58, 79));
-        l.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        l.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
-        row.addView(l, new LinearLayout.LayoutParams(0, dp(38), 1f));
-
-        Spinner sp = new Spinner(this);
-        ArrayAdapter<String> adapter = new ArrayAdapter<String>(
-                this, android.R.layout.simple_spinner_item, names) {
-            @Override public View getView(int position, View convertView, android.view.ViewGroup parent) {
-                TextView v = (TextView) super.getView(position, convertView, parent);
-                v.setTextColor(Color.rgb(36, 41, 59));
-                v.setTextSize(14);
-                v.setGravity(Gravity.CENTER);
-                v.setPadding(dp(8), 0, dp(8), 0);
-                return v;
-            }
-            @Override public View getDropDownView(int position, View convertView, android.view.ViewGroup parent) {
-                TextView v = new TextView(MainActivity.this);
-                v.setText(names[position]);
-                v.setTextColor(Color.rgb(36, 41, 59));
-                v.setTextSize(14);
-                v.setGravity(Gravity.CENTER);
-                v.setPadding(dp(10), 0, dp(10), 0);
-                v.setBackgroundColor(Color.rgb(247, 249, 252));
-                v.setMinHeight(dp(32));
-                return v;
-            }
-        };
-        sp.setAdapter(adapter);
-        GradientDrawable spinnerBg = new GradientDrawable();
-        spinnerBg.setColor(Color.rgb(249, 249, 253));
-        spinnerBg.setCornerRadius(dp(12));
-        spinnerBg.setStroke(dp(1), Color.rgb(190, 195, 212));
-        sp.setBackground(spinnerBg);
-
-        int ix = 0;
-        if (key.equals("fontColor") || key.equals("frameColor")) {
-            int stored = getInt(
-                    key, key.equals("fontColor") ? dateTextColor : Color.WHITE);
-
-            for (int i = 0; i < vals.length; i++) {
-                int col = colorValue(vals[i]);
-                if (stored == col) {
-                    ix = i;
-                    break;
-                }
-            }
-        } else if (key.equals("fontSize") || key.equals("fontWeight")
-                || key.equals("clockDateSize") || key.equals("playerSize")
-                || key.equals("frameWidth") || key.equals("frameRadius")) {
-            int stored = getInt(key, Integer.parseInt(vals[0]));
-            for (int i = 0; i < vals.length; i++) {
-                try {
-                    if (Integer.parseInt(vals[i]) == stored) {
-                        ix = i;
-                        break;
-                    }
-                } catch (NumberFormatException ignored) {
-                }
-            }
-        } else {
-            String cur = getString(key, vals[0]);
-            for (int i = 0; i < vals.length; i++) {
-                if (vals[i].equals(cur)) {
-                    ix = i;
-                    break;
-                }
-            }
-        }
-
-        LinearLayout target = settingsTarget(b);
-        sp.setSelection(ix, false);
-        sp.setOnItemSelectedListener(
-                new android.widget.AdapterView.OnItemSelectedListener() {
-                    @Override public void onItemSelected(
-                            android.widget.AdapterView<?> parent,
-                            View view, int pos, long id) {
-                        try {
-                            String val = vals[pos];
-                            SharedPreferences.Editor e = prefs.edit();
-
-                            if (key.equals("fontColor") || key.equals("frameColor")) {
-                                e.putInt(key, colorValue(val));
-                            } else if (key.equals("fontSize")
-                                    || key.equals("fontWeight")
-                                    || key.equals("clockDateSize")
-                                    || key.equals("playerSize")
-                                    || key.equals("frameWidth")
-                                    || key.equals("frameRadius")) {
-                                e.putInt(key, Integer.parseInt(val));
-                            } else {
-                                e.putString(key, val);
-                            }
-
-                            e.commit();
-                            applySettings();
-                            if ("screenSaverDuration".equals(key)) {
-                                screenDurationChangedInSettings = true;
-                                handler.post(MainActivity.this::updateScreenLockAdminCardVisibility);
-                            }
-                            handler.post(MainActivity.this::refreshSystemMediaMirror);
-                        } catch (Throwable ignored) {
-                        }
-                    }
-
-                    @Override public void onNothingSelected(
-                            android.widget.AdapterView<?> parent) {
-                    }
-                });
-
-
-        row.addView(sp, new LinearLayout.LayoutParams(dp(148), dp(44)));
-        b.addView(row);
-    }
-
-    private int colorValue(String value) {
-        if ("white".equals(value)) return Color.WHITE;
-        if ("light".equals(value)) return Color.argb(102, 220, 220, 220);
-        if ("gray".equals(value)) return Color.GRAY;
-        if ("blue".equals(value)) return Color.rgb(120,165,205);
-        if ("slate".equals(value)) return Color.rgb(100,125,150);
-        if ("silver".equals(value)) return Color.rgb(155,165,175);
-        if ("purple".equals(value)) return Color.rgb(145,130,165);
-        if ("gold".equals(value)) return Color.rgb(190,165,105);
-        return Color.WHITE;
     }
 
     private MediaController selectPlayableSession(List<MediaController> sessions) {
@@ -1917,7 +1366,7 @@ public class MainActivity extends Activity {
             if (duration > 0) position = Math.min(position, duration);
             boolean showDetails = getBool("showDetails", true);
             mediaDetails.setText(lastArtist);
-            mediaDetails.setVisibility(showDetails && !lastArtist.isEmpty() ? View.VISIBLE : View.GONE);
+            mediaDetails.setVisibility(showDetails && !lastArtist.isEmpty() ? View.VISIBLE : View.INVISIBLE);
             boolean showProgress = getBool("showProgress", false) && duration > 0;
             mediaProgressRow.setVisibility(showProgress ? View.VISIBLE : View.GONE);
             mediaSeekBar.setVisibility(showProgress ? View.VISIBLE : View.GONE);
