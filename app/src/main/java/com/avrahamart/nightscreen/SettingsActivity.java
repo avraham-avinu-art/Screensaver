@@ -209,8 +209,10 @@ public class SettingsActivity extends Activity {
         parent.addView(card, params);
 
         TextView heading = textView(title, 17, Color.rgb(49, 58, 92));
+        heading.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         heading.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        heading.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
+        // Use physical gravity so "end" cannot resolve to the left in an RTL card.
+        heading.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
         heading.setTextDirection(View.TEXT_DIRECTION_RTL);
         heading.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         heading.setPadding(dp(2), 0, dp(2), 0);
@@ -362,6 +364,7 @@ public class SettingsActivity extends Activity {
         view.setTextSize(15);
         view.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         view.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        view.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
         view.setTextDirection(View.TEXT_DIRECTION_RTL);
         view.setSingleLine(true);
         view.setPadding(dp(8), 0, dp(8), 0);
@@ -441,7 +444,7 @@ public class SettingsActivity extends Activity {
                 + "ההרשאה משמשת לנעילת המסך בלבד.",
                 14, MUTED);
         explanation.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        explanation.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
+        explanation.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
         explanation.setTextDirection(View.TEXT_DIRECTION_RTL);
         explanation.setLineSpacing(dp(2), 1f);
         LinearLayout.LayoutParams explanationParams =
