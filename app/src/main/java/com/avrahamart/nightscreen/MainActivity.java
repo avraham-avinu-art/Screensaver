@@ -766,6 +766,7 @@ public class MainActivity extends Activity {
         getWindow().setAttributes(attributes);
         brightnessBeforeSleep = Float.NaN;
         scheduleAutoOff();
+        showSettingsButtonForTenSeconds();
         if (stageView != null) {
             stageView.post(() -> updateScreenPositions(
                     stageView, clockBlockView, mediaHolderView));
@@ -805,7 +806,7 @@ public class MainActivity extends Activity {
             box.setPadding(dp(10), dp(8), dp(10), dp(12));
             box.setBackgroundColor(Color.rgb(248, 249, 251));
             int contentWidth = Math.min(
-                    Math.max(dp(240), getResources().getDisplayMetrics().widthPixels - dp(24)),
+                    Math.max(dp(1), getResources().getDisplayMetrics().widthPixels - dp(24)),
                     dp(560));
             scroll.addView(box, new FrameLayout.LayoutParams(
                     contentWidth, LinearLayout.LayoutParams.WRAP_CONTENT,
@@ -920,6 +921,8 @@ public class MainActivity extends Activity {
                 android.view.Window window = dialog.getWindow();
                 window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN);
                 window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+                window.setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(
+                        Color.rgb(248, 249, 251)));
                 window.setStatusBarColor(Color.BLACK);
                 window.setNavigationBarColor(Color.BLACK);
 
@@ -1773,6 +1776,9 @@ public class MainActivity extends Activity {
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
+        if (hasFocus && screenSleepPending) {
+            wakeSaverDisplay();
+        }
         if (hasFocus && !settingsDialogOpen) {
             hideSystemUi();
         }
