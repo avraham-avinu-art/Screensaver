@@ -3,6 +3,7 @@ package com.avrahamart.nightscreen;
 import android.app.Activity;
 import android.animation.ObjectAnimator;
 import android.app.NotificationManager;
+import android.app.admin.DevicePolicyManager;
 import androidx.appcompat.app.AlertDialog;
 import android.content.SharedPreferences;
 import android.content.BroadcastReceiver;
@@ -43,6 +44,7 @@ import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
@@ -63,12 +65,16 @@ public class MainActivity extends Activity {
     // is deliberately not overridden: Android must own its normal timeout and lock.
     private boolean screenSleepPending = false;
     private boolean deviceEventsRegistered = false;
-    private float brightnessBeforeSleep = Float.NaN;
     private long activityDeadlineElapsedRealtime = 0L;
     private String lastScheduledDurationValue = null;
     private boolean screenDurationChangedInSettings = false;
+    private long settingsOpenedElapsedRealtime = 0L;
     private LinearLayout settingsContainer;
     private LinearLayout notificationAccessCard;
+    private LinearLayout screenLockAdminCard;
+    private DevicePolicyManager devicePolicyManager;
+    private ComponentName screenLockAdminComponent;
+    private static final int REQUEST_ENABLE_SCREEN_LOCK_ADMIN = 8142;
     private final BroadcastReceiver deviceStateReceiver = new BroadcastReceiver() {
         @Override public void onReceive(Context context, Intent intent) {
             if (intent == null || intent.getAction() == null) return;
@@ -172,6 +178,7 @@ public class MainActivity extends Activity {
                 scheduleAutoOff();
             }
             updateNotificationAccessCardVisibility();
+            updateScreenLockAdminCardVisibility();
             if (!settingsDialogOpen) hideSystemUi();
             handler.removeCallbacks(ticker);
             handler.post(ticker);
@@ -679,6 +686,17 @@ public class MainActivity extends Activity {
         hebrewText.setTypeface(tf);
         timeText.setTypeface(tf);
 
+        // Prefer the user's selected sizes, but scale down only as much as needed on
+        // narrow screens or with larger system font scaling. This prevents clipped text.
+        timeText.setAutoSizeTextTypeUniformWithConfiguration(
+                36, Math.max(36, clockDateSize), 1,
+                android.util.TypedValue.COMPLEX_UNIT_SP);
+        int maxDateSp = Math.max(14, (int) Math.ceil(dateSize));
+        gregorianText.setAutoSizeTextTypeUniformWithConfiguration(
+                14, maxDateSp, 1, android.util.TypedValue.COMPLEX_UNIT_SP);
+        hebrewText.setAutoSizeTextTypeUniformWithConfiguration(
+                14, maxDateSp, 1, android.util.TypedValue.COMPLEX_UNIT_SP);
+
         // Measure the actual text metrics in pixels (including user font scaling).
         // This prevents date/time rows from being clipped on large text settings.
         int clockH = measuredLineHeight(timeText, 10, 56);
@@ -805,6 +823,9 @@ public class MainActivity extends Activity {
 
     private void scheduleAutoOff(boolean restartCountdown) {
         handler.removeCallbacks(autoOffRunnable);
+        if (settingsDialogOpen && !restartCountdown) {
+            return;
+        }
         String value = getString("screenSaverDuration", "0");
         boolean settingChanged = !value.equals(lastScheduledDurationValue);
         if (settingChanged) {
@@ -819,12 +840,10 @@ public class MainActivity extends Activity {
         if (restartCountdown) {
             activityDeadlineElapsedRealtime = 0L;
             screenSleepPending = false;
-            restoreSaverBrightness();
         }
 
         if ("device".equals(value)) {
             activityDeadlineElapsedRealtime = 0L;
-            restoreSaverBrightness();
             getWindow().clearFlags(
                     android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
             return;
@@ -834,7 +853,6 @@ public class MainActivity extends Activity {
         // screen timeout is allowed to run normally.
         if ("charging".equals(value)) {
             activityDeadlineElapsedRealtime = 0L;
-            restoreSaverBrightness();
             if (isDeviceCharging()) {
                 getWindow().addFlags(
                         android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -850,7 +868,6 @@ public class MainActivity extends Activity {
 
         if (minutes <= 0L) {
             activityDeadlineElapsedRealtime = 0L;
-            restoreSaverBrightness();
             getWindow().addFlags(
                     android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
             return;
@@ -871,36 +888,134 @@ public class MainActivity extends Activity {
         handler.postDelayed(autoOffRunnable, remaining);
     }
 
-    private void restoreSaverBrightness() {
-        if (Float.isNaN(brightnessBeforeSleep)) return;
-        try {
-            android.view.WindowManager.LayoutParams attributes = getWindow().getAttributes();
-            attributes.screenBrightness = brightnessBeforeSleep;
-            getWindow().setAttributes(attributes);
-        } catch (Throwable ignored) {
-        }
-        brightnessBeforeSleep = Float.NaN;
-    }
-
     private void enterDisplaySleepMode() {
         if (isFinishing() || screenSleepPending) return;
         screenSleepPending = true;
         handler.removeCallbacks(autoOffRunnable);
-
-        // Apps cannot power off the physical panel without privileged access. Darken
-        // this Activity immediately, keep it alive, and allow Android's own timeout/lock
-        // policy to turn the panel off as usual.
-        try {
-            android.view.WindowManager.LayoutParams attributes = getWindow().getAttributes();
-            if (Float.isNaN(brightnessBeforeSleep)) {
-                brightnessBeforeSleep = attributes.screenBrightness;
-            }
-            attributes.screenBrightness = 0.0f;
-            getWindow().setAttributes(attributes);
-        } catch (Throwable ignored) {
-        }
         getWindow().clearFlags(
                 android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
+        // Exact screen-off requires the user to enable Android's explicit force-lock
+        // policy. Do not fake a powered-off panel by setting this window's brightness
+        // to zero. Without the admin policy, Android uses its own configured timeout.
+        if (!isScreenLockAdminActive()) {
+            Toast.makeText(this,
+                    "לכיבוי המסך בדיוק בזמן, הפעל בהגדרות את הרשאת נעילת המסך.",
+                    Toast.LENGTH_LONG).show();
+            return;
+        }
+        try {
+            devicePolicyManager.lockNow();
+        } catch (SecurityException | IllegalStateException ex) {
+            Toast.makeText(this,
+                    "לא ניתן לנעול את המסך. בדוק את הרשאת נעילת המסך בהגדרות.",
+                    Toast.LENGTH_LONG).show();
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private boolean isScreenLockAdminActive() {
+        try {
+            if (devicePolicyManager == null) {
+                devicePolicyManager = (DevicePolicyManager) getSystemService(
+                        Context.DEVICE_POLICY_SERVICE);
+            }
+            if (screenLockAdminComponent == null) {
+                screenLockAdminComponent = new ComponentName(
+                        this, ScreenLockAdminReceiver.class);
+            }
+            return devicePolicyManager != null
+                    && devicePolicyManager.isAdminActive(screenLockAdminComponent);
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    private void requestScreenLockAdmin() {
+        if (isScreenLockAdminActive()) {
+            updateScreenLockAdminCardVisibility();
+            return;
+        }
+        try {
+            if (screenLockAdminComponent == null) {
+                screenLockAdminComponent = new ComponentName(
+                        this, ScreenLockAdminReceiver.class);
+            }
+            Intent intent = new Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN);
+            intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, screenLockAdminComponent);
+            intent.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION,
+                    "הרשאה זו משמשת רק לכיבוי ונעילת המסך בתום זמן הפעילות שבחרת. "
+                    + "לא נעשה בה שימוש למחיקת מידע או לשינוי נתונים במכשיר.");
+            startActivityForResult(intent, REQUEST_ENABLE_SCREEN_LOCK_ADMIN);
+        } catch (Throwable ex) {
+            Toast.makeText(this,
+                    "לא ניתן לפתוח את מסך הרשאת נעילת המסך במכשיר הזה.",
+                    Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void updateScreenLockAdminCardVisibility() {
+        if (settingsContainer == null) return;
+        String duration = getString("screenSaverDuration", "0");
+        boolean needsExactLock = "1".equals(duration) || "5".equals(duration);
+        if (!needsExactLock || isScreenLockAdminActive()) {
+            if (screenLockAdminCard != null
+                    && screenLockAdminCard.getParent() instanceof android.view.ViewGroup) {
+                ((android.view.ViewGroup) screenLockAdminCard.getParent())
+                        .removeView(screenLockAdminCard);
+            }
+            screenLockAdminCard = null;
+            return;
+        }
+        if (screenLockAdminCard != null) return;
+
+        screenLockAdminCard = addCard(settingsContainer, "כיבוי מדויק בתום זמן הפעילות");
+        TextView explanation = textView(
+                "כדי לנעול ולכבות את המסך מיד בתום הזמן שנבחר, יש להפעיל הרשאת נעילת מסך. "
+                + "ההרשאה משמשת לנעילת המסך בלבד.",
+                13, Color.rgb(75, 80, 103));
+        explanation.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        explanation.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
+        explanation.setLineSpacing(dp(2), 1.0f);
+        LinearLayout.LayoutParams explanationParams =
+                new LinearLayout.LayoutParams(-1, LinearLayout.LayoutParams.WRAP_CONTENT);
+        explanationParams.bottomMargin = dp(8);
+        screenLockAdminCard.addView(explanation, explanationParams);
+
+        MaterialButton enable = new MaterialButton(this);
+        enable.setText("הפעל הרשאת נעילת מסך");
+        enable.setTextSize(14);
+        enable.setTextColor(Color.WHITE);
+        enable.setMinWidth(0);
+        enable.setMinHeight(0);
+        enable.setInsetTop(0);
+        enable.setInsetBottom(0);
+        enable.setCornerRadius(dp(20));
+        enable.setBackgroundTintList(android.content.res.ColorStateList.valueOf(
+                Color.rgb(58, 76, 160)));
+        LinearLayout.LayoutParams enableParams =
+                new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.WRAP_CONTENT, dp(42));
+        enableParams.gravity = Gravity.CENTER_HORIZONTAL;
+        screenLockAdminCard.addView(enable, enableParams);
+        enable.setOnClickListener(v -> requestScreenLockAdmin());
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQUEST_ENABLE_SCREEN_LOCK_ADMIN) {
+            if (isScreenLockAdminActive()) {
+                Toast.makeText(this,
+                        "הרשאת נעילת המסך הופעלה. זמן הפעילות יכבה את המסך בתום הזמן שנבחר.",
+                        Toast.LENGTH_LONG).show();
+            } else {
+                Toast.makeText(this,
+                        "לא הופעלה הרשאת נעילת מסך; המכשיר ישתמש בזמן הכיבוי הרגיל שלו.",
+                        Toast.LENGTH_LONG).show();
+            }
+            updateScreenLockAdminCardVisibility();
+        }
     }
 
     private boolean isDeviceCharging() {
@@ -954,7 +1069,6 @@ public class MainActivity extends Activity {
     private void wakeSaverDisplay() {
         if (!screenSleepPending) return;
         screenSleepPending = false;
-        restoreSaverBrightness();
         scheduleAutoOff(true);
         showSettingsButtonForFiveSeconds();
         if (stageView != null) {
@@ -1050,6 +1164,7 @@ public class MainActivity extends Activity {
             }
 
             settingsContainer = box;
+            updateScreenLockAdminCardVisibility();
             LinearLayout s2 = addCard(box, "גופן");
             addSpinner(s2, "צבע",
                     new String[]{"לבן","אפור בהיר","אפור","כחול עדין"},
@@ -1114,6 +1229,8 @@ public class MainActivity extends Activity {
             final AlertDialog dialog = new MaterialAlertDialogBuilder(this).setView(scroll).create();
             done.setOnClickListener(v -> dialog.dismiss());
             settingsDialogOpen = true;
+            settingsOpenedElapsedRealtime = SystemClock.elapsedRealtime();
+            handler.removeCallbacks(autoOffRunnable);
 
             // The Activity itself is fullscreen/immersive. A child Dialog can inherit
             // that window state on some Android/OEM versions, which steals the top-edge
@@ -1135,9 +1252,18 @@ public class MainActivity extends Activity {
 
             dialog.setOnDismissListener(d -> {
                 boolean restartCountdown = screenDurationChangedInSettings || screenSleepPending;
+                long nowElapsed = SystemClock.elapsedRealtime();
+                if (!restartCountdown && settingsOpenedElapsedRealtime > 0L
+                        && activityDeadlineElapsedRealtime > 0L) {
+                    // Settings time does not consume the selected saver display duration.
+                    activityDeadlineElapsedRealtime += Math.max(
+                            0L, nowElapsed - settingsOpenedElapsedRealtime);
+                }
+                settingsOpenedElapsedRealtime = 0L;
                 settingsDialogOpen = false;
                 settingsContainer = null;
                 notificationAccessCard = null;
+                screenLockAdminCard = null;
                 screenDurationChangedInSettings = false;
 
                 applySettings();
@@ -1433,6 +1559,7 @@ public class MainActivity extends Activity {
                             applySettings();
                             if ("screenSaverDuration".equals(key)) {
                                 screenDurationChangedInSettings = true;
+                                handler.post(MainActivity.this::updateScreenLockAdminCardVisibility);
                             }
                             handler.post(MainActivity.this::refreshSystemMediaMirror);
                         } catch (Throwable ignored) {
