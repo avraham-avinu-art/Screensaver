@@ -704,7 +704,7 @@ public class MainActivity extends Activity {
         boolean showGregorian = getBool("showGregorian", true);
         boolean showHebrew = getBool("showHebrew", true);
         int visibleDates = (showGregorian ? 1 : 0) + (showHebrew ? 1 : 0);
-        int dateGap = 0;
+        int dateGap = visibleDates > 0 ? dp(2) : 0;
 
         LinearLayout.LayoutParams tp = (LinearLayout.LayoutParams) timeText.getLayoutParams();
         tp.height = clockH;
