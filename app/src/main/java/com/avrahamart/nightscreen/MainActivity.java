@@ -84,7 +84,7 @@ public class MainActivity extends Activity {
     private TextView hebrewText;
     private final int dateTextColor = Color.rgb(220, 220, 220);
     private SharedPreferences prefs;
-    private TextView settingsButton;
+    private ImageView settingsButton;
     private final Runnable hideSettingsButtonRunnable = () -> {
         if (settingsButton != null) settingsButton.setVisibility(View.GONE);
     };
@@ -115,6 +115,16 @@ public class MainActivity extends Activity {
     private MediaController.Callback mediaCallback;
     private MediaSessionManager.OnActiveSessionsChangedListener activeSessionsListener;
     private boolean activeSessionsListenerRegistered = false;
+    private boolean progressHidePending = false;
+    private final Runnable hideProgressRowAfterMetadataChange = () -> {
+        progressHidePending = false;
+        if (mediaProgressRow == null) return;
+        if (!getBool("showProgress", true) || getCurrentMediaDuration() <= 0L) {
+            setProgressRowVisible(false);
+        } else {
+            setProgressRowVisible(true);
+        }
+    };
 
     private final Runnable ticker = new Runnable() {
         @Override public void run() {
@@ -206,6 +216,7 @@ public class MainActivity extends Activity {
         handler.removeCallbacks(ticker);
         handler.removeCallbacks(autoOffRunnable);
         handler.removeCallbacks(hideSettingsButtonRunnable);
+        handler.removeCallbacks(hideProgressRowAfterMetadataChange);
         unregisterActiveSessionsListener();
         stopTitleMarquee();
         detachMediaController();
@@ -224,14 +235,18 @@ public class MainActivity extends Activity {
         stage.setBackgroundColor(Color.BLACK);
         root.addView(stage, new LinearLayout.LayoutParams(-1, 0, 1f));
 
-        settingsButton = textView("⚙", 20, Color.WHITE);
+        settingsButton = new ImageView(this);
+        settingsButton.setImageResource(R.drawable.ic_settings);
+        settingsButton.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        settingsButton.setColorFilter(Color.WHITE);
         settingsButton.setAlpha(0.48f);
-        settingsButton.setGravity(Gravity.CENTER);
+        settingsButton.setPadding(dp(4), dp(4), dp(4), dp(4));
+        settingsButton.setBackgroundColor(Color.TRANSPARENT);
         settingsButton.setVisibility(View.GONE);
         settingsButton.setContentDescription("הגדרות");
         settingsButton.setOnClickListener(v -> showSettings());
         FrameLayout.LayoutParams settingsParams = new FrameLayout.LayoutParams(
-                dp(30), dp(34), Gravity.TOP | Gravity.LEFT);
+                dp(36), dp(38), Gravity.TOP | Gravity.LEFT);
         settingsParams.leftMargin = dp(2);
         settingsParams.topMargin = dp(12);
         stage.addView(settingsButton, settingsParams);
@@ -241,11 +256,11 @@ public class MainActivity extends Activity {
         clockBlock.setOrientation(LinearLayout.VERTICAL);
         clockBlock.setGravity(Gravity.CENTER_HORIZONTAL);
 
-        timeText = textView("--:--", getInt("clockDateSize", 72), Color.rgb(247, 247, 247));
+        timeText = textView("--:--", getInt("clockDateSize", 84), Color.rgb(247, 247, 247));
         timeText.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
         timeText.setGravity(Gravity.CENTER);
         timeText.setIncludeFontPadding(true);
-        int initialClockSize = getInt("clockDateSize", 72);
+        int initialClockSize = getInt("clockDateSize", 84);
         int initialClockHeight = Math.max(dp(62), dp(initialClockSize + 20));
         clockBlock.addView(timeText, new LinearLayout.LayoutParams(-1, initialClockHeight));
 
@@ -253,7 +268,7 @@ public class MainActivity extends Activity {
         gregorianText.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         gregorianText.setGravity(Gravity.CENTER);
         gregorianText.setIncludeFontPadding(true);
-        int initialDateHeight = Math.max(dp(24), dp(Math.round(initialClockSize * 0.45f)));
+        int initialDateHeight = dateRowHeightForClockPreset(initialClockSize);
         gregorianText.setTextDirection(View.TEXT_DIRECTION_ANY_RTL);
         LinearLayout.LayoutParams gregorianParams =
                 new LinearLayout.LayoutParams(-1, initialDateHeight);
@@ -462,13 +477,13 @@ public class MainActivity extends Activity {
         totalParams.leftMargin = dp(4);
         mediaProgressRow.addView(mediaTotalText, totalParams);
 
-        // Version 2.4 order: song title first, artist directly below, then progress.
+        // Artist first and song title immediately below it, followed by progress.
+        LinearLayout.LayoutParams detailsParams = new LinearLayout.LayoutParams(-1, dp(30));
+        mediaMirror.addView(mediaDetails, detailsParams);
+
         LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(-1, dp(30));
         titleParams.topMargin = dp(0);
         mediaMirror.addView(mediaTitle, titleParams);
-
-        LinearLayout.LayoutParams detailsParams = new LinearLayout.LayoutParams(-1, dp(30));
-        mediaMirror.addView(mediaDetails, detailsParams);
 
         LinearLayout.LayoutParams progressParams = new LinearLayout.LayoutParams(-1, dp(28));
         progressParams.topMargin = dp(0);
@@ -528,7 +543,7 @@ public class MainActivity extends Activity {
 
         e.putInt("fontColor", getInt("fontColor", dateTextColor));
         e.putInt("fontSize", getInt("fontSize", 17));
-        e.putInt("clockDateSize", getInt("clockDateSize", 72));
+        e.putInt("clockDateSize", getInt("clockDateSize", 84));
         e.putInt("playerSize", getInt("playerSize", 17));
         e.putInt("fontWeight", getInt("fontWeight", 1));
         e.putString("fontFamily", getString("fontFamily", "sans-serif"));
@@ -561,7 +576,7 @@ public class MainActivity extends Activity {
         if (!getBool("defaultLayoutV4Applied", false)) {
             // Apply the requested defaults once to existing installations too.
             // Do not overwrite these pending editor values with the old preference values.
-            e.putInt("clockDateSize", 72);
+            e.putInt("clockDateSize", 84);
             e.putString("clockDatePosition", "upper");
             e.putString("playerPosition", "bottom");
             e.putBoolean("defaultLayoutV4Applied", true);
@@ -570,8 +585,7 @@ public class MainActivity extends Activity {
             e.putString("playerPosition", getString("playerPosition", "bottom"));
         }
         if (!getBool("clockSizesV24Restored", false)) {
-            // The 2.6 presets were each one step larger than the original 2.4 presets.
-            // Convert only installations that went through that migration; keep original 2.4 values.
+            // Normalize older expanded presets before applying the current preset update.
             boolean hadClockSize = prefs.contains("clockDateSize");
             int savedClockSize = getInt("clockDateSize", 72);
             boolean wasExpandedByV2 = getBool("clockSizesV2Applied", false);
@@ -587,6 +601,30 @@ public class MainActivity extends Activity {
                 }
             }
             e.putBoolean("clockSizesV24Restored", true);
+        }
+
+        if (!getBool("clockSizePresetsV3Applied", false)) {
+            boolean hadClockSize = prefs.contains("clockDateSize");
+            int savedClockSize = getInt("clockDateSize", 84);
+            boolean cameFromExpandedPresets = !getBool("clockSizesV24Restored", false)
+                    && getBool("clockSizesV2Applied", false);
+            if (!hadClockSize) {
+                // Preserve the existing default selection: "very large".
+                e.putInt("clockDateSize", 84);
+            } else if (cameFromExpandedPresets) {
+                // These values already represent small/medium/large/very large in the expanded
+                // 2.6 preset family, so keep the selected preset.
+                e.putInt("clockDateSize", savedClockSize);
+            } else {
+                switch (savedClockSize) {
+                    case 38: e.putInt("clockDateSize", 48); break;
+                    case 48: e.putInt("clockDateSize", 60); break;
+                    case 60: e.putInt("clockDateSize", 72); break;
+                    case 72: e.putInt("clockDateSize", 84); break;
+                    default: e.putInt("clockDateSize", savedClockSize); break;
+                }
+            }
+            e.putBoolean("clockSizePresetsV3Applied", true);
         }
         e.commit();
     }
@@ -684,7 +722,7 @@ public class MainActivity extends Activity {
         gregorianText.setTextColor(color);
         hebrewText.setTextColor(color);
         timeText.setTextColor(color);
-        float dateSize = Math.max(14f, clockDateSize * 0.30f);
+        float dateSize = dateTextSizeForClockPreset(clockDateSize);
         gregorianText.setTextSize(dateSize);
         hebrewText.setTextSize(dateSize);
         timeText.setTextSize(clockDateSize);
@@ -695,7 +733,7 @@ public class MainActivity extends Activity {
         // Match version 2.4: size the text rows from the selected preset instead of
         // capping them at a fixed height and letting autosizing shrink the clock.
         int clockH = Math.max(dp(62), dp(clockDateSize + 20));
-        int dateH = Math.max(dp(24), dp(Math.round(clockDateSize * 0.45f)));
+        int dateH = dateRowHeightForClockPreset(clockDateSize);
         boolean showGregorian = getBool("showGregorian", true);
         boolean showHebrew = getBool("showHebrew", true);
         int visibleDates = (showGregorian ? 1 : 0) + (showHebrew ? 1 : 0);
@@ -779,21 +817,7 @@ public class MainActivity extends Activity {
                     android.content.res.ColorStateList.valueOf(blendWithBlack(color, 0.48f)));
             mediaSeekBar.setThumbTintList(android.content.res.ColorStateList.valueOf(color));
 
-            boolean hasActiveSong = mediaController != null &&
-                    mediaController.getMetadata() != null &&
-                    mediaController.getMetadata().getString(MediaMetadata.METADATA_KEY_TITLE) != null &&
-                    !mediaController.getMetadata().getString(MediaMetadata.METADATA_KEY_TITLE).trim().isEmpty();
-            if (getBool("frameEnabled", false) && hasActiveSong) {
-                GradientDrawable bg = new GradientDrawable();
-                bg.setColor(Color.BLACK);
-                bg.setCornerRadius(dp(getInt("frameRadius", 10)));
-                bg.setStroke(
-                        Math.max(0, dp(getInt("frameWidth", 1))),
-                        getInt("frameColor", Color.WHITE));
-                mediaMirror.setBackground(bg);
-            } else {
-                mediaMirror.setBackgroundColor(Color.BLACK);
-            }
+            applyMediaFrame(mediaController != null && hasUsableMediaSession(mediaController));
 
             mediaNext.setBackgroundColor(Color.TRANSPARENT);
             mediaPrev.setBackgroundColor(Color.TRANSPARENT);
@@ -808,6 +832,50 @@ public class MainActivity extends Activity {
             }
         }
 
+    }
+
+    private float dateTextSizeForClockPreset(int clockSize) {
+        switch (clockSize) {
+            case 48: return 14f;
+            case 60: return 14.4f;
+            case 72: return 18f;
+            case 84: return 21.6f;
+            // Retain sensible dimensions for a stale preference during migration.
+            case 38: return 14f;
+            default: return Math.max(14f, clockSize * 0.30f);
+        }
+    }
+
+    private int dateRowHeightForClockPreset(int clockSize) {
+        int dateBasisSize;
+        switch (clockSize) {
+            case 48: dateBasisSize = 38; break;
+            case 60: dateBasisSize = 48; break;
+            case 72: dateBasisSize = 60; break;
+            case 84: dateBasisSize = 72; break;
+            case 38: dateBasisSize = 38; break;
+            default: dateBasisSize = clockSize; break;
+        }
+        return Math.max(dp(24), dp(Math.round(dateBasisSize * 0.45f)));
+    }
+
+    private void applyMediaFrame(boolean hasActiveSong) {
+        if (mediaMirror == null) return;
+        boolean enabled = getBool("frameEnabled", false) && hasActiveSong;
+        if (enabled) {
+            GradientDrawable bg = new GradientDrawable();
+            bg.setColor(Color.BLACK);
+            bg.setCornerRadius(dp(Math.max(0, getInt("frameRadius", 10))));
+            bg.setStroke(dp(Math.max(1, getInt("frameWidth", 1))),
+                    getInt("frameColor", Color.WHITE));
+            mediaMirror.setBackground(bg);
+            // Keep the text and controls inside the visible outline.
+            int inset = dp(Math.max(2, getInt("frameWidth", 1) + 1));
+            mediaMirror.setPadding(inset, inset, inset, inset);
+        } else {
+            mediaMirror.setBackgroundColor(Color.BLACK);
+            mediaMirror.setPadding(0, 0, 0, 0);
+        }
     }
 
     private void scheduleAutoOff() {
@@ -1339,10 +1407,14 @@ public class MainActivity extends Activity {
             }
 
             title = removeFileExtension(title);
-            mediaTitle.setText(title);
+            String previousTitle = mediaTitle.getText() == null
+                    ? "" : mediaTitle.getText().toString();
+            if (!title.equals(previousTitle)) {
+                stopTitleMarquee();
+                mediaTitle.setText(title);
+                mediaTitle.post(() -> updateTitleMarqueeIfNeeded());
+            }
             mediaTitle.setVisibility(View.VISIBLE);
-            stopTitleMarquee();
-            mediaTitle.post(() -> updateTitleMarqueeIfNeeded());
             lastTitle = title;
             String artist = metadata == null ? "" : metadata.getString(MediaMetadata.METADATA_KEY_ARTIST);
             artist = artist == null ? "" : artist.trim();
@@ -1361,18 +1433,30 @@ public class MainActivity extends Activity {
             if (duration > 0) position = Math.min(position, duration);
             boolean showDetails = getBool("showDetails", true);
             mediaDetails.setText(lastArtist);
-            mediaDetails.setVisibility(showDetails && !lastArtist.isEmpty() ? View.VISIBLE : View.INVISIBLE);
-            boolean showProgress = getBool("showProgress", false) && duration > 0;
-            mediaProgressRow.setVisibility(showProgress ? View.VISIBLE : View.GONE);
-            mediaSeekBar.setVisibility(showProgress ? View.VISIBLE : View.GONE);
-            mediaCurrentText.setVisibility(showProgress ? View.VISIBLE : View.GONE);
-            mediaTotalText.setVisibility(showProgress ? View.VISIBLE : View.GONE);
-            if (duration > 0) {
+            mediaDetails.setVisibility(showDetails && !lastArtist.isEmpty() ? View.VISIBLE : View.GONE);
+            boolean showProgressSetting = getBool("showProgress", true);
+            if (!showProgressSetting) {
+                handler.removeCallbacks(hideProgressRowAfterMetadataChange);
+                progressHidePending = false;
+                setProgressRowVisible(false);
+            } else if (duration > 0L) {
+                handler.removeCallbacks(hideProgressRowAfterMetadataChange);
+                progressHidePending = false;
+                setProgressRowVisible(true);
                 position = Math.max(0L, Math.min(position, duration));
                 mediaCurrentText.setText(formatMs(position));
                 mediaTotalText.setText(formatMs(duration));
                 mediaSeekBar.setMax(1000);
                 mediaSeekBar.setProgress((int)Math.min(1000L, (position * 1000L) / duration));
+            } else if (mediaProgressRow.getVisibility() == View.VISIBLE) {
+                // Track changes can briefly publish metadata without a duration. Keep the
+                // last progress row visible instead of blinking it off during the hand-off.
+                if (!progressHidePending) {
+                    progressHidePending = true;
+                    handler.postDelayed(hideProgressRowAfterMetadataChange, 1800L);
+                }
+            } else {
+                setProgressRowVisible(false);
             }
             mediaPlayPause.setVisibility(View.VISIBLE);
                 boolean isPlaying = playback == PlaybackState.STATE_PLAYING;
@@ -1390,6 +1474,7 @@ public class MainActivity extends Activity {
                     (actions & PlaybackState.ACTION_SKIP_TO_NEXT) != 0
                             ? View.VISIBLE : View.GONE);
 
+            applyMediaFrame(true);
             mediaMirror.setVisibility(getBool("showPlayer", true) ? View.VISIBLE : View.GONE);
             mediaMirror.requestLayout();
             View parent = mediaMirror.getParent() instanceof View ? (View) mediaMirror.getParent() : null;
@@ -1400,6 +1485,24 @@ public class MainActivity extends Activity {
         } catch (Throwable ignored) {
             hideMediaMirror();
         }
+    }
+
+    private long getCurrentMediaDuration() {
+        try {
+            MediaMetadata metadata = mediaController == null ? null : mediaController.getMetadata();
+            return metadata == null ? 0L
+                    : Math.max(0L, metadata.getLong(MediaMetadata.METADATA_KEY_DURATION));
+        } catch (Throwable ignored) {
+            return 0L;
+        }
+    }
+
+    private void setProgressRowVisible(boolean visible) {
+        int visibility = visible ? View.VISIBLE : View.GONE;
+        if (mediaProgressRow != null) mediaProgressRow.setVisibility(visibility);
+        if (mediaSeekBar != null) mediaSeekBar.setVisibility(visibility);
+        if (mediaCurrentText != null) mediaCurrentText.setVisibility(visibility);
+        if (mediaTotalText != null) mediaTotalText.setVisibility(visibility);
     }
 
     private boolean hasNotificationAccess() {

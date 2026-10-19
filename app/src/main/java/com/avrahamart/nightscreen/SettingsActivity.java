@@ -159,7 +159,7 @@ public class SettingsActivity extends Activity {
         LinearLayout clock = addCard(content, "תצוגת שעון ותאריך");
         addSpinner(clock, "גודל",
                 new String[]{"קטן", "בינוני", "גדול", "גדול מאוד"},
-                new String[]{"38", "48", "60", "72"}, "clockDateSize");
+                new String[]{"48", "60", "72", "84"}, "clockDateSize");
         addSpinner(clock, "מיקום",
                 new String[]{"הכי למעלה", "ברבע העליון", "באמצע המסך"},
                 new String[]{"top", "upper", "middle"}, "clockDatePosition");
@@ -219,7 +219,8 @@ public class SettingsActivity extends Activity {
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
-        row.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        // Position controls explicitly on the left and Hebrew labels on the right.
+        row.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         row.setTextDirection(View.TEXT_DIRECTION_RTL);
         row.setPadding(dp(4), 0, dp(4), 0);
 
@@ -249,7 +250,7 @@ public class SettingsActivity extends Activity {
         LinearLayout.LayoutParams switchParams =
                 new LinearLayout.LayoutParams(dp(58), dp(48));
         switchParams.rightMargin = dp(4);
-        row.addView(toggle, switchParams);
+        row.addView(toggle, 0, switchParams);
 
         toggle.setOnCheckedChangeListener((button, checked) -> {
             try {
@@ -266,7 +267,8 @@ public class SettingsActivity extends Activity {
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
-        row.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        // The spinner stays on the left while the Hebrew label stays on the right.
+        row.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         row.setTextDirection(View.TEXT_DIRECTION_RTL);
         row.setPadding(dp(4), dp(2), dp(4), dp(2));
 
@@ -306,7 +308,7 @@ public class SettingsActivity extends Activity {
         LinearLayout.LayoutParams spinnerParams =
                 new LinearLayout.LayoutParams(dp(158), dp(44));
         spinnerParams.rightMargin = dp(6);
-        row.addView(spinner, spinnerParams);
+        row.addView(spinner, 0, spinnerParams);
         card.addView(row, new LinearLayout.LayoutParams(-1, dp(48)));
 
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
