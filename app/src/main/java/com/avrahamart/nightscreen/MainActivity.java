@@ -3,7 +3,7 @@ package com.avrahamart.nightscreen;
 import android.app.Activity;
 import android.animation.ObjectAnimator;
 import android.app.NotificationManager;
-import android.app.AlertDialog;
+import androidx.appcompat.app.AlertDialog;
 import android.content.SharedPreferences;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -31,6 +31,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.BatteryManager;
 import android.os.PowerManager;
+import android.os.SystemClock;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.Gravity;
@@ -43,7 +44,9 @@ import android.widget.SeekBar;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import android.widget.Switch;
+import com.google.android.material.button.MaterialButton;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.materialswitch.MaterialSwitch;
 
 import com.kosherjava.zmanim.hebrewcalendar.HebrewDateFormatter;
 import com.kosherjava.zmanim.hebrewcalendar.JewishDate;
@@ -60,6 +63,10 @@ public class MainActivity extends Activity {
     // is deliberately not overridden: Android must own its normal timeout and lock.
     private boolean screenSleepPending = false;
     private boolean deviceEventsRegistered = false;
+    private float brightnessBeforeSleep = Float.NaN;
+    private long activityDeadlineElapsedRealtime = 0L;
+    private String lastScheduledDurationValue = null;
+    private boolean screenDurationChangedInSettings = false;
     private LinearLayout settingsContainer;
     private LinearLayout notificationAccessCard;
     private final BroadcastReceiver deviceStateReceiver = new BroadcastReceiver() {
@@ -165,7 +172,7 @@ public class MainActivity extends Activity {
                 scheduleAutoOff();
             }
             updateNotificationAccessCardVisibility();
-            hideSystemUi();
+            if (!settingsDialogOpen) hideSystemUi();
             handler.removeCallbacks(ticker);
             handler.post(ticker);
             registerActiveSessionsListener();
@@ -229,18 +236,21 @@ public class MainActivity extends Activity {
         clockBlock.setOrientation(LinearLayout.VERTICAL);
         clockBlock.setGravity(Gravity.CENTER_HORIZONTAL);
 
-        timeText = textView("--:--", getInt("clockDateSize", 72), Color.rgb(247, 247, 247));
+        timeText = textView("--:--", getInt("clockDateSize", 84), Color.rgb(247, 247, 247));
         timeText.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
         timeText.setGravity(Gravity.CENTER);
-        timeText.setIncludeFontPadding(true);
-        int initialClockSize = getInt("clockDateSize", 72);
+        timeText.setSingleLine(true);
+        timeText.setIncludeFontPadding(false);
+        int initialClockSize = getInt("clockDateSize", 84);
         int initialClockHeight = Math.max(dp(74), dp(initialClockSize + 28));
         clockBlock.addView(timeText, new LinearLayout.LayoutParams(-1, initialClockHeight));
 
         gregorianText = textView("", 22, dateTextColor);
         gregorianText.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         gregorianText.setGravity(Gravity.CENTER);
-        gregorianText.setIncludeFontPadding(true);
+        gregorianText.setSingleLine(true);
+        gregorianText.setEllipsize(TextUtils.TruncateAt.END);
+        gregorianText.setIncludeFontPadding(false);
         int initialDateHeight = Math.max(dp(30), dp(Math.round(initialClockSize * 0.42f)));
         gregorianText.setTextDirection(View.TEXT_DIRECTION_ANY_RTL);
         LinearLayout.LayoutParams gregorianParams =
@@ -253,7 +263,9 @@ public class MainActivity extends Activity {
         hebrewText.setGravity(Gravity.CENTER);
         hebrewText.setTextDirection(View.TEXT_DIRECTION_ANY_RTL);
         hebrewText.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-        hebrewText.setIncludeFontPadding(true);
+        hebrewText.setSingleLine(true);
+        hebrewText.setEllipsize(TextUtils.TruncateAt.END);
+        hebrewText.setIncludeFontPadding(false);
         clockBlock.addView(hebrewText, new LinearLayout.LayoutParams(-1, initialDateHeight));
 
         int initialClockBlockHeight = initialClockHeight + initialDateHeight * 2 + dp(12);
@@ -381,12 +393,14 @@ public class MainActivity extends Activity {
         mediaTitle.setVisibility(View.VISIBLE);
         mediaTitle.setGravity(Gravity.CENTER);
         mediaTitle.setSingleLine(true);
-        mediaTitle.setIncludeFontPadding(true);
+        mediaTitle.setEllipsize(TextUtils.TruncateAt.MARQUEE);
+        mediaTitle.setIncludeFontPadding(false);
         mediaDetails = textView("", 17, Color.rgb(175, 175, 175));
         mediaDetails.setVisibility(View.INVISIBLE);
         mediaDetails.setGravity(Gravity.CENTER);
         mediaDetails.setSingleLine(true);
-        mediaDetails.setIncludeFontPadding(true);
+        mediaDetails.setEllipsize(TextUtils.TruncateAt.END);
+        mediaDetails.setIncludeFontPadding(false);
         mediaProgressText = textView("", 12, Color.WHITE);
         mediaProgressText.setVisibility(View.GONE);
 
@@ -510,7 +524,7 @@ public class MainActivity extends Activity {
 
         e.putInt("fontColor", getInt("fontColor", dateTextColor));
         e.putInt("fontSize", getInt("fontSize", 17));
-        e.putInt("clockDateSize", getInt("clockDateSize", 72));
+        e.putInt("clockDateSize", getInt("clockDateSize", 84));
         e.putInt("playerSize", getInt("playerSize", 17));
         e.putInt("fontWeight", getInt("fontWeight", 1));
         e.putString("fontFamily", getString("fontFamily", "sans-serif"));
@@ -599,6 +613,22 @@ public class MainActivity extends Activity {
         }
     }
 
+    private float dateFontSizeForClockPreset(int clockSize) {
+        // The clock grows strongly at the upper presets, while date lines stay restrained:
+        // "Large" dates match the old "Medium" size; "Very large" dates match old "Large".
+        if (clockSize <= 48) return 18f;
+        if (clockSize <= 60) return 20f;
+        if (clockSize <= 72) return 20f;
+        return 24f;
+    }
+
+    private int measuredLineHeight(TextView view, int extraSpaceDp, int minimumHeightDp) {
+        if (view == null) return dp(minimumHeightDp);
+        android.graphics.Paint.FontMetrics metrics = view.getPaint().getFontMetrics();
+        int measured = Math.round(metrics.descent - metrics.ascent) + dp(extraSpaceDp);
+        return Math.max(dp(minimumHeightDp), measured);
+    }
+
     private int blendWithBlack(int color, float factor) {
         float f = Math.max(0f, Math.min(1f, factor));
         return Color.rgb(
@@ -617,7 +647,7 @@ public class MainActivity extends Activity {
 
         int color = getInt("fontColor", dateTextColor);
         int size = getInt("fontSize", 17);
-        int clockDateSize = getInt("clockDateSize", 72);
+        int clockDateSize = getInt("clockDateSize", 84);
         int playerSize = getInt("playerSize", 17);
         int weight = getInt("fontWeight", 1);
         String fontFamily = getString("fontFamily", "sans-serif");
@@ -642,31 +672,44 @@ public class MainActivity extends Activity {
         gregorianText.setTextColor(color);
         hebrewText.setTextColor(color);
         timeText.setTextColor(color);
-        gregorianText.setTextSize(Math.max(18, clockDateSize * 0.34f));
-        hebrewText.setTextSize(Math.max(18, clockDateSize * 0.34f));
+        float dateSize = dateFontSizeForClockPreset(clockDateSize);
+        gregorianText.setTextSize(dateSize);
+        hebrewText.setTextSize(dateSize);
         timeText.setTextSize(clockDateSize);
         gregorianText.setTypeface(tf);
         hebrewText.setTypeface(tf);
         timeText.setTypeface(tf);
 
+        // Measure the actual text metrics in pixels (including user font scaling).
+        // This prevents date/time rows from being clipped on large text settings.
+        int clockH = measuredLineHeight(timeText, 10, 56);
+        int dateH = Math.max(
+                measuredLineHeight(gregorianText, 8, 28),
+                measuredLineHeight(hebrewText, 8, 28));
+        boolean showGregorian = getBool("showGregorian", true);
+        boolean showHebrew = getBool("showHebrew", true);
+        int visibleDates = (showGregorian ? 1 : 0) + (showHebrew ? 1 : 0);
+        int dateGap = visibleDates > 0 ? dp(8) : 0;
+
+        LinearLayout.LayoutParams tp = (LinearLayout.LayoutParams) timeText.getLayoutParams();
+        tp.height = clockH;
+        timeText.setLayoutParams(tp);
+        LinearLayout.LayoutParams gp = (LinearLayout.LayoutParams) gregorianText.getLayoutParams();
+        gp.height = dateH;
+        gp.topMargin = showGregorian ? dp(8) : 0;
+        gregorianText.setLayoutParams(gp);
+        LinearLayout.LayoutParams hp = (LinearLayout.LayoutParams) hebrewText.getLayoutParams();
+        hp.height = dateH;
+        hp.topMargin = (!showGregorian && showHebrew) ? dp(8) : 0;
+        hebrewText.setLayoutParams(hp);
+
         View clockParent = (View) timeText.getParent();
         if (clockParent instanceof LinearLayout) {
             LinearLayout cb = (LinearLayout) clockParent;
-            int clockH = Math.max(dp(74), dp(clockDateSize + 28));
-            int dateH = Math.max(dp(30), dp(Math.round(clockDateSize * 0.42f)));
-            LinearLayout.LayoutParams tp = (LinearLayout.LayoutParams) timeText.getLayoutParams();
-            tp.height = clockH;
-            timeText.setLayoutParams(tp);
-            LinearLayout.LayoutParams gp = (LinearLayout.LayoutParams) gregorianText.getLayoutParams();
-            gp.height = dateH;
-            gp.topMargin = dp(12);
-            gregorianText.setLayoutParams(gp);
-            LinearLayout.LayoutParams hp = (LinearLayout.LayoutParams) hebrewText.getLayoutParams();
-            hp.height = dateH;
-            hebrewText.setLayoutParams(hp);
             FrameLayout.LayoutParams cp = (FrameLayout.LayoutParams) cb.getLayoutParams();
-            cp.height = clockH + dateH * 2 + dp(12);
+            cp.height = clockH + visibleDates * dateH + dateGap;
             cb.setLayoutParams(cp);
+            cb.requestLayout();
         }
 
         if (mediaTitle != null) {
@@ -675,7 +718,9 @@ public class MainActivity extends Activity {
             mediaProgressText.setTypeface(tf);
             mediaTitle.setTextSize(playerSize);
             mediaDetails.setTextSize(playerSize);
-            int textRowHeight = Math.max(dp(30), dp(playerSize + 12));
+            int textRowHeight = Math.max(
+                    measuredLineHeight(mediaTitle, 8, 30),
+                    measuredLineHeight(mediaDetails, 8, 30));
             if (mediaTitle.getLayoutParams() != null) {
                 mediaTitle.getLayoutParams().height = textRowHeight;
                 mediaTitle.requestLayout();
@@ -751,26 +796,46 @@ public class MainActivity extends Activity {
                 FrameLayout stage = (FrameLayout) parent.getParent();
                 updateScreenPositions(stageView, clockBlockView, mediaHolderView);
             }
-            scheduleAutoOff();
         }
 
     }
 
     private void scheduleAutoOff() {
+        scheduleAutoOff(false);
+    }
+
+    private void scheduleAutoOff(boolean restartCountdown) {
         handler.removeCallbacks(autoOffRunnable);
-
         String value = getString("screenSaverDuration", "0");
-        screenSleepPending = false;
+        boolean settingChanged = !value.equals(lastScheduledDurationValue);
+        if (settingChanged) {
+            lastScheduledDurationValue = value;
+            restartCountdown = true;
+        }
 
-        // "Device timeout" delegates sleep and lock entirely to Android.
+        // Layout changes, media refreshes and returning from system settings must not
+        // restart an already running inactivity countdown.
+        if (screenSleepPending && !restartCountdown) return;
+
+        if (restartCountdown) {
+            activityDeadlineElapsedRealtime = 0L;
+            screenSleepPending = false;
+            restoreSaverBrightness();
+        }
+
         if ("device".equals(value)) {
+            activityDeadlineElapsedRealtime = 0L;
+            restoreSaverBrightness();
             getWindow().clearFlags(
                     android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
             return;
         }
 
-        // The charging option keeps the display awake only while power is connected.
+        // While charging, keep the display awake. When unplugged, Android's own
+        // screen timeout is allowed to run normally.
         if ("charging".equals(value)) {
+            activityDeadlineElapsedRealtime = 0L;
+            restoreSaverBrightness();
             if (isDeviceCharging()) {
                 getWindow().addFlags(
                         android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -783,26 +848,58 @@ public class MainActivity extends Activity {
 
         long minutes = 0L;
         try { minutes = Long.parseLong(value); } catch (Throwable ignored) {}
+
         if (minutes <= 0L) {
+            activityDeadlineElapsedRealtime = 0L;
+            restoreSaverBrightness();
             getWindow().addFlags(
                     android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
             return;
         }
 
-        // Keep the saver visible for the chosen activity duration. When it expires,
-        // stop requesting the screen to stay on so the device's own timeout can dim,
-        // turn the display off and lock normally.
+        if (activityDeadlineElapsedRealtime <= 0L) {
+            activityDeadlineElapsedRealtime = SystemClock.elapsedRealtime()
+                    + minutes * 60_000L;
+        }
+        long remaining = activityDeadlineElapsedRealtime - SystemClock.elapsedRealtime();
+        if (remaining <= 0L) {
+            enterDisplaySleepMode();
+            return;
+        }
+
         getWindow().addFlags(
                 android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        handler.postDelayed(autoOffRunnable, minutes * 60_000L);
+        handler.postDelayed(autoOffRunnable, remaining);
+    }
+
+    private void restoreSaverBrightness() {
+        if (Float.isNaN(brightnessBeforeSleep)) return;
+        try {
+            android.view.WindowManager.LayoutParams attributes = getWindow().getAttributes();
+            attributes.screenBrightness = brightnessBeforeSleep;
+            getWindow().setAttributes(attributes);
+        } catch (Throwable ignored) {
+        }
+        brightnessBeforeSleep = Float.NaN;
     }
 
     private void enterDisplaySleepMode() {
         if (isFinishing() || screenSleepPending) return;
         screenSleepPending = true;
         handler.removeCallbacks(autoOffRunnable);
-        // Do not finish the Activity and do not override window brightness.
-        // Android is now free to dim, switch off and lock using its regular policy.
+
+        // Apps cannot power off the physical panel without privileged access. Darken
+        // this Activity immediately, keep it alive, and allow Android's own timeout/lock
+        // policy to turn the panel off as usual.
+        try {
+            android.view.WindowManager.LayoutParams attributes = getWindow().getAttributes();
+            if (Float.isNaN(brightnessBeforeSleep)) {
+                brightnessBeforeSleep = attributes.screenBrightness;
+            }
+            attributes.screenBrightness = 0.0f;
+            getWindow().setAttributes(attributes);
+        } catch (Throwable ignored) {
+        }
         getWindow().clearFlags(
                 android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     }
@@ -858,7 +955,8 @@ public class MainActivity extends Activity {
     private void wakeSaverDisplay() {
         if (!screenSleepPending) return;
         screenSleepPending = false;
-        scheduleAutoOff();
+        restoreSaverBrightness();
+        scheduleAutoOff(true);
         showSettingsButtonForFiveSeconds();
         if (stageView != null) {
             stageView.post(() -> updateScreenPositions(
@@ -905,24 +1003,39 @@ public class MainActivity extends Activity {
             scroll.setFillViewport(true);
             scroll.setVerticalScrollBarEnabled(true);
             scroll.setOverScrollMode(View.OVER_SCROLL_ALWAYS);
-            scroll.setBackgroundColor(Color.rgb(248, 249, 251));
+            scroll.setBackgroundColor(Color.TRANSPARENT);
             scroll.setClipToPadding(false);
+            scroll.setPadding(0, dp(8), 0, dp(8));
 
             LinearLayout box = new LinearLayout(this);
             box.setOrientation(LinearLayout.VERTICAL);
-            box.setPadding(dp(8), dp(8), dp(8), dp(12));
-            box.setBackgroundColor(Color.rgb(237, 241, 247));
-            int availableContentWidth = getResources().getDisplayMetrics().widthPixels - dp(80);
-            int contentWidth = Math.max(dp(220),
-                    Math.min(availableContentWidth, dp(440)));
+            box.setPadding(dp(14), dp(12), dp(14), dp(16));
+            GradientDrawable settingsSurface = new GradientDrawable();
+            settingsSurface.setColor(Color.rgb(247, 248, 252));
+            settingsSurface.setCornerRadius(dp(26));
+            settingsSurface.setStroke(dp(1), Color.rgb(222, 226, 238));
+            box.setBackground(settingsSurface);
+            if (Build.VERSION.SDK_INT >= 21) box.setElevation(dp(3));
+            int availableContentWidth = getResources().getDisplayMetrics().widthPixels - dp(24);
+            int contentWidth = Math.max(dp(240),
+                    Math.min(availableContentWidth, dp(460)));
             scroll.addView(box, new FrameLayout.LayoutParams(
                     contentWidth, LinearLayout.LayoutParams.WRAP_CONTENT,
                     Gravity.TOP | Gravity.CENTER_HORIZONTAL));
 
-            TextView h = textView("הגדרות", 22, Color.rgb(25, 28, 35));
+            TextView h = textView("הגדרות", 24, Color.rgb(28, 35, 54));
             h.setGravity(Gravity.CENTER);
-            h.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
-            box.addView(h, new LinearLayout.LayoutParams(-1, dp(42)));
+            h.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+            box.addView(h, new LinearLayout.LayoutParams(-1, dp(38)));
+
+            TextView subtitle = textView(
+                    "התאמה אישית של השעון, התאריך והנגן",
+                    13, Color.rgb(103, 110, 128));
+            subtitle.setGravity(Gravity.CENTER);
+            subtitle.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+            LinearLayout.LayoutParams subtitleParams = new LinearLayout.LayoutParams(-1, dp(24));
+            subtitleParams.bottomMargin = dp(10);
+            box.addView(subtitle, subtitleParams);
 
             // Each section is a single Card-like container. Every relevant row is
             // added inside that same container, so nothing belongs outside its frame.
@@ -979,24 +1092,27 @@ public class MainActivity extends Activity {
                     new String[]{"ישר","עדין","מעוגל"},
                     new String[]{"0","10","20"}, "frameRadius");
 
-            Button done = new Button(this);
+            MaterialButton done = new MaterialButton(this);
             done.setText("סיום ושמירה");
             done.setTextColor(Color.WHITE);
             done.setTextSize(15);
             done.setMinWidth(0);
             done.setMinHeight(0);
             done.setPadding(dp(22), 0, dp(22), 0);
-            GradientDrawable doneBg = new GradientDrawable();
-            doneBg.setColor(Color.rgb(55, 95, 145));
-            doneBg.setCornerRadius(dp(12));
-            done.setBackground(doneBg);
+            done.setInsetTop(0);
+            done.setInsetBottom(0);
+            done.setCornerRadius(dp(22));
+            done.setBackgroundTintList(android.content.res.ColorStateList.valueOf(
+                    Color.rgb(58, 76, 160)));
+            done.setRippleColor(android.content.res.ColorStateList.valueOf(
+                    Color.rgb(105, 120, 197)));
             LinearLayout.LayoutParams doneParams =
                     new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(46));
             doneParams.gravity = Gravity.CENTER_HORIZONTAL;
             doneParams.topMargin = dp(6);
             box.addView(done, doneParams);
 
-            final AlertDialog dialog = new AlertDialog.Builder(this).setView(scroll).create();
+            final AlertDialog dialog = new MaterialAlertDialogBuilder(this).setView(scroll).create();
             done.setOnClickListener(v -> dialog.dismiss());
             settingsDialogOpen = true;
 
@@ -1019,12 +1135,19 @@ public class MainActivity extends Activity {
             }
 
             dialog.setOnDismissListener(d -> {
-                applySettings();
-                refreshSystemMediaMirror();
-                scheduleAutoOff();
+                boolean restartCountdown = screenDurationChangedInSettings || screenSleepPending;
                 settingsDialogOpen = false;
                 settingsContainer = null;
                 notificationAccessCard = null;
+                screenDurationChangedInSettings = false;
+
+                applySettings();
+                refreshSystemMediaMirror();
+                if (screenSleepPending) {
+                    wakeSaverDisplay();
+                } else {
+                    scheduleAutoOff(restartCountdown);
+                }
                 getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN);
                 hideSystemUi();
             });
@@ -1035,7 +1158,7 @@ public class MainActivity extends Activity {
                 window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN);
                 window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
                 window.setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(
-                        Color.rgb(237, 241, 247)));
+                        Color.TRANSPARENT));
                 window.setStatusBarColor(Color.BLACK);
                 window.setNavigationBarColor(Color.BLACK);
 
@@ -1053,9 +1176,15 @@ public class MainActivity extends Activity {
                     }
                 }
 
-                int width = getResources().getDisplayMetrics().widthPixels;
-                int height = Math.min(getResources().getDisplayMetrics().heightPixels - dp(16), dp(820));
+                int width = Math.max(dp(280),
+                        getResources().getDisplayMetrics().widthPixels - dp(16));
+                int height = Math.max(dp(420),
+                        Math.min(getResources().getDisplayMetrics().heightPixels - dp(96), dp(780)));
                 window.setLayout(width, height);
+                window.addFlags(android.view.WindowManager.LayoutParams.FLAG_DIM_BEHIND);
+                android.view.WindowManager.LayoutParams windowParams = window.getAttributes();
+                windowParams.dimAmount = 0.42f;
+                window.setAttributes(windowParams);
             }
         } catch (Throwable t) {
             showFatalError(t);
@@ -1065,24 +1194,26 @@ public class MainActivity extends Activity {
     private LinearLayout addCard(LinearLayout parent, String title) {
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
-        card.setPadding(dp(10), dp(7), dp(10), dp(9));
+        card.setPadding(dp(14), dp(8), dp(14), dp(12));
 
         GradientDrawable bg = new GradientDrawable();
-        bg.setColor(Color.rgb(255, 255, 255));
-        bg.setCornerRadius(dp(12));
-        bg.setStroke(dp(1), Color.rgb(137, 153, 174));
+        bg.setColor(Color.WHITE);
+        bg.setCornerRadius(dp(20));
+        bg.setStroke(dp(1), Color.rgb(222, 226, 238));
         card.setBackground(bg);
-        if (Build.VERSION.SDK_INT >= 21) card.setElevation(dp(2));
+        if (Build.VERSION.SDK_INT >= 21) card.setElevation(dp(1));
 
         LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        p.setMargins(dp(2), dp(5), dp(2), dp(5));
+        p.setMargins(0, dp(5), 0, dp(5));
         parent.addView(card, p);
 
-        TextView titleView = textView(title, 18, Color.rgb(24, 39, 58));
-        titleView.setGravity(Gravity.CENTER);
-        titleView.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
-        card.addView(titleView, new LinearLayout.LayoutParams(-1, dp(38)));
+        TextView titleView = textView(title, 16, Color.rgb(49, 58, 92));
+        titleView.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        titleView.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
+        titleView.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        titleView.setPadding(dp(2), 0, dp(2), 0);
+        card.addView(titleView, new LinearLayout.LayoutParams(-1, dp(36)));
         return card;
     }
 
@@ -1099,7 +1230,7 @@ public class MainActivity extends Activity {
                 new LinearLayout.LayoutParams(-1, dp(48));
         card.addView(message, messageParams);
 
-        Button grant = new Button(this);
+        MaterialButton grant = new MaterialButton(this);
         grant.setText("פתיחת הגדרות הרשאה");
         grant.setTextColor(Color.WHITE);
         grant.setTextSize(14);
@@ -1108,11 +1239,11 @@ public class MainActivity extends Activity {
         grant.setMinWidth(0);
         grant.setMinHeight(0);
         grant.setPadding(dp(14), 0, dp(14), 0);
-        GradientDrawable grantBg = new GradientDrawable();
-        grantBg.setColor(Color.rgb(39, 76, 117));
-        grantBg.setCornerRadius(dp(14));
-        grantBg.setStroke(dp(1), Color.rgb(80, 118, 162));
-        grant.setBackground(grantBg);
+        grant.setInsetTop(0);
+        grant.setInsetBottom(0);
+        grant.setCornerRadius(dp(20));
+        grant.setBackgroundTintList(android.content.res.ColorStateList.valueOf(
+                Color.rgb(58, 76, 160)));
         LinearLayout.LayoutParams grantParams =
                 new LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.WRAP_CONTENT, dp(42));
@@ -1167,36 +1298,47 @@ public class MainActivity extends Activity {
         return currentSettingsCard != null ? currentSettingsCard : fallback;
     }
 
-    private void addCheck(LinearLayout b, String s, String k, boolean d) {
-        Switch x = new Switch(this);
-        x.setText(s);
-        x.setTextColor(Color.rgb(35, 38, 45));
-        x.setTextSize(15);
-        x.setGravity(Gravity.CENTER);
-        x.setPadding(dp(2), 0, dp(2), 0);
-        x.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        x.setShowText(false);
-        x.setChecked(getBool(k, d));
-        x.setOnCheckedChangeListener((a, z) -> {
-            try {
-                prefs.edit().putBoolean(k, z).commit();
-                applySettings();
-            } catch (Throwable ignored) {}
-        });
+    private void addCheck(LinearLayout b, String label, String key, boolean defaultValue) {
         LinearLayout row = new LinearLayout(this);
-        row.setGravity(Gravity.CENTER);
-        row.addView(x, new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT, dp(42)));
-        settingsTarget(b).addView(row, new LinearLayout.LayoutParams(-1, dp(42)));
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        row.setPadding(dp(4), 0, dp(4), 0);
+
+        TextView text = textView(label, 15, Color.rgb(36, 41, 59));
+        text.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        text.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
+        LinearLayout.LayoutParams textParams = new LinearLayout.LayoutParams(0, dp(48), 1f);
+        row.addView(text, textParams);
+
+        MaterialSwitch toggle = new MaterialSwitch(this);
+        toggle.setChecked(getBool(key, defaultValue));
+        toggle.setShowText(false);
+        LinearLayout.LayoutParams switchParams = new LinearLayout.LayoutParams(dp(58), dp(48));
+        switchParams.leftMargin = dp(4);
+        row.addView(toggle, switchParams);
+
+        toggle.setOnCheckedChangeListener((button, checked) -> {
+            try {
+                prefs.edit().putBoolean(key, checked).commit();
+                applySettings();
+            } catch (Throwable ignored) {
+            }
+        });
+        row.setOnClickListener(v -> toggle.setChecked(!toggle.isChecked()));
+        settingsTarget(b).addView(row, new LinearLayout.LayoutParams(-1, dp(48)));
     }
 
     private void addSpinner(LinearLayout b, String label, String[] names,
                             String[] vals, String key) {
         LinearLayout row = new LinearLayout(this);
         row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        row.setPadding(dp(4), dp(2), dp(4), dp(2));
 
-        TextView l = textView(label, 15, Color.rgb(30, 41, 56));
-        l.setGravity(Gravity.CENTER);
+        TextView l = textView(label, 14, Color.rgb(52, 58, 79));
+        l.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        l.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
         row.addView(l, new LinearLayout.LayoutParams(0, dp(38), 1f));
 
         Spinner sp = new Spinner(this);
@@ -1204,7 +1346,7 @@ public class MainActivity extends Activity {
                 this, android.R.layout.simple_spinner_item, names) {
             @Override public View getView(int position, View convertView, android.view.ViewGroup parent) {
                 TextView v = (TextView) super.getView(position, convertView, parent);
-                v.setTextColor(Color.rgb(28, 38, 52));
+                v.setTextColor(Color.rgb(36, 41, 59));
                 v.setTextSize(14);
                 v.setGravity(Gravity.CENTER);
                 v.setPadding(dp(8), 0, dp(8), 0);
@@ -1213,7 +1355,7 @@ public class MainActivity extends Activity {
             @Override public View getDropDownView(int position, View convertView, android.view.ViewGroup parent) {
                 TextView v = new TextView(MainActivity.this);
                 v.setText(names[position]);
-                v.setTextColor(Color.rgb(28, 38, 52));
+                v.setTextColor(Color.rgb(36, 41, 59));
                 v.setTextSize(14);
                 v.setGravity(Gravity.CENTER);
                 v.setPadding(dp(10), 0, dp(10), 0);
@@ -1224,9 +1366,9 @@ public class MainActivity extends Activity {
         };
         sp.setAdapter(adapter);
         GradientDrawable spinnerBg = new GradientDrawable();
-        spinnerBg.setColor(Color.rgb(247, 249, 252));
-        spinnerBg.setCornerRadius(dp(9));
-        spinnerBg.setStroke(dp(1), Color.rgb(112, 131, 155));
+        spinnerBg.setColor(Color.rgb(249, 249, 253));
+        spinnerBg.setCornerRadius(dp(12));
+        spinnerBg.setStroke(dp(1), Color.rgb(190, 195, 212));
         sp.setBackground(spinnerBg);
 
         int ix = 0;
@@ -1290,6 +1432,9 @@ public class MainActivity extends Activity {
 
                             e.commit();
                             applySettings();
+                            if ("screenSaverDuration".equals(key)) {
+                                screenDurationChangedInSettings = true;
+                            }
                             handler.post(MainActivity.this::refreshSystemMediaMirror);
                         } catch (Throwable ignored) {
                         }
@@ -1301,7 +1446,7 @@ public class MainActivity extends Activity {
                 });
 
 
-        row.addView(sp, new LinearLayout.LayoutParams(dp(144), dp(42)));
+        row.addView(sp, new LinearLayout.LayoutParams(dp(148), dp(44)));
         b.addView(row);
     }
 
