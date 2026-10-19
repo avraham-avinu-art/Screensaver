@@ -95,7 +95,7 @@ public class SettingsActivity extends Activity {
         content.setOrientation(LinearLayout.VERTICAL);
         content.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         scroll.addView(content, new ScrollView.LayoutParams(-1, -2));
-        root.addView(scroll, new LinearLayout.LayoutParams(0, 0, 1f));
+        root.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1f));
 
         buildSettingsCards();
 
