@@ -6,6 +6,11 @@
         android:theme="@style/AppTheme"
         android:supportsRtl="true">
         <activity
+            android:name=".SettingsActivity"
+            android:label="הגדרות"
+            android:exported="false"
+            android:screenOrientation="unspecified" />
+        <activity
             android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
