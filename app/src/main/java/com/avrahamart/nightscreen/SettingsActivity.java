@@ -277,7 +277,7 @@ public class SettingsActivity extends Activity {
         row.setTextDirection(View.TEXT_DIRECTION_RTL);
         row.setPadding(dp(4), dp(2), dp(4), dp(2));
 
-        TextView l = textView(label, 15, Color.rgb(52, 58, 79));
+        TextView l = textView(label, 16, Color.rgb(52, 58, 79));
         l.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         l.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
         l.setTextDirection(View.TEXT_DIRECTION_RTL);
@@ -360,7 +360,7 @@ public class SettingsActivity extends Activity {
 
     private void styleSpinnerText(TextView view, boolean selected) {
         view.setTextColor(ON_SURFACE);
-        view.setTextSize(15);
+        view.setTextSize(16);
         view.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         view.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         view.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
