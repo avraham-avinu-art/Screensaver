@@ -65,7 +65,7 @@ public class SettingsActivity extends Activity {
         root.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         root.setTextDirection(View.TEXT_DIRECTION_RTL);
         root.setBackgroundColor(SURFACE);
-        root.setPadding(dp(24), dp(8), dp(24), dp(12));
+        root.setPadding(dp(35), dp(8), dp(35), dp(12));
 
         LinearLayout header = new LinearLayout(this);
         header.setOrientation(LinearLayout.VERTICAL);
@@ -361,7 +361,10 @@ public class SettingsActivity extends Activity {
     private void styleSpinnerText(TextView view, boolean selected) {
         view.setTextColor(ON_SURFACE);
         view.setTextSize(16);
-        view.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        // Keep the selected value aligned as before; center only rows in the drop-down popup.
+        view.setGravity(selected
+                ? Gravity.RIGHT | Gravity.CENTER_VERTICAL
+                : Gravity.CENTER);
         view.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         view.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
         view.setTextDirection(View.TEXT_DIRECTION_RTL);
