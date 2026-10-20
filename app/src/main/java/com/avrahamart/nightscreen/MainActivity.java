@@ -333,7 +333,7 @@ public class MainActivity extends Activity {
             FrameLayout.LayoutParams cp = (FrameLayout.LayoutParams) clockBlock.getLayoutParams();
             int clockH = clockBlock.getMeasuredHeight();
             if ("upper".equals(clockPos)) {
-                cp.topMargin = Math.max(0, Math.round(h * 0.25f - clockH / 2f));
+                cp.topMargin = Math.max(0, Math.round(h * 0.275f - clockH / 2f));
             } else if ("middle".equals(clockPos)) {
                 cp.topMargin = Math.max(0, Math.round(h * 0.50f - clockH / 2f));
             } else {
