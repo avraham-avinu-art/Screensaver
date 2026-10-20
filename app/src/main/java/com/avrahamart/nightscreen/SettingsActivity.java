@@ -10,6 +10,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
+import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
@@ -142,11 +143,6 @@ public class SettingsActivity extends Activity {
                         "ללא כיבוי בטעינה", "לפי המכשיר"},
                 new String[]{"1", "5", "0", "charging", "device"}, "screenSaverDuration");
 
-        if (!hasNotificationAccess()) {
-            notificationAccessCard = addNotificationAccessCard(content);
-        }
-        updateScreenLockAdminCardVisibility();
-
         LinearLayout font = addCard(content, "גופן");
         addSpinner(font, "צבע",
                 new String[]{"לבן", "אפור בהיר", "אפור", "כחול עדין"},
@@ -165,6 +161,12 @@ public class SettingsActivity extends Activity {
         addSpinner(clock, "מיקום",
                 new String[]{"הכי למעלה", "ברבע העליון", "באמצע המסך"},
                 new String[]{"top", "upper", "middle"}, "clockDatePosition");
+
+        // Keep the notification-access permission card immediately after clock/date settings.
+        if (!hasNotificationAccess()) {
+            notificationAccessCard = addNotificationAccessCard(content);
+        }
+        updateScreenLockAdminCardVisibility();
 
         LinearLayout player = addCard(content, "תצוגת הנגן");
         addCheck(player, "פרטי אמן", "showDetails", getBool("showDetails", true));
@@ -306,6 +308,8 @@ public class SettingsActivity extends Activity {
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinner.setAdapter(adapter);
         spinner.setPadding(dp(6), 0, dp(6), 0);
+        // Let the dropdown popup fit its longest option while keeping a usable minimum width.
+        spinner.setDropDownWidth(dropdownWidthForOptions(names));
         spinner.setBackground(roundOutline(Color.rgb(249, 249, 253), dp(12), OUTLINE));
 
         int selected = selectedIndex(key, values);
@@ -374,6 +378,21 @@ public class SettingsActivity extends Activity {
             view.setMinHeight(dp(44));
             view.setBackgroundColor(Color.WHITE);
         }
+    }
+
+    private int dropdownWidthForOptions(String[] names) {
+        Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        paint.setTextSize(16f * getResources().getDisplayMetrics().scaledDensity);
+        float longestText = 0f;
+        for (String name : names) {
+            if (name != null) longestText = Math.max(longestText, paint.measureText(name));
+        }
+
+        // Account for item padding, popup insets, and the spinner's selection indicator.
+        int contentWidth = (int) Math.ceil(longestText) + dp(48);
+        int minimumWidth = dp(158);
+        int screenLimit = getResources().getDisplayMetrics().widthPixels - dp(24);
+        return Math.min(screenLimit, Math.max(minimumWidth, contentWidth));
     }
 
     private int selectedIndex(String key, String[] values) {
