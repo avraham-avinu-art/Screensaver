@@ -156,13 +156,13 @@ public class SettingsActivity extends Activity {
                 new String[]{"רגיל", "בינוני", "מודגש"},
                 new String[]{"0", "1", "2"}, "fontWeight");
         addSpinner(font, "סוג",
-                new String[]{"סנס רגיל", "סנס עדין", "סנס דק", "סנס צר",
-                        "סנס צר ועדין", "סנס בינוני", "סנס שחור", "סריף",
-                        "כתב יד", "אותיות קטנות"},
-                new String[]{"sans-serif", "sans-serif-light", "sans-serif-thin",
-                        "sans-serif-condensed", "sans-serif-condensed-light",
-                        "sans-serif-medium", "sans-serif-black", "serif",
-                        "casual", "sans-serif-smallcaps"}, "fontFamily");
+                new String[]{"כתב רגיל", "כתב דק", "כתב צר", "כתב צר ודק",
+                        "כתב בינוני", "כתב שחור", "כתב ספר", "כתב יד",
+                        "אותיות קטנות", "כתב מעוגל"},
+                new String[]{"sans-serif", "sans-serif-light", "sans-serif-condensed",
+                        "sans-serif-condensed-light", "sans-serif-medium",
+                        "sans-serif-black", "serif", "casual",
+                        "sans-serif-smallcaps", "sans-serif-rounded"}, "fontFamily");
 
         clockDateCard = addCard(content, "תצוגת שעון ותאריך");
         LinearLayout clock = clockDateCard;
@@ -206,23 +206,23 @@ public class SettingsActivity extends Activity {
                 "ההרשאה נדרשת רק אם רוצים כיבוי מסך ונעילת המכשיר מיד בתום פעילות השומר מסך.\n"
                 + "ללא ההרשאה, בתום הזמן תסתיים תצוגת שומר המסך בלבד. "
                 + "כיבוי המסך ונעילת המכשיר ימשיכו להתבצע לפי הגדרות המכשיר.",
-                14, MUTED);
+                16, MUTED);
         explanation.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         explanation.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
         explanation.setTextDirection(View.TEXT_DIRECTION_RTL);
-        explanation.setLineSpacing(dp(2), 1f);
-        explanation.setPadding(0, dp(10), 0, dp(10));
+        explanation.setLineSpacing(dp(1), 1f);
+        explanation.setPadding(0, dp(5), 0, dp(5));
         LinearLayout.LayoutParams explanationParams =
                 new LinearLayout.LayoutParams(-1, -2);
-        explanationParams.topMargin = dp(4);
-        explanationParams.bottomMargin = dp(4);
+        explanationParams.topMargin = dp(2);
+        explanationParams.bottomMargin = dp(2);
         screenLockAdminCard.addView(explanation, explanationParams);
 
-        screenLockAdminStatus = textView("", 14, MUTED);
+        screenLockAdminStatus = textView("", 16, MUTED);
         screenLockAdminStatus.setGravity(Gravity.CENTER);
         screenLockAdminStatus.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         screenLockAdminStatus.setTextDirection(View.TEXT_DIRECTION_RTL);
-        screenLockAdminStatus.setPadding(0, dp(10), 0, dp(10));
+        screenLockAdminStatus.setPadding(0, dp(5), 0, dp(5));
         LinearLayout.LayoutParams adminStatusParams =
                 new LinearLayout.LayoutParams(-1, -2);
         adminStatusParams.topMargin = dp(4);
@@ -337,14 +337,14 @@ public class SettingsActivity extends Activity {
         row.setTextDirection(View.TEXT_DIRECTION_RTL);
         row.setPadding(dp(4), dp(2), dp(4), dp(2));
 
-        TextView l = textView(label, 16, Color.rgb(52, 58, 79));
+        TextView l = textView(label, 18, Color.rgb(52, 58, 79));
         l.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         l.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
         l.setTextDirection(View.TEXT_DIRECTION_RTL);
         row.addView(l, new LinearLayout.LayoutParams(0, dp(42), 1f));
 
         int selected = selectedIndex(key, values);
-        int spinnerWidth = dropdownWidthForOptions(names);
+        int spinnerWidth = dp(112);
         Spinner spinner = new Spinner(this);
         spinner.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         spinner.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
@@ -367,31 +367,16 @@ public class SettingsActivity extends Activity {
         };
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinner.setAdapter(adapter);
-        spinner.setPadding(dp(6), 0, dp(6), 0);
+        spinner.setPadding(dp(8), 0, dp(8), 0);
         spinner.setDropDownWidth(spinnerWidth);
         spinner.setBackground(roundOutline(Color.rgb(249, 249, 253), dp(12), OUTLINE));
         spinner.setSelection(selected, false);
-
-        // A small down-chevron replaces the arrow that the custom rounded background hides.
-        FrameLayout spinnerContainer = new FrameLayout(this);
-        spinnerContainer.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-        spinnerContainer.addView(spinner, new FrameLayout.LayoutParams(-1, -1));
-        TextView arrow = textView("⌄", 18, MUTED);
-        arrow.setGravity(Gravity.CENTER);
-        arrow.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-        arrow.setTextDirection(View.TEXT_DIRECTION_LTR);
-        arrow.setPadding(0, 0, 0, dp(3));
-        arrow.setClickable(false);
-        arrow.setFocusable(false);
-        arrow.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-        spinnerContainer.addView(arrow,
-                new FrameLayout.LayoutParams(dp(24), -1, Gravity.LEFT | Gravity.CENTER_VERTICAL));
 
         LinearLayout.LayoutParams spinnerParams =
                 new LinearLayout.LayoutParams(spinnerWidth, dp(44));
         spinnerParams.leftMargin = dp(12);
         spinnerParams.rightMargin = dp(6);
-        row.addView(spinnerContainer, 0, spinnerParams);
+        row.addView(spinner, 0, spinnerParams);
         card.addView(row, new LinearLayout.LayoutParams(-1, dp(48)));
 
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
@@ -431,7 +416,7 @@ public class SettingsActivity extends Activity {
 
     private void styleSpinnerText(TextView view, boolean selected, boolean selectedOption) {
         view.setTextColor(ON_SURFACE);
-        view.setTextSize(16);
+        view.setTextSize(18);
         view.setGravity(selected
                 ? Gravity.RIGHT | Gravity.CENTER_VERTICAL
                 : Gravity.CENTER);
@@ -440,8 +425,7 @@ public class SettingsActivity extends Activity {
         view.setTextDirection(View.TEXT_DIRECTION_RTL);
         view.setSingleLine(true);
         if (selected) {
-            // Reserve the left edge for the custom dropdown chevron.
-            view.setPadding(dp(26), 0, dp(8), 0);
+            view.setPadding(dp(8), 0, dp(8), 0);
         } else {
             view.setPadding(dp(8), 0, dp(8), 0);
             view.setMinHeight(dp(44));
@@ -492,16 +476,16 @@ public class SettingsActivity extends Activity {
     private LinearLayout addNotificationAccessCard(LinearLayout parent) {
         LinearLayout card = addCard(parent, "גישה להתראות");
         TextView message = textView(
-                "\nכדי להציג את נגן המערכת, יש לאפשר גישה להתראות.\n",
-                15, ON_SURFACE);
+                "כדי להציג את נגן המערכת, יש לאפשר גישה להתראות.",
+                16, ON_SURFACE);
         message.setGravity(Gravity.CENTER);
         message.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         message.setTextDirection(View.TEXT_DIRECTION_RTL);
-        message.setLineSpacing(dp(2), 1f);
-        message.setPadding(dp(4), dp(4), dp(4), dp(4));
+        message.setLineSpacing(dp(1), 1f);
+        message.setPadding(0, 0, 0, 0);
         LinearLayout.LayoutParams messageParams = new LinearLayout.LayoutParams(-1, -2);
-        messageParams.topMargin = dp(4);
-        messageParams.bottomMargin = dp(4);
+        messageParams.topMargin = 0;
+        messageParams.bottomMargin = 0;
         card.addView(message, messageParams);
 
         Button grant = makeActionButton("פתיחת הגדרות הרשאה");
