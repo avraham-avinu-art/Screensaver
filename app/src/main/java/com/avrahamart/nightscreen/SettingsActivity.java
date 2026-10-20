@@ -159,8 +159,8 @@ public class SettingsActivity extends Activity {
                 new String[]{"Sans Serif", "Serif", "Monospace", "Casual", "Cursive",
                         "Sans Serif Condensed", "Sans Serif Rounded", "Serif Slab",
                         "Sans Serif Small Caps", "Serif Condensed"},
-                new String[]{"sans-serif", "serif", "monospace", "casual", "cursive",
-                        "sans-serif-condensed", "sans-serif-rounded", "serif-monospace",
+                new String[]{"sans-serif", "serif", "sans-serif-light", "casual", "cursive",
+                        "sans-serif-thin", "sans-serif-rounded", "sans-serif-black",
                         "sans-serif-smallcaps", "serif-condensed"}, "fontFamily");
 
         clockDateCard = addCard(content, "תצוגת שעון ותאריך");
@@ -195,6 +195,12 @@ public class SettingsActivity extends Activity {
                 new String[]{"ישר", "עדין", "מעוגל"},
                 new String[]{"0", "10", "20"}, "frameRadius");
 
+        normalizeSpinnerWidths(display);
+        normalizeSpinnerWidths(font);
+        normalizeSpinnerWidths(clockDateCard);
+        normalizeSpinnerWidths(player);
+        normalizeSpinnerWidths(playerFrameCard);
+
         if (!hasNotificationAccess()) {
             notificationAccessCard = addNotificationAccessCard(content);
         }
@@ -207,7 +213,8 @@ public class SettingsActivity extends Activity {
                 + "כיבוי המסך ונעילת המכשיר ימשיכו להתבצע לפי הגדרות המכשיר.",
                 16, MUTED);
         explanation.setGravity(Gravity.CENTER);
-        explanation.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
+        explanation.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        explanation.setTypeface(Typeface.DEFAULT);
         explanation.setTextDirection(View.TEXT_DIRECTION_RTL);
         explanation.setLineSpacing(dp(1), 1f);
         explanation.setPadding(0, dp(5), 0, dp(5));
@@ -217,7 +224,8 @@ public class SettingsActivity extends Activity {
         explanationParams.bottomMargin = dp(2);
         screenLockAdminCard.addView(explanation, explanationParams);
 
-        screenLockAdminStatus = textView("", 16, MUTED);
+        screenLockAdminStatus = textView("", 16, ON_SURFACE);
+        screenLockAdminStatus.setTypeface(Typeface.DEFAULT);
         screenLockAdminStatus.setGravity(Gravity.CENTER);
         screenLockAdminStatus.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         screenLockAdminStatus.setTextDirection(View.TEXT_DIRECTION_RTL);
@@ -416,6 +424,7 @@ public class SettingsActivity extends Activity {
     private void styleSpinnerText(TextView view, boolean selected, boolean selectedOption) {
         view.setTextColor(ON_SURFACE);
         view.setTextSize(14);
+        view.setIncludeFontPadding(false);
         view.setGravity(Gravity.CENTER);
         view.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         view.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
@@ -425,7 +434,8 @@ public class SettingsActivity extends Activity {
             view.setPadding(dp(4), 0, dp(4), 0);
         } else {
             view.setPadding(dp(4), 0, dp(4), 0);
-            view.setMinHeight(dp(36));
+            view.setHeight(dp(40));
+            view.setMinHeight(dp(40));
             view.setBackgroundColor(selectedOption
                     ? Color.rgb(234, 238, 251) : Color.WHITE);
         }
@@ -433,12 +443,11 @@ public class SettingsActivity extends Activity {
 
     private int dropdownWidthForOptions(String[] names) {
         Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        paint.setTextSize(16f * getResources().getDisplayMetrics().scaledDensity);
+        paint.setTextSize(14f * getResources().getDisplayMetrics().scaledDensity);
         float longestText = 0f;
         for (String name : names) {
             if (name != null) longestText = Math.max(longestText, paint.measureText(name));
         }
-        paint.setTextSize(14f * getResources().getDisplayMetrics().scaledDensity);
         int contentWidth = (int) Math.ceil(longestText) + dp(24);
         int minimumWidth = dp(88);
         // Preserve room for the label on narrow screens while fitting the longest option when possible.
@@ -446,6 +455,34 @@ public class SettingsActivity extends Activity {
                 - dp(70 + 31 + 8 + 18 + 55);
         int maximumWidth = Math.max(minimumWidth, screenLimit);
         return Math.min(maximumWidth, Math.max(minimumWidth, contentWidth));
+    }
+
+    private void normalizeSpinnerWidths(LinearLayout card) {
+        if (card == null) return;
+        int widest = dp(88);
+        int screenLimit = getResources().getDisplayMetrics().widthPixels
+                - dp(70 + 31 + 8 + 18 + 55);
+        for (int i = 0; i < card.getChildCount(); i++) {
+            View child = card.getChildAt(i);
+            if (!(child instanceof LinearLayout)) continue;
+            LinearLayout row = (LinearLayout) child;
+            if (row.getChildCount() == 0 || !(row.getChildAt(0) instanceof Spinner)) continue;
+            View spinner = row.getChildAt(0);
+            LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) spinner.getLayoutParams();
+            widest = Math.max(widest, params.width);
+        }
+        widest = Math.min(widest, Math.max(dp(88), screenLimit));
+        for (int i = 0; i < card.getChildCount(); i++) {
+            View child = card.getChildAt(i);
+            if (!(child instanceof LinearLayout)) continue;
+            LinearLayout row = (LinearLayout) child;
+            if (row.getChildCount() == 0 || !(row.getChildAt(0) instanceof Spinner)) continue;
+            Spinner spinner = (Spinner) row.getChildAt(0);
+            LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) spinner.getLayoutParams();
+            params.width = widest;
+            spinner.setLayoutParams(params);
+            spinner.setDropDownWidth(widest);
+        }
     }
 
     private int selectedIndex(String key, String[] values) {
