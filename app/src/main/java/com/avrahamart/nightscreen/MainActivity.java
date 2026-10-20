@@ -266,8 +266,8 @@ public class MainActivity extends Activity {
         settingsButton.setOnClickListener(v -> showSettings());
         FrameLayout.LayoutParams settingsParams = new FrameLayout.LayoutParams(
                 dp(36), dp(38), Gravity.TOP | Gravity.LEFT);
-        settingsParams.leftMargin = dp(2);
-        settingsParams.topMargin = dp(12);
+        settingsParams.leftMargin = dp(4);
+        settingsParams.topMargin = dp(14);
         stage.addView(settingsButton, settingsParams);
 
         LinearLayout clockBlock = new LinearLayout(this);
@@ -333,7 +333,7 @@ public class MainActivity extends Activity {
             FrameLayout.LayoutParams cp = (FrameLayout.LayoutParams) clockBlock.getLayoutParams();
             int clockH = clockBlock.getMeasuredHeight();
             if ("upper".equals(clockPos)) {
-                cp.topMargin = Math.max(0, Math.round(h * 0.25f));
+                cp.topMargin = Math.round(h * 0.125f - clockH / 2f);
             } else if ("middle".equals(clockPos)) {
                 cp.topMargin = Math.max(0, Math.round(h * 0.50f - clockH / 2f));
             } else {
@@ -565,7 +565,9 @@ public class MainActivity extends Activity {
         e.putInt("clockDateSize", getInt("clockDateSize", 84));
         e.putInt("playerSize", getInt("playerSize", 17));
         e.putInt("fontWeight", getInt("fontWeight", 1));
-        e.putString("fontFamily", getString("fontFamily", "sans-serif"));
+        String savedFontFamily = getString("fontFamily", "sans-serif");
+        if ("monospace".equals(savedFontFamily)) savedFontFamily = "sans-serif";
+        e.putString("fontFamily", savedFontFamily);
 
         e.putBoolean("showGregorian", getBool("showGregorian", true));
         e.putBoolean("showHebrew", getBool("showHebrew", true));
@@ -854,13 +856,15 @@ public class MainActivity extends Activity {
     }
 
     private int dateClockGapDp(int clockSize) {
-        if (clockSize >= 84) return 6;
-        return clockSize >= 72 ? 5 : 4;
+        if (clockSize >= 96) return 10;
+        if (clockSize >= 84) return 8;
+        if (clockSize >= 72) return 6;
+        return 4;
     }
 
     private float dateTextSizeForClockPreset(int clockSize) {
-        // The Hebrew and Gregorian dates are always exactly 28% of the selected clock size.
-        return clockSize * 0.28f;
+        // The two largest presets use 28%; the remaining presets use 30%.
+        return clockSize >= 84 ? clockSize * 0.28f : clockSize * 0.30f;
     }
 
     private int dateRowHeightForClockPreset(int clockSize) {
@@ -1017,7 +1021,7 @@ public class MainActivity extends Activity {
         if (!screenSleepPending) return;
         screenSleepPending = false;
         scheduleAutoOff(true);
-        showSettingsButtonForFiveSeconds();
+        showSettingsButtonForThreeSeconds();
         if (stageView != null) {
             stageView.post(() -> updateScreenPositions(
                     stageView, clockBlockView, mediaHolderView));
@@ -1063,12 +1067,12 @@ public class MainActivity extends Activity {
         deviceEventsRegistered = false;
     }
 
-    private void showSettingsButtonForFiveSeconds() {
+    private void showSettingsButtonForThreeSeconds() {
         if (settingsButton == null || settingsDialogOpen) return;
         handler.removeCallbacks(hideSettingsButtonRunnable);
         settingsButton.setVisibility(View.VISIBLE);
         settingsButton.setAlpha(0.58f);
-        handler.postDelayed(hideSettingsButtonRunnable, 5_000L);
+        handler.postDelayed(hideSettingsButtonRunnable, 3_000L);
     }
 
     @Override
@@ -1078,7 +1082,7 @@ public class MainActivity extends Activity {
             if (stageView != null && stageView.getHeight() > 0) {
                 float localY = event.getY() - stageView.getTop();
                 if (localY >= 0 && localY <= stageView.getHeight() / 2f) {
-                    showSettingsButtonForFiveSeconds();
+                    showSettingsButtonForThreeSeconds();
                 }
             }
         }
@@ -1089,7 +1093,7 @@ public class MainActivity extends Activity {
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if (screenSleepPending) wakeSaverDisplay();
         if (keyCode != KeyEvent.KEYCODE_BACK) {
-            showSettingsButtonForFiveSeconds();
+            showSettingsButtonForThreeSeconds();
         }
         return super.onKeyDown(keyCode, event);
     }
