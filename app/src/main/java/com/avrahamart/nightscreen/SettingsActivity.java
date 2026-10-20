@@ -2,7 +2,6 @@ package com.avrahamart.nightscreen;
 
 import android.app.Activity;
 import android.app.NotificationManager;
-import android.app.admin.DevicePolicyManager;
 import android.content.ActivityNotFoundException;
 import android.content.ComponentName;
 import android.content.Context;
@@ -31,7 +30,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 public class SettingsActivity extends Activity {
-    private static final int REQUEST_ENABLE_SCREEN_LOCK_ADMIN = 8142;
     private static final int SURFACE = Color.rgb(247, 248, 252);
     private static final int ON_SURFACE = Color.rgb(36, 41, 59);
     private static final int MUTED = Color.rgb(100, 106, 127);
@@ -42,10 +40,7 @@ public class SettingsActivity extends Activity {
     private LinearLayout content;
     private LinearLayout clockDateCard;
     private LinearLayout notificationAccessCard;
-    private LinearLayout screenLockAdminCard;
     private LinearLayout currentCard;
-    private DevicePolicyManager devicePolicyManager;
-    private ComponentName screenLockAdminComponent;
     private final int dateTextColor = Color.rgb(220, 220, 220);
 
     @Override
@@ -130,7 +125,6 @@ public class SettingsActivity extends Activity {
         super.onResume();
         if (content != null) {
             updateNotificationAccessCardVisibility();
-            updateScreenLockAdminCardVisibility();
         }
     }
 
@@ -168,7 +162,6 @@ public class SettingsActivity extends Activity {
         if (!hasNotificationAccess()) {
             notificationAccessCard = addNotificationAccessCard(content);
         }
-        updateScreenLockAdminCardVisibility();
 
         LinearLayout player = addCard(content, "תצוגת הנגן");
         addCheck(player, "פרטי אמן", "showDetails", getBool("showDetails", true));
@@ -354,9 +347,6 @@ public class SettingsActivity extends Activity {
                     }
                     editor.apply();
 
-                    if ("screenSaverDuration".equals(key)) {
-                        updateScreenLockAdminCardVisibility();
-                    }
                 } catch (Throwable ignored) {
                 }
             }
@@ -451,40 +441,6 @@ public class SettingsActivity extends Activity {
         positionPermissionCards();
     }
 
-    private void updateScreenLockAdminCardVisibility() {
-        if (content == null) return;
-        String duration = getString("screenSaverDuration", "0");
-        boolean needsAdmin = "1".equals(duration) || "5".equals(duration);
-        if (!needsAdmin || isScreenLockAdminActive()) {
-            removeCard(screenLockAdminCard);
-            screenLockAdminCard = null;
-            positionPermissionCards();
-            return;
-        }
-        if (screenLockAdminCard != null) return;
-
-        screenLockAdminCard = addCard(content, "כיבוי מדויק בתום זמן הפעילות");
-        TextView explanation = textView(
-                "כדי לנעול ולכבות את המסך מיד בתום הזמן שנבחר, יש להפעיל הרשאת נעילת מסך. "
-                + "ההרשאה משמשת לנעילת המסך בלבד.",
-                14, MUTED);
-        explanation.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        explanation.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
-        explanation.setTextDirection(View.TEXT_DIRECTION_RTL);
-        explanation.setLineSpacing(dp(2), 1f);
-        LinearLayout.LayoutParams explanationParams =
-                new LinearLayout.LayoutParams(-1, -2);
-        explanationParams.bottomMargin = dp(8);
-        screenLockAdminCard.addView(explanation, explanationParams);
-
-        Button enable = makeActionButton("הפעל הרשאת נעילת מסך");
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-2, dp(44));
-        params.gravity = Gravity.CENTER_HORIZONTAL;
-        screenLockAdminCard.addView(enable, params);
-        enable.setOnClickListener(v -> requestScreenLockAdmin());
-        positionPermissionCards();
-    }
-
     private void positionPermissionCards() {
         if (content == null || clockDateCard == null) return;
         int clockIndex = content.indexOfChild(clockDateCard);
@@ -494,10 +450,6 @@ public class SettingsActivity extends Activity {
         if (notificationAccessCard != null && notificationAccessCard.getParent() == content) {
             content.removeView(notificationAccessCard);
             content.addView(notificationAccessCard, insertAt++);
-        }
-        if (screenLockAdminCard != null && screenLockAdminCard.getParent() == content) {
-            content.removeView(screenLockAdminCard);
-            content.addView(screenLockAdminCard, insertAt);
         }
     }
 
@@ -529,52 +481,6 @@ public class SettingsActivity extends Activity {
             Toast.makeText(this, "לא ניתן לפתוח את הגדרות ההתראות במכשיר.",
                     Toast.LENGTH_LONG).show();
         } catch (Throwable ignored) {
-        }
-    }
-
-    private boolean isScreenLockAdminActive() {
-        try {
-            if (devicePolicyManager == null) {
-                devicePolicyManager = (DevicePolicyManager) getSystemService(
-                        Context.DEVICE_POLICY_SERVICE);
-            }
-            if (screenLockAdminComponent == null) {
-                screenLockAdminComponent = new ComponentName(
-                        this, ScreenLockAdminReceiver.class);
-            }
-            return devicePolicyManager != null
-                    && devicePolicyManager.isAdminActive(screenLockAdminComponent);
-        } catch (Throwable ignored) {
-            return false;
-        }
-    }
-
-    private void requestScreenLockAdmin() {
-        try {
-            if (screenLockAdminComponent == null) {
-                screenLockAdminComponent = new ComponentName(
-                        this, ScreenLockAdminReceiver.class);
-            }
-            Intent intent = new Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN);
-            intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, screenLockAdminComponent);
-            intent.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION,
-                    "הרשאה זו משמשת רק לנעילת המסך בתום זמן הפעילות שבחרת.");
-            startActivityForResult(intent, REQUEST_ENABLE_SCREEN_LOCK_ADMIN);
-        } catch (Throwable ex) {
-            Toast.makeText(this, "לא ניתן לפתוח את הרשאת נעילת המסך.",
-                    Toast.LENGTH_LONG).show();
-        }
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == REQUEST_ENABLE_SCREEN_LOCK_ADMIN) {
-            updateScreenLockAdminCardVisibility();
-            if (isScreenLockAdminActive()) {
-                Toast.makeText(this, "הרשאת נעילת המסך הופעלה.",
-                        Toast.LENGTH_LONG).show();
-            }
         }
     }
 

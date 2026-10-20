@@ -19,20 +19,6 @@
             </intent-filter>
         </activity>
 
-        <receiver
-            android:name=".ScreenLockAdminReceiver"
-            android:label="שומר מסך"
-            android:description="@string/screen_lock_admin_description"
-            android:permission="android.permission.BIND_DEVICE_ADMIN"
-            android:exported="true">
-            <meta-data
-                android:name="android.app.device_admin"
-                android:resource="@xml/device_admin" />
-            <intent-filter>
-                <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
-            </intent-filter>
-        </receiver>
-
         <service
             android:name=".SystemMediaNotificationListener"
             android:label="Night Screen"
