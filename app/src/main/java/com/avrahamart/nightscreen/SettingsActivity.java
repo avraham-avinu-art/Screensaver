@@ -207,6 +207,8 @@ public class SettingsActivity extends Activity {
 
         // Optional device-admin card is deliberately the final settings card.
         screenLockAdminCard = addCard(content, "הרשאת מנהל מכשיר");
+        // Reduce horizontal inner padding by half so the explanation uses the card width better.
+        screenLockAdminCard.setPadding(dp(7), dp(8), dp(8), dp(12));
         TextView explanation = textView(
                 "ההרשאה נדרשת רק אם רוצים כיבוי מסך ונעילת המכשיר מיד בתום פעילות השומר מסך.\n"
                 + "ללא ההרשאה, בתום הזמן תסתיים תצוגת שומר המסך בלבד. "
@@ -380,11 +382,11 @@ public class SettingsActivity extends Activity {
         spinner.setSelection(selected, false);
 
         LinearLayout.LayoutParams spinnerParams =
-                new LinearLayout.LayoutParams(spinnerWidth, dp(44));
+                new LinearLayout.LayoutParams(spinnerWidth, dp(38));
         spinnerParams.leftMargin = dp(12);
         spinnerParams.rightMargin = dp(6);
         row.addView(spinner, 0, spinnerParams);
-        card.addView(row, new LinearLayout.LayoutParams(-1, dp(48)));
+        card.addView(row, new LinearLayout.LayoutParams(-1, dp(42)));
 
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             private boolean initialSelectionPending = true;
@@ -424,6 +426,7 @@ public class SettingsActivity extends Activity {
     private void styleSpinnerText(TextView view, boolean selected, boolean selectedOption) {
         view.setTextColor(ON_SURFACE);
         view.setTextSize(14);
+        view.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
         view.setIncludeFontPadding(false);
         view.setGravity(Gravity.CENTER);
         view.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
@@ -434,8 +437,8 @@ public class SettingsActivity extends Activity {
             view.setPadding(dp(4), 0, dp(4), 0);
         } else {
             view.setPadding(dp(4), 0, dp(4), 0);
-            view.setHeight(dp(40));
-            view.setMinHeight(dp(40));
+            view.setHeight(dp(32));
+            view.setMinHeight(dp(32));
             view.setBackgroundColor(selectedOption
                     ? Color.rgb(234, 238, 251) : Color.WHITE);
         }
