@@ -156,13 +156,12 @@ public class SettingsActivity extends Activity {
                 new String[]{"רגיל", "בינוני", "מודגש"},
                 new String[]{"0", "1", "2"}, "fontWeight");
         addSpinner(font, "סוג",
-                new String[]{"כתב רגיל", "כתב דק", "כתב צר", "כתב צר ודק",
-                        "כתב בינוני", "כתב שחור", "כתב ספר", "כתב יד",
-                        "אותיות קטנות", "כתב מעוגל"},
-                new String[]{"sans-serif", "sans-serif-light", "sans-serif-condensed",
-                        "sans-serif-condensed-light", "sans-serif-medium",
-                        "sans-serif-black", "serif", "casual",
-                        "sans-serif-smallcaps", "sans-serif-rounded"}, "fontFamily");
+                new String[]{"Sans Serif", "Serif", "Monospace", "Casual", "Cursive",
+                        "Sans Serif Condensed", "Sans Serif Rounded", "Serif Slab",
+                        "Sans Serif Small Caps", "Serif Condensed"},
+                new String[]{"sans-serif", "serif", "monospace", "casual", "cursive",
+                        "sans-serif-condensed", "sans-serif-rounded", "serif-monospace",
+                        "sans-serif-smallcaps", "serif-condensed"}, "fontFamily");
 
         clockDateCard = addCard(content, "תצוגת שעון ותאריך");
         LinearLayout clock = clockDateCard;
@@ -207,7 +206,7 @@ public class SettingsActivity extends Activity {
                 + "ללא ההרשאה, בתום הזמן תסתיים תצוגת שומר המסך בלבד. "
                 + "כיבוי המסך ונעילת המכשיר ימשיכו להתבצע לפי הגדרות המכשיר.",
                 16, MUTED);
-        explanation.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        explanation.setGravity(Gravity.CENTER);
         explanation.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
         explanation.setTextDirection(View.TEXT_DIRECTION_RTL);
         explanation.setLineSpacing(dp(1), 1f);
@@ -335,16 +334,16 @@ public class SettingsActivity extends Activity {
         // The spinner stays on the left while every Hebrew label shares the same right edge.
         row.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         row.setTextDirection(View.TEXT_DIRECTION_RTL);
-        row.setPadding(dp(4), dp(2), dp(4), dp(2));
+        row.setPadding(dp(4), dp(1), dp(4), dp(1));
 
-        TextView l = textView(label, 18, Color.rgb(52, 58, 79));
+        TextView l = textView(label, 16, Color.rgb(52, 58, 79));
         l.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         l.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
         l.setTextDirection(View.TEXT_DIRECTION_RTL);
         row.addView(l, new LinearLayout.LayoutParams(0, dp(42), 1f));
 
         int selected = selectedIndex(key, values);
-        int spinnerWidth = dp(112);
+        int spinnerWidth = dropdownWidthForOptions(names);
         Spinner spinner = new Spinner(this);
         spinner.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         spinner.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
@@ -416,19 +415,17 @@ public class SettingsActivity extends Activity {
 
     private void styleSpinnerText(TextView view, boolean selected, boolean selectedOption) {
         view.setTextColor(ON_SURFACE);
-        view.setTextSize(18);
-        view.setGravity(selected
-                ? Gravity.RIGHT | Gravity.CENTER_VERTICAL
-                : Gravity.CENTER);
+        view.setTextSize(14);
+        view.setGravity(Gravity.CENTER);
         view.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         view.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
         view.setTextDirection(View.TEXT_DIRECTION_RTL);
         view.setSingleLine(true);
         if (selected) {
-            view.setPadding(dp(8), 0, dp(8), 0);
+            view.setPadding(dp(4), 0, dp(4), 0);
         } else {
-            view.setPadding(dp(8), 0, dp(8), 0);
-            view.setMinHeight(dp(44));
+            view.setPadding(dp(4), 0, dp(4), 0);
+            view.setMinHeight(dp(36));
             view.setBackgroundColor(selectedOption
                     ? Color.rgb(234, 238, 251) : Color.WHITE);
         }
@@ -441,7 +438,8 @@ public class SettingsActivity extends Activity {
         for (String name : names) {
             if (name != null) longestText = Math.max(longestText, paint.measureText(name));
         }
-        int contentWidth = (int) Math.ceil(longestText) + dp(44);
+        paint.setTextSize(14f * getResources().getDisplayMetrics().scaledDensity);
+        int contentWidth = (int) Math.ceil(longestText) + dp(24);
         int minimumWidth = dp(88);
         // Preserve room for the label on narrow screens while fitting the longest option when possible.
         int screenLimit = getResources().getDisplayMetrics().widthPixels
