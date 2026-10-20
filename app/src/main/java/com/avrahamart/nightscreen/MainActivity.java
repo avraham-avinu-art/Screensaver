@@ -3,6 +3,7 @@ package com.avrahamart.nightscreen;
 import android.app.Activity;
 import android.animation.ObjectAnimator;
 import android.app.NotificationManager;
+import android.app.admin.DevicePolicyManager;
 import android.content.SharedPreferences;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -50,8 +51,11 @@ import java.util.Locale;
 public class MainActivity extends Activity {
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Runnable autoOffRunnable = this::exitApplicationAtSelectedTime;
+    private boolean screenSleepPending = false;
     private boolean deviceEventsRegistered = false;
     private long activityDeadlineElapsedRealtime = 0L;
+    private DevicePolicyManager devicePolicyManager;
+    private ComponentName screenLockAdminComponent;
     private String lastScheduledDurationValue = null;
     private long settingsOpenedElapsedRealtime = 0L;
     private final BroadcastReceiver deviceStateReceiver = new BroadcastReceiver() {
@@ -63,6 +67,8 @@ public class MainActivity extends Activity {
                 if ("charging".equals(getString("screenSaverDuration", "0"))) {
                     scheduleAutoOff();
                 }
+            } else if (Intent.ACTION_SCREEN_ON.equals(action) && screenSleepPending) {
+                wakeSaverDisplay();
             }
         }
     };
@@ -191,7 +197,13 @@ public class MainActivity extends Activity {
                 applySettings();
             }
 
-            scheduleAutoOff();
+            if (screenSleepPending) {
+                if (isScreenInteractive()) wakeSaverDisplay();
+                else getWindow().clearFlags(
+                        android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            } else {
+                scheduleAutoOff();
+            }
             hideSystemUi();
             handler.removeCallbacks(ticker);
             handler.post(ticker);
@@ -893,8 +905,10 @@ public class MainActivity extends Activity {
 
         // Layout changes, media refreshes and returning from system settings must not
         // restart an already running inactivity countdown.
+        if (screenSleepPending && !restartCountdown) return;
         if (restartCountdown) {
             activityDeadlineElapsedRealtime = 0L;
+            screenSleepPending = false;
         }
 
         if ("device".equals(value)) {
@@ -944,14 +958,70 @@ public class MainActivity extends Activity {
     }
 
     private void exitApplicationAtSelectedTime() {
-        if (isFinishing()) return;
+        if (isFinishing() || screenSleepPending) return;
         handler.removeCallbacks(autoOffRunnable);
         activityDeadlineElapsedRealtime = 0L;
         getWindow().clearFlags(
                 android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        // End the screensaver task and let Android's normal screen timeout and lock
-        // policy take over. No device-admin or force-lock permission is needed.
-        finishAffinity();
+
+        // Without the optional device-admin permission, only end the screensaver.
+        // Android's configured screen timeout and lock policy remain in control.
+        if (!isScreenLockAdminActive()) {
+            finishAffinity();
+            return;
+        }
+
+        // When explicitly enabled by the user, lock the device at the chosen time.
+        screenSleepPending = true;
+        try {
+            if (devicePolicyManager == null) {
+                devicePolicyManager = (DevicePolicyManager) getSystemService(
+                        Context.DEVICE_POLICY_SERVICE);
+            }
+            if (devicePolicyManager == null) throw new IllegalStateException("Device policy unavailable");
+            devicePolicyManager.lockNow();
+        } catch (Throwable ignored) {
+            screenSleepPending = false;
+            finishAffinity();
+        }
+    }
+
+    private boolean isScreenLockAdminActive() {
+        try {
+            if (devicePolicyManager == null) {
+                devicePolicyManager = (DevicePolicyManager) getSystemService(
+                        Context.DEVICE_POLICY_SERVICE);
+            }
+            if (screenLockAdminComponent == null) {
+                screenLockAdminComponent = new ComponentName(
+                        this, ScreenLockAdminReceiver.class);
+            }
+            return devicePolicyManager != null
+                    && devicePolicyManager.isAdminActive(screenLockAdminComponent);
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    private boolean isScreenInteractive() {
+        try {
+            android.os.PowerManager power = (android.os.PowerManager)
+                    getSystemService(POWER_SERVICE);
+            return power != null && power.isInteractive();
+        } catch (Throwable ignored) {
+            return true;
+        }
+    }
+
+    private void wakeSaverDisplay() {
+        if (!screenSleepPending) return;
+        screenSleepPending = false;
+        scheduleAutoOff(true);
+        showSettingsButtonForFiveSeconds();
+        if (stageView != null) {
+            stageView.post(() -> updateScreenPositions(
+                    stageView, clockBlockView, mediaHolderView));
+        }
     }
 
     private boolean isDeviceCharging() {
@@ -1004,6 +1074,7 @@ public class MainActivity extends Activity {
     @Override
     public boolean dispatchTouchEvent(android.view.MotionEvent event) {
         if (event.getAction() == android.view.MotionEvent.ACTION_DOWN) {
+            if (screenSleepPending) wakeSaverDisplay();
             if (stageView != null && stageView.getHeight() > 0) {
                 float localY = event.getY() - stageView.getTop();
                 if (localY >= 0 && localY <= stageView.getHeight() / 2f) {
@@ -1016,6 +1087,7 @@ public class MainActivity extends Activity {
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (screenSleepPending) wakeSaverDisplay();
         if (keyCode != KeyEvent.KEYCODE_BACK) {
             showSettingsButtonForFiveSeconds();
         }
@@ -1719,6 +1791,9 @@ public class MainActivity extends Activity {
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
+        if (hasFocus && screenSleepPending && isScreenInteractive()) {
+            wakeSaverDisplay();
+        }
         if (hasFocus && !settingsDialogOpen) {
             hideSystemUi();
         }
