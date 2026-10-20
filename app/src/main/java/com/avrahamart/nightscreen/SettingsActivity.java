@@ -40,6 +40,7 @@ public class SettingsActivity extends Activity {
 
     private SharedPreferences prefs;
     private LinearLayout content;
+    private LinearLayout clockDateCard;
     private LinearLayout notificationAccessCard;
     private LinearLayout screenLockAdminCard;
     private LinearLayout currentCard;
@@ -154,7 +155,8 @@ public class SettingsActivity extends Activity {
                 new String[]{"Sans", "Monospace", "Serif"},
                 new String[]{"sans-serif", "monospace", "serif"}, "fontFamily");
 
-        LinearLayout clock = addCard(content, "תצוגת שעון ותאריך");
+        clockDateCard = addCard(content, "תצוגת שעון ותאריך");
+        LinearLayout clock = clockDateCard;
         addSpinner(clock, "גודל",
                 new String[]{"קטן", "בינוני", "גדול", "גדול מאוד"},
                 new String[]{"48", "60", "72", "84"}, "clockDateSize");
@@ -446,6 +448,7 @@ public class SettingsActivity extends Activity {
         } else if (notificationAccessCard == null && content != null) {
             notificationAccessCard = addNotificationAccessCard(content);
         }
+        positionPermissionCards();
     }
 
     private void updateScreenLockAdminCardVisibility() {
@@ -455,6 +458,7 @@ public class SettingsActivity extends Activity {
         if (!needsAdmin || isScreenLockAdminActive()) {
             removeCard(screenLockAdminCard);
             screenLockAdminCard = null;
+            positionPermissionCards();
             return;
         }
         if (screenLockAdminCard != null) return;
@@ -478,6 +482,23 @@ public class SettingsActivity extends Activity {
         params.gravity = Gravity.CENTER_HORIZONTAL;
         screenLockAdminCard.addView(enable, params);
         enable.setOnClickListener(v -> requestScreenLockAdmin());
+        positionPermissionCards();
+    }
+
+    private void positionPermissionCards() {
+        if (content == null || clockDateCard == null) return;
+        int clockIndex = content.indexOfChild(clockDateCard);
+        if (clockIndex < 0) return;
+
+        int insertAt = clockIndex + 1;
+        if (notificationAccessCard != null && notificationAccessCard.getParent() == content) {
+            content.removeView(notificationAccessCard);
+            content.addView(notificationAccessCard, insertAt++);
+        }
+        if (screenLockAdminCard != null && screenLockAdminCard.getParent() == content) {
+            content.removeView(screenLockAdminCard);
+            content.addView(screenLockAdminCard, insertAt);
+        }
     }
 
     private boolean hasNotificationAccess() {
