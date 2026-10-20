@@ -156,8 +156,8 @@ public class SettingsActivity extends Activity {
                 new String[]{"רגיל", "בינוני", "מודגש"},
                 new String[]{"0", "1", "2"}, "fontWeight");
         addSpinner(font, "סוג",
-                new String[]{"Sans Serif", "Serif", "Monospace", "Casual", "Cursive",
-                        "Sans Serif Condensed", "Sans Serif Rounded", "Serif Slab",
+                new String[]{"Sans Serif", "Serif", "Sans Serif Light", "Casual", "Cursive",
+                        "Sans Serif Thin", "Sans Serif Rounded", "Sans Serif Black",
                         "Sans Serif Small Caps", "Serif Condensed"},
                 new String[]{"sans-serif", "serif", "sans-serif-light", "casual", "cursive",
                         "sans-serif-thin", "sans-serif-rounded", "sans-serif-black",
