@@ -441,9 +441,11 @@ public class SettingsActivity extends Activity {
     private void styleSpinnerText(TextView view, boolean selected, boolean selectedOption) {
         // Use one identical text style for the closed spinner and every dropdown option.
         view.setTextColor(ON_SURFACE);
-        view.setTextSize(16);
+        // Dropdown options need to be visibly larger and separated; keep the closed
+        // spinner value aligned with the standard settings-label typography.
+        view.setTextSize(selected ? 16 : 18);
         view.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
-        view.setIncludeFontPadding(false);
+        view.setIncludeFontPadding(!selected);
         view.setGravity(Gravity.CENTER);
         view.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         view.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
@@ -451,22 +453,23 @@ public class SettingsActivity extends Activity {
         view.setSingleLine(true);
         view.setMinHeight(0);
         view.setMinimumHeight(0);
-        view.setPadding(dp(3), 0, dp(3), 0);
         if (selected) {
+            view.setPadding(dp(3), 0, dp(3), 0);
             view.setHeight(dp(34));
         } else {
-            // A fixed compact row height avoids theme defaults adding vertical gaps.
-            view.setHeight(dp(24));
+            // Taller dropdown rows, with breathing room above and below each option.
+            view.setPadding(dp(8), dp(8), dp(8), dp(8));
+            view.setHeight(dp(44));
             view.setBackgroundColor(selectedOption
                     ? Color.rgb(234, 238, 251) : Color.WHITE);
             view.setLayoutParams(new android.widget.AbsListView.LayoutParams(
-                    -1, dp(22)));
+                    -1, dp(44)));
         }
     }
 
     private int dropdownWidthForOptions(String[] names) {
         Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        paint.setTextSize(16f * getResources().getDisplayMetrics().scaledDensity);
+        paint.setTextSize(18f * getResources().getDisplayMetrics().scaledDensity);
         float longestText = 0f;
         for (String name : names) {
             if (name != null) longestText = Math.max(longestText, paint.measureText(name));
