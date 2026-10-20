@@ -207,6 +207,7 @@ public class SettingsActivity extends Activity {
 
         // Optional device-admin card is deliberately the final settings card.
         screenLockAdminCard = addCard(content, "הרשאת מנהל מכשיר");
+        setPermissionCardHeadingTypeface(screenLockAdminCard);
         // Reduce horizontal inner padding by half so the explanation uses the card width better.
         screenLockAdminCard.setPadding(dp(7), dp(8), dp(8), dp(12));
         TextView explanation = textView(
@@ -216,7 +217,7 @@ public class SettingsActivity extends Activity {
                 16, ON_SURFACE);
         explanation.setGravity(Gravity.CENTER);
         explanation.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-        explanation.setTypeface(Typeface.DEFAULT);
+        explanation.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
         explanation.setTextDirection(View.TEXT_DIRECTION_RTL);
         explanation.setLineSpacing(dp(1), 1f);
         explanation.setPadding(0, dp(5), 0, dp(5));
@@ -227,7 +228,7 @@ public class SettingsActivity extends Activity {
         screenLockAdminCard.addView(explanation, explanationParams);
 
         screenLockAdminStatus = textView("", 16, ON_SURFACE);
-        screenLockAdminStatus.setTypeface(Typeface.DEFAULT);
+        screenLockAdminStatus.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
         screenLockAdminStatus.setGravity(Gravity.CENTER);
         screenLockAdminStatus.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         screenLockAdminStatus.setTextDirection(View.TEXT_DIRECTION_RTL);
@@ -336,6 +337,15 @@ public class SettingsActivity extends Activity {
         card.addView(row, new LinearLayout.LayoutParams(-1, dp(48)));
     }
 
+    private void setPermissionCardHeadingTypeface(LinearLayout card) {
+        if (card == null || card.getChildCount() == 0) return;
+        View first = card.getChildAt(0);
+        if (first instanceof TextView) {
+            TextView heading = (TextView) first;
+            heading.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
+        }
+    }
+
     private void addSpinner(LinearLayout card, String label, String[] names,
                             String[] values, String key) {
         LinearLayout row = new LinearLayout(this);
@@ -437,8 +447,8 @@ public class SettingsActivity extends Activity {
             view.setPadding(dp(4), 0, dp(4), 0);
         } else {
             view.setPadding(dp(4), 0, dp(4), 0);
-            view.setHeight(dp(32));
-            view.setMinHeight(dp(32));
+            view.setHeight(dp(27));
+            view.setMinHeight(dp(27));
             view.setBackgroundColor(selectedOption
                     ? Color.rgb(234, 238, 251) : Color.WHITE);
         }
@@ -513,12 +523,14 @@ public class SettingsActivity extends Activity {
 
     private LinearLayout addNotificationAccessCard(LinearLayout parent) {
         LinearLayout card = addCard(parent, "גישה להתראות");
+        setPermissionCardHeadingTypeface(card);
         TextView message = textView(
                 "כדי להציג את נגן המערכת, יש לאפשר גישה להתראות.",
                 16, ON_SURFACE);
         message.setGravity(Gravity.CENTER);
         message.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         message.setTextDirection(View.TEXT_DIRECTION_RTL);
+        message.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
         message.setLineSpacing(dp(1), 1f);
         message.setPadding(0, 0, 0, 0);
         LinearLayout.LayoutParams messageParams = new LinearLayout.LayoutParams(-1, -2);
