@@ -211,7 +211,7 @@ public class SettingsActivity extends Activity {
                 "ההרשאה נדרשת רק אם רוצים כיבוי מסך ונעילת המכשיר מיד בתום פעילות השומר מסך.\n"
                 + "ללא ההרשאה, בתום הזמן תסתיים תצוגת שומר המסך בלבד. "
                 + "כיבוי המסך ונעילת המכשיר ימשיכו להתבצע לפי הגדרות המכשיר.",
-                16, MUTED);
+                16, ON_SURFACE);
         explanation.setGravity(Gravity.CENTER);
         explanation.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         explanation.setTypeface(Typeface.DEFAULT);
