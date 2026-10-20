@@ -217,7 +217,7 @@ public class SettingsActivity extends Activity {
                 16, ON_SURFACE);
         explanation.setGravity(Gravity.CENTER);
         explanation.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-        explanation.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
+        explanation.setTypeface(Typeface.create("sans-serif-light", Typeface.NORMAL));
         explanation.setTextDirection(View.TEXT_DIRECTION_RTL);
         explanation.setLineSpacing(dp(1), 1f);
         explanation.setPadding(0, dp(5), 0, dp(5));
@@ -228,7 +228,7 @@ public class SettingsActivity extends Activity {
         screenLockAdminCard.addView(explanation, explanationParams);
 
         screenLockAdminStatus = textView("", 16, ON_SURFACE);
-        screenLockAdminStatus.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
+        screenLockAdminStatus.setTypeface(Typeface.create("sans-serif-light", Typeface.NORMAL));
         screenLockAdminStatus.setGravity(Gravity.CENTER);
         screenLockAdminStatus.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         screenLockAdminStatus.setTextDirection(View.TEXT_DIRECTION_RTL);
@@ -342,7 +342,7 @@ public class SettingsActivity extends Activity {
         View first = card.getChildAt(0);
         if (first instanceof TextView) {
             TextView heading = (TextView) first;
-            heading.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
+            heading.setTypeface(Typeface.create("sans-serif-light", Typeface.NORMAL));
         }
     }
 
@@ -371,14 +371,17 @@ public class SettingsActivity extends Activity {
                 this, android.R.layout.simple_spinner_item, names) {
             @Override public View getView(int position, View convertView,
                                           android.view.ViewGroup parent) {
-                TextView view = (TextView) super.getView(position, convertView, parent);
+                TextView view = convertView instanceof TextView
+                        ? (TextView) convertView : new TextView(SettingsActivity.this);
+                view.setText(names[position]);
                 styleSpinnerText(view, true, false);
                 return view;
             }
 
             @Override public View getDropDownView(int position, View convertView,
                                                   android.view.ViewGroup parent) {
-                TextView view = new TextView(SettingsActivity.this);
+                TextView view = convertView instanceof TextView
+                        ? (TextView) convertView : new TextView(SettingsActivity.this);
                 view.setText(names[position]);
                 styleSpinnerText(view, false, position == selectedIndex(key, values));
                 return view;
@@ -434,6 +437,7 @@ public class SettingsActivity extends Activity {
     }
 
     private void styleSpinnerText(TextView view, boolean selected, boolean selectedOption) {
+        // Use one identical text style for the closed spinner and every dropdown option.
         view.setTextColor(ON_SURFACE);
         view.setTextSize(14);
         view.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
@@ -443,14 +447,18 @@ public class SettingsActivity extends Activity {
         view.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
         view.setTextDirection(View.TEXT_DIRECTION_RTL);
         view.setSingleLine(true);
+        view.setMinHeight(0);
+        view.setMinimumHeight(0);
+        view.setPadding(dp(3), 0, dp(3), 0);
         if (selected) {
-            view.setPadding(dp(4), 0, dp(4), 0);
+            view.setHeight(dp(38));
         } else {
-            view.setPadding(dp(4), 0, dp(4), 0);
-            view.setHeight(dp(27));
-            view.setMinHeight(dp(27));
+            // A fixed compact row height avoids theme defaults adding vertical gaps.
+            view.setHeight(dp(22));
             view.setBackgroundColor(selectedOption
                     ? Color.rgb(234, 238, 251) : Color.WHITE);
+            view.setLayoutParams(new android.widget.AbsListView.LayoutParams(
+                    -1, dp(22)));
         }
     }
 
@@ -530,7 +538,7 @@ public class SettingsActivity extends Activity {
         message.setGravity(Gravity.CENTER);
         message.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         message.setTextDirection(View.TEXT_DIRECTION_RTL);
-        message.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
+        message.setTypeface(Typeface.create("sans-serif-light", Typeface.NORMAL));
         message.setLineSpacing(dp(1), 1f);
         message.setPadding(0, 0, 0, 0);
         LinearLayout.LayoutParams messageParams = new LinearLayout.LayoutParams(-1, -2);
