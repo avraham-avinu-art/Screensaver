@@ -258,7 +258,7 @@ public class SettingsActivity extends Activity {
         params.setMargins(0, 0, 0, dp(5));
         parent.addView(card, params);
 
-        TextView heading = textView(title, 17, Color.rgb(49, 58, 92));
+        TextView heading = textView(title, 18, Color.rgb(49, 58, 92));
         heading.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         heading.setGravity(Gravity.CENTER);
         heading.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
@@ -288,7 +288,7 @@ public class SettingsActivity extends Activity {
         row.setTextDirection(View.TEXT_DIRECTION_RTL);
         row.setPadding(dp(4), 0, dp(4), 0);
 
-        TextView text = textView(label, 16, ON_SURFACE);
+        TextView text = textView(label, 18, ON_SURFACE);
         text.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         text.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
         row.addView(text, new LinearLayout.LayoutParams(0, dp(48), 1f));
