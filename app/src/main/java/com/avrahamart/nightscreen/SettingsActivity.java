@@ -156,12 +156,12 @@ public class SettingsActivity extends Activity {
                 new String[]{"רגיל", "בינוני", "מודגש"},
                 new String[]{"0", "1", "2"}, "fontWeight");
         addSpinner(font, "סוג",
-                new String[]{"Sans Serif", "Serif", "Sans Serif Light", "Casual", "Cursive",
-                        "Sans Serif Thin", "Sans Serif Rounded", "Sans Serif Black",
-                        "Sans Serif Small Caps", "Serif Condensed"},
-                new String[]{"sans-serif", "serif", "sans-serif-light", "casual", "cursive",
-                        "sans-serif-thin", "sans-serif-rounded", "sans-serif-black",
-                        "sans-serif-smallcaps", "serif-condensed"}, "fontFamily");
+                new String[]{"Sans Serif", "Serif", "Monospace", "Casual", "Cursive",
+                        "Sans Serif Condensed", "Sans Serif Rounded", "Sans Serif Small Caps",
+                        "Serif Monospace", "Serif Condensed"},
+                new String[]{"sans-serif", "serif", "monospace", "casual", "cursive",
+                        "sans-serif-condensed", "sans-serif-rounded", "sans-serif-smallcaps",
+                        "serif-monospace", "serif-condensed"}, "fontFamily");
 
         clockDateCard = addCard(content, "תצוגת שעון ותאריך");
         LinearLayout clock = clockDateCard;
