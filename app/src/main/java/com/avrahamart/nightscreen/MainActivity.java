@@ -566,7 +566,6 @@ public class MainActivity extends Activity {
         e.putInt("playerSize", getInt("playerSize", 17));
         e.putInt("fontWeight", getInt("fontWeight", 1));
         String savedFontFamily = getString("fontFamily", "sans-serif");
-        if ("monospace".equals(savedFontFamily)) savedFontFamily = "sans-serif";
         e.putString("fontFamily", savedFontFamily);
 
         e.putBoolean("showGregorian", getBool("showGregorian", true));
