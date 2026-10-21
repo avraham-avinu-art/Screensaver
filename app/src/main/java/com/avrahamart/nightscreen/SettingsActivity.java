@@ -175,9 +175,9 @@ public class SettingsActivity extends Activity {
         addCheck(display, "תאריך לועזי", "showGregorian", true);
         addCheck(display, "הצגת הנגן", "showPlayer", true);
         addDiscreteSlider(display, "זמן פעילות",
-                new String[]{"דקה אחת", "חמש דקות", "ללא כיבוי",
-                        "ללא כיבוי בטעינה", "לפי המכשיר"},
-                new String[]{"1", "5", "0", "charging", "device"}, "screenSaverDuration");
+                new String[]{"לפי המכשיר", "דקה אחת", "חמש דקות",
+                        "ללא כיבוי בטעינה", "ללא כיבוי בכל מצב"},
+                new String[]{"device", "1", "5", "charging", "0"}, "screenSaverDuration");
 
         LinearLayout font = addCard(content, "גופן");
         addColorChoices(font, "צבע",
