@@ -89,41 +89,31 @@ public class SettingsActivity extends Activity {
 
         LinearLayout header = new LinearLayout(this);
         header.setOrientation(LinearLayout.HORIZONTAL);
-        header.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-        header.setGravity(Gravity.CENTER_VERTICAL);
+        header.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        header.setGravity(Gravity.CENTER);
         header.setPadding(dp(2), dp(7), dp(2), dp(12));
-
-        FrameLayout backTarget = new FrameLayout(this);
-        GraphicIcon back = new GraphicIcon(this, "arrow", ON_SURFACE);
-        backTarget.addView(back, new FrameLayout.LayoutParams(dp(18), dp(18), Gravity.CENTER));
-        LinearLayout.LayoutParams backParams = new LinearLayout.LayoutParams(dp(38), dp(42));
-        backParams.leftMargin = dp(10);
-        backTarget.setContentDescription("חזרה");
-        backTarget.setFocusable(true);
-        backTarget.setOnClickListener(v -> finish());
 
         LinearLayout titleBlock = new LinearLayout(this);
         titleBlock.setOrientation(LinearLayout.VERTICAL);
         titleBlock.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        titleBlock.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        titleBlock.setPadding(0, 0, dp(2), 0);
+        titleBlock.setGravity(Gravity.CENTER);
+        titleBlock.setPadding(0, 0, 0, 0);
 
         TextView title = textView("הגדרות", 28, ON_SURFACE);
         title.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-        title.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        title.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
+        title.setGravity(Gravity.CENTER);
+        title.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         title.setTextDirection(View.TEXT_DIRECTION_RTL);
         titleBlock.addView(title, new LinearLayout.LayoutParams(-1, -2));
 
         TextView subtitle = textView("התאמה אישית של השומר מסך", 18, MUTED);
-        subtitle.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        subtitle.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
+        subtitle.setGravity(Gravity.CENTER);
+        subtitle.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         subtitle.setTextDirection(View.TEXT_DIRECTION_RTL);
         subtitle.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
         titleBlock.addView(subtitle, new LinearLayout.LayoutParams(-1, -2));
 
-        header.addView(titleBlock, new LinearLayout.LayoutParams(0, -2, 1f));
-        header.addView(backTarget, backParams);
+        header.addView(titleBlock, new LinearLayout.LayoutParams(-1, -2));
 
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(false);
@@ -454,6 +444,11 @@ public class SettingsActivity extends Activity {
         markers.setOrientation(LinearLayout.HORIZONTAL);
         markers.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         markers.setGravity(Gravity.CENTER_VERTICAL);
+        // Match the SeekBar's usable track bounds, including the thumb's horizontal inset,
+        // so each station marker sits directly under its corresponding thumb position.
+        markers.setPadding(
+                slider.getPaddingLeft() + slider.getThumbOffset(), 0,
+                slider.getPaddingRight() + slider.getThumbOffset(), 0);
         final View[] markerDots = new View[names.length];
         for (int i = 0; i < names.length; i++) {
             View dot = new View(this);
