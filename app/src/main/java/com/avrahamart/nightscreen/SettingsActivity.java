@@ -90,6 +90,7 @@ public class SettingsActivity extends Activity {
         subtitle.setGravity(Gravity.CENTER);
         subtitle.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         subtitle.setTextDirection(View.TEXT_DIRECTION_RTL);
+        subtitle.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
         header.addView(subtitle, new LinearLayout.LayoutParams(-1, -2));
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(false);
@@ -216,7 +217,7 @@ public class SettingsActivity extends Activity {
         screenLockAdminCard = addCard(content, "הרשאת מנהל מכשיר");
         setPermissionCardHeadingTypeface(screenLockAdminCard);
         // Reduce horizontal inner padding by half so the explanation uses the card width better.
-        screenLockAdminCard.setPadding(dp(9), dp(4), dp(13), dp(10));
+        screenLockAdminCard.setPadding(dp(9), dp(9), dp(17), dp(15));
         TextView explanation = textView(
                 "ההרשאה נדרשת רק לכיבוי מסך ונעילת המכשיר מיד בתום פעילות השומר מסך.\n"
                 + "ללא ההרשאה, בתום הזמן תסתיים תצוגת שומר המסך בלבד. "
@@ -261,7 +262,7 @@ public class SettingsActivity extends Activity {
         card.setOrientation(LinearLayout.VERTICAL);
         card.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         card.setTextDirection(View.TEXT_DIRECTION_RTL);
-        card.setPadding(dp(8), dp(4), dp(12), dp(10));
+        card.setPadding(dp(8), dp(9), dp(16), dp(15));
 
         GradientDrawable bg = new GradientDrawable();
         bg.setColor(Color.WHITE);
@@ -277,11 +278,11 @@ public class SettingsActivity extends Activity {
 
         TextView heading = textView(title, 18, Color.rgb(49, 58, 92));
         heading.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        heading.setGravity(Gravity.CENTER);
-        heading.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        heading.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        heading.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
         heading.setTextDirection(View.TEXT_DIRECTION_RTL);
         heading.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
-        heading.setPadding(dp(2), 0, dp(2), 0);
+        heading.setPadding(dp(2), 0, dp(4), 0);
         LinearLayout.LayoutParams headingParams =
                 new LinearLayout.LayoutParams(-1, dp(40));
         headingParams.bottomMargin = dp(1);
@@ -389,9 +390,9 @@ public class SettingsActivity extends Activity {
 
             @Override public View getDropDownView(int position, View convertView,
                                                   android.view.ViewGroup parent) {
-                // Create a fresh row every time. Build 191 did not recycle dropdown
-                // TextViews; reusing convertView can preserve the popup's activated/
-                // pressed state and make the selected row's text disappear on first open.
+                // Disable the popup list scrollbar as well as the screen scrollbar.
+                if (parent instanceof View) ((View) parent).setVerticalScrollBarEnabled(false);
+                // Create a fresh row every time to avoid stale selected/pressed state.
                 TextView view = new TextView(SettingsActivity.this);
                 view.setText(names[position]);
                 styleDropdownOptionText(view, position == selectedIndex(key, values));
