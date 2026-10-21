@@ -216,41 +216,41 @@ public class SettingsActivity extends Activity {
         screenLockAdminCard = addCard(content, "הרשאת מנהל מכשיר");
         setPermissionCardHeadingTypeface(screenLockAdminCard);
         // Reduce horizontal inner padding by half so the explanation uses the card width better.
-        screenLockAdminCard.setPadding(dp(7), dp(4), dp(8), dp(6));
+        screenLockAdminCard.setPadding(dp(9), dp(4), dp(9), dp(6));
         TextView explanation = textView(
-                "ההרשאה נדרשת רק אם רוצים כיבוי מסך ונעילת המכשיר מיד בתום פעילות השומר מסך.\n"
+                "ההרשאה נדרשת רק לכיבוי מסך ונעילת המכשיר מיד בתום פעילות השומר מסך.\n"
                 + "ללא ההרשאה, בתום הזמן תסתיים תצוגת שומר המסך בלבד. "
                 + "כיבוי המסך ונעילת המכשיר ימשיכו להתבצע לפי הגדרות המכשיר.",
-                16, ON_SURFACE);
+                15, ON_SURFACE);
         explanation.setGravity(Gravity.CENTER);
         explanation.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         explanation.setTypeface(Typeface.create("sans-serif-light", Typeface.NORMAL));
         explanation.setTextDirection(View.TEXT_DIRECTION_RTL);
         explanation.setLineSpacing(dp(1), 1f);
-        explanation.setPadding(0, dp(5), 0, dp(5));
+        explanation.setPadding(0, 0, 0, 0);
         LinearLayout.LayoutParams explanationParams =
                 new LinearLayout.LayoutParams(-1, -2);
-        explanationParams.topMargin = dp(1);
-        explanationParams.bottomMargin = dp(1);
+        explanationParams.topMargin = dp(2);
+        explanationParams.bottomMargin = dp(2);
         screenLockAdminCard.addView(explanation, explanationParams);
 
         screenLockAdminStatus = textView("", 16, ON_SURFACE);
-        screenLockAdminStatus.setTypeface(Typeface.create("sans-serif-light", Typeface.NORMAL));
+        screenLockAdminStatus.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         screenLockAdminStatus.setGravity(Gravity.CENTER);
         screenLockAdminStatus.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         screenLockAdminStatus.setTextDirection(View.TEXT_DIRECTION_RTL);
-        screenLockAdminStatus.setPadding(0, dp(5), 0, dp(5));
+        screenLockAdminStatus.setPadding(0, 0, 0, 0);
         LinearLayout.LayoutParams adminStatusParams =
                 new LinearLayout.LayoutParams(-1, -2);
-        adminStatusParams.topMargin = dp(4);
-        adminStatusParams.bottomMargin = dp(4);
+        adminStatusParams.topMargin = dp(6);
+        adminStatusParams.bottomMargin = dp(6);
         screenLockAdminCard.addView(screenLockAdminStatus, adminStatusParams);
 
         screenLockAdminButton = makeActionButton("הפעל הרשאת מנהל מכשיר");
         LinearLayout.LayoutParams adminButtonParams =
                 new LinearLayout.LayoutParams(-2, dp(44));
         adminButtonParams.gravity = Gravity.CENTER_HORIZONTAL;
-        adminButtonParams.topMargin = dp(5);
+        adminButtonParams.topMargin = dp(7);
         screenLockAdminCard.addView(screenLockAdminButton, adminButtonParams);
         screenLockAdminButton.setOnClickListener(v -> requestScreenLockAdmin());
         updateScreenLockAdminCard();
@@ -561,11 +561,11 @@ public class SettingsActivity extends Activity {
     }
 
     private LinearLayout addNotificationAccessCard(LinearLayout parent) {
-        LinearLayout card = addCard(parent, "גישה להתראות");
+        LinearLayout card = addCard(parent, "הרשאת גישה להתראות");
         setPermissionCardHeadingTypeface(card);
         TextView message = textView(
                 "כדי להציג את נגן המערכת, יש לאפשר גישה להתראות.",
-                16, ON_SURFACE);
+                15, ON_SURFACE);
         message.setGravity(Gravity.CENTER);
         message.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         message.setTextDirection(View.TEXT_DIRECTION_RTL);
@@ -581,7 +581,7 @@ public class SettingsActivity extends Activity {
         LinearLayout.LayoutParams params =
                 new LinearLayout.LayoutParams(-2, dp(44));
         params.gravity = Gravity.CENTER_HORIZONTAL;
-        params.topMargin = dp(8);
+        params.topMargin = dp(12);
         card.addView(grant, params);
         grant.setOnClickListener(v -> openNotificationAccessSettings());
         return card;
@@ -657,7 +657,7 @@ public class SettingsActivity extends Activity {
         boolean active = isScreenLockAdminActive();
         screenLockAdminStatus.setText(active
                 ? "ההרשאה הופעלה, וניתן לנעול את המסך בתום זמן הפעילות."
-                : "ההרשאה עדיין לא הופעלה, ולכן כיום כיבוי המסך והנעילה הם רק לפי הגדרות המכשיר.");
+                : "ההרשאה עדיין לא הופעלה, ולכן כיבוי המסך והנעילה הם רק לפי הגדרות המכשיר.");
         screenLockAdminButton.setText(active
                 ? "הרשאת מנהל מכשיר פעילה"
                 : "הפעל הרשאת מנהל מכשיר");
@@ -692,7 +692,7 @@ public class SettingsActivity extends Activity {
             intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN,
                     screenLockAdminComponent);
             intent.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION,
-                    "ההרשאה נדרשת רק אם רוצים כיבוי מסך ונעילת המכשיר מיד בתום פעילות השומר מסך. "
+                    "ההרשאה נדרשת רק לכיבוי מסך ונעילת המכשיר מיד בתום פעילות השומר מסך. "
                     + "ללא ההרשאה, כיבוי המסך ונעילת המכשיר ימשיכו להתבצע לפי הגדרות המכשיר.");
             startActivityForResult(intent, REQUEST_ENABLE_SCREEN_LOCK_ADMIN);
         } catch (Throwable ex) {
@@ -723,7 +723,7 @@ public class SettingsActivity extends Activity {
         Button button = new Button(this);
         button.setText(text);
         button.setAllCaps(false);
-        button.setTextSize(15);
+        button.setTextSize(16);
         button.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         button.setTextColor(Color.WHITE);
         button.setMinWidth(0);
