@@ -440,30 +440,6 @@ public class SettingsActivity extends Activity {
         sliderParams.topMargin = dp(1);
         block.addView(slider, sliderParams);
 
-        LinearLayout markers = new LinearLayout(this);
-        markers.setOrientation(LinearLayout.HORIZONTAL);
-        markers.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        markers.setGravity(Gravity.CENTER_VERTICAL);
-        // Match the SeekBar's usable track bounds, including the thumb's horizontal inset,
-        // so each station marker sits directly under its corresponding thumb position.
-        markers.setPadding(
-                slider.getPaddingLeft() + slider.getThumbOffset(), 0,
-                slider.getPaddingRight() + slider.getThumbOffset(), 0);
-        final View[] markerDots = new View[names.length];
-        for (int i = 0; i < names.length; i++) {
-            View dot = new View(this);
-            GradientDrawable dotShape = new GradientDrawable();
-            dotShape.setShape(GradientDrawable.OVAL);
-            dotShape.setColor(i == initial ? ACCENT : TRACK);
-            dot.setBackground(dotShape);
-            markerDots[i] = dot;
-            LinearLayout holder = new LinearLayout(this);
-            holder.setGravity(Gravity.CENTER);
-            holder.addView(dot, new LinearLayout.LayoutParams(dp(i == initial ? 7 : 5), dp(i == initial ? 7 : 5)));
-            markers.addView(holder, new LinearLayout.LayoutParams(0, dp(12), 1f));
-        }
-        block.addView(markers, new LinearLayout.LayoutParams(-1, dp(12)));
-
         LinearLayout endpoints = new LinearLayout(this);
         endpoints.setOrientation(LinearLayout.HORIZONTAL);
         endpoints.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
@@ -485,17 +461,6 @@ public class SettingsActivity extends Activity {
                                                     boolean fromUser) {
                 int safeProgress = Math.max(0, Math.min(progress, names.length - 1));
                 chosenValue.setText(names[safeProgress]);
-                for (int i = 0; i < markerDots.length; i++) {
-                    GradientDrawable dotShape = new GradientDrawable();
-                    dotShape.setShape(GradientDrawable.OVAL);
-                    dotShape.setColor(i == safeProgress ? ACCENT : TRACK);
-                    markerDots[i].setBackground(dotShape);
-                    LinearLayout.LayoutParams dotParams =
-                            (LinearLayout.LayoutParams) markerDots[i].getLayoutParams();
-                    dotParams.width = dp(i == safeProgress ? 7 : 5);
-                    dotParams.height = dp(i == safeProgress ? 7 : 5);
-                    markerDots[i].setLayoutParams(dotParams);
-                }
                 if (fromUser) persistOption(key, values[safeProgress]);
             }
             @Override public void onStartTrackingTouch(SeekBar seekBar) {}
