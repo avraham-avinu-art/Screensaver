@@ -389,11 +389,25 @@ public class SettingsActivity extends Activity {
 
             @Override public View getDropDownView(int position, View convertView,
                                                   android.view.ViewGroup parent) {
-                TextView view = convertView instanceof TextView
-                        ? (TextView) convertView : new TextView(SettingsActivity.this);
+                FrameLayout row;
+                TextView view;
+                if (convertView instanceof FrameLayout
+                        && ((FrameLayout) convertView).getChildCount() > 0
+                        && ((FrameLayout) convertView).getChildAt(0) instanceof TextView) {
+                    row = (FrameLayout) convertView;
+                    view = (TextView) row.getChildAt(0);
+                } else {
+                    row = new FrameLayout(SettingsActivity.this);
+                    row.setBackgroundColor(Color.WHITE);
+                    view = new TextView(SettingsActivity.this);
+                    row.addView(view, new FrameLayout.LayoutParams(
+                            -1, dp(30), Gravity.CENTER_VERTICAL));
+                }
+                row.setBackgroundColor(Color.WHITE);
+                row.setLayoutParams(new android.widget.AbsListView.LayoutParams(-1, dp(32)));
                 view.setText(names[position]);
-                styleSpinnerText(view, false, position == selectedIndex(key, values));
-                return view;
+                styleDropdownOptionText(view, position == selectedIndex(key, values));
+                return row;
             }
         };
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
@@ -446,13 +460,10 @@ public class SettingsActivity extends Activity {
     }
 
     private void styleSpinnerText(TextView view, boolean selected, boolean selectedOption) {
-        // Use one identical text style for the closed spinner and every dropdown option.
         view.setTextColor(ON_SURFACE);
-        // Dropdown options need to be visibly larger and separated; keep the closed
-        // spinner value aligned with the standard settings-label typography.
-        view.setTextSize(selected ? 16 : 18);
+        view.setTextSize(16);
         view.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
-        view.setIncludeFontPadding(!selected);
+        view.setIncludeFontPadding(false);
         view.setGravity(Gravity.CENTER);
         view.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         view.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
@@ -460,28 +471,36 @@ public class SettingsActivity extends Activity {
         view.setSingleLine(true);
         view.setMinHeight(0);
         view.setMinimumHeight(0);
-        if (selected) {
-            view.setPadding(dp(3), 0, dp(3), 0);
-            view.setHeight(dp(34));
-        } else {
-            // Taller dropdown rows, with breathing room above and below each option.
-            view.setPadding(dp(8), dp(8), dp(8), dp(8));
-            view.setHeight(dp(44));
-            view.setBackgroundColor(selectedOption
-                    ? Color.rgb(234, 238, 251) : Color.WHITE);
-            view.setLayoutParams(new android.widget.AbsListView.LayoutParams(
-                    -1, dp(44)));
-        }
+        view.setPadding(dp(2), 0, dp(2), 0);
+        view.setHeight(dp(30));
+    }
+
+    private void styleDropdownOptionText(TextView view, boolean selectedOption) {
+        view.setTextColor(ON_SURFACE);
+        view.setTextSize(16);
+        view.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
+        view.setIncludeFontPadding(false);
+        view.setGravity(Gravity.CENTER);
+        view.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        view.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
+        view.setTextDirection(View.TEXT_DIRECTION_RTL);
+        view.setSingleLine(true);
+        view.setMinHeight(0);
+        view.setMinimumHeight(0);
+        view.setPadding(dp(3), dp(2), dp(3), dp(2));
+        view.setBackgroundColor(selectedOption
+                ? Color.rgb(234, 238, 251) : Color.WHITE);
+        view.setLayoutParams(new FrameLayout.LayoutParams(-1, dp(30), Gravity.CENTER_VERTICAL));
     }
 
     private int dropdownWidthForOptions(String[] names) {
         Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        paint.setTextSize(18f * getResources().getDisplayMetrics().scaledDensity);
+        paint.setTextSize(16f * getResources().getDisplayMetrics().scaledDensity);
         float longestText = 0f;
         for (String name : names) {
             if (name != null) longestText = Math.max(longestText, paint.measureText(name));
         }
-        int contentWidth = (int) Math.ceil(longestText) + dp(24);
+        int contentWidth = (int) Math.ceil(longestText) + dp(12);
         int minimumWidth = dp(88);
         // Preserve room for the label on narrow screens while fitting the longest option when possible.
         int screenLimit = getResources().getDisplayMetrics().widthPixels
