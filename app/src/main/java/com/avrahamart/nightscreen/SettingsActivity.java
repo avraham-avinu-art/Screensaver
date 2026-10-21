@@ -438,6 +438,8 @@ public class SettingsActivity extends Activity {
         LinearLayout.LayoutParams sliderParams =
                 new LinearLayout.LayoutParams(-1, dp(32));
         sliderParams.topMargin = dp(1);
+        sliderParams.leftMargin = dp(8);
+        sliderParams.rightMargin = dp(7);
         block.addView(slider, sliderParams);
 
         LinearLayout endpoints = new LinearLayout(this);
@@ -1210,15 +1212,18 @@ public class SettingsActivity extends Activity {
                     canvas.drawLine(3.5f, 9f, 20.5f, 9f, paint);
                     paint.setStyle(Paint.Style.FILL);
                     paint.setTextSize(7f);
-                    canvas.drawText("ע", 7f, 17f, paint);
-                    canvas.drawText("א", 14f, 17f, paint);
+                    paint.setTextAlign(Paint.Align.CENTER);
+                    canvas.drawText("א", 12f, 17f, paint);
+                    paint.setTextAlign(Paint.Align.LEFT);
                     break;
                 case "gregorian-date":
                     canvas.drawRoundRect(new RectF(3f, 4f, 21f, 20f), 2f, 2f, paint);
                     canvas.drawLine(3.5f, 9f, 20.5f, 9f, paint);
                     paint.setStyle(Paint.Style.FILL);
                     paint.setTextSize(7f);
-                    canvas.drawText("31", 6f, 17f, paint);
+                    paint.setTextAlign(Paint.Align.CENTER);
+                    canvas.drawText("31", 12f, 17f, paint);
+                    paint.setTextAlign(Paint.Align.LEFT);
                     break;
                 case "media-toggle":
                     canvas.drawRoundRect(new RectF(3f, 5f, 21f, 19f), 3f, 3f, paint);
