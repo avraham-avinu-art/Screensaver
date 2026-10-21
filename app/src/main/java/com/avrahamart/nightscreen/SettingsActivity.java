@@ -420,7 +420,7 @@ public class SettingsActivity extends Activity {
         LinearLayout.LayoutParams spinnerParams =
                 new LinearLayout.LayoutParams(spinnerWidth, dp(30));
         spinnerParams.leftMargin = dp(12);
-        spinnerParams.rightMargin = dp(6);
+        spinnerParams.rightMargin = dp(10);
         row.addView(spinner, 0, spinnerParams);
         card.addView(row, new LinearLayout.LayoutParams(-1, dp(30)));
 
