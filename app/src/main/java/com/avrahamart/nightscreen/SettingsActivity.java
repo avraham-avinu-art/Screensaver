@@ -1218,7 +1218,7 @@ public class SettingsActivity extends Activity {
             super(context);
             this.value = value;
             this.selected = selected;
-            setClickable(true);
+            setClickable(false);
         }
 
         void setSwatchSelected(boolean selected) {
