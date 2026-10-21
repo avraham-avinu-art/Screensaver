@@ -86,14 +86,14 @@ public class SettingsActivity extends Activity {
         title.setTextDirection(View.TEXT_DIRECTION_RTL);
         header.addView(title, new LinearLayout.LayoutParams(-1, -2));
 
-        TextView subtitle = textView("התאמה אישית של השומר מסך", 17, MUTED);
+        TextView subtitle = textView("התאמה אישית של השומר מסך", 20, MUTED);
         subtitle.setGravity(Gravity.CENTER);
         subtitle.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         subtitle.setTextDirection(View.TEXT_DIRECTION_RTL);
         header.addView(subtitle, new LinearLayout.LayoutParams(-1, -2));
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(false);
-        scroll.setVerticalScrollBarEnabled(true);
+        scroll.setVerticalScrollBarEnabled(false);
         scroll.setOverScrollMode(View.OVER_SCROLL_IF_CONTENT_SCROLLS);
         scroll.setClipToPadding(false);
         scroll.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
@@ -123,8 +123,8 @@ public class SettingsActivity extends Activity {
         done.setTextColor(Color.WHITE);
         done.setMinWidth(0);
         done.setMinHeight(0);
-        done.setPadding(dp(9), 0, dp(9), 0);
-        done.setBackground(pillBackground(ACCENT, dp(12)));
+        done.setPadding(dp(14), 0, dp(14), 0);
+        done.setBackground(pillBackground(ACCENT, dp(22)));
         done.setElevation(dp(2));
         LinearLayout.LayoutParams doneParams =
                 new LinearLayout.LayoutParams(-2, dp(50));
@@ -216,7 +216,7 @@ public class SettingsActivity extends Activity {
         screenLockAdminCard = addCard(content, "הרשאת מנהל מכשיר");
         setPermissionCardHeadingTypeface(screenLockAdminCard);
         // Reduce horizontal inner padding by half so the explanation uses the card width better.
-        screenLockAdminCard.setPadding(dp(9), dp(4), dp(9), dp(10));
+        screenLockAdminCard.setPadding(dp(9), dp(4), dp(13), dp(10));
         TextView explanation = textView(
                 "ההרשאה נדרשת רק לכיבוי מסך ונעילת המכשיר מיד בתום פעילות השומר מסך.\n"
                 + "ללא ההרשאה, בתום הזמן תסתיים תצוגת שומר המסך בלבד. "
@@ -234,8 +234,8 @@ public class SettingsActivity extends Activity {
         explanationParams.bottomMargin = dp(2);
         screenLockAdminCard.addView(explanation, explanationParams);
 
-        screenLockAdminStatus = textView("", 17, ON_SURFACE);
-        screenLockAdminStatus.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        screenLockAdminStatus = textView("", 16, ON_SURFACE);
+        screenLockAdminStatus.setTypeface(Typeface.create("sans-serif-light", Typeface.NORMAL));
         screenLockAdminStatus.setGravity(Gravity.CENTER);
         screenLockAdminStatus.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         screenLockAdminStatus.setTextDirection(View.TEXT_DIRECTION_RTL);
@@ -261,7 +261,7 @@ public class SettingsActivity extends Activity {
         card.setOrientation(LinearLayout.VERTICAL);
         card.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         card.setTextDirection(View.TEXT_DIRECTION_RTL);
-        card.setPadding(dp(8), dp(4), dp(8), dp(10));
+        card.setPadding(dp(8), dp(4), dp(12), dp(10));
 
         GradientDrawable bg = new GradientDrawable();
         bg.setColor(Color.WHITE);
@@ -432,7 +432,9 @@ public class SettingsActivity extends Activity {
         spinnerParams.leftMargin = dp(12);
         spinnerParams.rightMargin = dp(10);
         row.addView(spinner, 0, spinnerParams);
-        card.addView(row, new LinearLayout.LayoutParams(-1, dp(35)));
+        LinearLayout.LayoutParams spinnerRowParams = new LinearLayout.LayoutParams(-1, dp(35));
+        spinnerRowParams.bottomMargin = dp(3);
+        card.addView(row, spinnerRowParams);
 
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             private boolean initialSelectionPending = true;
