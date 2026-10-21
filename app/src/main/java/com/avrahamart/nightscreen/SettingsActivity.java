@@ -1264,8 +1264,8 @@ public class SettingsActivity extends Activity {
         }
     }
 
-    private int dp(
-
-}
+    private int dp(int value) {
+        return Math.round(value * getResources().getDisplayMetrics().density);
+    }
 
 }
