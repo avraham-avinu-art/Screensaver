@@ -390,25 +390,30 @@ public class SettingsActivity extends Activity {
             @Override public View getDropDownView(int position, View convertView,
                                                   android.view.ViewGroup parent) {
                 FrameLayout row;
+                View highlight;
                 TextView view;
                 if (convertView instanceof FrameLayout
-                        && ((FrameLayout) convertView).getChildCount() > 0
-                        && ((FrameLayout) convertView).getChildAt(0) instanceof TextView) {
+                        && ((FrameLayout) convertView).getChildCount() >= 2
+                        && ((FrameLayout) convertView).getChildAt(1) instanceof TextView) {
                     row = (FrameLayout) convertView;
-                    view = (TextView) row.getChildAt(0);
+                    highlight = row.getChildAt(0);
+                    view = (TextView) row.getChildAt(1);
                 } else {
                     row = new FrameLayout(SettingsActivity.this);
                     row.setBackgroundColor(Color.WHITE);
+                    highlight = new View(SettingsActivity.this);
+                    row.addView(highlight, new FrameLayout.LayoutParams(
+                            -1, dp(35), Gravity.TOP));
                     view = new TextView(SettingsActivity.this);
                     row.addView(view, new FrameLayout.LayoutParams(
-                            -1, dp(35), Gravity.CENTER_VERTICAL));
+                            -1, dp(35), Gravity.TOP));
                 }
                 boolean selectedOption = position == selectedIndex(key, values);
-                // Apply the selected color to the container, behind the text view.
-                // Keeping the text view transparent prevents the highlight from
-                // masking its own option label.
-                row.setBackgroundColor(selectedOption
+                // Draw the selection background as a sibling underneath the label.
+                // The final 2dp of each 37dp row stays white as the inter-option gap.
+                highlight.setBackgroundColor(selectedOption
                         ? Color.rgb(234, 238, 251) : Color.WHITE);
+                row.setBackgroundColor(Color.WHITE);
                 row.setLayoutParams(new android.widget.AbsListView.LayoutParams(-1, dp(37)));
                 view.setText(names[position]);
                 styleDropdownOptionText(view);
@@ -500,7 +505,7 @@ public class SettingsActivity extends Activity {
 
     private int dropdownWidthForOptions(String[] names) {
         Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        paint.setTextSize(16f * getResources().getDisplayMetrics().scaledDensity);
+        paint.setTextSize(17f * getResources().getDisplayMetrics().scaledDensity);
         float longestText = 0f;
         for (String name : names) {
             if (name != null) longestText = Math.max(longestText, paint.measureText(name));
