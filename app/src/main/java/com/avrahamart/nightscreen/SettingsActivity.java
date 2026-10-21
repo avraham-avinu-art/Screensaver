@@ -71,7 +71,7 @@ public class SettingsActivity extends Activity {
         root.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         root.setTextDirection(View.TEXT_DIRECTION_RTL);
         root.setBackgroundColor(SURFACE);
-        root.setPadding(dp(35), dp(5), dp(35), dp(8));
+        root.setPadding(dp(30), dp(5), dp(30), dp(8));
 
         LinearLayout header = new LinearLayout(this);
         header.setOrientation(LinearLayout.VERTICAL);
