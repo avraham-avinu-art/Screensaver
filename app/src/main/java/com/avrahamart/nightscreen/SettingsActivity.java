@@ -124,7 +124,7 @@ public class SettingsActivity extends Activity {
         done.setTextColor(Color.WHITE);
         done.setMinWidth(0);
         done.setMinHeight(0);
-        done.setPadding(dp(14), 0, dp(14), 0);
+        done.setPadding(dp(24), 0, dp(24), 0);
         done.setBackground(pillBackground(ACCENT, dp(22)));
         done.setElevation(dp(2));
         LinearLayout.LayoutParams doneParams =
@@ -262,7 +262,7 @@ public class SettingsActivity extends Activity {
         card.setOrientation(LinearLayout.VERTICAL);
         card.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         card.setTextDirection(View.TEXT_DIRECTION_RTL);
-        card.setPadding(dp(8), dp(9), dp(16), dp(15));
+        card.setPadding(dp(8), dp(9), dp(22), dp(15));
 
         GradientDrawable bg = new GradientDrawable();
         bg.setColor(Color.WHITE);
@@ -289,10 +289,10 @@ public class SettingsActivity extends Activity {
         card.addView(heading, headingParams);
 
         View separator = new View(this);
-        separator.setBackgroundColor(OUTLINE);
+        separator.setBackgroundColor(CARD_OUTLINE);
         LinearLayout.LayoutParams separatorParams =
                 new LinearLayout.LayoutParams(-1, dp(1));
-        separatorParams.setMargins(dp(2), dp(1), dp(2), dp(10));
+        separatorParams.setMargins(dp(6), dp(1), dp(6), dp(10));
         card.addView(separator, separatorParams);
         return card;
     }
@@ -475,7 +475,7 @@ public class SettingsActivity extends Activity {
 
     private void styleDropdownOptionText(TextView view, boolean selectedOption) {
         view.setTextColor(ON_SURFACE);
-        view.setTextSize(17);
+        view.setTextSize(15);
         view.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
         view.setIncludeFontPadding(false);
         view.setGravity(Gravity.CENTER);
@@ -494,7 +494,7 @@ public class SettingsActivity extends Activity {
 
     private int dropdownWidthForOptions(String[] names) {
         Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        paint.setTextSize(17f * getResources().getDisplayMetrics().scaledDensity);
+        paint.setTextSize(15f * getResources().getDisplayMetrics().scaledDensity);
         float longestText = 0f;
         for (String name : names) {
             if (name != null) longestText = Math.max(longestText, paint.measureText(name));
