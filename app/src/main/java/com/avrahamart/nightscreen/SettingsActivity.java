@@ -389,35 +389,14 @@ public class SettingsActivity extends Activity {
 
             @Override public View getDropDownView(int position, View convertView,
                                                   android.view.ViewGroup parent) {
-                FrameLayout row;
-                View highlight;
-                TextView view;
-                if (convertView instanceof FrameLayout
-                        && ((FrameLayout) convertView).getChildCount() >= 2
-                        && ((FrameLayout) convertView).getChildAt(1) instanceof TextView) {
-                    row = (FrameLayout) convertView;
-                    highlight = row.getChildAt(0);
-                    view = (TextView) row.getChildAt(1);
-                } else {
-                    row = new FrameLayout(SettingsActivity.this);
-                    row.setBackgroundColor(Color.WHITE);
-                    highlight = new View(SettingsActivity.this);
-                    row.addView(highlight, new FrameLayout.LayoutParams(
-                            -1, dp(35), Gravity.TOP));
-                    view = new TextView(SettingsActivity.this);
-                    row.addView(view, new FrameLayout.LayoutParams(
-                            -1, dp(35), Gravity.TOP));
-                }
-                boolean selectedOption = position == selectedIndex(key, values);
-                // Draw the selection background as a sibling underneath the label.
-                // The final 2dp of each 37dp row stays white as the inter-option gap.
-                highlight.setBackgroundColor(selectedOption
-                        ? Color.rgb(234, 238, 251) : Color.WHITE);
-                row.setBackgroundColor(Color.WHITE);
-                row.setLayoutParams(new android.widget.AbsListView.LayoutParams(-1, dp(37)));
+                TextView view = convertView instanceof TextView
+                        ? (TextView) convertView : new TextView(SettingsActivity.this);
                 view.setText(names[position]);
-                styleDropdownOptionText(view);
-                return row;
+                styleDropdownOptionText(view, position == selectedIndex(key, values));
+                // Keep a 2dp white gap between options while the option text/background
+                // remain on one TextView, as in the last known-good build (191).
+                view.setLayoutParams(new android.widget.AbsListView.LayoutParams(-1, dp(37)));
+                return view;
             }
         };
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
@@ -487,7 +466,7 @@ public class SettingsActivity extends Activity {
         view.setHeight(dp(35));
     }
 
-    private void styleDropdownOptionText(TextView view) {
+    private void styleDropdownOptionText(TextView view, boolean selectedOption) {
         view.setTextColor(ON_SURFACE);
         view.setTextSize(17);
         view.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
@@ -500,9 +479,10 @@ public class SettingsActivity extends Activity {
         view.setMinHeight(0);
         view.setMinimumHeight(0);
         view.setPadding(dp(3), dp(2), dp(3), dp(2));
-        // The option's highlight lives on the FrameLayout row, not on this text.
-        view.setBackgroundColor(Color.TRANSPARENT);
-        view.setLayoutParams(new FrameLayout.LayoutParams(-1, dp(35), Gravity.CENTER_VERTICAL));
+        // Use the proven single-TextView rendering from build 191; the selection
+        // background is drawn by the same TextView before its text, not by a sibling.
+        view.setBackgroundColor(selectedOption ? Color.rgb(234, 238, 251) : Color.WHITE);
+        view.setHeight(dp(35));
     }
 
     private int dropdownWidthForOptions(String[] names) {
