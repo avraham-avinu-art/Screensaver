@@ -527,7 +527,7 @@ public class SettingsActivity extends Activity {
             item.setOnClickListener(v -> {
                 persistOption(key, values[index]);
                 for (int j = 0; j < swatches.length; j++) {
-                    swatches[j].setSelected(j == index);
+                    swatches[j].setSwatchSelected(j == index);
                     captions[j].setTextColor(j == index ? ACCENT : MUTED);
                 }
             });
@@ -1221,7 +1221,7 @@ public class SettingsActivity extends Activity {
             setClickable(true);
         }
 
-        void setSelected(boolean selected) {
+        void setSwatchSelected(boolean selected) {
             this.selected = selected;
             invalidate();
         }
