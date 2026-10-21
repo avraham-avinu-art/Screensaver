@@ -191,6 +191,10 @@ public class SettingsActivity extends Activity {
                 new String[]{"lower", "bottom"}, "playerPosition");
 
         playerFrameCard = addCard(content, "מסגרת לנגן");
+        LinearLayout.LayoutParams playerFrameCardParams =
+                (LinearLayout.LayoutParams) playerFrameCard.getLayoutParams();
+        playerFrameCardParams.bottomMargin += dp(5);
+        playerFrameCard.setLayoutParams(playerFrameCardParams);
         LinearLayout frame = playerFrameCard;
         addCheck(frame, "הצג מסגרת", "frameEnabled", false);
         addSpinner(frame, "צבע מסגרת",
