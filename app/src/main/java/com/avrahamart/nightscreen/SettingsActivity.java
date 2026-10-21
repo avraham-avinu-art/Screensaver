@@ -76,22 +76,20 @@ public class SettingsActivity extends Activity {
         LinearLayout header = new LinearLayout(this);
         header.setOrientation(LinearLayout.VERTICAL);
         header.setGravity(Gravity.CENTER);
-        header.setPadding(dp(4), dp(2), dp(4), dp(4));
+        header.setPadding(dp(2), dp(5), dp(2), dp(10));
 
-        TextView title = textView("הגדרות", 26, ON_SURFACE);
-        title.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        TextView title = textView("הגדרות", 28, ON_SURFACE);
+        title.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
         title.setGravity(Gravity.CENTER);
         title.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         title.setTextDirection(View.TEXT_DIRECTION_RTL);
-        header.addView(title, new LinearLayout.LayoutParams(-1, dp(34)));
+        header.addView(title, new LinearLayout.LayoutParams(-1, -2));
 
-        TextView subtitle = textView("התאמה אישית של השעון, התאריך והנגן", 14, MUTED);
+        TextView subtitle = textView("התאמה אישית של השעון, התאריך והנגן", 17, MUTED);
         subtitle.setGravity(Gravity.CENTER);
         subtitle.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         subtitle.setTextDirection(View.TEXT_DIRECTION_RTL);
-        header.addView(subtitle, new LinearLayout.LayoutParams(-1, dp(24)));
-        root.addView(header, new LinearLayout.LayoutParams(-1, -2));
-
+        header.addView(subtitle, new LinearLayout.LayoutParams(-1, -2));
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(false);
         scroll.setVerticalScrollBarEnabled(true);
@@ -100,11 +98,18 @@ public class SettingsActivity extends Activity {
         scroll.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         scroll.setPadding(0, dp(1), 0, dp(4));
 
+        LinearLayout scrollContent = new LinearLayout(this);
+        scrollContent.setOrientation(LinearLayout.VERTICAL);
+        scrollContent.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        scrollContent.setTextDirection(View.TEXT_DIRECTION_RTL);
+        scrollContent.addView(header, new LinearLayout.LayoutParams(-1, -2));
+
         content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
         content.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         content.setTextDirection(View.TEXT_DIRECTION_RTL);
-        scroll.addView(content, new ScrollView.LayoutParams(-1, -2));
+        scrollContent.addView(content, new LinearLayout.LayoutParams(-1, -2));
+        scroll.addView(scrollContent, new ScrollView.LayoutParams(-1, -2));
         root.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1f));
 
         buildSettingsCards();
@@ -113,15 +118,16 @@ public class SettingsActivity extends Activity {
         done.setText("סיום ושמירה");
         done.setAllCaps(false);
         done.setTextSize(16);
-        done.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        done.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
         done.setTextColor(Color.WHITE);
         done.setMinWidth(0);
         done.setMinHeight(0);
-        done.setPadding(dp(24), 0, dp(24), 0);
+        done.setPadding(dp(4), 0, dp(4), 0);
         done.setBackground(pillBackground(ACCENT, dp(24)));
         done.setElevation(dp(2));
         LinearLayout.LayoutParams doneParams =
-                new LinearLayout.LayoutParams(-1, dp(50));
+                new LinearLayout.LayoutParams(-2, dp(50));
+        doneParams.gravity = Gravity.CENTER_HORIZONTAL;
         doneParams.topMargin = dp(4);
         root.addView(done, doneParams);
         done.setOnClickListener(v -> finish());
