@@ -414,11 +414,11 @@ public class SettingsActivity extends Activity {
         spinner.setSelection(selected, false);
 
         LinearLayout.LayoutParams spinnerParams =
-                new LinearLayout.LayoutParams(spinnerWidth, dp(39));
+                new LinearLayout.LayoutParams(spinnerWidth, dp(35));
         spinnerParams.leftMargin = dp(12);
         spinnerParams.rightMargin = dp(10);
         row.addView(spinner, 0, spinnerParams);
-        LinearLayout.LayoutParams spinnerRowParams = new LinearLayout.LayoutParams(-1, dp(39));
+        LinearLayout.LayoutParams spinnerRowParams = new LinearLayout.LayoutParams(-1, dp(35));
         spinnerRowParams.bottomMargin = dp(3);
         card.addView(row, spinnerRowParams);
 
@@ -470,7 +470,7 @@ public class SettingsActivity extends Activity {
         view.setMinHeight(0);
         view.setMinimumHeight(0);
         view.setPadding(dp(2), 0, dp(2), 0);
-        view.setHeight(dp(39));
+        view.setHeight(dp(35));
     }
 
     private void styleDropdownOptionText(TextView view, boolean selectedOption) {
@@ -499,7 +499,7 @@ public class SettingsActivity extends Activity {
         for (String name : names) {
             if (name != null) longestText = Math.max(longestText, paint.measureText(name));
         }
-        int contentWidth = (int) Math.ceil(longestText) + dp(12);
+        int contentWidth = (int) Math.ceil(longestText) + dp(16);
         int minimumWidth = dp(88);
         // Preserve room for the label on narrow screens while fitting the longest option when possible.
         int screenLimit = getResources().getDisplayMetrics().widthPixels
