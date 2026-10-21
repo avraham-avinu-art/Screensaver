@@ -78,6 +78,14 @@ public class SettingsActivity extends Activity {
         root.setTextDirection(View.TEXT_DIRECTION_RTL);
         root.setBackgroundColor(SURFACE);
         root.setPadding(dp(14), dp(4), dp(14), dp(8));
+        if (Build.VERSION.SDK_INT >= 21) {
+            root.setOnApplyWindowInsetsListener((view, insets) -> {
+                int topInset = insets.getSystemWindowInsetTop();
+                int bottomInset = insets.getSystemWindowInsetBottom();
+                view.setPadding(dp(14), dp(4) + topInset, dp(14), dp(8) + bottomInset);
+                return insets;
+            });
+        }
 
         LinearLayout header = new LinearLayout(this);
         header.setOrientation(LinearLayout.HORIZONTAL);
@@ -85,11 +93,14 @@ public class SettingsActivity extends Activity {
         header.setGravity(Gravity.CENTER_VERTICAL);
         header.setPadding(dp(2), dp(7), dp(2), dp(12));
 
+        FrameLayout backTarget = new FrameLayout(this);
         GraphicIcon back = new GraphicIcon(this, "arrow", ON_SURFACE);
+        backTarget.addView(back, new FrameLayout.LayoutParams(dp(18), dp(18), Gravity.CENTER));
         LinearLayout.LayoutParams backParams = new LinearLayout.LayoutParams(dp(38), dp(42));
-        backParams.rightMargin = dp(10);
-        header.addView(back, backParams);
-        back.setOnClickListener(v -> finish());
+        backParams.leftMargin = dp(10);
+        backTarget.setContentDescription("חזרה");
+        backTarget.setFocusable(true);
+        backTarget.setOnClickListener(v -> finish());
 
         LinearLayout titleBlock = new LinearLayout(this);
         titleBlock.setOrientation(LinearLayout.VERTICAL);
@@ -98,7 +109,7 @@ public class SettingsActivity extends Activity {
         titleBlock.setPadding(0, 0, dp(2), 0);
 
         TextView title = textView("הגדרות", 28, ON_SURFACE);
-        title.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
+        title.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         title.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         title.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
         title.setTextDirection(View.TEXT_DIRECTION_RTL);
@@ -112,6 +123,7 @@ public class SettingsActivity extends Activity {
         titleBlock.addView(subtitle, new LinearLayout.LayoutParams(-1, -2));
 
         header.addView(titleBlock, new LinearLayout.LayoutParams(0, -2, 1f));
+        header.addView(backTarget, backParams);
 
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(false);
@@ -331,7 +343,7 @@ public class SettingsActivity extends Activity {
         row.setPadding(dp(2), dp(2), dp(2), dp(2));
 
         TextView text = textView(label, 16, ON_SURFACE);
-        text.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
+        text.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         text.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         text.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
         text.setTextDirection(View.TEXT_DIRECTION_RTL);
@@ -406,7 +418,7 @@ public class SettingsActivity extends Activity {
         headingRow.addView(chosenValue, valueParams);
 
         TextView settingLabel = textView(label, 16, ON_SURFACE);
-        settingLabel.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
+        settingLabel.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         settingLabel.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         settingLabel.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
         settingLabel.setTextDirection(View.TEXT_DIRECTION_RTL);
@@ -484,11 +496,11 @@ public class SettingsActivity extends Activity {
         headingRow.setGravity(Gravity.CENTER_VERTICAL);
 
         TextView title = textView(label, 16, ON_SURFACE);
-        title.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
+        title.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         title.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         title.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
         headingRow.addView(title, new LinearLayout.LayoutParams(0, dp(36), 1f));
-        FrameLayout icon = makeIconBadge("palette", dp(34));
+        FrameLayout icon = makeIconBadge("color-options", dp(34));
         LinearLayout.LayoutParams iconParams =
                 new LinearLayout.LayoutParams(dp(34), dp(34));
         iconParams.leftMargin = dp(9);
@@ -570,17 +582,23 @@ public class SettingsActivity extends Activity {
     }
 
     private String iconForSetting(String key) {
-        if ("showHebrew".equals(key) || "showGregorian".equals(key)) return "calendar";
-        if ("showPlayer".equals(key) || "showDetails".equals(key)
-                || "playerPosition".equals(key) || "playerSize".equals(key)
-                || "showProgress".equals(key)) return "music";
-        if ("screenSaverDuration".equals(key) || "clockDatePosition".equals(key)) return "clock";
-        if ("fontColor".equals(key)) return "palette";
-        if ("fontWeight".equals(key) || "fontFamily".equals(key)) return "type";
-        if ("clockDateSize".equals(key)) return "size";
-        if ("frameEnabled".equals(key) || "frameRadius".equals(key)) return "frame";
-        if ("frameColor".equals(key)) return "palette";
-        if ("frameWidth".equals(key)) return "line";
+        if ("showHebrew".equals(key)) return "hebrew-date";
+        if ("showGregorian".equals(key)) return "gregorian-date";
+        if ("showPlayer".equals(key)) return "media-toggle";
+        if ("screenSaverDuration".equals(key)) return "duration";
+        if ("fontColor".equals(key)) return "text-color";
+        if ("fontWeight".equals(key)) return "weight";
+        if ("fontFamily".equals(key)) return "font-family";
+        if ("clockDateSize".equals(key)) return "clock-size";
+        if ("clockDatePosition".equals(key)) return "clock-position";
+        if ("showDetails".equals(key)) return "artist";
+        if ("showProgress".equals(key)) return "progress";
+        if ("playerSize".equals(key)) return "player-size";
+        if ("playerPosition".equals(key)) return "player-position";
+        if ("frameEnabled".equals(key)) return "frame-toggle";
+        if ("frameColor".equals(key)) return "frame-color";
+        if ("frameWidth".equals(key)) return "border-width";
+        if ("frameRadius".equals(key)) return "corners";
         return "settings";
     }
 
@@ -620,7 +638,7 @@ public class SettingsActivity extends Activity {
         row.setPadding(dp(2), dp(2), dp(2), dp(4));
 
         TextView labelView = textView(label, 16, ON_SURFACE);
-        labelView.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
+        labelView.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         labelView.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         labelView.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
         labelView.setTextDirection(View.TEXT_DIRECTION_RTL);
@@ -781,10 +799,12 @@ public class SettingsActivity extends Activity {
     private int selectedIndex(String key, String[] values) {
         int index = 0;
         if ("fontColor".equals(key) || "frameColor".equals(key)) {
+            if (!prefs.contains(key)) return -1;
             int stored = getInt(key, colorValue(values[0]));
             for (int i = 0; i < values.length; i++) {
                 if (colorValue(values[i]) == stored) return i;
             }
+            return -1;
         } else if ("fontWeight".equals(key) || "clockDateSize".equals(key)
                 || "playerSize".equals(key) || "frameWidth".equals(key)
                 || "frameRadius".equals(key)) {
@@ -1188,6 +1208,114 @@ public class SettingsActivity extends Activity {
                     path.lineTo(20f, 12f);
                     path.lineTo(13f, 19f);
                     canvas.drawPath(path, paint);
+                    break;
+                case "hebrew-date":
+                    canvas.drawRoundRect(new RectF(3f, 4f, 21f, 20f), 2f, 2f, paint);
+                    canvas.drawLine(3.5f, 9f, 20.5f, 9f, paint);
+                    paint.setStyle(Paint.Style.FILL);
+                    paint.setTextSize(7f);
+                    canvas.drawText("ע", 7f, 17f, paint);
+                    canvas.drawText("א", 14f, 17f, paint);
+                    break;
+                case "gregorian-date":
+                    canvas.drawRoundRect(new RectF(3f, 4f, 21f, 20f), 2f, 2f, paint);
+                    canvas.drawLine(3.5f, 9f, 20.5f, 9f, paint);
+                    paint.setStyle(Paint.Style.FILL);
+                    paint.setTextSize(7f);
+                    canvas.drawText("31", 6f, 17f, paint);
+                    break;
+                case "media-toggle":
+                    canvas.drawRoundRect(new RectF(3f, 5f, 21f, 19f), 3f, 3f, paint);
+                    path.moveTo(10f, 8f);
+                    path.lineTo(16f, 12f);
+                    path.lineTo(10f, 16f);
+                    path.close();
+                    paint.setStyle(Paint.Style.FILL);
+                    canvas.drawPath(path, paint);
+                    break;
+                case "duration":
+                    canvas.drawCircle(12f, 12f, 9f, paint);
+                    canvas.drawLine(12f, 6f, 12f, 12f, paint);
+                    canvas.drawLine(12f, 12f, 17f, 12f, paint);
+                    canvas.drawArc(new RectF(6f, 2f, 18f, 14f), 210f, 120f, false, paint);
+                    break;
+                case "text-color":
+                    paint.setStyle(Paint.Style.FILL);
+                    paint.setTextSize(18f);
+                    canvas.drawText("A", 4f, 18f, paint);
+                    canvas.drawCircle(18f, 7f, 2f, paint);
+                    canvas.drawCircle(19f, 13f, 2f, paint);
+                    break;
+                case "weight":
+                    paint.setStrokeWidth(3.2f);
+                    canvas.drawLine(5f, 4f, 5f, 20f, paint);
+                    canvas.drawLine(12f, 4f, 12f, 20f, paint);
+                    canvas.drawLine(19f, 4f, 19f, 20f, paint);
+                    break;
+                case "font-family":
+                    paint.setStyle(Paint.Style.FILL);
+                    paint.setTextSize(18f);
+                    canvas.drawText("Aa", 2f, 17f, paint);
+                    break;
+                case "clock-size":
+                    canvas.drawLine(3f, 7f, 21f, 7f, paint);
+                    canvas.drawLine(3f, 12f, 17f, 12f, paint);
+                    canvas.drawLine(3f, 17f, 13f, 17f, paint);
+                    break;
+                case "clock-position":
+                    canvas.drawLine(12f, 3f, 12f, 21f, paint);
+                    path.moveTo(7f, 8f);
+                    path.lineTo(12f, 3f);
+                    path.lineTo(17f, 8f);
+                    canvas.drawPath(path, paint);
+                    canvas.drawLine(5f, 21f, 19f, 21f, paint);
+                    break;
+                case "artist":
+                    canvas.drawCircle(9f, 8f, 4f, paint);
+                    canvas.drawArc(new RectF(2f, 13f, 16f, 24f), 180f, 180f, false, paint);
+                    canvas.drawLine(17f, 6f, 22f, 6f, paint);
+                    canvas.drawLine(17f, 11f, 22f, 11f, paint);
+                    break;
+                case "progress":
+                    canvas.drawLine(3f, 12f, 21f, 12f, paint);
+                    paint.setStyle(Paint.Style.FILL);
+                    canvas.drawCircle(8f, 12f, 3f, paint);
+                    canvas.drawCircle(18f, 12f, 2f, paint);
+                    break;
+                case "player-size":
+                    canvas.drawRoundRect(new RectF(3f, 5f, 21f, 19f), 2f, 2f, paint);
+                    canvas.drawRoundRect(new RectF(7f, 8f, 17f, 16f), 1f, 1f, paint);
+                    break;
+                case "player-position":
+                    canvas.drawLine(3f, 18f, 21f, 18f, paint);
+                    path.moveTo(7f, 12f);
+                    path.lineTo(12f, 17f);
+                    path.lineTo(17f, 12f);
+                    canvas.drawPath(path, paint);
+                    break;
+                case "frame-toggle":
+                    canvas.drawRoundRect(new RectF(3f, 3f, 21f, 21f), 2f, 2f, paint);
+                    canvas.drawLine(7f, 7f, 17f, 7f, paint);
+                    canvas.drawLine(7f, 17f, 17f, 17f, paint);
+                    break;
+                case "frame-color":
+                case "color-options":
+                    canvas.drawCircle(12f, 12f, 8f, paint);
+                    canvas.drawCircle(12f, 12f, 4f, paint);
+                    paint.setStyle(Paint.Style.FILL);
+                    canvas.drawCircle(12f, 12f, 1.5f, paint);
+                    break;
+                case "border-width":
+                    paint.setStrokeWidth(1f);
+                    canvas.drawLine(4f, 5f, 20f, 5f, paint);
+                    paint.setStrokeWidth(2.5f);
+                    canvas.drawLine(4f, 12f, 20f, 12f, paint);
+                    paint.setStrokeWidth(4f);
+                    canvas.drawLine(4f, 19f, 20f, 19f, paint);
+                    break;
+                case "corners":
+                    canvas.drawRoundRect(new RectF(3f, 3f, 21f, 21f), 7f, 7f, paint);
+                    canvas.drawRoundRect(new RectF(7f, 7f, 17f, 17f), 2f, 2f, paint);
                     break;
                 case "settings":
                     canvas.drawCircle(12f, 12f, 7.5f, paint);
