@@ -207,7 +207,7 @@ public class SettingsActivity extends Activity {
         clockDateCard = addCard(content, "תצוגת שעון ותאריך");
         addDiscreteSlider(clockDateCard, "גודל",
                 new String[]{"קטן", "בינוני", "רגיל", "גדול", "גדול מאוד"},
-                new String[]{"48", "60", "72", "84", "96"}, "clockDateSize");
+                new String[]{"38", "48", "60", "72", "84"}, "clockDateSize");
         addDiscreteSlider(clockDateCard, "מיקום",
                 new String[]{"למעלה", "25% מלמעלה", "באמצע"},
                 new String[]{"top", "upper", "middle"}, "clockDatePosition");
@@ -358,6 +358,7 @@ public class SettingsActivity extends Activity {
         Switch toggle = new Switch(this);
         toggle.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         toggle.setShowText(false);
+        toggle.setContentDescription(label);
         toggle.setChecked(getBool(key, defaultValue));
         if (Build.VERSION.SDK_INT >= 21) {
             toggle.setThumbTintList(new ColorStateList(
@@ -436,6 +437,8 @@ public class SettingsActivity extends Activity {
         slider.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         slider.setMax(Math.max(0, names.length - 1));
         slider.setProgress(initial);
+        slider.setContentDescription(label);
+        slider.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
         slider.setPadding(dp(2), 0, dp(2), 0);
         if (Build.VERSION.SDK_INT >= 21) {
             slider.setThumbTintList(ColorStateList.valueOf(ACCENT));
@@ -446,6 +449,25 @@ public class SettingsActivity extends Activity {
                 new LinearLayout.LayoutParams(-1, dp(32));
         sliderParams.topMargin = dp(1);
         block.addView(slider, sliderParams);
+
+        LinearLayout markers = new LinearLayout(this);
+        markers.setOrientation(LinearLayout.HORIZONTAL);
+        markers.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        markers.setGravity(Gravity.CENTER_VERTICAL);
+        final View[] markerDots = new View[names.length];
+        for (int i = 0; i < names.length; i++) {
+            View dot = new View(this);
+            GradientDrawable dotShape = new GradientDrawable();
+            dotShape.setShape(GradientDrawable.OVAL);
+            dotShape.setColor(i == initial ? ACCENT : TRACK);
+            dot.setBackground(dotShape);
+            markerDots[i] = dot;
+            LinearLayout holder = new LinearLayout(this);
+            holder.setGravity(Gravity.CENTER);
+            holder.addView(dot, new LinearLayout.LayoutParams(dp(i == initial ? 7 : 5), dp(i == initial ? 7 : 5)));
+            markers.addView(holder, new LinearLayout.LayoutParams(0, dp(12), 1f));
+        }
+        block.addView(markers, new LinearLayout.LayoutParams(-1, dp(12)));
 
         LinearLayout endpoints = new LinearLayout(this);
         endpoints.setOrientation(LinearLayout.HORIZONTAL);
@@ -468,6 +490,17 @@ public class SettingsActivity extends Activity {
                                                     boolean fromUser) {
                 int safeProgress = Math.max(0, Math.min(progress, names.length - 1));
                 chosenValue.setText(names[safeProgress]);
+                for (int i = 0; i < markerDots.length; i++) {
+                    GradientDrawable dotShape = new GradientDrawable();
+                    dotShape.setShape(GradientDrawable.OVAL);
+                    dotShape.setColor(i == safeProgress ? ACCENT : TRACK);
+                    markerDots[i].setBackground(dotShape);
+                    LinearLayout.LayoutParams dotParams =
+                            (LinearLayout.LayoutParams) markerDots[i].getLayoutParams();
+                    dotParams.width = dp(i == safeProgress ? 7 : 5);
+                    dotParams.height = dp(i == safeProgress ? 7 : 5);
+                    markerDots[i].setLayoutParams(dotParams);
+                }
                 if (fromUser) persistOption(key, values[safeProgress]);
             }
             @Override public void onStartTrackingTouch(SeekBar seekBar) {}
@@ -647,6 +680,7 @@ public class SettingsActivity extends Activity {
         int spinnerWidth = dropdownWidthForOptions(names);
         Spinner spinner = new Spinner(this);
         spinner.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        spinner.setContentDescription(label);
         spinner.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(
                 this, android.R.layout.simple_spinner_item, names) {
@@ -808,7 +842,9 @@ public class SettingsActivity extends Activity {
         } else if ("fontWeight".equals(key) || "clockDateSize".equals(key)
                 || "playerSize".equals(key) || "frameWidth".equals(key)
                 || "frameRadius".equals(key)) {
-            int stored = getInt(key, parse(values[0], 0));
+            int fallback = "clockDateSize".equals(key) ? 84 : parse(values[0], 0);
+            int stored = getInt(key, fallback);
+            if ("clockDateSize".equals(key) && stored == 96) stored = 84;
             for (int i = 0; i < values.length; i++) {
                 if (parse(values[i], Integer.MIN_VALUE) == stored) return i;
             }
