@@ -86,7 +86,7 @@ public class SettingsActivity extends Activity {
         title.setTextDirection(View.TEXT_DIRECTION_RTL);
         header.addView(title, new LinearLayout.LayoutParams(-1, -2));
 
-        TextView subtitle = textView("התאמה אישית של השעון, התאריך והנגן", 17, MUTED);
+        TextView subtitle = textView("התאמה אישית של השומר מסך", 17, MUTED);
         subtitle.setGravity(Gravity.CENTER);
         subtitle.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         subtitle.setTextDirection(View.TEXT_DIRECTION_RTL);
@@ -118,13 +118,13 @@ public class SettingsActivity extends Activity {
         Button done = new Button(this);
         done.setText("סיום ושמירה");
         done.setAllCaps(false);
-        done.setTextSize(16);
+        done.setTextSize(17);
         done.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
         done.setTextColor(Color.WHITE);
         done.setMinWidth(0);
         done.setMinHeight(0);
-        done.setPadding(dp(4), 0, dp(4), 0);
-        done.setBackground(pillBackground(ACCENT, dp(24)));
+        done.setPadding(dp(9), 0, dp(9), 0);
+        done.setBackground(pillBackground(ACCENT, dp(12)));
         done.setElevation(dp(2));
         LinearLayout.LayoutParams doneParams =
                 new LinearLayout.LayoutParams(-2, dp(50));
@@ -216,7 +216,7 @@ public class SettingsActivity extends Activity {
         screenLockAdminCard = addCard(content, "הרשאת מנהל מכשיר");
         setPermissionCardHeadingTypeface(screenLockAdminCard);
         // Reduce horizontal inner padding by half so the explanation uses the card width better.
-        screenLockAdminCard.setPadding(dp(9), dp(4), dp(9), dp(6));
+        screenLockAdminCard.setPadding(dp(9), dp(4), dp(9), dp(10));
         TextView explanation = textView(
                 "ההרשאה נדרשת רק לכיבוי מסך ונעילת המכשיר מיד בתום פעילות השומר מסך.\n"
                 + "ללא ההרשאה, בתום הזמן תסתיים תצוגת שומר המסך בלבד. "
@@ -234,7 +234,7 @@ public class SettingsActivity extends Activity {
         explanationParams.bottomMargin = dp(2);
         screenLockAdminCard.addView(explanation, explanationParams);
 
-        screenLockAdminStatus = textView("", 16, ON_SURFACE);
+        screenLockAdminStatus = textView("", 17, ON_SURFACE);
         screenLockAdminStatus.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         screenLockAdminStatus.setGravity(Gravity.CENTER);
         screenLockAdminStatus.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
@@ -261,7 +261,7 @@ public class SettingsActivity extends Activity {
         card.setOrientation(LinearLayout.VERTICAL);
         card.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         card.setTextDirection(View.TEXT_DIRECTION_RTL);
-        card.setPadding(dp(8), dp(4), dp(8), dp(6));
+        card.setPadding(dp(8), dp(4), dp(8), dp(10));
 
         GradientDrawable bg = new GradientDrawable();
         bg.setColor(Color.WHITE);
@@ -291,7 +291,7 @@ public class SettingsActivity extends Activity {
         separator.setBackgroundColor(OUTLINE);
         LinearLayout.LayoutParams separatorParams =
                 new LinearLayout.LayoutParams(-1, dp(1));
-        separatorParams.setMargins(dp(2), dp(1), dp(2), dp(6));
+        separatorParams.setMargins(dp(2), dp(1), dp(2), dp(10));
         card.addView(separator, separatorParams);
         return card;
     }
@@ -305,11 +305,11 @@ public class SettingsActivity extends Activity {
         row.setTextDirection(View.TEXT_DIRECTION_RTL);
         row.setPadding(dp(4), 0, dp(4), 0);
 
-        TextView text = textView(label, 16, ON_SURFACE);
+        TextView text = textView(label, 17, ON_SURFACE);
         text.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
         text.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         text.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
-        row.addView(text, new LinearLayout.LayoutParams(0, dp(30), 1f));
+        row.addView(text, new LinearLayout.LayoutParams(0, dp(35), 1f));
 
         Switch toggle = new Switch(this);
         toggle.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
@@ -342,7 +342,7 @@ public class SettingsActivity extends Activity {
             }
         });
         row.setOnClickListener(v -> toggle.setChecked(!toggle.isChecked()));
-        card.addView(row, new LinearLayout.LayoutParams(-1, dp(30)));
+        card.addView(row, new LinearLayout.LayoutParams(-1, dp(35)));
     }
 
     private void setPermissionCardHeadingTypeface(LinearLayout card) {
@@ -364,12 +364,12 @@ public class SettingsActivity extends Activity {
         row.setTextDirection(View.TEXT_DIRECTION_RTL);
         row.setPadding(dp(4), 0, dp(4), 0);
 
-        TextView l = textView(label, 16, ON_SURFACE);
+        TextView l = textView(label, 17, ON_SURFACE);
         l.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
         l.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         l.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
         l.setTextDirection(View.TEXT_DIRECTION_RTL);
-        row.addView(l, new LinearLayout.LayoutParams(0, dp(30), 1f));
+        row.addView(l, new LinearLayout.LayoutParams(0, dp(35), 1f));
 
         int selected = selectedIndex(key, values);
         int spinnerWidth = dropdownWidthForOptions(names);
@@ -401,7 +401,7 @@ public class SettingsActivity extends Activity {
                     row.setBackgroundColor(Color.WHITE);
                     view = new TextView(SettingsActivity.this);
                     row.addView(view, new FrameLayout.LayoutParams(
-                            -1, dp(30), Gravity.CENTER_VERTICAL));
+                            -1, dp(35), Gravity.CENTER_VERTICAL));
                 }
                 boolean selectedOption = position == selectedIndex(key, values);
                 // Apply the selected color to the container, behind the text view.
@@ -409,7 +409,7 @@ public class SettingsActivity extends Activity {
                 // masking its own option label.
                 row.setBackgroundColor(selectedOption
                         ? Color.rgb(234, 238, 251) : Color.WHITE);
-                row.setLayoutParams(new android.widget.AbsListView.LayoutParams(-1, dp(32)));
+                row.setLayoutParams(new android.widget.AbsListView.LayoutParams(-1, dp(37)));
                 view.setText(names[position]);
                 styleDropdownOptionText(view);
                 return row;
@@ -423,11 +423,11 @@ public class SettingsActivity extends Activity {
         spinner.setSelection(selected, false);
 
         LinearLayout.LayoutParams spinnerParams =
-                new LinearLayout.LayoutParams(spinnerWidth, dp(30));
+                new LinearLayout.LayoutParams(spinnerWidth, dp(35));
         spinnerParams.leftMargin = dp(12);
         spinnerParams.rightMargin = dp(10);
         row.addView(spinner, 0, spinnerParams);
-        card.addView(row, new LinearLayout.LayoutParams(-1, dp(30)));
+        card.addView(row, new LinearLayout.LayoutParams(-1, dp(35)));
 
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             private boolean initialSelectionPending = true;
@@ -466,7 +466,7 @@ public class SettingsActivity extends Activity {
 
     private void styleSpinnerText(TextView view, boolean selected, boolean selectedOption) {
         view.setTextColor(ON_SURFACE);
-        view.setTextSize(16);
+        view.setTextSize(17);
         view.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
         view.setIncludeFontPadding(false);
         view.setGravity(Gravity.CENTER);
@@ -477,12 +477,12 @@ public class SettingsActivity extends Activity {
         view.setMinHeight(0);
         view.setMinimumHeight(0);
         view.setPadding(dp(2), 0, dp(2), 0);
-        view.setHeight(dp(30));
+        view.setHeight(dp(35));
     }
 
     private void styleDropdownOptionText(TextView view) {
         view.setTextColor(ON_SURFACE);
-        view.setTextSize(16);
+        view.setTextSize(17);
         view.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
         view.setIncludeFontPadding(false);
         view.setGravity(Gravity.CENTER);
@@ -495,7 +495,7 @@ public class SettingsActivity extends Activity {
         view.setPadding(dp(3), dp(2), dp(3), dp(2));
         // The option's highlight lives on the FrameLayout row, not on this text.
         view.setBackgroundColor(Color.TRANSPARENT);
-        view.setLayoutParams(new FrameLayout.LayoutParams(-1, dp(30), Gravity.CENTER_VERTICAL));
+        view.setLayoutParams(new FrameLayout.LayoutParams(-1, dp(35), Gravity.CENTER_VERTICAL));
     }
 
     private int dropdownWidthForOptions(String[] names) {
@@ -728,7 +728,7 @@ public class SettingsActivity extends Activity {
         Button button = new Button(this);
         button.setText(text);
         button.setAllCaps(false);
-        button.setTextSize(16);
+        button.setTextSize(17);
         button.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         button.setTextColor(Color.WHITE);
         button.setMinWidth(0);
