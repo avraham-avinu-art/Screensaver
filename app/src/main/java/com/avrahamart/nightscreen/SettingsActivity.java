@@ -309,7 +309,7 @@ public class SettingsActivity extends Activity {
         text.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
         text.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         text.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
-        row.addView(text, new LinearLayout.LayoutParams(0, dp(40), 1f));
+        row.addView(text, new LinearLayout.LayoutParams(0, dp(30), 1f));
 
         Switch toggle = new Switch(this);
         toggle.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
@@ -342,7 +342,7 @@ public class SettingsActivity extends Activity {
             }
         });
         row.setOnClickListener(v -> toggle.setChecked(!toggle.isChecked()));
-        card.addView(row, new LinearLayout.LayoutParams(-1, dp(40)));
+        card.addView(row, new LinearLayout.LayoutParams(-1, dp(30)));
     }
 
     private void setPermissionCardHeadingTypeface(LinearLayout card) {
@@ -369,7 +369,7 @@ public class SettingsActivity extends Activity {
         l.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         l.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
         l.setTextDirection(View.TEXT_DIRECTION_RTL);
-        row.addView(l, new LinearLayout.LayoutParams(0, dp(36), 1f));
+        row.addView(l, new LinearLayout.LayoutParams(0, dp(30), 1f));
 
         int selected = selectedIndex(key, values);
         int spinnerWidth = dropdownWidthForOptions(names);
@@ -398,17 +398,17 @@ public class SettingsActivity extends Activity {
         };
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinner.setAdapter(adapter);
-        spinner.setPadding(dp(8), 0, dp(8), 0);
+        spinner.setPadding(0, 0, 0, 0);
         spinner.setDropDownWidth(spinnerWidth);
         spinner.setBackground(roundOutline(Color.rgb(249, 249, 253), dp(12), OUTLINE));
         spinner.setSelection(selected, false);
 
         LinearLayout.LayoutParams spinnerParams =
-                new LinearLayout.LayoutParams(spinnerWidth, dp(34));
+                new LinearLayout.LayoutParams(spinnerWidth, dp(30));
         spinnerParams.leftMargin = dp(12);
         spinnerParams.rightMargin = dp(6);
         row.addView(spinner, 0, spinnerParams);
-        card.addView(row, new LinearLayout.LayoutParams(-1, dp(36)));
+        card.addView(row, new LinearLayout.LayoutParams(-1, dp(30)));
 
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             private boolean initialSelectionPending = true;
