@@ -217,7 +217,7 @@ public class SettingsActivity extends Activity {
         screenLockAdminCard = addCard(content, "הרשאת מנהל מכשיר");
         setPermissionCardHeadingTypeface(screenLockAdminCard);
         // Reduce horizontal inner padding by half so the explanation uses the card width better.
-        screenLockAdminCard.setPadding(dp(9), dp(4), dp(13), dp(10));
+        screenLockAdminCard.setPadding(dp(9), dp(9), dp(13), dp(15));
         TextView explanation = textView(
                 "ההרשאה נדרשת רק לכיבוי מסך ונעילת המכשיר מיד בתום פעילות השומר מסך.\n"
                 + "ללא ההרשאה, בתום הזמן תסתיים תצוגת שומר המסך בלבד. "
@@ -561,7 +561,7 @@ public class SettingsActivity extends Activity {
 
     private LinearLayout addNotificationAccessCard(LinearLayout parent) {
         LinearLayout card = addCard(parent, "הרשאת גישה להתראות");
-        card.setPadding(dp(8), dp(4), dp(12), dp(10));
+        card.setPadding(dp(8), dp(9), dp(12), dp(15));
         setPermissionCardHeadingTypeface(card);
         TextView message = textView(
                 "כדי להציג את נגן המערכת, יש לאפשר גישה להתראות.",
