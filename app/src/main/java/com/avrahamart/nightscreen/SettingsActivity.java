@@ -37,6 +37,7 @@ public class SettingsActivity extends Activity {
     private static final int ON_SURFACE = Color.rgb(36, 41, 59);
     private static final int MUTED = Color.rgb(100, 106, 127);
     private static final int OUTLINE = Color.rgb(205, 210, 226);
+    private static final int CARD_OUTLINE = Color.rgb(230, 232, 240);
     private static final int ACCENT = Color.rgb(58, 76, 160);
 
     private SharedPreferences prefs;
@@ -156,8 +157,8 @@ public class SettingsActivity extends Activity {
 
         LinearLayout font = addCard(content, "גופן");
         addSpinner(font, "צבע",
-                new String[]{"לבן", "אפור בהיר", "אפור", "כחול עדין"},
-                new String[]{"white", "light", "gray", "blue"}, "fontColor");
+                new String[]{"לבן", "אפור", "אפור בהיר", "כחול עדין"},
+                new String[]{"white", "gray", "light", "blue"}, "fontColor");
         addSpinner(font, "עובי",
                 new String[]{"רגיל", "בינוני", "מודגש"},
                 new String[]{"0", "1", "2"}, "fontWeight");
@@ -175,7 +176,7 @@ public class SettingsActivity extends Activity {
                 new String[]{"קטן", "בינוני", "רגיל", "גדול", "גדול מאוד"},
                 new String[]{"48", "60", "72", "84", "96"}, "clockDateSize");
         addSpinner(clock, "מיקום",
-                new String[]{"הכי למעלה", "ברבע העליון", "באמצע המסך"},
+                new String[]{"למעלה", "25% מלמעלה", "באמצע"},
                 new String[]{"top", "upper", "middle"}, "clockDatePosition");
 
         LinearLayout player = addCard(content, "תצוגת הנגן");
@@ -185,15 +186,15 @@ public class SettingsActivity extends Activity {
                 new String[]{"קטן", "בינוני", "גדול", "גדול מאוד"},
                 new String[]{"14", "17", "20", "23"}, "playerSize");
         addSpinner(player, "מיקום הנגן",
-                new String[]{"ברבע התחתון", "הכי למטה"},
+                new String[]{"25% מלמטה", "למטה"},
                 new String[]{"lower", "bottom"}, "playerPosition");
 
         playerFrameCard = addCard(content, "מסגרת לנגן");
         LinearLayout frame = playerFrameCard;
         addCheck(frame, "הצג מסגרת", "frameEnabled", false);
         addSpinner(frame, "צבע מסגרת",
-                new String[]{"לבן", "אפור", "אפור בהיר", "כסף"},
-                new String[]{"white", "gray", "light", "silver"}, "frameColor");
+                new String[]{"לבן", "כסף", "אפור", "אפור בהיר"},
+                new String[]{"white", "silver", "gray", "light"}, "frameColor");
         addSpinner(frame, "עובי מסגרת",
                 new String[]{"דקה", "בינונית", "עבה"},
                 new String[]{"1", "2", "3"}, "frameWidth");
@@ -260,18 +261,18 @@ public class SettingsActivity extends Activity {
         card.setOrientation(LinearLayout.VERTICAL);
         card.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         card.setTextDirection(View.TEXT_DIRECTION_RTL);
-        card.setPadding(dp(12), dp(4), dp(12), dp(6));
+        card.setPadding(dp(8), dp(4), dp(8), dp(6));
 
         GradientDrawable bg = new GradientDrawable();
         bg.setColor(Color.WHITE);
         bg.setCornerRadius(dp(20));
-        bg.setStroke(dp(1), OUTLINE);
+        bg.setStroke(dp(1), CARD_OUTLINE);
         card.setBackground(bg);
         if (Build.VERSION.SDK_INT >= 21) card.setElevation(dp(1));
 
         LinearLayout.LayoutParams params =
                 new LinearLayout.LayoutParams(-1, -2);
-        params.setMargins(0, 0, 0, dp(3));
+        params.setMargins(0, 0, 0, dp(6));
         parent.addView(card, params);
 
         TextView heading = textView(title, 18, Color.rgb(49, 58, 92));
@@ -282,7 +283,7 @@ public class SettingsActivity extends Activity {
         heading.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
         heading.setPadding(dp(2), 0, dp(2), 0);
         LinearLayout.LayoutParams headingParams =
-                new LinearLayout.LayoutParams(-1, dp(32));
+                new LinearLayout.LayoutParams(-1, dp(40));
         headingParams.bottomMargin = dp(1);
         card.addView(heading, headingParams);
 
@@ -290,7 +291,7 @@ public class SettingsActivity extends Activity {
         separator.setBackgroundColor(OUTLINE);
         LinearLayout.LayoutParams separatorParams =
                 new LinearLayout.LayoutParams(-1, dp(1));
-        separatorParams.setMargins(dp(2), dp(1), dp(2), dp(3));
+        separatorParams.setMargins(dp(2), dp(1), dp(2), dp(6));
         card.addView(separator, separatorParams);
         return card;
     }
