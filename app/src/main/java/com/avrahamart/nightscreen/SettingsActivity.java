@@ -403,10 +403,15 @@ public class SettingsActivity extends Activity {
                     row.addView(view, new FrameLayout.LayoutParams(
                             -1, dp(30), Gravity.CENTER_VERTICAL));
                 }
-                row.setBackgroundColor(Color.WHITE);
+                boolean selectedOption = position == selectedIndex(key, values);
+                // Apply the selected color to the container, behind the text view.
+                // Keeping the text view transparent prevents the highlight from
+                // masking its own option label.
+                row.setBackgroundColor(selectedOption
+                        ? Color.rgb(234, 238, 251) : Color.WHITE);
                 row.setLayoutParams(new android.widget.AbsListView.LayoutParams(-1, dp(32)));
                 view.setText(names[position]);
-                styleDropdownOptionText(view, position == selectedIndex(key, values));
+                styleDropdownOptionText(view);
                 return row;
             }
         };
@@ -475,7 +480,7 @@ public class SettingsActivity extends Activity {
         view.setHeight(dp(30));
     }
 
-    private void styleDropdownOptionText(TextView view, boolean selectedOption) {
+    private void styleDropdownOptionText(TextView view) {
         view.setTextColor(ON_SURFACE);
         view.setTextSize(16);
         view.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
@@ -488,8 +493,8 @@ public class SettingsActivity extends Activity {
         view.setMinHeight(0);
         view.setMinimumHeight(0);
         view.setPadding(dp(3), dp(2), dp(3), dp(2));
-        view.setBackgroundColor(selectedOption
-                ? Color.rgb(234, 238, 251) : Color.WHITE);
+        // The option's highlight lives on the FrameLayout row, not on this text.
+        view.setBackgroundColor(Color.TRANSPARENT);
         view.setLayoutParams(new FrameLayout.LayoutParams(-1, dp(30), Gravity.CENTER_VERTICAL));
     }
 
