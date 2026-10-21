@@ -389,12 +389,14 @@ public class SettingsActivity extends Activity {
 
             @Override public View getDropDownView(int position, View convertView,
                                                   android.view.ViewGroup parent) {
-                TextView view = convertView instanceof TextView
-                        ? (TextView) convertView : new TextView(SettingsActivity.this);
+                // Create a fresh row every time. Build 191 did not recycle dropdown
+                // TextViews; reusing convertView can preserve the popup's activated/
+                // pressed state and make the selected row's text disappear on first open.
+                TextView view = new TextView(SettingsActivity.this);
                 view.setText(names[position]);
                 styleDropdownOptionText(view, position == selectedIndex(key, values));
                 // Keep a 2dp white gap between options while the option text/background
-                // remain on one TextView, as in the last known-good build (191).
+                // remain on one TextView.
                 view.setLayoutParams(new android.widget.AbsListView.LayoutParams(-1, dp(37)));
                 return view;
             }
