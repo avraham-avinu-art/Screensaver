@@ -86,7 +86,7 @@ public class SettingsActivity extends Activity {
         title.setTextDirection(View.TEXT_DIRECTION_RTL);
         header.addView(title, new LinearLayout.LayoutParams(-1, -2));
 
-        TextView subtitle = textView("התאמה אישית של השומר מסך", 20, MUTED);
+        TextView subtitle = textView("התאמה אישית של השומר מסך", 18, MUTED);
         subtitle.setGravity(Gravity.CENTER);
         subtitle.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         subtitle.setTextDirection(View.TEXT_DIRECTION_RTL);
@@ -217,7 +217,7 @@ public class SettingsActivity extends Activity {
         screenLockAdminCard = addCard(content, "הרשאת מנהל מכשיר");
         setPermissionCardHeadingTypeface(screenLockAdminCard);
         // Reduce horizontal inner padding by half so the explanation uses the card width better.
-        screenLockAdminCard.setPadding(dp(9), dp(9), dp(17), dp(15));
+        screenLockAdminCard.setPadding(dp(9), dp(4), dp(13), dp(10));
         TextView explanation = textView(
                 "ההרשאה נדרשת רק לכיבוי מסך ונעילת המכשיר מיד בתום פעילות השומר מסך.\n"
                 + "ללא ההרשאה, בתום הזמן תסתיים תצוגת שומר המסך בלבד. "
@@ -279,10 +279,10 @@ public class SettingsActivity extends Activity {
         TextView heading = textView(title, 18, Color.rgb(49, 58, 92));
         heading.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         heading.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        heading.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
+        heading.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
         heading.setTextDirection(View.TEXT_DIRECTION_RTL);
         heading.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
-        heading.setPadding(dp(2), 0, dp(4), 0);
+        heading.setPadding(dp(4), 0, dp(4), 0);
         LinearLayout.LayoutParams headingParams =
                 new LinearLayout.LayoutParams(-1, dp(40));
         headingParams.bottomMargin = dp(1);
@@ -351,6 +351,10 @@ public class SettingsActivity extends Activity {
         View first = card.getChildAt(0);
         if (first instanceof TextView) {
             TextView heading = (TextView) first;
+            // Permission-card headings keep their original centered alignment.
+            heading.setGravity(Gravity.CENTER);
+            heading.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+            heading.setPadding(dp(2), 0, dp(2), 0);
             heading.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
         }
     }
@@ -557,6 +561,7 @@ public class SettingsActivity extends Activity {
 
     private LinearLayout addNotificationAccessCard(LinearLayout parent) {
         LinearLayout card = addCard(parent, "הרשאת גישה להתראות");
+        card.setPadding(dp(8), dp(4), dp(12), dp(10));
         setPermissionCardHeadingTypeface(card);
         TextView message = textView(
                 "כדי להציג את נגן המערכת, יש לאפשר גישה להתראות.",
