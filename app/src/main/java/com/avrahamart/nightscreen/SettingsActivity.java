@@ -414,11 +414,11 @@ public class SettingsActivity extends Activity {
         spinner.setSelection(selected, false);
 
         LinearLayout.LayoutParams spinnerParams =
-                new LinearLayout.LayoutParams(spinnerWidth, dp(35));
+                new LinearLayout.LayoutParams(spinnerWidth, dp(39));
         spinnerParams.leftMargin = dp(12);
         spinnerParams.rightMargin = dp(10);
         row.addView(spinner, 0, spinnerParams);
-        LinearLayout.LayoutParams spinnerRowParams = new LinearLayout.LayoutParams(-1, dp(35));
+        LinearLayout.LayoutParams spinnerRowParams = new LinearLayout.LayoutParams(-1, dp(39));
         spinnerRowParams.bottomMargin = dp(3);
         card.addView(row, spinnerRowParams);
 
@@ -470,7 +470,7 @@ public class SettingsActivity extends Activity {
         view.setMinHeight(0);
         view.setMinimumHeight(0);
         view.setPadding(dp(2), 0, dp(2), 0);
-        view.setHeight(dp(35));
+        view.setHeight(dp(39));
     }
 
     private void styleDropdownOptionText(TextView view, boolean selectedOption) {
