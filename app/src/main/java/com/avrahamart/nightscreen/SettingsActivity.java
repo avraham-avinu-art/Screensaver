@@ -1292,7 +1292,7 @@ public class SettingsActivity extends Activity {
                     path.lineTo(21f, 9f);
                     canvas.drawPath(path, paint);
                     path.moveTo(21f, 5f);
-                    path.lineTo(17f, 9f, paint);
+                    path.lineTo(17f, 9f);
                     canvas.drawPath(path, paint);
                     break;
                 case "battery-hold":
