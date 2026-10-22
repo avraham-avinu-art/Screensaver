@@ -275,11 +275,11 @@ public class MainActivity extends Activity {
         clockBlock.setOrientation(LinearLayout.VERTICAL);
         clockBlock.setGravity(Gravity.CENTER_HORIZONTAL);
 
-        timeText = textView("--:--", getInt("clockDateSize", 84), Color.rgb(247, 247, 247));
+        timeText = textView("--:--", getInt("clockDateSize", 96), Color.rgb(247, 247, 247));
         timeText.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
         timeText.setGravity(Gravity.CENTER);
         timeText.setIncludeFontPadding(true);
-        int initialClockSize = getInt("clockDateSize", 84);
+        int initialClockSize = getInt("clockDateSize", 96);
         int initialClockHeight = Math.max(dp(62), dp(initialClockSize + 20));
         clockBlock.addView(timeText, new LinearLayout.LayoutParams(-1, initialClockHeight));
 
@@ -563,7 +563,7 @@ public class MainActivity extends Activity {
 
         e.putInt("fontColor", getInt("fontColor", dateTextColor));
         e.putInt("fontSize", getInt("fontSize", 17));
-        e.putInt("clockDateSize", getInt("clockDateSize", 84));
+        e.putInt("clockDateSize", getInt("clockDateSize", 96));
         e.putInt("playerSize", getInt("playerSize", 17));
         e.putInt("fontWeight", getInt("fontWeight", 1));
         String savedFontFamily = getString("fontFamily", "sans-serif");
@@ -609,8 +609,8 @@ public class MainActivity extends Activity {
         e.putString("screenSaverDuration", getString("screenSaverDuration", "0"));
         if (!getBool("defaultLayoutV4Applied", false)) {
             // Apply the requested defaults once to existing installations too.
-            // Do not overwrite these pending editor values with the old preference values.
-            e.putInt("clockDateSize", 84);
+            // The current default is "very large" (96sp).
+            e.putInt("clockDateSize", 96);
             e.putString("clockDatePosition", "upper");
             e.putString("playerPosition", "bottom");
             e.putBoolean("defaultLayoutV4Applied", true);
@@ -659,6 +659,44 @@ public class MainActivity extends Activity {
                 }
             }
             e.putBoolean("clockSizePresetsV3Applied", true);
+        }
+
+        if (!getBool("clockSizePresetsV4Applied", false)) {
+            // Current presets are 48 / 60 / 72 / 84 / 96. Convert the previous
+            // five-preset scale once so each existing selection keeps its label.
+            boolean forceDefaultNow = !getBool("defaultLayoutV4Applied", false);
+            boolean hadClockSize = prefs.contains("clockDateSize");
+            int savedClockSize = getInt("clockDateSize", 84);
+            int migratedClockSize;
+            if (forceDefaultNow || !hadClockSize) {
+                migratedClockSize = 96;
+            } else {
+                boolean legacyExpandedPresets = !getBool("clockSizePresetsV3Applied", false)
+                        && !getBool("clockSizesV24Restored", false)
+                        && getBool("clockSizesV2Applied", false);
+                if (legacyExpandedPresets) {
+                    // Older four-preset versions already used 48/60/72/84.
+                    switch (savedClockSize) {
+                        case 38: migratedClockSize = 48; break;
+                        case 48: migratedClockSize = 48; break;
+                        case 60: migratedClockSize = 60; break;
+                        case 72: migratedClockSize = 84; break;
+                        case 84: migratedClockSize = 96; break;
+                        default: migratedClockSize = savedClockSize; break;
+                    }
+                } else {
+                    switch (savedClockSize) {
+                        case 38: migratedClockSize = 48; break;
+                        case 48: migratedClockSize = 60; break;
+                        case 60: migratedClockSize = 72; break;
+                        case 72: migratedClockSize = 84; break;
+                        case 84: migratedClockSize = 96; break;
+                        default: migratedClockSize = savedClockSize; break;
+                    }
+                }
+            }
+            e.putInt("clockDateSize", migratedClockSize);
+            e.putBoolean("clockSizePresetsV4Applied", true);
         }
         e.commit();
     }
@@ -770,7 +808,7 @@ public class MainActivity extends Activity {
 
         int color = getInt("fontColor", dateTextColor);
         int size = getInt("fontSize", 17);
-        int clockDateSize = getInt("clockDateSize", 72);
+        int clockDateSize = getInt("clockDateSize", 96);
         int playerSize = getInt("playerSize", 17);
         int weight = getInt("fontWeight", 1);
         String fontFamily = getString("fontFamily", "sans-serif");
