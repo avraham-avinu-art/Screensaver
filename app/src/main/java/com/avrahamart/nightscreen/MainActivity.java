@@ -284,7 +284,7 @@ public class MainActivity extends Activity {
         settingsButtonHitArea.addView(settingsButton, new FrameLayout.LayoutParams(
                 dp(36), dp(38), Gravity.TOP | Gravity.LEFT));
         FrameLayout.LayoutParams settingsParams = new FrameLayout.LayoutParams(
-                dp(72), dp(76), Gravity.TOP | Gravity.LEFT);
+                dp(72), dp(57), Gravity.TOP | Gravity.LEFT);
         settingsParams.leftMargin = dp(4);
         settingsParams.topMargin = dp(14);
         stage.addView(settingsButtonHitArea, settingsParams);
