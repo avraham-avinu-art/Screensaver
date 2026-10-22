@@ -608,9 +608,8 @@ public class MainActivity extends Activity {
         e.putInt("buttonBorderColor", getInt("buttonBorderColor", Color.rgb(110,110,110)));
         e.putString("screenSaverDuration", getString("screenSaverDuration", "0"));
         if (!getBool("defaultLayoutV4Applied", false)) {
-            // Apply the requested defaults once to existing installations too.
-            // The current default is "very large" (96sp).
-            e.putInt("clockDateSize", 96);
+            // Apply the requested layout positions once to existing installations.
+            // The clock-size preference is migrated separately below.
             e.putString("clockDatePosition", "upper");
             e.putString("playerPosition", "bottom");
             e.putBoolean("defaultLayoutV4Applied", true);
@@ -618,85 +617,53 @@ public class MainActivity extends Activity {
             e.putString("clockDatePosition", getString("clockDatePosition", "upper"));
             e.putString("playerPosition", getString("playerPosition", "bottom"));
         }
-        if (!getBool("clockSizesV24Restored", false)) {
-            // Normalize older expanded presets before applying the current preset update.
+        if (!getBool("clockSizePresetsV5Applied", false)) {
+            // The active options are exactly 48, 60, 72, 84 and 96sp.
+            // Migrate old saved values once, then never reinterpret this preference again.
+            boolean defaultLayoutPending = !getBool("defaultLayoutV4Applied", false);
             boolean hadClockSize = prefs.contains("clockDateSize");
-            int savedClockSize = getInt("clockDateSize", 72);
-            boolean wasExpandedByV2 = getBool("clockSizesV2Applied", false);
-            if (hadClockSize && (wasExpandedByV2 || savedClockSize == 84)) {
-                if (savedClockSize == 48 && wasExpandedByV2) {
-                    e.putInt("clockDateSize", 38);
-                } else if (savedClockSize == 60 && wasExpandedByV2) {
-                    e.putInt("clockDateSize", 48);
-                } else if (savedClockSize == 72 && wasExpandedByV2) {
-                    e.putInt("clockDateSize", 60);
-                } else if (savedClockSize == 84) {
-                    e.putInt("clockDateSize", 72);
-                }
-            }
-            e.putBoolean("clockSizesV24Restored", true);
-        }
-
-        if (!getBool("clockSizePresetsV3Applied", false)) {
-            boolean hadClockSize = prefs.contains("clockDateSize");
-            int savedClockSize = getInt("clockDateSize", 84);
-            boolean cameFromExpandedPresets = !getBool("clockSizesV24Restored", false)
-                    && getBool("clockSizesV2Applied", false);
-            if (!hadClockSize) {
-                // Preserve the existing default selection: "very large".
-                e.putInt("clockDateSize", 84);
-            } else if (cameFromExpandedPresets) {
-                // These values already represent small/medium/large/very large in the expanded
-                // 2.6 preset family, so keep the selected preset.
-                e.putInt("clockDateSize", savedClockSize);
-            } else {
-                switch (savedClockSize) {
-                    case 38: e.putInt("clockDateSize", 48); break;
-                    case 48: e.putInt("clockDateSize", 60); break;
-                    case 60: e.putInt("clockDateSize", 72); break;
-                    case 72: e.putInt("clockDateSize", 84); break;
-                    default: e.putInt("clockDateSize", savedClockSize); break;
-                }
-            }
-            e.putBoolean("clockSizePresetsV3Applied", true);
-        }
-
-        if (!getBool("clockSizePresetsV4Applied", false)) {
-            // Current presets are 48 / 60 / 72 / 84 / 96. Convert the previous
-            // five-preset scale once so each existing selection keeps its label.
-            boolean forceDefaultNow = !getBool("defaultLayoutV4Applied", false);
-            boolean hadClockSize = prefs.contains("clockDateSize");
-            int savedClockSize = getInt("clockDateSize", 84);
+            int savedClockSize = getInt("clockDateSize", 96);
+            boolean previousPresetMigrationApplied =
+                    getBool("clockSizePresetsV4Applied", false);
+            boolean legacyFourPresetScale =
+                    getBool("clockSizesV2Applied", false)
+                    && !getBool("clockSizePresetsV3Applied", false)
+                    && !getBool("clockSizesV24Restored", false);
             int migratedClockSize;
-            if (forceDefaultNow || !hadClockSize) {
+
+            if (defaultLayoutPending || !hadClockSize) {
                 migratedClockSize = 96;
+            } else if (previousPresetMigrationApplied
+                    && (savedClockSize == 48 || savedClockSize == 60
+                    || savedClockSize == 72 || savedClockSize == 84
+                    || savedClockSize == 96)) {
+                // These values already use the current five-size scale.
+                migratedClockSize = savedClockSize;
+            } else if (legacyFourPresetScale) {
+                // Preserve the label from older four-size versions.
+                switch (savedClockSize) {
+                    case 38: migratedClockSize = 48; break;
+                    case 48: migratedClockSize = 48; break;
+                    case 60: migratedClockSize = 60; break;
+                    case 72: migratedClockSize = 84; break;
+                    case 84: migratedClockSize = 96; break;
+                    case 96: migratedClockSize = 96; break;
+                    default: migratedClockSize = 96; break;
+                }
             } else {
-                boolean legacyExpandedPresets = !getBool("clockSizePresetsV3Applied", false)
-                        && !getBool("clockSizesV24Restored", false)
-                        && getBool("clockSizesV2Applied", false);
-                if (legacyExpandedPresets) {
-                    // Older four-preset versions already used 48/60/72/84.
-                    switch (savedClockSize) {
-                        case 38: migratedClockSize = 48; break;
-                        case 48: migratedClockSize = 48; break;
-                        case 60: migratedClockSize = 60; break;
-                        case 72: migratedClockSize = 84; break;
-                        case 84: migratedClockSize = 96; break;
-                        default: migratedClockSize = savedClockSize; break;
-                    }
-                } else {
-                    switch (savedClockSize) {
-                        case 38: migratedClockSize = 48; break;
-                        case 48: migratedClockSize = 60; break;
-                        case 60: migratedClockSize = 72; break;
-                        case 72: migratedClockSize = 84; break;
-                        case 84: migratedClockSize = 96; break;
-                        default: migratedClockSize = savedClockSize; break;
-                    }
+                // Old five-size options: 38 / 48 / 60 / 72 / 84.
+                switch (savedClockSize) {
+                    case 38: migratedClockSize = 48; break;
+                    case 48: migratedClockSize = 60; break;
+                    case 60: migratedClockSize = 72; break;
+                    case 72: migratedClockSize = 84; break;
+                    case 84: migratedClockSize = 96; break;
+                    case 96: migratedClockSize = 96; break;
+                    default: migratedClockSize = 96; break;
                 }
             }
             e.putInt("clockDateSize", migratedClockSize);
-            e.putBoolean("clockSizePresetsV4Applied", true);
+            e.putBoolean("clockSizePresetsV5Applied", true);
         }
         e.commit();
     }
@@ -733,15 +700,6 @@ public class MainActivity extends Activity {
         } catch (Throwable ignored) {
             return def;
         }
-    }
-
-    private float dateFontSizeForClockPreset(int clockSize) {
-        // The clock grows strongly at the upper presets, while date lines stay restrained:
-        // "Large" dates match the old "Medium" size; "Very large" dates match old "Large".
-        if (clockSize <= 48) return 18f;
-        if (clockSize <= 60) return 20f;
-        if (clockSize <= 72) return 20f;
-        return 24f;
     }
 
     private int measuredLineHeight(TextView view, String sampleText,

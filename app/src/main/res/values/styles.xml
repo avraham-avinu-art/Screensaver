@@ -10,4 +10,10 @@
         <item name="android:windowActionModeOverlay">true</item>
         <item name="android:windowBackground">@android:color/black</item>
     </style>
+
+    <!-- Hide the status bar before the launch window draws, avoiding a visible flash. -->
+    <style name="AppTheme.Fullscreen" parent="@style/AppTheme">
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
 </resources>
