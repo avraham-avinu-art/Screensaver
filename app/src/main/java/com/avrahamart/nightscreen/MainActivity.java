@@ -378,10 +378,9 @@ public class MainActivity extends Activity {
             }
             cp.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
             if ("upper".equals(clockPos)) {
-                // This option remains labeled "25% from the top", but its visual
-                // position is intentionally one third down the screen for better balance.
-                // Anchor the clock line itself, accounting for the selected font size.
-                cp.topMargin = Math.max(0, Math.round(h / 3f - clockLineHeight / 2f));
+                // Place the center of the clock line at exactly one quarter of the
+                // screen height, independent of the clock/date block's total height.
+                cp.topMargin = Math.max(0, Math.round(h / 4f - clockLineHeight / 2f));
             } else if ("middle".equals(clockPos)) {
                 cp.topMargin = Math.max(0, Math.round(h * 0.50f - blockHeight / 2f));
             } else {
@@ -764,6 +763,26 @@ public class MainActivity extends Activity {
         }
     }
 
+    private int measuredVisibleGlyphHeight(TextView view, String sampleText,
+                                            int extraSpaceDp, int minimumHeightDp) {
+        if (view == null) return dp(minimumHeightDp);
+
+        android.graphics.Paint paint = view.getPaint();
+        android.graphics.Rect bounds = new android.graphics.Rect();
+        int visibleGlyphHeight = 0;
+        if (sampleText != null && !sampleText.isEmpty()) {
+            paint.getTextBounds(sampleText, 0, sampleText.length(), bounds);
+            visibleGlyphHeight = Math.max(visibleGlyphHeight, bounds.height());
+        }
+        CharSequence currentText = view.getText();
+        if (currentText != null && currentText.length() > 0) {
+            paint.getTextBounds(currentText.toString(), 0, currentText.length(), bounds);
+            visibleGlyphHeight = Math.max(visibleGlyphHeight, bounds.height());
+        }
+
+        return Math.max(dp(minimumHeightDp), visibleGlyphHeight + dp(extraSpaceDp));
+    }
+
     private int measuredLineHeight(TextView view, String sampleText,
                                    int extraSpaceDp, int minimumHeightDp) {
         if (view == null) return dp(minimumHeightDp);
@@ -888,8 +907,8 @@ public class MainActivity extends Activity {
         // Measure every row with its final Typeface and TextSize. Hebrew and Gregorian
         // dates are measured separately because the custom font's Hebrew glyphs can be
         // taller than its digits, even when both rows share the same nominal font size.
-        int clockH = Math.max(dp(62), measuredLineHeight(
-                timeText, "0123456789:00", 0, clockDateSize));
+        int clockH = measuredVisibleGlyphHeight(
+                timeText, "0123456789:00", 4, 40);
         int gregorianH = Math.max(dateRowHeightForClockPreset(clockDateSize),
                 measuredLineHeight(gregorianText, "יום ה׳ · 22.10.2026", 0, 24));
         int hebrewH = Math.max(dateRowHeightForClockPreset(clockDateSize),
@@ -1004,10 +1023,9 @@ public class MainActivity extends Activity {
     }
 
     private int dateClockGapDp(int clockSize) {
-        if (clockSize >= 96) return 5;
-        if (clockSize >= 84) return 4;
-        if (clockSize >= 72) return 3;
-        return 2;
+        // Keep only a minimal deliberate gap; excess visual space is handled by
+        // sizing the clock row to its visible glyph bounds below.
+        return 1;
     }
 
     private float dateTextSizeForClockPreset(int clockSize) {
