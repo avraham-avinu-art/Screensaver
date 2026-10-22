@@ -32,6 +32,7 @@ import android.view.Gravity;
 import android.view.KeyEvent;
 import android.provider.Settings;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.SeekBar;
@@ -363,13 +364,25 @@ public class MainActivity extends Activity {
             String playerPos = getString("playerPosition", "bottom");
 
             FrameLayout.LayoutParams cp = (FrameLayout.LayoutParams) clockBlock.getLayoutParams();
-            int clockH = clockBlock.getMeasuredHeight();
+            int blockHeight = Math.max(0, clockBlock.getMeasuredHeight());
+            int clockLineHeight = blockHeight;
+            if (timeText != null) {
+                // Prefer the final row height calculated from the selected font and size;
+                // this remains accurate even when the surrounding date rows are taller.
+                ViewGroup.LayoutParams timeParams = timeText.getLayoutParams();
+                if (timeParams != null && timeParams.height > 0) {
+                    clockLineHeight = timeParams.height;
+                } else if (timeText.getMeasuredHeight() > 0) {
+                    clockLineHeight = timeText.getMeasuredHeight();
+                }
+            }
             cp.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
             if ("upper".equals(clockPos)) {
-                // The center of the clock/date block sits exactly one quarter of the screen down.
-                cp.topMargin = Math.max(0, Math.round(h * 0.25f - clockH / 2f));
+                // Anchor the clock line itself at the 25% point. Centering the whole
+                // clock+dates block puts the visible clock too high because dates sit below it.
+                cp.topMargin = Math.max(0, Math.round(h * 0.25f - clockLineHeight / 2f));
             } else if ("middle".equals(clockPos)) {
-                cp.topMargin = Math.max(0, Math.round(h * 0.50f - clockH / 2f));
+                cp.topMargin = Math.max(0, Math.round(h * 0.50f - blockHeight / 2f));
             } else {
                 // "למעלה" keeps the top edge of the block aligned with the screen top.
                 cp.topMargin = 0;
