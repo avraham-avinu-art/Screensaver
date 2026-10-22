@@ -43,10 +43,14 @@ import android.widget.Toast;
 import com.kosherjava.zmanim.hebrewcalendar.HebrewDateFormatter;
 import com.kosherjava.zmanim.hebrewcalendar.JewishDate;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 public class MainActivity extends Activity {
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -565,7 +569,7 @@ public class MainActivity extends Activity {
         e.putInt("clockDateSize", getInt("clockDateSize", 84));
         e.putInt("playerSize", getInt("playerSize", 17));
         e.putInt("fontWeight", getInt("fontWeight", 1));
-        String savedFontFamily = getString("fontFamily", "sans-serif");
+        String savedFontFamily = getString("fontFamily", "custom:DL Adva.ttf");
         e.putString("fontFamily", savedFontFamily);
 
         e.putBoolean("showGregorian", getBool("showGregorian", true));
@@ -712,6 +716,57 @@ public class MainActivity extends Activity {
         return String.format(Locale.US, "%d:%02d", (t / 60) % 60, t % 60);
     }
 
+    private Typeface loadCustomTypeface(String fileName) {
+        Typeface fallback = Typeface.create("sans-serif", Typeface.NORMAL);
+        if (fileName == null || fileName.isEmpty()
+                || fileName.contains("/") || fileName.contains("\\")
+                || !(fileName.toLowerCase(Locale.US).endsWith(".ttf")
+                     || fileName.toLowerCase(Locale.US).endsWith(".otf"))) {
+            return fallback;
+        }
+
+        File fontDirectory = new File(getFilesDir(), "screen_saver_fonts");
+        if (!fontDirectory.isDirectory() && !fontDirectory.mkdirs()) {
+            return fallback;
+        }
+        File selectedFont = new File(fontDirectory, fileName);
+        if (!selectedFont.isFile() || selectedFont.length() == 0L) {
+            byte[] buffer = new byte[8192];
+            try (ZipInputStream zip = new ZipInputStream(
+                    getAssets().open("fonts/Fonts13.zip"))) {
+                ZipEntry entry;
+                while ((entry = zip.getNextEntry()) != null) {
+                    String entryName = entry.getName();
+                    if (entry.isDirectory() || entryName == null
+                            || entryName.contains("/") || entryName.contains("\\")
+                            || !(entryName.toLowerCase(Locale.US).endsWith(".ttf")
+                                 || entryName.toLowerCase(Locale.US).endsWith(".otf"))) {
+                        zip.closeEntry();
+                        continue;
+                    }
+                    File destination = new File(fontDirectory, entryName);
+                    try (FileOutputStream output = new FileOutputStream(destination)) {
+                        int count;
+                        while ((count = zip.read(buffer)) != -1) {
+                            output.write(buffer, 0, count);
+                        }
+                        output.flush();
+                    }
+                    zip.closeEntry();
+                }
+            } catch (Exception ignored) {
+            }
+        }
+
+        if (selectedFont.isFile() && selectedFont.length() > 0L) {
+            try {
+                return Typeface.createFromFile(selectedFont);
+            } catch (Exception ignored) {
+            }
+        }
+        return fallback;
+    }
+
     private void applySettings() {
         if (prefs == null || gregorianText == null) return;
 
@@ -722,7 +777,17 @@ public class MainActivity extends Activity {
         int weight = getInt("fontWeight", 1);
         String fontFamily = getString("fontFamily", "sans-serif");
         Typeface tf;
-        if (weight == 2) {
+        if (fontFamily.startsWith("custom:")) {
+            Typeface baseTypeface = loadCustomTypeface(fontFamily.substring("custom:".length()));
+            if (weight <= 0) {
+                tf = baseTypeface;
+            } else if (weight == 1 && Build.VERSION.SDK_INT >= 28) {
+                // Use the platform's medium weight when variable/synthetic weights are supported.
+                tf = Typeface.create(baseTypeface, 500, false);
+            } else {
+                tf = Typeface.create(baseTypeface, Typeface.BOLD);
+            }
+        } else if (weight == 2) {
             tf = Typeface.create(fontFamily, Typeface.BOLD);
         } else if (weight == 1 && "sans-serif".equals(fontFamily)) {
             // Android's sans-serif default and sans-serif-medium are distinct weights.

@@ -187,12 +187,17 @@ public class SettingsActivity extends Activity {
                 new String[]{"רגיל", "בינוני", "מודגש"},
                 new String[]{"0", "1", "2"}, "fontWeight");
         addSpinner(font, "סוג",
-                new String[]{"Sans Serif", "Serif", "Monospace", "Casual", "Cursive",
-                        "Sans Serif Condensed", "Sans Serif Rounded", "Sans Serif Small Caps",
-                        "Serif Monospace", "Serif Condensed"},
-                new String[]{"sans-serif", "serif", "monospace", "casual", "cursive",
-                        "sans-serif-condensed", "sans-serif-rounded", "sans-serif-smallcaps",
-                        "serif-monospace", "serif-condensed"}, "fontFamily");
+                new String[]{"DL Adva", "Keter Aram Tsova", "Shofar", "Gveret Levin",
+                        "Yehuda CLM", "Stam Ashkenaz", "DL Apollo Black", "DL Normador",
+                        "Ozrad CLM Bold", "Haim FB Black", "Coming Soon", "Merienda Black",
+                        "Short Stack"},
+                new String[]{"custom:DL Adva.ttf", "custom:KeterAramTsova.ttf",
+                        "custom:ShofarRegular.ttf", "custom:gveretlevi-regular.ttf",
+                        "custom:yehudaclm-light.ttf", "custom:Ashkenazi-Stam.ttf",
+                        "custom:DL ApolloBlack.ttf", "custom:DL Normador.TTF",
+                        "custom:OzradCLM-Bold.otf", "custom:fmhaimblack.ttf",
+                        "custom:ComingSoon.ttf", "custom:Merienda-Black.ttf",
+                        "custom:ShortStack-Regular.ttf"}, "fontFamily");
 
         clockDateCard = addCard(content, "תצוגת שעון ותאריך");
         addDiscreteSlider(clockDateCard, "גודל",
@@ -639,6 +644,21 @@ public class SettingsActivity extends Activity {
         labelView.setTextDirection(View.TEXT_DIRECTION_RTL);
 
         int selected = selectedIndex(key, values);
+        if ("fontFamily".equals(key)) {
+            String storedFamily = getString(key, values[0]);
+            boolean knownFamily = false;
+            for (String value : values) {
+                if (value.equals(storedFamily)) {
+                    knownFamily = true;
+                    break;
+                }
+            }
+            // Migrate previous Android built-in family values to the first newly supplied font.
+            if (!knownFamily) {
+                selected = 0;
+                persistOption(key, values[0]);
+            }
+        }
         int spinnerWidth = dropdownWidthForOptions(names);
         Spinner spinner = new Spinner(this);
         spinner.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
