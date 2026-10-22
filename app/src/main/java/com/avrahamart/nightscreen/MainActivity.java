@@ -64,9 +64,12 @@ public class MainActivity extends Activity {
             String action = intent.getAction();
             if (Intent.ACTION_POWER_CONNECTED.equals(action)
                     || Intent.ACTION_POWER_DISCONNECTED.equals(action)) {
-                if ("charging".equals(getString("screenSaverDuration", "0"))) {
-                    scheduleAutoOff();
+                updateBatteryPercentView();
+                if (getBool("noShutdownWhileCharging", false)) {
+                    scheduleAutoOff(true);
                 }
+            } else if (Intent.ACTION_BATTERY_CHANGED.equals(action)) {
+                updateBatteryPercentView();
             } else if (Intent.ACTION_SCREEN_ON.equals(action) && screenSleepPending) {
                 wakeSaverDisplay();
             }
@@ -82,8 +85,11 @@ public class MainActivity extends Activity {
     private final int dateTextColor = Color.rgb(220, 220, 220);
     private SharedPreferences prefs;
     private ImageView settingsButton;
+    private FrameLayout settingsButtonHitArea;
+    private TextView batteryPercentText;
     private final Runnable hideSettingsButtonRunnable = () -> {
-        if (settingsButton != null) settingsButton.setVisibility(View.GONE);
+        if (settingsButtonHitArea != null) settingsButtonHitArea.setVisibility(View.GONE);
+        else if (settingsButton != null) settingsButton.setVisibility(View.GONE);
     };
     private boolean settingsDialogOpen = false;
     private FrameLayout stageView;
@@ -195,6 +201,10 @@ public class MainActivity extends Activity {
                 settingsDialogOpen = false;
                 settingsOpenedElapsedRealtime = 0L;
                 applySettings();
+                if (stageView != null) {
+                    stageView.post(() -> updateScreenPositions(
+                            stageView, clockBlockView, mediaHolderView));
+                }
             }
 
             if (screenSleepPending) {
@@ -254,6 +264,13 @@ public class MainActivity extends Activity {
         stage.setBackgroundColor(Color.BLACK);
         root.addView(stage, new LinearLayout.LayoutParams(-1, 0, 1f));
 
+        settingsButtonHitArea = new FrameLayout(this);
+        settingsButtonHitArea.setBackgroundColor(Color.TRANSPARENT);
+        settingsButtonHitArea.setVisibility(View.GONE);
+        settingsButtonHitArea.setClickable(true);
+        settingsButtonHitArea.setContentDescription("הגדרות");
+        settingsButtonHitArea.setOnClickListener(v -> showSettings());
+
         settingsButton = new ImageView(this);
         settingsButton.setImageResource(R.drawable.ic_settings);
         settingsButton.setScaleType(ImageView.ScaleType.FIT_CENTER);
@@ -261,14 +278,16 @@ public class MainActivity extends Activity {
         settingsButton.setAlpha(0.48f);
         settingsButton.setPadding(dp(4), dp(4), dp(4), dp(4));
         settingsButton.setBackgroundColor(Color.TRANSPARENT);
-        settingsButton.setVisibility(View.GONE);
         settingsButton.setContentDescription("הגדרות");
         settingsButton.setOnClickListener(v -> showSettings());
+        // The hit target is twice as wide and tall; the visual settings icon stays 36x38dp.
+        settingsButtonHitArea.addView(settingsButton, new FrameLayout.LayoutParams(
+                dp(36), dp(38), Gravity.CENTER));
         FrameLayout.LayoutParams settingsParams = new FrameLayout.LayoutParams(
-                dp(36), dp(38), Gravity.TOP | Gravity.LEFT);
+                dp(72), dp(76), Gravity.TOP | Gravity.LEFT);
         settingsParams.leftMargin = dp(4);
         settingsParams.topMargin = dp(14);
-        stage.addView(settingsButton, settingsParams);
+        stage.addView(settingsButtonHitArea, settingsParams);
 
         LinearLayout clockBlock = new LinearLayout(this);
         clockBlockView = clockBlock;
@@ -278,15 +297,15 @@ public class MainActivity extends Activity {
         timeText = textView("--:--", getInt("clockDateSize", 96), Color.rgb(247, 247, 247));
         timeText.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
         timeText.setGravity(Gravity.CENTER);
-        timeText.setIncludeFontPadding(true);
+        timeText.setIncludeFontPadding(false);
         int initialClockSize = getInt("clockDateSize", 96);
-        int initialClockHeight = Math.max(dp(62), dp(initialClockSize + 20));
+        int initialClockHeight = Math.max(dp(62), dp(initialClockSize + 4));
         clockBlock.addView(timeText, new LinearLayout.LayoutParams(-1, initialClockHeight));
 
         gregorianText = textView("", 22, dateTextColor);
         gregorianText.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         gregorianText.setGravity(Gravity.CENTER);
-        gregorianText.setIncludeFontPadding(true);
+        gregorianText.setIncludeFontPadding(false);
         int initialDateHeight = dateRowHeightForClockPreset(initialClockSize);
         gregorianText.setTextDirection(View.TEXT_DIRECTION_ANY_RTL);
         LinearLayout.LayoutParams gregorianParams =
@@ -299,7 +318,7 @@ public class MainActivity extends Activity {
         hebrewText.setGravity(Gravity.CENTER);
         hebrewText.setTextDirection(View.TEXT_DIRECTION_ANY_RTL);
         hebrewText.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-        hebrewText.setIncludeFontPadding(true);
+        hebrewText.setIncludeFontPadding(false);
         clockBlock.addView(hebrewText, new LinearLayout.LayoutParams(-1, initialDateHeight));
 
         int initialClockBlockHeight = initialClockHeight + initialDateHeight * 2
@@ -314,6 +333,18 @@ public class MainActivity extends Activity {
 
         // Notification permission guidance now lives only in Settings.
         buildSystemMediaMirror(mediaHolder);
+
+        batteryPercentText = textView("", 15, Color.rgb(156, 178, 203));
+        batteryPercentText.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        batteryPercentText.setGravity(Gravity.CENTER);
+        batteryPercentText.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        batteryPercentText.setIncludeFontPadding(false);
+        batteryPercentText.setVisibility(View.GONE);
+        FrameLayout.LayoutParams batteryPercentParams = new FrameLayout.LayoutParams(
+                dp(54), dp(30), Gravity.TOP | Gravity.RIGHT);
+        batteryPercentParams.rightMargin = dp(14);
+        batteryPercentParams.topMargin = dp(17);
+        stage.addView(batteryPercentText, batteryPercentParams);
 
         stage.post(() -> {
             applySettings();
@@ -333,11 +364,14 @@ public class MainActivity extends Activity {
 
             FrameLayout.LayoutParams cp = (FrameLayout.LayoutParams) clockBlock.getLayoutParams();
             int clockH = clockBlock.getMeasuredHeight();
+            cp.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
             if ("upper".equals(clockPos)) {
-                cp.topMargin = Math.max(0, Math.round(h * 0.275f - clockH / 2f));
+                // The center of the clock/date block sits exactly one quarter of the screen down.
+                cp.topMargin = Math.max(0, Math.round(h * 0.25f - clockH / 2f));
             } else if ("middle".equals(clockPos)) {
                 cp.topMargin = Math.max(0, Math.round(h * 0.50f - clockH / 2f));
             } else {
+                // "למעלה" keeps the top edge of the block aligned with the screen top.
                 cp.topMargin = 0;
             }
             clockBlock.setLayoutParams(cp);
@@ -607,6 +641,20 @@ public class MainActivity extends Activity {
         e.putInt("buttonColor", getInt("buttonColor", Color.rgb(45,45,45)));
         e.putInt("buttonBorderColor", getInt("buttonBorderColor", Color.rgb(110,110,110)));
         e.putString("screenSaverDuration", getString("screenSaverDuration", "0"));
+        e.putBoolean("autoStartOnCharge", getBool("autoStartOnCharge", false));
+        e.putBoolean("noShutdownWhileCharging",
+                getBool("noShutdownWhileCharging", false));
+        e.putBoolean("showBatteryPercent", getBool("showBatteryPercent", false));
+        if (!getBool("chargingOptionsSplitV1Applied", false)) {
+            // Migrate the old activity-time choice once to the dedicated charging switch.
+            if ("charging".equals(getString("screenSaverDuration", "device"))) {
+                e.putString("screenSaverDuration", "device");
+                if (!prefs.contains("noShutdownWhileCharging")) {
+                    e.putBoolean("noShutdownWhileCharging", true);
+                }
+            }
+            e.putBoolean("chargingOptionsSplitV1Applied", true);
+        }
         if (!getBool("defaultLayoutV4Applied", false)) {
             // Apply the requested layout positions once to existing installations.
             // The clock-size preference is migrated separately below.
@@ -709,9 +757,8 @@ public class MainActivity extends Activity {
         android.graphics.Paint paint = view.getPaint();
         android.graphics.Paint.FontMetrics metrics = paint.getFontMetrics();
 
-        // Use the complete font line metrics (including top/bottom padding), not just
-        // ascent/descent. Some custom fonts have glyphs extending beyond those values.
-        int lineMetricsHeight = Math.round(metrics.bottom - metrics.top);
+        // Exclude excess font padding; visible glyph bounds below still protect custom fonts.
+        int lineMetricsHeight = Math.round(metrics.descent - metrics.ascent);
 
         // Also inspect a representative sample and the current text, including Hebrew
         // characters and digits, in case visible outlines extend beyond font metrics.
@@ -773,21 +820,24 @@ public class MainActivity extends Activity {
         Typeface tf;
         if (fontFamily.startsWith("custom:")) {
             Typeface baseTypeface = loadCustomTypeface(fontFamily.substring("custom:".length()));
-            if (weight <= 0) {
+            if (weight == -1) {
+                tf = Build.VERSION.SDK_INT >= 28
+                        ? Typeface.create(baseTypeface, 300, false) : baseTypeface;
+            } else if (weight == 0) {
                 tf = baseTypeface;
-            } else if (weight == 1 && Build.VERSION.SDK_INT >= 28) {
-                // Use the platform's medium weight when variable/synthetic weights are supported.
-                tf = Typeface.create(baseTypeface, 500, false);
+            } else if (Build.VERSION.SDK_INT >= 28) {
+                tf = Typeface.create(baseTypeface, weight == 1 ? 500 : 700, false);
             } else {
-                tf = Typeface.create(baseTypeface, Typeface.BOLD);
+                tf = Typeface.create(baseTypeface,
+                        weight == 1 ? Typeface.NORMAL : Typeface.BOLD);
             }
+        } else if (weight == -1 && "sans-serif".equals(fontFamily)) {
+            tf = Typeface.create("sans-serif-thin", Typeface.NORMAL);
         } else if (weight == 2) {
             tf = Typeface.create(fontFamily, Typeface.BOLD);
         } else if (weight == 1 && "sans-serif".equals(fontFamily)) {
-            // Android's sans-serif default and sans-serif-medium are distinct weights.
             tf = Typeface.create("sans-serif-medium", Typeface.NORMAL);
         } else if (weight == 1) {
-            // For other families, make the medium choice visibly heavier than regular.
             tf = Typeface.create(fontFamily, Typeface.BOLD);
         } else {
             tf = Typeface.create(fontFamily, Typeface.NORMAL);
@@ -798,9 +848,11 @@ public class MainActivity extends Activity {
         hebrewText.setVisibility(
                 getBool("showHebrew", true) ? View.VISIBLE : View.GONE);
 
-        gregorianText.setTextColor(color);
-        hebrewText.setTextColor(color);
-        timeText.setTextColor(color);
+        int displayTextColor = weight == -1 && fontFamily.startsWith("custom:")
+                ? blendWithBlack(color, 0.80f) : color;
+        gregorianText.setTextColor(displayTextColor);
+        hebrewText.setTextColor(displayTextColor);
+        timeText.setTextColor(displayTextColor);
         // Glyph-size differences are normalized inside the font files themselves.
         // Keep Android text sizes tied directly to the size preset selected by the user.
         float dateSize = dateTextSizeForClockPreset(clockDateSize);
@@ -811,6 +863,9 @@ public class MainActivity extends Activity {
         gregorianText.setTypeface(tf);
         hebrewText.setTypeface(tf);
         timeText.setTypeface(tf);
+        applyFontWeightToTextView(gregorianText, weight);
+        applyFontWeightToTextView(hebrewText, weight);
+        applyFontWeightToTextView(timeText, weight);
 
         boolean showGregorian = getBool("showGregorian", true);
         boolean showHebrew = getBool("showHebrew", true);
@@ -820,11 +875,11 @@ public class MainActivity extends Activity {
         // dates are measured separately because the custom font's Hebrew glyphs can be
         // taller than its digits, even when both rows share the same nominal font size.
         int clockH = Math.max(dp(62), measuredLineHeight(
-                timeText, "0123456789:00", 12, clockDateSize + 20));
+                timeText, "0123456789:00", 2, clockDateSize + 4));
         int gregorianH = Math.max(dateRowHeightForClockPreset(clockDateSize),
-                measuredLineHeight(gregorianText, "יום ה׳ · 22.10.2026", 8, 24));
+                measuredLineHeight(gregorianText, "יום ה׳ · 22.10.2026", 2, 24));
         int hebrewH = Math.max(dateRowHeightForClockPreset(clockDateSize),
-                measuredLineHeight(hebrewText, "כ״ט בתשרי תשפ״ז אבגדהוזחטיכלמנסעפצקרשת", 10, 24));
+                measuredLineHeight(hebrewText, "כ״ט בתשרי תשפ״ז אבגדהוזחטיכלמנסעפצקרשת", 2, 24));
 
         LinearLayout.LayoutParams tp = (LinearLayout.LayoutParams) timeText.getLayoutParams();
         tp.height = clockH;
@@ -856,6 +911,13 @@ public class MainActivity extends Activity {
             mediaTitle.setTypeface(tf);
             mediaDetails.setTypeface(tf);
             mediaProgressText.setTypeface(tf);
+            if (mediaCurrentText != null) mediaCurrentText.setTypeface(tf);
+            if (mediaTotalText != null) mediaTotalText.setTypeface(tf);
+            applyFontWeightToTextView(mediaTitle, weight);
+            applyFontWeightToTextView(mediaDetails, weight);
+            applyFontWeightToTextView(mediaProgressText, weight);
+            applyFontWeightToTextView(mediaCurrentText, weight);
+            applyFontWeightToTextView(mediaTotalText, weight);
             mediaTitle.setTextSize(playerSize);
             mediaDetails.setTextSize(playerSize);
             int textRowHeight = Math.max(dp(30), dp(playerSize + 12));
@@ -900,11 +962,11 @@ public class MainActivity extends Activity {
                 }
             }
 
-            mediaTitle.setTextColor(color);
-            mediaDetails.setTextColor(color);
-            mediaProgressText.setTextColor(color);
-            mediaCurrentText.setTextColor(color);
-            mediaTotalText.setTextColor(color);
+            mediaTitle.setTextColor(displayTextColor);
+            mediaDetails.setTextColor(displayTextColor);
+            mediaProgressText.setTextColor(displayTextColor);
+            mediaCurrentText.setTextColor(displayTextColor);
+            mediaTotalText.setTextColor(displayTextColor);
             mediaSeekBar.setProgressTintList(android.content.res.ColorStateList.valueOf(color));
             mediaSeekBar.setProgressBackgroundTintList(
                     android.content.res.ColorStateList.valueOf(blendWithBlack(color, 0.48f)));
@@ -924,7 +986,7 @@ public class MainActivity extends Activity {
                 updateScreenPositions(stageView, clockBlockView, mediaHolderView);
             }
         }
-
+        updateBatteryPercentView();
     }
 
     private int dateClockGapDp(int clockSize) {
@@ -940,8 +1002,51 @@ public class MainActivity extends Activity {
     }
 
     private int dateRowHeightForClockPreset(int clockSize) {
-        // Keep enough height for the larger date text without changing the surrounding layout.
-        return Math.max(dp(24), dp(Math.round(clockSize * 0.45f)));
+        // Keep each date row close to its actual glyph metrics to avoid excess visual gaps.
+        return Math.max(dp(24), dp(Math.round(clockSize * 0.36f)));
+    }
+
+    private void applyFontWeightToTextView(TextView view, int weight) {
+        if (view == null) return;
+        android.graphics.Paint paint = view.getPaint();
+        if (weight == 1 || weight == 2) {
+            paint.setStyle(android.graphics.Paint.Style.FILL_AND_STROKE);
+            float density = getResources().getDisplayMetrics().density;
+            // Custom font assets often have only one embedded weight. A small controlled
+            // stroke makes "medium" and "bold" visibly different even for static faces.
+            paint.setStrokeWidth(density * (weight == 1 ? 0.18f : 0.48f));
+        } else {
+            paint.setStyle(android.graphics.Paint.Style.FILL);
+            paint.setStrokeWidth(0f);
+        }
+        view.invalidate();
+    }
+
+    private void updateBatteryPercentView() {
+        if (batteryPercentText == null) return;
+        if (!getBool("showBatteryPercent", false) || !isDeviceCharging()) {
+            batteryPercentText.setVisibility(View.GONE);
+            return;
+        }
+        try {
+            Intent battery = registerReceiver(null,
+                    new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+            if (battery == null) {
+                batteryPercentText.setVisibility(View.GONE);
+                return;
+            }
+            int level = battery.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
+            int scale = battery.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
+            if (level < 0 || scale <= 0) {
+                batteryPercentText.setVisibility(View.GONE);
+                return;
+            }
+            int percent = Math.max(0, Math.min(100, Math.round(level * 100f / scale)));
+            batteryPercentText.setText(percent + "%");
+            batteryPercentText.setVisibility(View.VISIBLE);
+        } catch (Throwable ignored) {
+            batteryPercentText.setVisibility(View.GONE);
+        }
     }
 
     private void applyMediaFrame(boolean hasActiveSong) {
@@ -994,17 +1099,11 @@ public class MainActivity extends Activity {
             return;
         }
 
-        // While charging, keep the display awake. When unplugged, Android's own
-        // screen timeout is allowed to run normally.
-        if ("charging".equals(value)) {
+        // This independent switch prevents screen-off only while the device is plugged in.
+        if (getBool("noShutdownWhileCharging", false) && isDeviceCharging()) {
             activityDeadlineElapsedRealtime = 0L;
-            if (isDeviceCharging()) {
-                getWindow().addFlags(
-                        android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-            } else {
-                getWindow().clearFlags(
-                        android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-            }
+            getWindow().addFlags(
+                    android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
             return;
         }
 
@@ -1120,6 +1219,7 @@ public class MainActivity extends Activity {
         IntentFilter filter = new IntentFilter();
         filter.addAction(Intent.ACTION_POWER_CONNECTED);
         filter.addAction(Intent.ACTION_POWER_DISCONNECTED);
+        filter.addAction(Intent.ACTION_BATTERY_CHANGED);
         filter.addAction(Intent.ACTION_SCREEN_ON);
         try {
             if (Build.VERSION.SDK_INT >= 33) {
@@ -1140,9 +1240,9 @@ public class MainActivity extends Activity {
     }
 
     private void showSettingsButtonForThreeSeconds() {
-        if (settingsButton == null || settingsDialogOpen) return;
+        if (settingsButton == null || settingsButtonHitArea == null || settingsDialogOpen) return;
         handler.removeCallbacks(hideSettingsButtonRunnable);
-        settingsButton.setVisibility(View.VISIBLE);
+        settingsButtonHitArea.setVisibility(View.VISIBLE);
         settingsButton.setAlpha(0.58f);
         handler.postDelayed(hideSettingsButtonRunnable, 3_000L);
     }

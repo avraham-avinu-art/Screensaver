@@ -175,17 +175,21 @@ public class SettingsActivity extends Activity {
         addCheck(display, "תאריך לועזי", "showGregorian", true);
         addCheck(display, "הצגת הנגן", "showPlayer", true);
         addDiscreteSlider(display, "זמן פעילות",
-                new String[]{"לפי המכשיר", "דקה אחת", "חמש דקות",
-                        "ללא כיבוי בטעינה", "ללא כיבוי בכל מצב"},
-                new String[]{"device", "1", "5", "charging", "0"}, "screenSaverDuration");
+                new String[]{"לפי המכשיר", "דקה אחת", "חמש דקות", "ללא כיבוי"},
+                new String[]{"device", "1", "5", "0"}, "screenSaverDuration");
+
+        LinearLayout charging = addCard(content, "שומר מסך בזמן טעינה");
+        addCheck(charging, "הפעלה אוטומטית בטעינה", "autoStartOnCharge", false);
+        addCheck(charging, "ללא כיבוי בטעינה", "noShutdownWhileCharging", false);
+        addCheck(charging, "הצגת אחוז הסוללה", "showBatteryPercent", false);
 
         LinearLayout font = addCard(content, "גופן");
         addColorChoices(font, "צבע",
-                new String[]{"לבן", "אפור", "אפור בהיר", "כחול עדין"},
-                new String[]{"white", "gray", "light", "blue"}, "fontColor");
+                new String[]{"לבן", "כסף", "אפור", "אפור בהיר", "כחול עדין"},
+                new String[]{"white", "silver", "gray", "light", "blue"}, "fontColor");
         addDiscreteSlider(font, "עובי",
-                new String[]{"רגיל", "בינוני", "מודגש"},
-                new String[]{"0", "1", "2"}, "fontWeight");
+                new String[]{"דק", "רגיל", "בינוני", "מודגש"},
+                new String[]{"-1", "0", "1", "2"}, "fontWeight");
         addSpinner(font, "סוג",
                 new String[]{"Sans Serif", "DL Adva", "Keter Aram Tsova", "Shofar",
                         "Gveret Levin", "Yehuda CLM", "Stam Ashkenaz", "DL Apollo Black",
@@ -224,8 +228,8 @@ public class SettingsActivity extends Activity {
         playerFrameCard.setLayoutParams(playerFrameCardParams);
         addCheck(playerFrameCard, "הצג מסגרת", "frameEnabled", false);
         addColorChoices(playerFrameCard, "צבע מסגרת",
-                new String[]{"לבן", "כסף", "אפור", "אפור בהיר"},
-                new String[]{"white", "silver", "gray", "light"}, "frameColor");
+                new String[]{"לבן", "כסף", "אפור", "אפור בהיר", "כחול עדין"},
+                new String[]{"white", "silver", "gray", "light", "blue"}, "frameColor");
         addDiscreteSlider(playerFrameCard, "עובי מסגרת",
                 new String[]{"דקה", "בינונית", "עבה"},
                 new String[]{"1", "2", "3"}, "frameWidth");
@@ -572,6 +576,7 @@ public class SettingsActivity extends Activity {
 
     private String iconForCard(String title) {
         if ("תצוגה במסך".equals(title)) return "monitor";
+        if ("שומר מסך בזמן טעינה".equals(title)) return "battery";
         if ("גופן".equals(title)) return "type";
         if ("תצוגת שעון ותאריך".equals(title)) return "clock";
         if ("תצוגת הנגן".equals(title)) return "music";
@@ -586,6 +591,9 @@ public class SettingsActivity extends Activity {
         if ("showGregorian".equals(key)) return "gregorian-date";
         if ("showPlayer".equals(key)) return "media-toggle";
         if ("screenSaverDuration".equals(key)) return "duration";
+        if ("autoStartOnCharge".equals(key)) return "battery";
+        if ("noShutdownWhileCharging".equals(key)) return "battery";
+        if ("showBatteryPercent".equals(key)) return "battery";
         if ("fontColor".equals(key)) return "text-color";
         if ("fontWeight".equals(key)) return "weight";
         if ("fontFamily".equals(key)) return "font-family";
@@ -1259,6 +1267,17 @@ public class SettingsActivity extends Activity {
                     canvas.drawLine(12f, 6f, 12f, 12f, paint);
                     canvas.drawLine(12f, 12f, 17f, 12f, paint);
                     canvas.drawArc(new RectF(6f, 2f, 18f, 14f), 210f, 120f, false, paint);
+                    break;
+                case "battery":
+                    canvas.drawRoundRect(new RectF(2.5f, 6f, 20f, 18f), 2f, 2f, paint);
+                    canvas.drawRoundRect(new RectF(20.5f, 9.5f, 22.5f, 14.5f), 0.8f, 0.8f, paint);
+                    path.moveTo(12f, 7.5f);
+                    path.lineTo(8.5f, 12.5f);
+                    path.lineTo(12f, 12.5f);
+                    path.lineTo(10.5f, 16.5f);
+                    path.lineTo(16f, 10.5f);
+                    path.lineTo(12.5f, 10.5f);
+                    canvas.drawPath(path, paint);
                     break;
                 case "text-color":
                     paint.setStyle(Paint.Style.FILL);

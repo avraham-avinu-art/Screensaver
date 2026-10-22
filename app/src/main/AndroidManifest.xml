@@ -21,6 +21,15 @@
         </activity>
 
         <receiver
+            android:name=".AutoStartOnPowerReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.ACTION_POWER_CONNECTED" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
             android:name=".ScreenLockAdminReceiver"
             android:label="שומר מסך"
             android:description="@string/screen_lock_admin_description"
