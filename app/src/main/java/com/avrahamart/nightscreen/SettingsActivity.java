@@ -246,8 +246,8 @@ public class SettingsActivity extends Activity {
         setPermissionCardHeadingTypeface(screenLockAdminCard);
         screenLockAdminCard.setPadding(dp(13), dp(10), dp(13), dp(14));
         TextView explanation = textView(
-                "הרשאת מנהל מאפשרת לנעול את המכשיר מיד בסיום הזמן שנבחר.\n"
-                + "בלי ההרשאה, כיבוי המסך מתבסס על הגדרת Android ולא מובטח שיקרה בדיוק בזמן.",
+                "ההרשאה מאפשרת לנעול את המכשיר בכל מצב בסיום הזמן שנבחר.\n"
+                + "ללא ההרשאה, כיבוי המסך לא יהיה לפני הזמן המוגדר במכשיר.",
                 15, ON_SURFACE);
         explanation.setGravity(Gravity.CENTER);
         explanation.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
@@ -944,7 +944,7 @@ public class SettingsActivity extends Activity {
         boolean active = isScreenLockAdminActive();
         screenLockAdminStatus.setText(active
                 ? "הרשאה פעילה — המכשיר יינעל בסיום הזמן."
-                : "בלי ההרשאה, הכיבוי מתבסס על הגדרת המכשיר.");
+                : "ההרשאה עדיין לא ניתנה, כיבוי המסך תלוי בהגדרות המכשיר.");
         screenLockAdminButton.setText(active
                 ? "הרשאת מנהל מכשיר פעילה"
                 : "הפעל הרשאת מנהל מכשיר");
@@ -979,8 +979,8 @@ public class SettingsActivity extends Activity {
             intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN,
                     screenLockAdminComponent);
             intent.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION,
-                    "ההרשאה מאפשרת לנעול את המכשיר מיד בסיום הזמן שנבחר. "
-                    + "בלעדיה, הכיבוי מתבסס על הגדרת זמן המסך במכשיר.");
+                    "ההרשאה מאפשרת לנעול את המכשיר בכל מצב בסיום הזמן שנבחר.\n"
+                    + "ללא ההרשאה, כיבוי המסך לא יהיה לפני הזמן המוגדר במכשיר.");
             startActivityForResult(intent, REQUEST_ENABLE_SCREEN_LOCK_ADMIN);
         } catch (Throwable ex) {
             Toast.makeText(this, "לא ניתן לפתוח את בקשת הרשאת מנהל המכשיר.",
