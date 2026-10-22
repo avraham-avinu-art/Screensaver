@@ -659,6 +659,7 @@ public class SettingsActivity extends Activity {
                 persistOption(key, values[0]);
             }
         }
+        final int selectedPosition = selected;
         int spinnerWidth = dropdownWidthForOptions(names);
         Spinner spinner = new Spinner(this);
         spinner.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
@@ -692,7 +693,7 @@ public class SettingsActivity extends Activity {
         if (Build.VERSION.SDK_INT >= 16) {
             spinner.setPopupBackgroundDrawable(roundOutline(CARD_SURFACE, dp(12), OUTLINE));
         }
-        spinner.setSelection(selected, false);
+        spinner.setSelection(selectedPosition, false);
 
         FrameLayout spinnerContainer = new FrameLayout(this);
         spinnerContainer.setBackground(roundOutline(CONTROL_SURFACE, dp(12), OUTLINE));
@@ -717,13 +718,13 @@ public class SettingsActivity extends Activity {
 
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             private boolean initialSelectionPending = true;
-            private int lastHandledPosition = selected;
+            private int lastHandledPosition = selectedPosition;
 
             @Override public void onItemSelected(AdapterView<?> parent, View view,
                                                  int position, long id) {
                 if (initialSelectionPending) {
                     initialSelectionPending = false;
-                    if (position == selected) {
+                    if (position == selectedPosition) {
                         lastHandledPosition = position;
                         return;
                     }
