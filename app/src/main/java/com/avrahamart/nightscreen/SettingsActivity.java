@@ -246,13 +246,8 @@ public class SettingsActivity extends Activity {
         setPermissionCardHeadingTypeface(screenLockAdminCard);
         screenLockAdminCard.setPadding(dp(13), dp(10), dp(13), dp(14));
         TextView explanation = textView(
-                "ההרשאה נדרשת רק אם רוצים לנעול את המכשיר מיד בתום הזמן שנבחר.\n"
-                + "ללא ההרשאה, האפליקציה קוראת את זמן כיבוי המסך שהוגדר ב־Android "
-                + "ומתאימה את מניעת הכיבוי לכל ערך שהמכשיר מחזיר, כולל שניות ודקות.\n"
-                + "אם זמן הפעילות באפליקציה ארוך מזמן הכיבוי במכשיר, המסך יישאר פעיל "
-                + "עד סוף זמן הפעילות ואז האפליקציה תשחרר את מניעת הכיבוי. "
-                + "אם הזמן קצר או שווה לזמן המכשיר, האפליקציה לא תמנע כיבוי.\n"
-                + "ללא הרשאת מנהל מכשיר, אי אפשר להבטיח כיבוי ונעילה בדיוק בסיום הזמן שנבחר.",
+                "הרשאת מנהל מאפשרת לנעול את המכשיר מיד בסיום הזמן שנבחר.\n"
+                + "בלי ההרשאה, כיבוי המסך מתבסס על הגדרת Android ולא מובטח שיקרה בדיוק בזמן.",
                 15, ON_SURFACE);
         explanation.setGravity(Gravity.CENTER);
         explanation.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
@@ -948,9 +943,8 @@ public class SettingsActivity extends Activity {
                 || screenLockAdminButton == null) return;
         boolean active = isScreenLockAdminActive();
         screenLockAdminStatus.setText(active
-                ? "הרשאת מנהל המכשיר פעילה. המכשיר יינעל בתום הזמן שנבחר."
-                : "ללא ההרשאה, האפליקציה מתאימה את מניעת הכיבוי לזמן שמוגדר במכשיר; "
-                  + "כיבוי ונעילה בדיוק בזמן אינם מובטחים.");
+                ? "הרשאה פעילה — המכשיר יינעל בסיום הזמן."
+                : "בלי ההרשאה, הכיבוי מתבסס על הגדרת המכשיר.");
         screenLockAdminButton.setText(active
                 ? "הרשאת מנהל מכשיר פעילה"
                 : "הפעל הרשאת מנהל מכשיר");
@@ -985,9 +979,8 @@ public class SettingsActivity extends Activity {
             intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN,
                     screenLockAdminComponent);
             intent.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION,
-                    "ההרשאה מאפשרת לנעול את המכשיר מיד בתום הזמן שנבחר. "
-                    + "ללא ההרשאה, האפליקציה מתאימה את מניעת הכיבוי לזמן המסך שהוגדר ב־Android, "
-                    + "אך אינה יכולה להבטיח נעילה או כיבוי מיידיים בכל מצב.");
+                    "ההרשאה מאפשרת לנעול את המכשיר מיד בסיום הזמן שנבחר. "
+                    + "בלעדיה, הכיבוי מתבסס על הגדרת זמן המסך במכשיר.");
             startActivityForResult(intent, REQUEST_ENABLE_SCREEN_LOCK_ADMIN);
         } catch (Throwable ex) {
             Toast.makeText(this, "לא ניתן לפתוח את בקשת הרשאת מנהל המכשיר.",
