@@ -282,7 +282,7 @@ public class MainActivity extends Activity {
         settingsButton.setOnClickListener(v -> showSettings());
         // The hit target is twice as wide and tall; the visual settings icon stays 36x38dp.
         settingsButtonHitArea.addView(settingsButton, new FrameLayout.LayoutParams(
-                dp(36), dp(38), Gravity.CENTER));
+                dp(36), dp(38), Gravity.TOP | Gravity.LEFT));
         FrameLayout.LayoutParams settingsParams = new FrameLayout.LayoutParams(
                 dp(72), dp(76), Gravity.TOP | Gravity.LEFT);
         settingsParams.leftMargin = dp(4);
@@ -299,7 +299,7 @@ public class MainActivity extends Activity {
         timeText.setGravity(Gravity.CENTER);
         timeText.setIncludeFontPadding(false);
         int initialClockSize = getInt("clockDateSize", 96);
-        int initialClockHeight = Math.max(dp(62), dp(initialClockSize + 4));
+        int initialClockHeight = Math.max(dp(62), dp(initialClockSize));
         clockBlock.addView(timeText, new LinearLayout.LayoutParams(-1, initialClockHeight));
 
         gregorianText = textView("", 22, dateTextColor);
@@ -849,7 +849,7 @@ public class MainActivity extends Activity {
                 getBool("showHebrew", true) ? View.VISIBLE : View.GONE);
 
         int displayTextColor = weight == -1 && fontFamily.startsWith("custom:")
-                ? blendWithBlack(color, 0.80f) : color;
+                ? blendWithBlack(color, 0.68f) : color;
         gregorianText.setTextColor(displayTextColor);
         hebrewText.setTextColor(displayTextColor);
         timeText.setTextColor(displayTextColor);
@@ -875,11 +875,11 @@ public class MainActivity extends Activity {
         // dates are measured separately because the custom font's Hebrew glyphs can be
         // taller than its digits, even when both rows share the same nominal font size.
         int clockH = Math.max(dp(62), measuredLineHeight(
-                timeText, "0123456789:00", 2, clockDateSize + 4));
+                timeText, "0123456789:00", 0, clockDateSize));
         int gregorianH = Math.max(dateRowHeightForClockPreset(clockDateSize),
-                measuredLineHeight(gregorianText, "יום ה׳ · 22.10.2026", 2, 24));
+                measuredLineHeight(gregorianText, "יום ה׳ · 22.10.2026", 0, 24));
         int hebrewH = Math.max(dateRowHeightForClockPreset(clockDateSize),
-                measuredLineHeight(hebrewText, "כ״ט בתשרי תשפ״ז אבגדהוזחטיכלמנסעפצקרשת", 2, 24));
+                measuredLineHeight(hebrewText, "כ״ט בתשרי תשפ״ז אבגדהוזחטיכלמנסעפצקרשת", 0, 24));
 
         LinearLayout.LayoutParams tp = (LinearLayout.LayoutParams) timeText.getLayoutParams();
         tp.height = clockH;
@@ -1002,8 +1002,8 @@ public class MainActivity extends Activity {
     }
 
     private int dateRowHeightForClockPreset(int clockSize) {
-        // Keep each date row close to its actual glyph metrics to avoid excess visual gaps.
-        return Math.max(dp(24), dp(Math.round(clockSize * 0.36f)));
+        // Let measured glyph metrics determine the line height; this is only a fallback minimum.
+        return Math.max(dp(24), dp(Math.round(clockSize * 0.30f)));
     }
 
     private void applyFontWeightToTextView(TextView view, int weight) {
@@ -1012,9 +1012,9 @@ public class MainActivity extends Activity {
         if (weight == 1 || weight == 2) {
             paint.setStyle(android.graphics.Paint.Style.FILL_AND_STROKE);
             float density = getResources().getDisplayMetrics().density;
-            // Custom font assets often have only one embedded weight. A small controlled
-            // stroke makes "medium" and "bold" visibly different even for static faces.
-            paint.setStrokeWidth(density * (weight == 1 ? 0.18f : 0.48f));
+            // Most custom font assets contain only one static weight. Stronger controlled
+            // strokes keep medium and bold visibly distinct across these faces.
+            paint.setStrokeWidth(density * (weight == 1 ? 0.42f : 0.90f));
         } else {
             paint.setStyle(android.graphics.Paint.Style.FILL);
             paint.setStrokeWidth(0f);
@@ -1092,17 +1092,17 @@ public class MainActivity extends Activity {
             screenSleepPending = false;
         }
 
-        if ("device".equals(value)) {
+        // The dedicated charging option overrides every activity-time preset while plugged in.
+        if (getBool("noShutdownWhileCharging", false) && isDeviceCharging()) {
             activityDeadlineElapsedRealtime = 0L;
-            getWindow().clearFlags(
+            getWindow().addFlags(
                     android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
             return;
         }
 
-        // This independent switch prevents screen-off only while the device is plugged in.
-        if (getBool("noShutdownWhileCharging", false) && isDeviceCharging()) {
+        if ("device".equals(value)) {
             activityDeadlineElapsedRealtime = 0L;
-            getWindow().addFlags(
+            getWindow().clearFlags(
                     android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
             return;
         }
