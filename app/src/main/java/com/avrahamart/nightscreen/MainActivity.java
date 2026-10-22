@@ -1127,9 +1127,41 @@ public class MainActivity extends Activity {
             return;
         }
 
-        getWindow().addFlags(
-                android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        // Read Android's actual timeout; do not assume it is one or five minutes.
+        // The inactivity timer does not restart when KEEP_SCREEN_ON is released.
+        // If the selected duration exceeds the system timeout, keep the screen on
+        // for the full remaining duration, then release it at the selected deadline.
+        // If it is at most the system timeout, leave the display timeout to Android.
+        boolean keepAwake = isScreenLockAdminActive();
+        if (!keepAwake) {
+            long systemTimeoutMs = getSystemScreenOffTimeoutMs();
+            if (systemTimeoutMs < 0L) {
+                // If the setting cannot be read, retain the existing safe behavior.
+                keepAwake = true;
+            } else {
+                long selectedDurationMs = minutes > Long.MAX_VALUE / 60_000L
+                        ? Long.MAX_VALUE : minutes * 60_000L;
+                keepAwake = selectedDurationMs > systemTimeoutMs;
+            }
+        }
+
+        if (keepAwake) {
+            getWindow().addFlags(
+                    android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        } else {
+            getWindow().clearFlags(
+                    android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        }
         handler.postDelayed(autoOffRunnable, remaining);
+    }
+
+    private long getSystemScreenOffTimeoutMs() {
+        try {
+            return Settings.System.getLong(
+                    getContentResolver(), Settings.System.SCREEN_OFF_TIMEOUT);
+        } catch (Throwable ignored) {
+            return -1L;
+        }
     }
 
     private void exitApplicationAtSelectedTime() {
