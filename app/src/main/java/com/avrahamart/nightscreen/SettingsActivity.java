@@ -575,7 +575,7 @@ public class SettingsActivity extends Activity {
 
     private String iconForCard(String title) {
         if ("תצוגה במסך".equals(title)) return "monitor";
-        if ("שומר מסך בזמן טעינה".equals(title)) return "screen-loading";
+        if ("שומר מסך בזמן טעינה".equals(title)) return "android-charge";
         if ("גופן".equals(title)) return "type";
         if ("תצוגת שעון ותאריך".equals(title)) return "clock";
         if ("תצוגת הנגן".equals(title)) return "music";
@@ -591,7 +591,7 @@ public class SettingsActivity extends Activity {
         if ("showPlayer".equals(key)) return "media-toggle";
         if ("screenSaverDuration".equals(key)) return "duration";
         if ("autoStartOnCharge".equals(key)) return "auto-start";
-        if ("noShutdownWhileCharging".equals(key)) return "screen-lit";
+        if ("noShutdownWhileCharging".equals(key)) return "android-lit";
         if ("showBatteryPercent".equals(key)) return "battery-percent";
         if ("fontColor".equals(key)) return "text-color";
         if ("fontWeight".equals(key)) return "weight";
@@ -1267,29 +1267,34 @@ public class SettingsActivity extends Activity {
                     canvas.drawLine(12f, 12f, 17f, 12f, paint);
                     canvas.drawArc(new RectF(6f, 2f, 18f, 14f), 210f, 120f, false, paint);
                     break;
-                case "screen-loading":
-                    // Monitor screen with a circular loading indicator.
-                    canvas.drawRoundRect(new RectF(2.5f, 2.5f, 21.5f, 16.5f), 1.8f, 1.8f, paint);
-                    canvas.drawLine(8f, 21f, 16f, 21f, paint);
-                    canvas.drawLine(12f, 16.5f, 12f, 21f, paint);
-                    canvas.drawArc(new RectF(8f, 5.5f, 16f, 13.5f), 35f, 270f, false, paint);
-                    paint.setStyle(Paint.Style.FILL);
-                    canvas.drawCircle(16f, 8f, 1.1f, paint);
+                case "android-charge":
+                    // Vertical Android phone with the familiar charging lightning bolt.
+                    canvas.drawRoundRect(new RectF(6.5f, 1.5f, 17.5f, 22.5f), 2.2f, 2.2f, paint);
+                    canvas.drawLine(10f, 4f, 14f, 4f, paint);
+                    canvas.drawRoundRect(new RectF(8.2f, 6f, 15.8f, 18f), 0.8f, 0.8f, paint);
+                    path.moveTo(13f, 7.5f);
+                    path.lineTo(10.2f, 12.1f);
+                    path.lineTo(12.1f, 12.1f);
+                    path.lineTo(11f, 16.3f);
+                    path.lineTo(14.1f, 11.3f);
+                    path.lineTo(12.2f, 11.3f);
+                    path.close();
+                    canvas.drawPath(path, paint);
+                    canvas.drawCircle(12f, 20.4f, 0.65f, paint);
                     break;
-                case "screen-lit":
-                    // Illuminated display with brightness rays.
-                    canvas.drawRoundRect(new RectF(2.5f, 3f, 21.5f, 17f), 1.8f, 1.8f, paint);
-                    canvas.drawLine(8f, 21f, 16f, 21f, paint);
-                    canvas.drawLine(12f, 17f, 12f, 21f, paint);
-                    canvas.drawCircle(12f, 10f, 2.8f, paint);
-                    canvas.drawLine(12f, 5.5f, 12f, 4.5f, paint);
-                    canvas.drawLine(12f, 14.5f, 12f, 15f, paint);
-                    canvas.drawLine(7.5f, 10f, 6.5f, 10f, paint);
-                    canvas.drawLine(16.5f, 10f, 17.5f, 10f, paint);
-                    canvas.drawLine(8.8f, 6.8f, 8.1f, 6.1f, paint);
-                    canvas.drawLine(15.2f, 6.8f, 15.9f, 6.1f, paint);
+                case "android-lit":
+                    // Vertical Android phone with a clearly illuminated screen.
+                    canvas.drawRoundRect(new RectF(6.5f, 1.5f, 17.5f, 22.5f), 2.2f, 2.2f, paint);
+                    canvas.drawLine(10f, 4f, 14f, 4f, paint);
+                    canvas.drawRoundRect(new RectF(8.2f, 6f, 15.8f, 18f), 0.8f, 0.8f, paint);
+                    canvas.drawCircle(12f, 12f, 2.1f, paint);
+                    canvas.drawLine(12f, 8.6f, 12f, 7.8f, paint);
+                    canvas.drawLine(12f, 16.2f, 12f, 15.4f, paint);
+                    canvas.drawLine(9f, 12f, 9.8f, 12f, paint);
+                    canvas.drawLine(14.2f, 12f, 15f, 12f, paint);
                     paint.setStyle(Paint.Style.FILL);
-                    canvas.drawCircle(12f, 10f, 1.1f, paint);
+                    canvas.drawCircle(12f, 12f, 0.8f, paint);
+                    canvas.drawCircle(12f, 20.4f, 0.65f, paint);
                     break;
                 case "auto-start":
                     canvas.drawCircle(11f, 12f, 8f, paint);
