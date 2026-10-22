@@ -187,16 +187,16 @@ public class SettingsActivity extends Activity {
                 new String[]{"רגיל", "בינוני", "מודגש"},
                 new String[]{"0", "1", "2"}, "fontWeight");
         addSpinner(font, "סוג",
-                new String[]{"DL Adva", "Keter Aram Tsova", "Shofar", "Gveret Levin",
-                        "Yehuda CLM", "Stam Ashkenaz", "DL Apollo Black", "DL Normador",
-                        "Ozrad CLM Bold", "Haim FB Black", "Coming Soon", "Merienda Black",
+                new String[]{"Sans Serif", "DL Adva", "Keter Aram Tsova", "Shofar",
+                        "Gveret Levin", "Yehuda CLM", "Stam Ashkenaz", "DL Apollo Black",
+                        "DL Normador", "Ozrad CLM Bold", "Haim FB Black", "Coming Soon",
                         "Short Stack"},
-                new String[]{"custom:DL Adva.ttf", "custom:KeterAramTsova.ttf",
-                        "custom:ShofarRegular.ttf", "custom:gveretlevi-regular.ttf",
-                        "custom:yehudaclm-light.ttf", "custom:Ashkenazi-Stam.ttf",
-                        "custom:DL ApolloBlack.ttf", "custom:DL Normador.TTF",
-                        "custom:OzradCLM-Bold.otf", "custom:fmhaimblack.ttf",
-                        "custom:ComingSoon.ttf", "custom:Merienda-Black.ttf",
+                new String[]{"sans-serif", "custom:DL Adva.ttf",
+                        "custom:KeterAramTsova.ttf", "custom:ShofarRegular.ttf",
+                        "custom:gveretlevi-regular.ttf", "custom:yehudaclm-light.ttf",
+                        "custom:Ashkenazi-Stam.ttf", "custom:DL ApolloBlack.ttf",
+                        "custom:DL Normador.TTF", "custom:OzradCLM-Bold.otf",
+                        "custom:fmhaimblack.ttf", "custom:ComingSoon.ttf",
                         "custom:ShortStack-Regular.ttf"}, "fontFamily");
 
         clockDateCard = addCard(content, "תצוגת שעון ותאריך");

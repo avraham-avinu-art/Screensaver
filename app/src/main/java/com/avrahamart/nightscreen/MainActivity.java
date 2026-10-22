@@ -15,6 +15,8 @@ import android.content.ComponentName;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.media.AudioManager;
 import android.media.MediaMetadata;
@@ -46,6 +48,7 @@ import com.kosherjava.zmanim.hebrewcalendar.JewishDate;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
@@ -569,7 +572,20 @@ public class MainActivity extends Activity {
         e.putInt("clockDateSize", getInt("clockDateSize", 84));
         e.putInt("playerSize", getInt("playerSize", 17));
         e.putInt("fontWeight", getInt("fontWeight", 1));
-        String savedFontFamily = getString("fontFamily", "custom:DL Adva.ttf");
+        String savedFontFamily = getString("fontFamily", "sans-serif");
+        // Earlier builds stored DL Adva as the initial default. Restore Sans Serif
+        // once on upgrade, but preserve any other font the user explicitly chose.
+        if (!getBool("fontSansSerifDefaultRestoredV1", false)) {
+            if (!prefs.contains("fontFamily")
+                    || "custom:DL Adva.ttf".equals(savedFontFamily)
+                    || "custom:Merienda-Black.ttf".equals(savedFontFamily)) {
+                savedFontFamily = "sans-serif";
+            }
+            e.putBoolean("fontSansSerifDefaultRestoredV1", true);
+        } else if ("custom:Merienda-Black.ttf".equals(savedFontFamily)) {
+            // Merienda was removed because it clipped on screen.
+            savedFontFamily = "sans-serif";
+        }
         e.putString("fontFamily", savedFontFamily);
 
         e.putBoolean("showGregorian", getBool("showGregorian", true));
@@ -767,6 +783,54 @@ public class MainActivity extends Activity {
         return fallback;
     }
 
+    private float visualFontSizeScale(Typeface selectedTypeface, int weight) {
+        Typeface referenceTypeface;
+        if (weight == 2) {
+            referenceTypeface = Typeface.create("sans-serif", Typeface.BOLD);
+        } else if (weight == 1) {
+            referenceTypeface = Typeface.create("sans-serif-medium", Typeface.NORMAL);
+        } else {
+            referenceTypeface = Typeface.create("sans-serif", Typeface.NORMAL);
+        }
+
+        // Measure representative digits and Hebrew letters as they render on this
+        // Android device. This also accounts for system fallback for Latin-only fonts.
+        String digits = "0123456789";
+        String hebrew = "אבגדהוזחטיכךלמםנןסעפףצץקרשת";
+        float referenceHeight = (medianGlyphHeight(referenceTypeface, digits)
+                + medianGlyphHeight(referenceTypeface, hebrew)) / 2f;
+        float selectedHeight = (medianGlyphHeight(selectedTypeface, digits)
+                + medianGlyphHeight(selectedTypeface, hebrew)) / 2f;
+
+        if (referenceHeight <= 0f || selectedHeight <= 0f
+                || Float.isNaN(referenceHeight) || Float.isNaN(selectedHeight)
+                || Float.isInfinite(referenceHeight) || Float.isInfinite(selectedHeight)) {
+            return 1f;
+        }
+        // Prevent a malformed or unusually decorative font from causing extreme scaling.
+        return Math.max(0.82f, Math.min(1.25f, referenceHeight / selectedHeight));
+    }
+
+    private float medianGlyphHeight(Typeface typeface, String sample) {
+        if (typeface == null || sample == null || sample.isEmpty()) return 0f;
+        Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        paint.setTypeface(typeface);
+        paint.setTextSize(100f);
+        Rect bounds = new Rect();
+        int[] heights = new int[sample.length()];
+        int count = 0;
+        for (int i = 0; i < sample.length(); i++) {
+            paint.getTextBounds(sample, i, i + 1, bounds);
+            if (bounds.height() > 0) {
+                heights[count++] = bounds.height();
+            }
+        }
+        if (count == 0) return 0f;
+        Arrays.sort(heights, 0, count);
+        if ((count & 1) == 1) return heights[count / 2];
+        return (heights[count / 2 - 1] + heights[count / 2]) / 2f;
+    }
+
     private void applySettings() {
         if (prefs == null || gregorianText == null) return;
 
@@ -807,18 +871,22 @@ public class MainActivity extends Activity {
         gregorianText.setTextColor(color);
         hebrewText.setTextColor(color);
         timeText.setTextColor(color);
-        float dateSize = dateTextSizeForClockPreset(clockDateSize);
+        float fontScale = visualFontSizeScale(tf, weight);
+        float dateSize = dateTextSizeForClockPreset(clockDateSize) * fontScale;
+        float clockDisplaySize = clockDateSize * fontScale;
         gregorianText.setTextSize(dateSize);
         hebrewText.setTextSize(dateSize);
-        timeText.setTextSize(clockDateSize);
+        timeText.setTextSize(clockDisplaySize);
         gregorianText.setTypeface(tf);
         hebrewText.setTypeface(tf);
         timeText.setTypeface(tf);
 
-        // Match version 2.4: size the text rows from the selected preset instead of
-        // capping them at a fixed height and letting autosizing shrink the clock.
-        int clockH = Math.max(dp(62), dp(clockDateSize + 20));
-        int dateH = dateRowHeightForClockPreset(clockDateSize);
+        // Keep the visible glyph height consistent across font families and grow
+        // the rows only when the adjusted face needs the additional room.
+        int clockH = Math.max(dp(62),
+                dp((int) Math.ceil(clockDisplaySize + 20f)));
+        int dateH = Math.max(dateRowHeightForClockPreset(clockDateSize),
+                dp(Math.round(dateSize * 1.45f)));
         boolean showGregorian = getBool("showGregorian", true);
         boolean showHebrew = getBool("showHebrew", true);
         int visibleDates = (showGregorian ? 1 : 0) + (showHebrew ? 1 : 0);
@@ -848,9 +916,11 @@ public class MainActivity extends Activity {
             mediaTitle.setTypeface(tf);
             mediaDetails.setTypeface(tf);
             mediaProgressText.setTypeface(tf);
-            mediaTitle.setTextSize(playerSize);
-            mediaDetails.setTextSize(playerSize);
-            int textRowHeight = Math.max(dp(30), dp(playerSize + 12));
+            float playerDisplaySize = playerSize * fontScale;
+            mediaTitle.setTextSize(playerDisplaySize);
+            mediaDetails.setTextSize(playerDisplaySize);
+            int textRowHeight = Math.max(dp(30),
+                    dp((int) Math.ceil(playerDisplaySize + 12f)));
             if (mediaTitle.getLayoutParams() != null) {
                 mediaTitle.getLayoutParams().height = textRowHeight;
                 mediaTitle.requestLayout();
@@ -859,7 +929,7 @@ public class MainActivity extends Activity {
                 mediaDetails.getLayoutParams().height = textRowHeight;
                 mediaDetails.requestLayout();
             }
-            mediaProgressText.setTextSize(Math.max(10, playerSize - 4));
+            mediaProgressText.setTextSize(Math.max(10f, playerDisplaySize - 4f));
             // Re-measure after a preset change; otherwise a longer title may stay clipped
             // because its old (smaller) font previously fit on one line.
             mediaTitle.post(() -> updateTitleMarqueeIfNeeded());
