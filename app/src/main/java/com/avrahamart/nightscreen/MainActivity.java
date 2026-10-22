@@ -15,8 +15,6 @@ import android.content.ComponentName;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Color;
-import android.graphics.Paint;
-import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.media.AudioManager;
 import android.media.MediaMetadata;
@@ -46,7 +44,6 @@ import com.kosherjava.zmanim.hebrewcalendar.HebrewDateFormatter;
 import com.kosherjava.zmanim.hebrewcalendar.JewishDate;
 
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
@@ -745,55 +742,6 @@ public class MainActivity extends Activity {
         }
     }
 
-    private Typeface referenceTypefaceForWeight(int weight) {
-        if (weight == 2) {
-            return Typeface.create("sans-serif", Typeface.BOLD);
-        }
-        if (weight == 1) {
-            return Typeface.create("sans-serif-medium", Typeface.NORMAL);
-        }
-        return Typeface.create("sans-serif", Typeface.NORMAL);
-    }
-
-    private float visualFontSizeScale(Typeface selectedTypeface, int weight, String sample) {
-        Typeface referenceTypeface = referenceTypefaceForWeight(weight);
-
-        // Compare visible glyph heights for the characters actually used in each
-        // part of the screensaver, rather than averaging digit and Hebrew metrics.
-        float referenceHeight = medianGlyphHeight(referenceTypeface, sample);
-        float selectedHeight = medianGlyphHeight(selectedTypeface, sample);
-
-        if (referenceHeight <= 0f || selectedHeight <= 0f
-                || Float.isNaN(referenceHeight) || Float.isNaN(selectedHeight)
-                || Float.isInfinite(referenceHeight) || Float.isInfinite(selectedHeight)) {
-            return 1f;
-        }
-
-        // Some supplied fonts have a much smaller visible body at the same nominal
-        // text size. Allow enough correction for those fonts without extreme jumps.
-        return Math.max(0.82f, Math.min(1.40f, referenceHeight / selectedHeight));
-    }
-
-    private float medianGlyphHeight(Typeface typeface, String sample) {
-        if (typeface == null || sample == null || sample.isEmpty()) return 0f;
-        Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        paint.setTypeface(typeface);
-        paint.setTextSize(100f);
-        Rect bounds = new Rect();
-        int[] heights = new int[sample.length()];
-        int count = 0;
-        for (int i = 0; i < sample.length(); i++) {
-            paint.getTextBounds(sample, i, i + 1, bounds);
-            if (bounds.height() > 0) {
-                heights[count++] = bounds.height();
-            }
-        }
-        if (count == 0) return 0f;
-        Arrays.sort(heights, 0, count);
-        if ((count & 1) == 1) return heights[count / 2];
-        return (heights[count / 2 - 1] + heights[count / 2]) / 2f;
-    }
-
     private void applySettings() {
         if (prefs == null || gregorianText == null) return;
 
@@ -834,20 +782,10 @@ public class MainActivity extends Activity {
         gregorianText.setTextColor(color);
         hebrewText.setTextColor(color);
         timeText.setTextColor(color);
-        // Normalize each text group against Android Sans Serif at the same weight.
-        // The clock is digit-only, while the shared date size is calibrated from both
-        // Hebrew letters and digits so both date rows retain the same nominal size.
-        String clockSample = "0123456789:";
-        String dateDigitsSample = "0123456789";
-        String hebrewDateSample = "אבגדהוזחטיכךלמםנןסעפףצץקרשת";
-        String playerSample = "AaGgMm0123456789אבגדקרשת";
-        float clockScale = visualFontSizeScale(tf, weight, clockSample);
-        float dateDigitScale = visualFontSizeScale(tf, weight, dateDigitsSample);
-        float dateHebrewScale = visualFontSizeScale(tf, weight, hebrewDateSample);
-        float dateScale = (dateDigitScale + dateHebrewScale) / 2f;
-        float playerScale = visualFontSizeScale(tf, weight, playerSample);
-        float dateSize = dateTextSizeForClockPreset(clockDateSize) * dateScale;
-        float clockDisplaySize = clockDateSize * clockScale;
+        // Glyph-size differences are normalized inside the font files themselves.
+        // Keep Android text sizes tied directly to the size preset selected by the user.
+        float dateSize = dateTextSizeForClockPreset(clockDateSize);
+        float clockDisplaySize = clockDateSize;
         gregorianText.setTextSize(dateSize);
         hebrewText.setTextSize(dateSize);
         timeText.setTextSize(clockDisplaySize);
@@ -855,12 +793,8 @@ public class MainActivity extends Activity {
         hebrewText.setTypeface(tf);
         timeText.setTypeface(tf);
 
-        // Keep the visible glyph height consistent across font families and grow
-        // the rows only when the adjusted face needs the additional room.
-        int clockH = Math.max(dp(62),
-                dp((int) Math.ceil(clockDisplaySize + 20f)));
-        int dateH = Math.max(dateRowHeightForClockPreset(clockDateSize),
-                dp(Math.round(dateSize * 1.45f)));
+        int clockH = Math.max(dp(62), dp(clockDateSize + 20));
+        int dateH = dateRowHeightForClockPreset(clockDateSize);
         boolean showGregorian = getBool("showGregorian", true);
         boolean showHebrew = getBool("showHebrew", true);
         int visibleDates = (showGregorian ? 1 : 0) + (showHebrew ? 1 : 0);
@@ -890,11 +824,9 @@ public class MainActivity extends Activity {
             mediaTitle.setTypeface(tf);
             mediaDetails.setTypeface(tf);
             mediaProgressText.setTypeface(tf);
-            float playerDisplaySize = playerSize * playerScale;
-            mediaTitle.setTextSize(playerDisplaySize);
-            mediaDetails.setTextSize(playerDisplaySize);
-            int textRowHeight = Math.max(dp(30),
-                    dp((int) Math.ceil(playerDisplaySize + 12f)));
+            mediaTitle.setTextSize(playerSize);
+            mediaDetails.setTextSize(playerSize);
+            int textRowHeight = Math.max(dp(30), dp(playerSize + 12));
             if (mediaTitle.getLayoutParams() != null) {
                 mediaTitle.getLayoutParams().height = textRowHeight;
                 mediaTitle.requestLayout();
@@ -903,13 +835,13 @@ public class MainActivity extends Activity {
                 mediaDetails.getLayoutParams().height = textRowHeight;
                 mediaDetails.requestLayout();
             }
-            mediaProgressText.setTextSize(Math.max(10f, playerDisplaySize - 4f));
+            mediaProgressText.setTextSize(Math.max(10, playerSize - 4));
             // Re-measure after a preset change; otherwise a longer title may stay clipped
             // because its old (smaller) font previously fit on one line.
             mediaTitle.post(() -> updateTitleMarqueeIfNeeded());
 
             // Scale the control buttons together with the selected player size.
-            float scale = Math.max(0.72f, Math.min(1.45f, playerDisplaySize / 17f));
+            float scale = Math.max(0.72f, Math.min(1.45f, playerSize / 17f));
             int scaledButtonSize = Math.round(dp(44) * scale);
             if (mediaPrev != null && mediaPlayPause != null && mediaNext != null) {
                 mediaPrev.getLayoutParams().width = scaledButtonSize;
