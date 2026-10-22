@@ -763,26 +763,6 @@ public class MainActivity extends Activity {
         }
     }
 
-    private int measuredVisibleGlyphHeight(TextView view, String sampleText,
-                                            int extraSpaceDp, int minimumHeightDp) {
-        if (view == null) return dp(minimumHeightDp);
-
-        android.graphics.Paint paint = view.getPaint();
-        android.graphics.Rect bounds = new android.graphics.Rect();
-        int visibleGlyphHeight = 0;
-        if (sampleText != null && !sampleText.isEmpty()) {
-            paint.getTextBounds(sampleText, 0, sampleText.length(), bounds);
-            visibleGlyphHeight = Math.max(visibleGlyphHeight, bounds.height());
-        }
-        CharSequence currentText = view.getText();
-        if (currentText != null && currentText.length() > 0) {
-            paint.getTextBounds(currentText.toString(), 0, currentText.length(), bounds);
-            visibleGlyphHeight = Math.max(visibleGlyphHeight, bounds.height());
-        }
-
-        return Math.max(dp(minimumHeightDp), visibleGlyphHeight + dp(extraSpaceDp));
-    }
-
     private int measuredLineHeight(TextView view, String sampleText,
                                    int extraSpaceDp, int minimumHeightDp) {
         if (view == null) return dp(minimumHeightDp);
@@ -907,8 +887,10 @@ public class MainActivity extends Activity {
         // Measure every row with its final Typeface and TextSize. Hebrew and Gregorian
         // dates are measured separately because the custom font's Hebrew glyphs can be
         // taller than its digits, even when both rows share the same nominal font size.
-        int clockH = measuredVisibleGlyphHeight(
-                timeText, "0123456789:00", 4, 40);
+        // Use complete font metrics for the clock row, not only painted glyph bounds.
+        // Centering and clipping can occur when this row is shorter than the font metrics.
+        int clockH = Math.max(dp(62), measuredLineHeight(
+                timeText, "0123456789:00", 2, clockDateSize));
         int gregorianH = Math.max(dateRowHeightForClockPreset(clockDateSize),
                 measuredLineHeight(gregorianText, "יום ה׳ · 22.10.2026", 0, 24));
         int hebrewH = Math.max(dateRowHeightForClockPreset(clockDateSize),
