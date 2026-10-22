@@ -727,7 +727,7 @@ public class MainActivity extends Activity {
         }
         CharSequence currentText = view.getText();
         if (currentText != null && currentText.length() > 0) {
-            paint.getTextBounds(currentText, 0, currentText.length(), bounds);
+            paint.getTextBounds(currentText.toString(), 0, currentText.length(), bounds);
             visibleGlyphHeight = Math.max(visibleGlyphHeight, bounds.height());
         }
 
