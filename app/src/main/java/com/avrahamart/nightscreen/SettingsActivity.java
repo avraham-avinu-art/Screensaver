@@ -580,7 +580,7 @@ public class SettingsActivity extends Activity {
 
     private String iconForCard(String title) {
         if ("תצוגה במסך".equals(title)) return "monitor";
-        if ("שומר מסך בזמן טעינה".equals(title)) return "battery";
+        if ("שומר מסך בזמן טעינה".equals(title)) return "charger";
         if ("גופן".equals(title)) return "type";
         if ("תצוגת שעון ותאריך".equals(title)) return "clock";
         if ("תצוגת הנגן".equals(title)) return "music";
@@ -595,9 +595,9 @@ public class SettingsActivity extends Activity {
         if ("showGregorian".equals(key)) return "gregorian-date";
         if ("showPlayer".equals(key)) return "media-toggle";
         if ("screenSaverDuration".equals(key)) return "duration";
-        if ("autoStartOnCharge".equals(key)) return "battery";
-        if ("noShutdownWhileCharging".equals(key)) return "battery";
-        if ("showBatteryPercent".equals(key)) return "battery";
+        if ("autoStartOnCharge".equals(key)) return "auto-start";
+        if ("noShutdownWhileCharging".equals(key)) return "battery-hold";
+        if ("showBatteryPercent".equals(key)) return "battery-percent";
         if ("fontColor".equals(key)) return "text-color";
         if ("fontWeight".equals(key)) return "weight";
         if ("fontFamily".equals(key)) return "font-family";
@@ -1273,6 +1273,43 @@ public class SettingsActivity extends Activity {
                     canvas.drawLine(12f, 6f, 12f, 12f, paint);
                     canvas.drawLine(12f, 12f, 17f, 12f, paint);
                     canvas.drawArc(new RectF(6f, 2f, 18f, 14f), 210f, 120f, false, paint);
+                    break;
+                case "charger":
+                    canvas.drawRoundRect(new RectF(7f, 3f, 17f, 11f), 2f, 2f, paint);
+                    canvas.drawLine(9.5f, 3f, 9.5f, 1f, paint);
+                    canvas.drawLine(14.5f, 3f, 14.5f, 1f, paint);
+                    canvas.drawLine(12f, 11f, 12f, 16f, paint);
+                    path.moveTo(12f, 16f);
+                    path.cubicTo(12f, 20f, 15f, 21f, 18f, 21f);
+                    canvas.drawPath(path, paint);
+                    break;
+                case "auto-start":
+                    canvas.drawCircle(11f, 12f, 8f, paint);
+                    canvas.drawLine(11f, 6f, 11f, 12f, paint);
+                    canvas.drawLine(11f, 12f, 15f, 14.5f, paint);
+                    path.moveTo(17f, 5f);
+                    path.lineTo(21f, 5f);
+                    path.lineTo(21f, 9f);
+                    canvas.drawPath(path, paint);
+                    path.moveTo(21f, 5f);
+                    path.lineTo(17f, 9f, paint);
+                    canvas.drawPath(path, paint);
+                    break;
+                case "battery-hold":
+                    canvas.drawRoundRect(new RectF(2.5f, 6f, 20f, 18f), 2f, 2f, paint);
+                    canvas.drawRoundRect(new RectF(20.5f, 9.5f, 22.5f, 14.5f), 0.8f, 0.8f, paint);
+                    canvas.drawCircle(11f, 12f, 3.5f, paint);
+                    canvas.drawLine(11f, 9.5f, 11f, 12f, paint);
+                    canvas.drawLine(11f, 12f, 13f, 13.2f, paint);
+                    break;
+                case "battery-percent":
+                    canvas.drawRoundRect(new RectF(2.5f, 6f, 20f, 18f), 2f, 2f, paint);
+                    canvas.drawRoundRect(new RectF(20.5f, 9.5f, 22.5f, 14.5f), 0.8f, 0.8f, paint);
+                    paint.setStyle(Paint.Style.FILL);
+                    paint.setTextSize(8.5f);
+                    paint.setTextAlign(Paint.Align.CENTER);
+                    canvas.drawText("%", 11f, 14.7f, paint);
+                    paint.setTextAlign(Paint.Align.LEFT);
                     break;
                 case "battery":
                     canvas.drawRoundRect(new RectF(2.5f, 6f, 20f, 18f), 2f, 2f, paint);
