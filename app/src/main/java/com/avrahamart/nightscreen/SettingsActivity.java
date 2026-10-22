@@ -1268,32 +1268,34 @@ public class SettingsActivity extends Activity {
                     canvas.drawArc(new RectF(6f, 2f, 18f, 14f), 210f, 120f, false, paint);
                     break;
                 case "android-charge":
-                    // Vertical Android phone with the familiar charging lightning bolt.
-                    canvas.drawRoundRect(new RectF(6.5f, 1.5f, 17.5f, 22.5f), 2.2f, 2.2f, paint);
+                    // One outer phone frame; the charging bolt sits directly inside it.
+                    canvas.drawRoundRect(new RectF(5.8f, 1.5f, 18.2f, 22.5f), 2.2f, 2.2f, paint);
                     canvas.drawLine(10f, 4f, 14f, 4f, paint);
-                    canvas.drawRoundRect(new RectF(8.2f, 6f, 15.8f, 18f), 0.8f, 0.8f, paint);
-                    path.moveTo(13f, 7.5f);
-                    path.lineTo(10.2f, 12.1f);
-                    path.lineTo(12.1f, 12.1f);
-                    path.lineTo(11f, 16.3f);
-                    path.lineTo(14.1f, 11.3f);
-                    path.lineTo(12.2f, 11.3f);
+                    path.moveTo(13.2f, 7f);
+                    path.lineTo(9.5f, 12.2f);
+                    path.lineTo(11.8f, 12.2f);
+                    path.lineTo(10.8f, 17f);
+                    path.lineTo(14.8f, 10.8f);
+                    path.lineTo(12.5f, 10.8f);
                     path.close();
                     canvas.drawPath(path, paint);
                     canvas.drawCircle(12f, 20.4f, 0.65f, paint);
                     break;
                 case "android-lit":
-                    // Vertical Android phone with a clearly illuminated screen.
-                    canvas.drawRoundRect(new RectF(6.5f, 1.5f, 17.5f, 22.5f), 2.2f, 2.2f, paint);
+                    // One outer phone frame; a brightness symbol sits directly inside it.
+                    canvas.drawRoundRect(new RectF(5.8f, 1.5f, 18.2f, 22.5f), 2.2f, 2.2f, paint);
                     canvas.drawLine(10f, 4f, 14f, 4f, paint);
-                    canvas.drawRoundRect(new RectF(8.2f, 6f, 15.8f, 18f), 0.8f, 0.8f, paint);
-                    canvas.drawCircle(12f, 12f, 2.1f, paint);
-                    canvas.drawLine(12f, 8.6f, 12f, 7.8f, paint);
-                    canvas.drawLine(12f, 16.2f, 12f, 15.4f, paint);
-                    canvas.drawLine(9f, 12f, 9.8f, 12f, paint);
-                    canvas.drawLine(14.2f, 12f, 15f, 12f, paint);
+                    canvas.drawCircle(12f, 12f, 2.7f, paint);
+                    canvas.drawLine(12f, 7.8f, 12f, 6.8f, paint);
+                    canvas.drawLine(12f, 17.2f, 12f, 16.2f, paint);
+                    canvas.drawLine(7.8f, 12f, 8.8f, 12f, paint);
+                    canvas.drawLine(15.2f, 12f, 16.2f, 12f, paint);
+                    canvas.drawLine(9f, 9f, 8.3f, 8.3f, paint);
+                    canvas.drawLine(15f, 9f, 15.7f, 8.3f, paint);
+                    canvas.drawLine(9f, 15f, 8.3f, 15.7f, paint);
+                    canvas.drawLine(15f, 15f, 15.7f, 15.7f, paint);
                     paint.setStyle(Paint.Style.FILL);
-                    canvas.drawCircle(12f, 12f, 0.8f, paint);
+                    canvas.drawCircle(12f, 12f, 1f, paint);
                     canvas.drawCircle(12f, 20.4f, 0.65f, paint);
                     break;
                 case "auto-start":
