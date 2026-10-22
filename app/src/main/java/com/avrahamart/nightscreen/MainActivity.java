@@ -745,32 +745,33 @@ public class MainActivity extends Activity {
         }
     }
 
-    private float visualFontSizeScale(Typeface selectedTypeface, int weight) {
-        Typeface referenceTypeface;
+    private Typeface referenceTypefaceForWeight(int weight) {
         if (weight == 2) {
-            referenceTypeface = Typeface.create("sans-serif", Typeface.BOLD);
-        } else if (weight == 1) {
-            referenceTypeface = Typeface.create("sans-serif-medium", Typeface.NORMAL);
-        } else {
-            referenceTypeface = Typeface.create("sans-serif", Typeface.NORMAL);
+            return Typeface.create("sans-serif", Typeface.BOLD);
         }
+        if (weight == 1) {
+            return Typeface.create("sans-serif-medium", Typeface.NORMAL);
+        }
+        return Typeface.create("sans-serif", Typeface.NORMAL);
+    }
 
-        // Measure representative digits and Hebrew letters as they render on this
-        // Android device. This also accounts for system fallback for Latin-only fonts.
-        String digits = "0123456789";
-        String hebrew = "אבגדהוזחטיכךלמםנןסעפףצץקרשת";
-        float referenceHeight = (medianGlyphHeight(referenceTypeface, digits)
-                + medianGlyphHeight(referenceTypeface, hebrew)) / 2f;
-        float selectedHeight = (medianGlyphHeight(selectedTypeface, digits)
-                + medianGlyphHeight(selectedTypeface, hebrew)) / 2f;
+    private float visualFontSizeScale(Typeface selectedTypeface, int weight, String sample) {
+        Typeface referenceTypeface = referenceTypefaceForWeight(weight);
+
+        // Compare visible glyph heights for the characters actually used in each
+        // part of the screensaver, rather than averaging digit and Hebrew metrics.
+        float referenceHeight = medianGlyphHeight(referenceTypeface, sample);
+        float selectedHeight = medianGlyphHeight(selectedTypeface, sample);
 
         if (referenceHeight <= 0f || selectedHeight <= 0f
                 || Float.isNaN(referenceHeight) || Float.isNaN(selectedHeight)
                 || Float.isInfinite(referenceHeight) || Float.isInfinite(selectedHeight)) {
             return 1f;
         }
-        // Prevent a malformed or unusually decorative font from causing extreme scaling.
-        return Math.max(0.82f, Math.min(1.25f, referenceHeight / selectedHeight));
+
+        // Some supplied fonts have a much smaller visible body at the same nominal
+        // text size. Allow enough correction for those fonts without extreme jumps.
+        return Math.max(0.82f, Math.min(1.40f, referenceHeight / selectedHeight));
     }
 
     private float medianGlyphHeight(Typeface typeface, String sample) {
@@ -833,9 +834,20 @@ public class MainActivity extends Activity {
         gregorianText.setTextColor(color);
         hebrewText.setTextColor(color);
         timeText.setTextColor(color);
-        float fontScale = visualFontSizeScale(tf, weight);
-        float dateSize = dateTextSizeForClockPreset(clockDateSize) * fontScale;
-        float clockDisplaySize = clockDateSize * fontScale;
+        // Normalize each text group against Android Sans Serif at the same weight.
+        // The clock is digit-only, while the shared date size is calibrated from both
+        // Hebrew letters and digits so both date rows retain the same nominal size.
+        String clockSample = "0123456789:";
+        String dateDigitsSample = "0123456789";
+        String hebrewDateSample = "אבגדהוזחטיכךלמםנןסעפףצץקרשת";
+        String playerSample = "AaGgMm0123456789אבגדקרשת";
+        float clockScale = visualFontSizeScale(tf, weight, clockSample);
+        float dateDigitScale = visualFontSizeScale(tf, weight, dateDigitsSample);
+        float dateHebrewScale = visualFontSizeScale(tf, weight, hebrewDateSample);
+        float dateScale = (dateDigitScale + dateHebrewScale) / 2f;
+        float playerScale = visualFontSizeScale(tf, weight, playerSample);
+        float dateSize = dateTextSizeForClockPreset(clockDateSize) * dateScale;
+        float clockDisplaySize = clockDateSize * clockScale;
         gregorianText.setTextSize(dateSize);
         hebrewText.setTextSize(dateSize);
         timeText.setTextSize(clockDisplaySize);
@@ -878,7 +890,7 @@ public class MainActivity extends Activity {
             mediaTitle.setTypeface(tf);
             mediaDetails.setTypeface(tf);
             mediaProgressText.setTypeface(tf);
-            float playerDisplaySize = playerSize * fontScale;
+            float playerDisplaySize = playerSize * playerScale;
             mediaTitle.setTextSize(playerDisplaySize);
             mediaDetails.setTextSize(playerDisplaySize);
             int textRowHeight = Math.max(dp(30),
@@ -897,7 +909,7 @@ public class MainActivity extends Activity {
             mediaTitle.post(() -> updateTitleMarqueeIfNeeded());
 
             // Scale the control buttons together with the selected player size.
-            float scale = Math.max(0.72f, Math.min(1.45f, playerSize / 17f));
+            float scale = Math.max(0.72f, Math.min(1.45f, playerDisplaySize / 17f));
             int scaledButtonSize = Math.round(dp(44) * scale);
             if (mediaPrev != null && mediaPlayPause != null && mediaNext != null) {
                 mediaPrev.getLayoutParams().width = scaledButtonSize;
