@@ -378,9 +378,10 @@ public class MainActivity extends Activity {
             }
             cp.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
             if ("upper".equals(clockPos)) {
-                // Anchor the clock line itself at the 25% point. Centering the whole
-                // clock+dates block puts the visible clock too high because dates sit below it.
-                cp.topMargin = Math.max(0, Math.round(h * 0.25f - clockLineHeight / 2f));
+                // This option remains labeled "25% from the top", but its visual
+                // position is intentionally one third down the screen for better balance.
+                // Anchor the clock line itself, accounting for the selected font size.
+                cp.topMargin = Math.max(0, Math.round(h / 3f - clockLineHeight / 2f));
             } else if ("middle".equals(clockPos)) {
                 cp.topMargin = Math.max(0, Math.round(h * 0.50f - blockHeight / 2f));
             } else {
