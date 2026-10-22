@@ -202,7 +202,7 @@ public class SettingsActivity extends Activity {
         clockDateCard = addCard(content, "תצוגת שעון ותאריך");
         addDiscreteSlider(clockDateCard, "גודל",
                 new String[]{"קטן", "בינוני", "רגיל", "גדול", "גדול מאוד"},
-                new String[]{"38", "48", "60", "72", "84"}, "clockDateSize");
+                new String[]{"48", "60", "72", "84", "96"}, "clockDateSize");
         addDiscreteSlider(clockDateCard, "מיקום",
                 new String[]{"למעלה", "25% מלמעלה", "באמצע"},
                 new String[]{"top", "upper", "middle"}, "clockDatePosition");
@@ -825,9 +825,8 @@ public class SettingsActivity extends Activity {
         } else if ("fontWeight".equals(key) || "clockDateSize".equals(key)
                 || "playerSize".equals(key) || "frameWidth".equals(key)
                 || "frameRadius".equals(key)) {
-            int fallback = "clockDateSize".equals(key) ? 84 : parse(values[0], 0);
+            int fallback = "clockDateSize".equals(key) ? 96 : parse(values[0], 0);
             int stored = getInt(key, fallback);
-            if ("clockDateSize".equals(key) && stored == 96) stored = 84;
             for (int i = 0; i < values.length; i++) {
                 if (parse(values[i], Integer.MIN_VALUE) == stored) return i;
             }
