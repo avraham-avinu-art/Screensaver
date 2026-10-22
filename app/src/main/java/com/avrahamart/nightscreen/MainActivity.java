@@ -45,15 +45,11 @@ import android.widget.Toast;
 import com.kosherjava.zmanim.hebrewcalendar.HebrewDateFormatter;
 import com.kosherjava.zmanim.hebrewcalendar.JewishDate;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 
 public class MainActivity extends Activity {
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -741,46 +737,12 @@ public class MainActivity extends Activity {
             return fallback;
         }
 
-        File fontDirectory = new File(getFilesDir(), "screen_saver_fonts");
-        if (!fontDirectory.isDirectory() && !fontDirectory.mkdirs()) {
+        try {
+            return Typeface.createFromAsset(getAssets(), "fonts/" + fileName);
+        } catch (Exception ignored) {
+            // Keep the screensaver readable if an asset is unexpectedly missing.
             return fallback;
         }
-        File selectedFont = new File(fontDirectory, fileName);
-        if (!selectedFont.isFile() || selectedFont.length() == 0L) {
-            byte[] buffer = new byte[8192];
-            try (ZipInputStream zip = new ZipInputStream(
-                    getAssets().open("fonts/Fonts13.zip"))) {
-                ZipEntry entry;
-                while ((entry = zip.getNextEntry()) != null) {
-                    String entryName = entry.getName();
-                    if (entry.isDirectory() || entryName == null
-                            || entryName.contains("/") || entryName.contains("\\")
-                            || !(entryName.toLowerCase(Locale.US).endsWith(".ttf")
-                                 || entryName.toLowerCase(Locale.US).endsWith(".otf"))) {
-                        zip.closeEntry();
-                        continue;
-                    }
-                    File destination = new File(fontDirectory, entryName);
-                    try (FileOutputStream output = new FileOutputStream(destination)) {
-                        int count;
-                        while ((count = zip.read(buffer)) != -1) {
-                            output.write(buffer, 0, count);
-                        }
-                        output.flush();
-                    }
-                    zip.closeEntry();
-                }
-            } catch (Exception ignored) {
-            }
-        }
-
-        if (selectedFont.isFile() && selectedFont.length() > 0L) {
-            try {
-                return Typeface.createFromFile(selectedFont);
-            } catch (Exception ignored) {
-            }
-        }
-        return fallback;
     }
 
     private float visualFontSizeScale(Typeface selectedTypeface, int weight) {
