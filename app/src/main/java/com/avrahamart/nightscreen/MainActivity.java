@@ -302,7 +302,8 @@ public class MainActivity extends Activity {
         hebrewText.setIncludeFontPadding(true);
         clockBlock.addView(hebrewText, new LinearLayout.LayoutParams(-1, initialDateHeight));
 
-        int initialClockBlockHeight = initialClockHeight + initialDateHeight * 2 + dp(2);
+        int initialClockBlockHeight = initialClockHeight + initialDateHeight * 2
+                + dp(dateClockGapDp(initialClockSize)) + dp(2);
         stage.addView(clockBlock, new FrameLayout.LayoutParams(-1, initialClockBlockHeight, Gravity.TOP | Gravity.CENTER_HORIZONTAL));
 
         LinearLayout mediaHolder = new LinearLayout(this);
@@ -705,10 +706,32 @@ public class MainActivity extends Activity {
         return 24f;
     }
 
-    private int measuredLineHeight(TextView view, int extraSpaceDp, int minimumHeightDp) {
+    private int measuredLineHeight(TextView view, String sampleText,
+                                   int extraSpaceDp, int minimumHeightDp) {
         if (view == null) return dp(minimumHeightDp);
-        android.graphics.Paint.FontMetrics metrics = view.getPaint().getFontMetrics();
-        int measured = Math.round(metrics.descent - metrics.ascent) + dp(extraSpaceDp);
+
+        android.graphics.Paint paint = view.getPaint();
+        android.graphics.Paint.FontMetrics metrics = paint.getFontMetrics();
+
+        // Use the complete font line metrics (including top/bottom padding), not just
+        // ascent/descent. Some custom fonts have glyphs extending beyond those values.
+        int lineMetricsHeight = Math.round(metrics.bottom - metrics.top);
+
+        // Also inspect a representative sample and the current text, including Hebrew
+        // characters and digits, in case visible outlines extend beyond font metrics.
+        android.graphics.Rect bounds = new android.graphics.Rect();
+        int visibleGlyphHeight = 0;
+        if (sampleText != null && !sampleText.isEmpty()) {
+            paint.getTextBounds(sampleText, 0, sampleText.length(), bounds);
+            visibleGlyphHeight = Math.max(visibleGlyphHeight, bounds.height());
+        }
+        CharSequence currentText = view.getText();
+        if (currentText != null && currentText.length() > 0) {
+            paint.getTextBounds(currentText, 0, currentText.length(), bounds);
+            visibleGlyphHeight = Math.max(visibleGlyphHeight, bounds.height());
+        }
+
+        int measured = Math.max(lineMetricsHeight, visibleGlyphHeight) + dp(extraSpaceDp);
         return Math.max(dp(minimumHeightDp), measured);
     }
 
@@ -793,21 +816,29 @@ public class MainActivity extends Activity {
         hebrewText.setTypeface(tf);
         timeText.setTypeface(tf);
 
-        int clockH = Math.max(dp(62), dp(clockDateSize + 20));
-        int dateH = dateRowHeightForClockPreset(clockDateSize);
         boolean showGregorian = getBool("showGregorian", true);
         boolean showHebrew = getBool("showHebrew", true);
         int visibleDates = (showGregorian ? 1 : 0) + (showHebrew ? 1 : 0);
+
+        // Measure every row with its final Typeface and TextSize. Hebrew and Gregorian
+        // dates are measured separately because the custom font's Hebrew glyphs can be
+        // taller than its digits, even when both rows share the same nominal font size.
+        int clockH = Math.max(dp(62), measuredLineHeight(
+                timeText, "0123456789:00", 12, clockDateSize + 20));
+        int gregorianH = Math.max(dateRowHeightForClockPreset(clockDateSize),
+                measuredLineHeight(gregorianText, "יום ה׳ · 22.10.2026", 8, 24));
+        int hebrewH = Math.max(dateRowHeightForClockPreset(clockDateSize),
+                measuredLineHeight(hebrewText, "כ״ט בתשרי תשפ״ז אבגדהוזחטיכלמנסעפצקרשת", 10, 24));
 
         LinearLayout.LayoutParams tp = (LinearLayout.LayoutParams) timeText.getLayoutParams();
         tp.height = clockH;
         timeText.setLayoutParams(tp);
         LinearLayout.LayoutParams gp = (LinearLayout.LayoutParams) gregorianText.getLayoutParams();
-        gp.height = dateH;
+        gp.height = gregorianH;
         gp.topMargin = showGregorian ? dp(dateClockGapDp(clockDateSize)) : 0;
         gregorianText.setLayoutParams(gp);
         LinearLayout.LayoutParams hp = (LinearLayout.LayoutParams) hebrewText.getLayoutParams();
-        hp.height = dateH;
+        hp.height = hebrewH;
         hp.topMargin = (!showGregorian && showHebrew) ? dp(dateClockGapDp(clockDateSize)) : 0;
         hebrewText.setLayoutParams(hp);
 
@@ -815,9 +846,14 @@ public class MainActivity extends Activity {
         if (clockParent instanceof LinearLayout) {
             LinearLayout cb = (LinearLayout) clockParent;
             FrameLayout.LayoutParams cp = (FrameLayout.LayoutParams) cb.getLayoutParams();
-            cp.height = clockH + visibleDates * dateH + (visibleDates > 0 ? dp(2) : 0);
+            int dateRowsHeight = (showGregorian ? gregorianH : 0)
+                    + (showHebrew ? hebrewH : 0);
+            int firstDateGap = visibleDates > 0 ? dp(dateClockGapDp(clockDateSize)) : 0;
+            cp.height = clockH + dateRowsHeight + firstDateGap
+                    + (visibleDates > 0 ? dp(2) : 0);
             cb.setLayoutParams(cp);
             cb.requestLayout();
+            cb.post(() -> updateScreenPositions(stageView, clockBlockView, mediaHolderView));
         }
 
         if (mediaTitle != null) {
