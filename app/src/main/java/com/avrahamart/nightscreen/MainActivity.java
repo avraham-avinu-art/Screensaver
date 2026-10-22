@@ -990,10 +990,10 @@ public class MainActivity extends Activity {
     }
 
     private int dateClockGapDp(int clockSize) {
-        if (clockSize >= 96) return 10;
-        if (clockSize >= 84) return 8;
-        if (clockSize >= 72) return 6;
-        return 4;
+        if (clockSize >= 96) return 5;
+        if (clockSize >= 84) return 4;
+        if (clockSize >= 72) return 3;
+        return 2;
     }
 
     private float dateTextSizeForClockPreset(int clockSize) {
