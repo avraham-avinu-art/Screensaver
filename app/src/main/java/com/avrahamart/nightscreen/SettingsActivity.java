@@ -203,7 +203,7 @@ public class SettingsActivity extends Activity {
         clockDateCard = addCard(content, "תצוגת שעון ותאריך");
         addDiscreteSlider(clockDateCard, "גודל",
                 new String[]{"קטן", "בינוני", "רגיל", "גדול", "גדול מאוד"},
-                new String[]{"48", "60", "72", "84", "96"}, "clockDateSize");
+                new String[]{"60", "72", "84", "96", "108"}, "clockDateSize");
         addDiscreteSlider(clockDateCard, "עובי הגופן",
                 new String[]{"דק", "רגיל", "בינוני", "מודגש"},
                 new String[]{"-1", "0", "1", "2"}, "fontWeight");
@@ -315,11 +315,6 @@ public class SettingsActivity extends Activity {
                 new LinearLayout.LayoutParams(0, dp(42), 1f);
         headingRow.addView(heading, headingTextParams);
 
-        FrameLayout icon = makeIconBadge(iconForCard(title), dp(36));
-        LinearLayout.LayoutParams iconParams =
-                new LinearLayout.LayoutParams(dp(36), dp(36));
-        iconParams.leftMargin = dp(9);
-        headingRow.addView(icon, iconParams);
         card.addView(headingRow, new LinearLayout.LayoutParams(-1, dp(42)));
 
         View separator = new View(this);
@@ -345,11 +340,11 @@ public class SettingsActivity extends Activity {
         text.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         text.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
         text.setTextDirection(View.TEXT_DIRECTION_RTL);
-        row.addView(text, new LinearLayout.LayoutParams(0, dp(42), 1f));
+        row.addView(text, new LinearLayout.LayoutParams(0, dp(38), 1f));
 
-        FrameLayout settingIcon = makeIconBadge(iconForSetting(key), dp(34));
+        FrameLayout settingIcon = makeIconBadge(iconForSetting(key), dp(30));
         LinearLayout.LayoutParams iconParams =
-                new LinearLayout.LayoutParams(dp(34), dp(34));
+                new LinearLayout.LayoutParams(dp(30), dp(30));
         iconParams.leftMargin = dp(9);
         row.addView(settingIcon, iconParams);
 
@@ -373,7 +368,7 @@ public class SettingsActivity extends Activity {
                     new int[]{Color.rgb(39, 123, 153), Color.rgb(49, 67, 88)}));
         }
         LinearLayout.LayoutParams switchParams =
-                new LinearLayout.LayoutParams(dp(56), dp(42));
+                new LinearLayout.LayoutParams(dp(56), dp(38));
         switchParams.leftMargin = dp(7);
         row.addView(toggle, 0, switchParams);
 
@@ -412,7 +407,7 @@ public class SettingsActivity extends Activity {
         headingRow.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         headingRow.setGravity(Gravity.CENTER_VERTICAL);
         LinearLayout.LayoutParams valueParams =
-                new LinearLayout.LayoutParams(-2, dp(34));
+                new LinearLayout.LayoutParams(-2, dp(30));
         valueParams.rightMargin = dp(8);
         headingRow.addView(chosenValue, valueParams);
 
@@ -421,15 +416,15 @@ public class SettingsActivity extends Activity {
         settingLabel.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         settingLabel.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
         settingLabel.setTextDirection(View.TEXT_DIRECTION_RTL);
-        headingRow.addView(settingLabel, new LinearLayout.LayoutParams(0, dp(34), 1f));
+        headingRow.addView(settingLabel, new LinearLayout.LayoutParams(0, dp(30), 1f));
 
-        FrameLayout settingIcon = makeIconBadge(iconForSetting(key), dp(34));
+        FrameLayout settingIcon = makeIconBadge(iconForSetting(key), dp(30));
         LinearLayout.LayoutParams iconParams =
-                new LinearLayout.LayoutParams(dp(34), dp(34));
+                new LinearLayout.LayoutParams(dp(30), dp(30));
         iconParams.leftMargin = dp(9);
         headingRow.addView(settingIcon, iconParams);
 
-        block.addView(headingRow, new LinearLayout.LayoutParams(-1, dp(36)));
+        block.addView(headingRow, new LinearLayout.LayoutParams(-1, dp(32)));
 
         SeekBar slider = new SeekBar(this);
         slider.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
@@ -437,7 +432,7 @@ public class SettingsActivity extends Activity {
         slider.setProgress(initial);
         slider.setContentDescription(label);
         slider.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
-        slider.setPadding(dp(2), 0, dp(2), 0);
+        slider.setPadding(dp(12), 0, dp(12), 0);
         if (Build.VERSION.SDK_INT >= 21) {
             slider.setThumbTintList(ColorStateList.valueOf(ACCENT));
             slider.setProgressTintList(ColorStateList.valueOf(ACCENT));
@@ -449,22 +444,6 @@ public class SettingsActivity extends Activity {
         sliderParams.leftMargin = dp(8);
         sliderParams.rightMargin = dp(7);
         block.addView(slider, sliderParams);
-
-        LinearLayout endpoints = new LinearLayout(this);
-        endpoints.setOrientation(LinearLayout.HORIZONTAL);
-        endpoints.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        endpoints.setGravity(Gravity.CENTER_VERTICAL);
-        TextView first = textView(names[0], 12, MUTED);
-        first.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        first.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
-        first.setSingleLine(true);
-        TextView last = textView(names[names.length - 1], 12, MUTED);
-        last.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
-        last.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
-        last.setSingleLine(true);
-        endpoints.addView(first, new LinearLayout.LayoutParams(0, dp(20), 1f));
-        endpoints.addView(last, new LinearLayout.LayoutParams(0, dp(20), 1f));
-        block.addView(endpoints, new LinearLayout.LayoutParams(-1, dp(20)));
 
         slider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override public void onProgressChanged(SeekBar seekBar, int progress,
@@ -502,13 +481,13 @@ public class SettingsActivity extends Activity {
         title.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         title.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         title.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
-        headingRow.addView(title, new LinearLayout.LayoutParams(0, dp(36), 1f));
-        FrameLayout icon = makeIconBadge("color-options", dp(34));
+        headingRow.addView(title, new LinearLayout.LayoutParams(0, dp(32), 1f));
+        FrameLayout icon = makeIconBadge("color-options", dp(30));
         LinearLayout.LayoutParams iconParams =
-                new LinearLayout.LayoutParams(dp(34), dp(34));
+                new LinearLayout.LayoutParams(dp(30), dp(30));
         iconParams.leftMargin = dp(9);
         headingRow.addView(icon, iconParams);
-        block.addView(headingRow, new LinearLayout.LayoutParams(-1, dp(36)));
+        block.addView(headingRow, new LinearLayout.LayoutParams(-1, dp(32)));
 
         LinearLayout choices = new LinearLayout(this);
         choices.setOrientation(LinearLayout.HORIZONTAL);
@@ -523,7 +502,7 @@ public class SettingsActivity extends Activity {
             LinearLayout item = new LinearLayout(this);
             item.setOrientation(LinearLayout.VERTICAL);
             item.setGravity(Gravity.CENTER);
-            item.setPadding(dp(1), dp(4), dp(1), dp(2));
+            item.setPadding(dp(1), dp(2), dp(1), 0);
 
             ColorSwatchView swatch = new ColorSwatchView(this, values[i], i == initial);
             swatches[i] = swatch;
@@ -591,7 +570,7 @@ public class SettingsActivity extends Activity {
         if ("showPlayer".equals(key)) return "media-toggle";
         if ("screenSaverDuration".equals(key)) return "duration";
         if ("autoStartOnCharge".equals(key)) return "auto-start";
-        if ("noShutdownWhileCharging".equals(key)) return "android-lit";
+        if ("noShutdownWhileCharging".equals(key)) return "android-charge";
         if ("showBatteryPercent".equals(key)) return "battery-percent";
         if ("fontColor".equals(key)) return "text-color";
         if ("fontWeight".equals(key)) return "weight";
@@ -600,9 +579,9 @@ public class SettingsActivity extends Activity {
         if ("clockDatePosition".equals(key)) return "clock-position";
         if ("showDetails".equals(key)) return "artist";
         if ("showProgress".equals(key)) return "progress";
-        if ("playerSize".equals(key)) return "player-size";
+        if ("playerSize".equals(key)) return "music";
         if ("playerPosition".equals(key)) return "player-position";
-        if ("frameEnabled".equals(key)) return "frame-toggle";
+        if ("frameEnabled".equals(key)) return "frame";
         if ("frameColor".equals(key)) return "frame-color";
         if ("frameWidth".equals(key)) return "border-width";
         if ("frameRadius".equals(key)) return "corners";
@@ -717,10 +696,15 @@ public class SettingsActivity extends Activity {
         spinnerContainer.setOnClickListener(v -> spinner.performClick());
 
         LinearLayout.LayoutParams spinnerParams =
-                new LinearLayout.LayoutParams(spinnerWidth, dp(44));
+                new LinearLayout.LayoutParams(spinnerWidth, dp(40));
         spinnerParams.leftMargin = dp(9);
         row.addView(spinnerContainer, spinnerParams);
-        row.addView(labelView, new LinearLayout.LayoutParams(0, dp(44), 1f));
+        row.addView(labelView, new LinearLayout.LayoutParams(0, dp(40), 1f));
+        FrameLayout settingIcon = makeIconBadge(iconForSetting(key), dp(30));
+        LinearLayout.LayoutParams settingIconParams =
+                new LinearLayout.LayoutParams(dp(30), dp(30));
+        settingIconParams.leftMargin = dp(9);
+        row.addView(settingIcon, settingIconParams);
         card.addView(row, new LinearLayout.LayoutParams(-1, -2));
 
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
@@ -758,7 +742,7 @@ public class SettingsActivity extends Activity {
         view.setMinHeight(0);
         view.setMinimumHeight(0);
         view.setPadding(dp(2), 0, dp(2), 0);
-        view.setHeight(dp(42));
+        view.setHeight(dp(38));
     }
 
     private void styleDropdownOptionText(TextView view, boolean selectedOption) {
@@ -1139,14 +1123,16 @@ public class SettingsActivity extends Activity {
                     canvas.drawLine(12f, 12f, 16.5f, 14.5f, paint);
                     break;
                 case "music":
-                    path.moveTo(14f, 5f);
-                    path.lineTo(20f, 3.5f);
-                    path.lineTo(20f, 16.5f);
+                    // Compact, balanced double-note glyph, centered and not stretched horizontally.
+                    paint.setStrokeWidth(1.8f);
+                    path.moveTo(13.5f, 5f);
+                    path.lineTo(18f, 4f);
+                    path.lineTo(18f, 15.5f);
                     canvas.drawPath(path, paint);
-                    canvas.drawLine(14f, 5f, 14f, 17f, paint);
+                    canvas.drawLine(13.5f, 5f, 13.5f, 16f, paint);
                     paint.setStyle(Paint.Style.FILL);
-                    canvas.drawOval(new RectF(8f, 15f, 14f, 20f), paint);
-                    canvas.drawOval(new RectF(15f, 15f, 21f, 19.5f), paint);
+                    canvas.drawOval(new RectF(8.2f, 14.8f, 13.5f, 19.2f), paint);
+                    canvas.drawOval(new RectF(12.8f, 14f, 18.1f, 18.4f), paint);
                     break;
                 case "type":
                 case "font":

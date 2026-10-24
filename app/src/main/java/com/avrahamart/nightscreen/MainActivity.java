@@ -775,6 +775,27 @@ public class MainActivity extends Activity {
             e.putBoolean("clockSizePresetsV5Applied", true);
         }
         e.commit();
+
+        // Upgrade the existing five presets to the requested 60/72/84/96/108sp scale.
+        // Run once to preserve the selected preset label across the update.
+        if (!getBool("clockSizePresetsV6Applied", false)) {
+            int oldSize = getInt("clockDateSize", 96);
+            int newSize;
+            switch (oldSize) {
+                case 38:
+                case 48: newSize = 60; break;
+                case 60: newSize = 72; break;
+                case 72: newSize = 84; break;
+                case 84: newSize = 96; break;
+                case 96: newSize = 108; break;
+                case 108: newSize = 108; break;
+                default: newSize = 108; break;
+            }
+            prefs.edit()
+                    .putInt("clockDateSize", newSize)
+                    .putBoolean("clockSizePresetsV6Applied", true)
+                    .commit();
+        }
     }
 
     private boolean getBool(String key, boolean def) {
@@ -1124,7 +1145,7 @@ public class MainActivity extends Activity {
     }
 
     private float dateTextSizeForClockPreset(int clockSize) {
-        // The two largest presets use 28%; the remaining presets use 30%.
+        // Requested values: 60/72 use 30%; 84/96/108 use 28%.
         return clockSize >= 84 ? clockSize * 0.28f : clockSize * 0.30f;
     }
 
@@ -1150,11 +1171,11 @@ public class MainActivity extends Activity {
             return requestedSize;
         }
         switch (requestedSize) {
-            case 48: return 60;
             case 60: return 72;
             case 72: return 84;
             case 84: return 96;
-            default: return 96;
+            case 96: return 108;
+            default: return 108;
         }
     }
 
