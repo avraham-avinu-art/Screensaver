@@ -1,6 +1,8 @@
 package com.avrahamart.nightscreen;
 
 import android.app.Activity;
+import android.app.ActivityOptions;
+import android.app.PendingIntent;
 import android.animation.ObjectAnimator;
 import android.app.NotificationManager;
 import android.app.admin.DevicePolicyManager;
@@ -9,11 +11,14 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.IntentFilter;
 import android.graphics.drawable.GradientDrawable;
+import android.text.Layout;
 import android.text.TextUtils;
 import android.content.ActivityNotFoundException;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.media.AudioManager;
@@ -50,6 +55,8 @@ import java.util.List;
 import java.util.Locale;
 
 public class MainActivity extends Activity {
+    public static final String EXTRA_OPENED_BY_CHARGER =
+            "com.avrahamart.nightscreen.EXTRA_OPENED_BY_CHARGER";
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Runnable autoOffRunnable = this::exitApplicationAtSelectedTime;
     private boolean screenSleepPending = false;
@@ -104,6 +111,8 @@ public class MainActivity extends Activity {
     private SeekBar mediaSeekBar;
     private MediaController lastKnownMediaController;
     private ObjectAnimator titleMarqueeAnimator;
+    private ObjectAnimator artistMarqueeAnimator;
+    private int mediaProgressBaseWidth;
     private String lastTitle = "";
     private String lastArtist = "";
 
@@ -169,6 +178,7 @@ public class MainActivity extends Activity {
                     android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN);
             getWindow().clearFlags(
                     android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            applyChargingLaunchFlags(getIntent());
             hideSystemUi();
             buildUi();
             applySettings();
@@ -177,6 +187,34 @@ public class MainActivity extends Activity {
         } catch (Throwable t) {
             showFatalError(t);
         }
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        if (intent != null && intent.getBooleanExtra(EXTRA_OPENED_BY_CHARGER, false)) {
+            applyChargingLaunchFlags(intent);
+            hideSystemUi();
+            scheduleAutoOff(true);
+            showSettingsButtonForThreeSeconds();
+            if (stageView != null) {
+                stageView.post(() -> updateScreenPositions(
+                        stageView, clockBlockView, mediaHolderView));
+            }
+        }
+    }
+
+    private void applyChargingLaunchFlags(Intent intent) {
+        if (intent == null || !intent.getBooleanExtra(EXTRA_OPENED_BY_CHARGER, false)) return;
+        if (Build.VERSION.SDK_INT >= 27) {
+            setShowWhenLocked(true);
+            setTurnScreenOn(true);
+        }
+        getWindow().addFlags(
+                android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
+                        | android.view.WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
+                        | android.view.WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED);
     }
 
     @Override
@@ -249,6 +287,7 @@ public class MainActivity extends Activity {
         handler.removeCallbacks(hideNextButtonIfStillUnsupported);
         unregisterActiveSessionsListener();
         stopTitleMarquee();
+        stopArtistMarquee();
         detachMediaController();
         super.onDestroy();
     }
@@ -295,7 +334,7 @@ public class MainActivity extends Activity {
         clockBlock.setOrientation(LinearLayout.VERTICAL);
         clockBlock.setGravity(Gravity.CENTER_HORIZONTAL);
 
-        timeText = textView("--:--", getInt("clockDateSize", 96), Color.rgb(247, 247, 247));
+        timeText = clockDateTextView("--:--", getInt("clockDateSize", 96), Color.rgb(247, 247, 247));
         timeText.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
         timeText.setGravity(Gravity.CENTER);
         timeText.setIncludeFontPadding(false);
@@ -303,7 +342,7 @@ public class MainActivity extends Activity {
         int initialClockHeight = Math.max(dp(62), dp(initialClockSize));
         clockBlock.addView(timeText, new LinearLayout.LayoutParams(-1, initialClockHeight));
 
-        gregorianText = textView("", 22, dateTextColor);
+        gregorianText = clockDateTextView("", 22, dateTextColor);
         gregorianText.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         gregorianText.setGravity(Gravity.CENTER);
         gregorianText.setIncludeFontPadding(false);
@@ -314,7 +353,7 @@ public class MainActivity extends Activity {
         gregorianParams.topMargin = dp(dateClockGapDp(initialClockSize));
         clockBlock.addView(gregorianText, gregorianParams);
 
-        hebrewText = textView("", 22, dateTextColor);
+        hebrewText = clockDateTextView("", 22, dateTextColor);
         hebrewText.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         hebrewText.setGravity(Gravity.CENTER);
         hebrewText.setTextDirection(View.TEXT_DIRECTION_ANY_RTL);
@@ -475,6 +514,7 @@ public class MainActivity extends Activity {
         mediaTitle.setVisibility(View.VISIBLE);
         mediaTitle.setGravity(Gravity.CENTER);
         mediaTitle.setSingleLine(true);
+        mediaTitle.setTextDirection(View.TEXT_DIRECTION_FIRST_STRONG_RTL);
         mediaTitle.setIncludeFontPadding(true);
         mediaTitle.addOnLayoutChangeListener((view, left, top, right, bottom,
                                               oldLeft, oldTop, oldRight, oldBottom) -> {
@@ -486,7 +526,14 @@ public class MainActivity extends Activity {
         mediaDetails.setVisibility(View.INVISIBLE);
         mediaDetails.setGravity(Gravity.CENTER);
         mediaDetails.setSingleLine(true);
+        mediaDetails.setTextDirection(View.TEXT_DIRECTION_FIRST_STRONG_RTL);
         mediaDetails.setIncludeFontPadding(true);
+        mediaDetails.addOnLayoutChangeListener((view, left, top, right, bottom,
+                                                oldLeft, oldTop, oldRight, oldBottom) -> {
+            if ((right - left) != (oldRight - oldLeft)) {
+                mediaDetails.post(() -> updateArtistMarqueeIfNeeded());
+            }
+        });
         mediaProgressText = textView("", 12, Color.WHITE);
         mediaProgressText.setVisibility(View.GONE);
 
@@ -532,6 +579,7 @@ public class MainActivity extends Activity {
         int lineWidth = Math.max(
                 dp(120),
                 Math.round(getResources().getDisplayMetrics().widthPixels * 0.36f));
+        mediaProgressBaseWidth = lineWidth;
         mediaProgressRow.addView(mediaSeekBar,
                 new LinearLayout.LayoutParams(lineWidth, dp(32)));
 
@@ -801,7 +849,7 @@ public class MainActivity extends Activity {
 
     private String formatMs(long ms) {
         long t = Math.max(0, ms / 1000);
-        return String.format(Locale.US, "%d:%02d", (t / 60) % 60, t % 60);
+        return String.format(Locale.US, "%d:%02d", t / 60, t % 60);
     }
 
     private Typeface loadCustomTypeface(String fileName) {
@@ -828,11 +876,14 @@ public class MainActivity extends Activity {
         int size = getInt("fontSize", 17);
         int clockDateSize = getInt("clockDateSize", 96);
         int playerSize = getInt("playerSize", 17);
-        int weight = getInt("fontWeight", 1);
         String fontFamily = getString("fontFamily", "sans-serif");
+        int requestedWeight = getInt("fontWeight", 1);
+        int weight = effectiveFontWeightForFamily(fontFamily, requestedWeight);
         Typeface tf;
+        Typeface mediaTypeface;
         if (fontFamily.startsWith("custom:")) {
             Typeface baseTypeface = loadCustomTypeface(fontFamily.substring("custom:".length()));
+            mediaTypeface = baseTypeface;
             if (weight == -1) {
                 tf = Build.VERSION.SDK_INT >= 28
                         ? Typeface.create(baseTypeface, 300, false) : baseTypeface;
@@ -844,16 +895,19 @@ public class MainActivity extends Activity {
                 tf = Typeface.create(baseTypeface,
                         weight == 1 ? Typeface.NORMAL : Typeface.BOLD);
             }
-        } else if (weight == -1 && "sans-serif".equals(fontFamily)) {
-            tf = Typeface.create("sans-serif-thin", Typeface.NORMAL);
-        } else if (weight == 2) {
-            tf = Typeface.create(fontFamily, Typeface.BOLD);
-        } else if (weight == 1 && "sans-serif".equals(fontFamily)) {
-            tf = Typeface.create("sans-serif-medium", Typeface.NORMAL);
-        } else if (weight == 1) {
-            tf = Typeface.create(fontFamily, Typeface.BOLD);
         } else {
-            tf = Typeface.create(fontFamily, Typeface.NORMAL);
+            mediaTypeface = Typeface.create(fontFamily, Typeface.NORMAL);
+            if (weight == -1 && "sans-serif".equals(fontFamily)) {
+                tf = Typeface.create("sans-serif-thin", Typeface.NORMAL);
+            } else if (weight == 2) {
+                tf = Typeface.create(fontFamily, Typeface.BOLD);
+            } else if (weight == 1 && "sans-serif".equals(fontFamily)) {
+                tf = Typeface.create("sans-serif-medium", Typeface.NORMAL);
+            } else if (weight == 1) {
+                tf = Typeface.create(fontFamily, Typeface.BOLD);
+            } else {
+                tf = Typeface.create(fontFamily, Typeface.NORMAL);
+            }
         }
 
         gregorianText.setVisibility(
@@ -861,24 +915,29 @@ public class MainActivity extends Activity {
         hebrewText.setVisibility(
                 getBool("showHebrew", true) ? View.VISIBLE : View.GONE);
 
-        int displayTextColor = weight == -1 && fontFamily.startsWith("custom:")
-                ? blendWithBlack(color, 0.68f) : color;
+        int displayTextColor = color;
         gregorianText.setTextColor(displayTextColor);
         hebrewText.setTextColor(displayTextColor);
         timeText.setTextColor(displayTextColor);
-        // Glyph-size differences are normalized inside the font files themselves.
-        // Keep Android text sizes tied directly to the size preset selected by the user.
-        float dateSize = dateTextSizeForClockPreset(clockDateSize);
-        float clockDisplaySize = clockDateSize;
+        // Keep the chosen color independent of font weight. Proportional numerals
+        // avoid tabular-width spacing in the built-in default font where supported.
+        String fontFeatures = "sans-serif".equals(fontFamily) ? "'pnum'" : "";
+        gregorianText.setFontFeatureSettings(fontFeatures);
+        hebrewText.setFontFeatureSettings(fontFeatures);
+        timeText.setFontFeatureSettings(fontFeatures);
+
+        int effectiveClockSize = effectiveClockDateSize(fontFamily, clockDateSize);
+        float dateSize = dateTextSizeForClockPreset(effectiveClockSize);
+        float clockDisplaySize = effectiveClockSize;
         gregorianText.setTextSize(dateSize);
         hebrewText.setTextSize(dateSize);
         timeText.setTextSize(clockDisplaySize);
         gregorianText.setTypeface(tf);
         hebrewText.setTypeface(tf);
         timeText.setTypeface(tf);
-        applyFontWeightToTextView(gregorianText, weight);
-        applyFontWeightToTextView(hebrewText, weight);
-        applyFontWeightToTextView(timeText, weight);
+        applyFontWeightToTextView(gregorianText, weight, fontFamily, requestedWeight);
+        applyFontWeightToTextView(hebrewText, weight, fontFamily, requestedWeight);
+        applyFontWeightToTextView(timeText, weight, fontFamily, requestedWeight);
 
         boolean showGregorian = getBool("showGregorian", true);
         boolean showHebrew = getBool("showHebrew", true);
@@ -890,10 +949,10 @@ public class MainActivity extends Activity {
         // Use complete font metrics for the clock row, not only painted glyph bounds.
         // Centering and clipping can occur when this row is shorter than the font metrics.
         int clockH = Math.max(dp(62), measuredLineHeight(
-                timeText, "0123456789:00", 2, clockDateSize));
-        int gregorianH = Math.max(dateRowHeightForClockPreset(clockDateSize),
+                timeText, "0123456789:00", 2, effectiveClockSize));
+        int gregorianH = Math.max(dateRowHeightForClockPreset(effectiveClockSize),
                 measuredLineHeight(gregorianText, "יום ה׳ · 22.10.2026", 0, 24));
-        int hebrewH = Math.max(dateRowHeightForClockPreset(clockDateSize),
+        int hebrewH = Math.max(dateRowHeightForClockPreset(effectiveClockSize),
                 measuredLineHeight(hebrewText, "כ״ט בתשרי תשפ״ז אבגדהוזחטיכלמנסעפצקרשת", 0, 24));
 
         LinearLayout.LayoutParams tp = (LinearLayout.LayoutParams) timeText.getLayoutParams();
@@ -901,11 +960,11 @@ public class MainActivity extends Activity {
         timeText.setLayoutParams(tp);
         LinearLayout.LayoutParams gp = (LinearLayout.LayoutParams) gregorianText.getLayoutParams();
         gp.height = gregorianH;
-        gp.topMargin = showGregorian ? dp(dateClockGapDp(clockDateSize)) : 0;
+        gp.topMargin = showGregorian ? dp(dateClockGapDp(effectiveClockSize)) : 0;
         gregorianText.setLayoutParams(gp);
         LinearLayout.LayoutParams hp = (LinearLayout.LayoutParams) hebrewText.getLayoutParams();
         hp.height = hebrewH;
-        hp.topMargin = (!showGregorian && showHebrew) ? dp(dateClockGapDp(clockDateSize)) : 0;
+        hp.topMargin = (!showGregorian && showHebrew) ? dp(dateClockGapDp(effectiveClockSize)) : 0;
         hebrewText.setLayoutParams(hp);
 
         View clockParent = (View) timeText.getParent();
@@ -914,7 +973,7 @@ public class MainActivity extends Activity {
             FrameLayout.LayoutParams cp = (FrameLayout.LayoutParams) cb.getLayoutParams();
             int dateRowsHeight = (showGregorian ? gregorianH : 0)
                     + (showHebrew ? hebrewH : 0);
-            int firstDateGap = visibleDates > 0 ? dp(dateClockGapDp(clockDateSize)) : 0;
+            int firstDateGap = visibleDates > 0 ? dp(dateClockGapDp(effectiveClockSize)) : 0;
             cp.height = clockH + dateRowsHeight + firstDateGap
                     + (visibleDates > 0 ? dp(2) : 0);
             cb.setLayoutParams(cp);
@@ -922,20 +981,23 @@ public class MainActivity extends Activity {
             cb.post(() -> updateScreenPositions(stageView, clockBlockView, mediaHolderView));
         }
 
+        if (settingsButton != null) {
+            settingsButton.setColorFilter(color);
+        }
+
         if (mediaTitle != null) {
-            mediaTitle.setTypeface(tf);
-            mediaDetails.setTypeface(tf);
-            mediaProgressText.setTypeface(tf);
-            if (mediaCurrentText != null) mediaCurrentText.setTypeface(tf);
-            if (mediaTotalText != null) mediaTotalText.setTypeface(tf);
-            applyFontWeightToTextView(mediaTitle, weight);
-            applyFontWeightToTextView(mediaDetails, weight);
-            applyFontWeightToTextView(mediaProgressText, weight);
-            applyFontWeightToTextView(mediaCurrentText, weight);
-            applyFontWeightToTextView(mediaTotalText, weight);
+            // Font family and color apply to the player, but the clock/date weight
+            // selector is deliberately isolated from all player text.
+            mediaTitle.setTypeface(mediaTypeface);
+            mediaDetails.setTypeface(mediaTypeface);
+            mediaProgressText.setTypeface(mediaTypeface);
+            if (mediaCurrentText != null) mediaCurrentText.setTypeface(mediaTypeface);
+            if (mediaTotalText != null) mediaTotalText.setTypeface(mediaTypeface);
+
+            float scale = Math.max(0.72f, Math.min(1.45f, playerSize / 17f));
+            int textRowHeight = Math.max(dp(24), Math.round(dp(30) * scale));
             mediaTitle.setTextSize(playerSize);
             mediaDetails.setTextSize(playerSize);
-            int textRowHeight = Math.max(dp(30), dp(playerSize + 12));
             if (mediaTitle.getLayoutParams() != null) {
                 mediaTitle.getLayoutParams().height = textRowHeight;
                 mediaTitle.requestLayout();
@@ -944,13 +1006,59 @@ public class MainActivity extends Activity {
                 mediaDetails.getLayoutParams().height = textRowHeight;
                 mediaDetails.requestLayout();
             }
-            mediaProgressText.setTextSize(Math.max(10, playerSize - 4));
-            // Re-measure after a preset change; otherwise a longer title may stay clipped
-            // because its old (smaller) font previously fit on one line.
+            mediaProgressText.setTextSize(Math.max(9, Math.round((playerSize - 4) * scale)));
+
+            // Scale the position/time row, including its labels, track, and row height.
+            int progressRowHeight = Math.max(dp(24), Math.round(dp(32) * scale));
+            int timeLabelWidth = Math.max(dp(34), Math.round(dp(48) * scale));
+            int timeLabelMargin = Math.round(dp(4) * scale);
+            int seekBarPadding = Math.max(dp(3), Math.round(dp(7) * scale));
+            int baseTrackWidth = mediaProgressBaseWidth > 0 ? mediaProgressBaseWidth
+                    : Math.max(dp(120),
+                            Math.round(getResources().getDisplayMetrics().widthPixels * 0.36f));
+            int scaledTrackWidth = Math.max(dp(80), Math.round(baseTrackWidth * scale));
+
+            if (mediaProgressRow != null) {
+                mediaProgressRow.setPadding(
+                        Math.round(dp(4) * scale), 0,
+                        Math.round(dp(4) * scale), 0);
+                if (mediaProgressRow.getLayoutParams() != null) {
+                    mediaProgressRow.getLayoutParams().height = progressRowHeight;
+                    mediaProgressRow.requestLayout();
+                }
+            }
+            if (mediaCurrentText != null) {
+                mediaCurrentText.setTextSize(Math.max(9, 12f * scale));
+                LinearLayout.LayoutParams currentParams =
+                        (LinearLayout.LayoutParams) mediaCurrentText.getLayoutParams();
+                currentParams.width = timeLabelWidth;
+                currentParams.height = progressRowHeight;
+                currentParams.rightMargin = timeLabelMargin;
+                mediaCurrentText.setLayoutParams(currentParams);
+            }
+            if (mediaTotalText != null) {
+                mediaTotalText.setTextSize(Math.max(9, 12f * scale));
+                LinearLayout.LayoutParams totalParams =
+                        (LinearLayout.LayoutParams) mediaTotalText.getLayoutParams();
+                totalParams.width = timeLabelWidth;
+                totalParams.height = progressRowHeight;
+                totalParams.leftMargin = timeLabelMargin;
+                mediaTotalText.setLayoutParams(totalParams);
+            }
+            if (mediaSeekBar != null) {
+                LinearLayout.LayoutParams seekParams =
+                        (LinearLayout.LayoutParams) mediaSeekBar.getLayoutParams();
+                seekParams.width = scaledTrackWidth;
+                seekParams.height = progressRowHeight;
+                mediaSeekBar.setLayoutParams(seekParams);
+                mediaSeekBar.setPadding(seekBarPadding, 0, seekBarPadding, 0);
+            }
+
+            // Re-measure both rows after a preset change; only overflowing text scrolls.
             mediaTitle.post(() -> updateTitleMarqueeIfNeeded());
+            mediaDetails.post(() -> updateArtistMarqueeIfNeeded());
 
             // Scale the control buttons together with the selected player size.
-            float scale = Math.max(0.72f, Math.min(1.45f, playerSize / 17f));
             int scaledButtonSize = Math.round(dp(44) * scale);
             if (mediaPrev != null && mediaPlayPause != null && mediaNext != null) {
                 mediaPrev.getLayoutParams().width = scaledButtonSize;
@@ -971,7 +1079,8 @@ public class MainActivity extends Activity {
                 mediaNext.requestLayout();
                 View controls = (View) mediaPrev.getParent();
                 if (controls != null) {
-                    LinearLayout.LayoutParams cp = (LinearLayout.LayoutParams) controls.getLayoutParams();
+                    LinearLayout.LayoutParams cp =
+                            (LinearLayout.LayoutParams) controls.getLayoutParams();
                     cp.height = scaledButtonSize;
                     controls.setLayoutParams(cp);
                 }
@@ -980,12 +1089,16 @@ public class MainActivity extends Activity {
             mediaTitle.setTextColor(displayTextColor);
             mediaDetails.setTextColor(displayTextColor);
             mediaProgressText.setTextColor(displayTextColor);
-            mediaCurrentText.setTextColor(displayTextColor);
-            mediaTotalText.setTextColor(displayTextColor);
-            mediaSeekBar.setProgressTintList(android.content.res.ColorStateList.valueOf(color));
-            mediaSeekBar.setProgressBackgroundTintList(
-                    android.content.res.ColorStateList.valueOf(blendWithBlack(color, 0.48f)));
-            mediaSeekBar.setThumbTintList(android.content.res.ColorStateList.valueOf(color));
+            if (mediaCurrentText != null) mediaCurrentText.setTextColor(displayTextColor);
+            if (mediaTotalText != null) mediaTotalText.setTextColor(displayTextColor);
+            if (mediaSeekBar != null) {
+                mediaSeekBar.setProgressTintList(
+                        android.content.res.ColorStateList.valueOf(color));
+                mediaSeekBar.setProgressBackgroundTintList(
+                        android.content.res.ColorStateList.valueOf(blendWithBlack(color, 0.48f)));
+                mediaSeekBar.setThumbTintList(
+                        android.content.res.ColorStateList.valueOf(color));
+            }
 
             applyMediaFrame(mediaController != null && hasUsableMediaSession(mediaController));
 
@@ -1005,9 +1118,9 @@ public class MainActivity extends Activity {
     }
 
     private int dateClockGapDp(int clockSize) {
-        // Keep only a minimal deliberate gap; excess visual space is handled by
-        // sizing the clock row to its visible glyph bounds below.
-        return 1;
+        // Negative layout margin removes excess empty font-leading without shrinking
+        // the clock row itself, which previously caused large digits to be clipped.
+        return -8;
     }
 
     private float dateTextSizeForClockPreset(int clockSize) {
@@ -1020,17 +1133,67 @@ public class MainActivity extends Activity {
         return Math.max(dp(24), dp(Math.round(clockSize * 0.30f)));
     }
 
-    private void applyFontWeightToTextView(TextView view, int weight) {
+    private int effectiveFontWeightForFamily(String fontFamily, int requestedWeight) {
+        // Haim FB Black is intrinsically heavier than the other faces; lower it by two
+        // weight grades, clamping at the lightest available setting.
+        if ("custom:fmhaimblack.ttf".equals(fontFamily)) {
+            return Math.max(-1, requestedWeight - 2);
+        }
+        return requestedWeight;
+    }
+
+    private int effectiveClockDateSize(String fontFamily, int requestedSize) {
+        // Normador and Stam Ashkenaz render materially smaller; promote them one preset
+        // for every weight without modifying the user's stored size preference.
+        if (!"custom:DL Normador.TTF".equals(fontFamily)
+                && !"custom:Ashkenazi-Stam.ttf".equals(fontFamily)) {
+            return requestedSize;
+        }
+        switch (requestedSize) {
+            case 48: return 60;
+            case 60: return 72;
+            case 72: return 84;
+            case 84: return 96;
+            default: return 96;
+        }
+    }
+
+    private void applyFontWeightToTextView(TextView view, int weight,
+                                           String fontFamily, int requestedWeight) {
         if (view == null) return;
-        android.graphics.Paint paint = view.getPaint();
+        Paint paint = view.getPaint();
+
+        if ("custom:fmhaimblack.ttf".equals(fontFamily)) {
+            // Haim FB Black is intrinsically very heavy. Use a lighter requested typeface
+            // and erode the outer edge of the white glyphs against the black saver surface.
+            paint.setStyle(Paint.Style.FILL);
+            paint.setStrokeWidth(0f);
+            if (view instanceof ClockDateTextView) {
+                float[] erosionByWeight = {2.0f, 1.6f, 1.15f, 0.7f};
+                int index = Math.max(0, Math.min(3, requestedWeight + 1));
+                ((ClockDateTextView) view).setEdgeErosionDp(erosionByWeight[index]);
+            }
+            view.invalidate();
+            return;
+        }
+
+        if (view instanceof ClockDateTextView) {
+            ((ClockDateTextView) view).setEdgeErosionDp(0f);
+        }
         if (weight == 1 || weight == 2) {
-            paint.setStyle(android.graphics.Paint.Style.FILL_AND_STROKE);
+            paint.setStyle(Paint.Style.FILL_AND_STROKE);
             float density = getResources().getDisplayMetrics().density;
-            // Most custom font assets contain only one static weight. Stronger controlled
-            // strokes keep medium and bold visibly distinct across these faces.
-            paint.setStrokeWidth(density * (weight == 1 ? 0.42f : 0.90f));
+            boolean apolloBlack = "custom:DL ApolloBlack.ttf".equals(fontFamily);
+            float strokeDp;
+            if (apolloBlack) {
+                // This face needs a wider visible difference between medium and bold.
+                strokeDp = weight == 1 ? 0.75f : 1.30f;
+            } else {
+                strokeDp = weight == 1 ? 0.42f : 0.90f;
+            }
+            paint.setStrokeWidth(density * strokeDp);
         } else {
-            paint.setStyle(android.graphics.Paint.Style.FILL);
+            paint.setStyle(Paint.Style.FILL);
             paint.setStrokeWidth(0f);
         }
         view.invalidate();
@@ -1074,7 +1237,7 @@ public class MainActivity extends Activity {
                     getInt("frameColor", Color.WHITE));
             mediaMirror.setBackground(bg);
             // Keep the text and controls inside the visible outline.
-            int inset = dp(Math.max(2, getInt("frameWidth", 1) + 1));
+            int inset = dp(Math.max(3, getInt("frameWidth", 1) + 2));
             mediaMirror.setPadding(inset, inset, inset, inset);
         } else {
             mediaMirror.setBackgroundColor(Color.BLACK);
@@ -1366,6 +1529,9 @@ public class MainActivity extends Activity {
             formatter.setUseGershGershayim(true);
             formatter.setUseLongHebrewYears(false);
             String formattedHebrewDate = formatter.format(jewishDate)
+                    .replace("מרחשוון", "חשוון")
+                    .replace("מרחשון", "חשוון")
+                    .replace("חשון", "חשוון")
                     .replace("\u05F3", "'")
                     .replace("\u05F4", "\"")
                     .replace("’", "'")
@@ -1391,7 +1557,7 @@ public class MainActivity extends Activity {
             case Calendar.WEDNESDAY: return "יום ד'";
             case Calendar.THURSDAY: return "יום ה'";
             case Calendar.FRIDAY: return "יום ו'";
-            default: return "יום שבת";
+            default: return "שבת";
         }
     }
 
@@ -1660,14 +1826,23 @@ public class MainActivity extends Activity {
                     artist.equals("לא ידוע")) {
                 artist = "";
             }
+            String previousArtistText = mediaDetails.getText() == null
+                    ? "" : mediaDetails.getText().toString();
+            boolean artistChanged = !artist.equals(previousArtistText);
             lastArtist = artist;
             prefs.edit().putString("lastTitle", lastTitle).putString("lastArtist", lastArtist).apply();
             long duration = metadata == null ? 0L : metadata.getLong(MediaMetadata.METADATA_KEY_DURATION);
             long position = Math.max(0L, state.getPosition());
             if (duration > 0) position = Math.min(position, duration);
             boolean showDetails = getBool("showDetails", true);
-            mediaDetails.setText(lastArtist);
+            if (artistChanged) {
+                stopArtistMarquee();
+                mediaDetails.setText(lastArtist);
+            }
             mediaDetails.setVisibility(showDetails && !lastArtist.isEmpty() ? View.VISIBLE : View.GONE);
+            if (artistChanged && showDetails && !lastArtist.isEmpty()) {
+                mediaDetails.post(() -> updateArtistMarqueeIfNeeded());
+            }
             boolean showProgressSetting = getBool("showProgress", true);
             if (!showProgressSetting) {
                 handler.removeCallbacks(hideProgressRowAfterMetadataChange);
@@ -1799,6 +1974,8 @@ public class MainActivity extends Activity {
         if (mediaMirror != null) {
             mediaMirror.setVisibility(View.GONE);
         }
+        stopTitleMarquee();
+        stopArtistMarquee();
     }
 
     private String removeFileExtension(String title) {
@@ -1826,14 +2003,15 @@ public class MainActivity extends Activity {
                 // The title fits normally when short. Only overflowing titles
                 // become horizontally scrollable.
                 mediaTitle.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
+                mediaTitle.setTextDirection(View.TEXT_DIRECTION_FIRST_STRONG_RTL);
                 mediaTitle.setHorizontallyScrolling(true);
                 mediaTitle.setEllipsize(null);
                 mediaTitle.setSelected(false);
 
                 final int overflow = Math.max(1, (int)Math.ceil(textWidth - available));
-                mediaTitle.setScrollX(0);
+                mediaTitle.setScrollX(overflow);
                 titleMarqueeAnimator = ObjectAnimator.ofInt(
-                        mediaTitle, "scrollX", 0, overflow);
+                        mediaTitle, "scrollX", overflow, 0);
                 long duration = Math.max(8000L,
                         Math.min(20000L, 7000L + overflow * 20L));
                 titleMarqueeAnimator.setDuration(duration);
@@ -1844,6 +2022,7 @@ public class MainActivity extends Activity {
                 titleMarqueeAnimator.start();
             } else {
                 mediaTitle.setGravity(Gravity.CENTER);
+                mediaTitle.setTextDirection(View.TEXT_DIRECTION_FIRST_STRONG_RTL);
                 mediaTitle.setHorizontallyScrolling(false);
                 mediaTitle.setEllipsize(TextUtils.TruncateAt.END);
                 mediaTitle.setSelected(false);
@@ -1851,6 +2030,60 @@ public class MainActivity extends Activity {
             }
         } catch (Throwable ignored) {
         }
+    }
+
+    private void updateArtistMarqueeIfNeeded() {
+        if (mediaDetails == null) return;
+        try {
+            String value = mediaDetails.getText() == null ? "" : mediaDetails.getText().toString();
+            if (value.isEmpty() || mediaDetails.getVisibility() != View.VISIBLE) {
+                stopArtistMarquee();
+                return;
+            }
+            float textWidth = mediaDetails.getPaint().measureText(value);
+            float available = Math.max(0,
+                    mediaDetails.getWidth() - mediaDetails.getPaddingLeft()
+                            - mediaDetails.getPaddingRight());
+            stopArtistMarquee();
+            if (textWidth > available + dp(2)) {
+                mediaDetails.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
+                mediaDetails.setTextDirection(View.TEXT_DIRECTION_FIRST_STRONG_RTL);
+                mediaDetails.setHorizontallyScrolling(true);
+                mediaDetails.setEllipsize(null);
+                mediaDetails.setSelected(false);
+                int overflow = Math.max(1, (int) Math.ceil(textWidth - available));
+                mediaDetails.setScrollX(overflow);
+                artistMarqueeAnimator = ObjectAnimator.ofInt(
+                        mediaDetails, "scrollX", overflow, 0);
+                long duration = Math.max(8000L,
+                        Math.min(20000L, 7000L + overflow * 20L));
+                artistMarqueeAnimator.setDuration(duration);
+                artistMarqueeAnimator.setStartDelay(1200L);
+                artistMarqueeAnimator.setRepeatMode(ObjectAnimator.REVERSE);
+                artistMarqueeAnimator.setRepeatCount(ObjectAnimator.INFINITE);
+                artistMarqueeAnimator.setInterpolator(
+                        new android.view.animation.LinearInterpolator());
+                artistMarqueeAnimator.start();
+            } else {
+                mediaDetails.setGravity(Gravity.CENTER);
+                mediaDetails.setHorizontallyScrolling(false);
+                mediaDetails.setEllipsize(TextUtils.TruncateAt.END);
+                mediaDetails.setSelected(false);
+                mediaDetails.setScrollX(0);
+            }
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private void stopArtistMarquee() {
+        try {
+            if (artistMarqueeAnimator != null) {
+                artistMarqueeAnimator.cancel();
+                artistMarqueeAnimator = null;
+            }
+        } catch (Throwable ignored) {
+        }
+        if (mediaDetails != null) mediaDetails.setScrollX(0);
     }
 
     private void stopTitleMarquee() {
@@ -1967,6 +2200,81 @@ public class MainActivity extends Activity {
         v.setPadding(0, 0, 0, 0);
         v.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         return v;
+    }
+
+    private ClockDateTextView clockDateTextView(String text, float size, int color) {
+        ClockDateTextView view = new ClockDateTextView(this);
+        view.setText(text);
+        view.setTextSize(size);
+        view.setTextColor(color);
+        view.setTextDirection(View.TEXT_DIRECTION_RTL);
+        view.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        return view;
+    }
+
+    private final class ClockDateTextView extends TextView {
+        private float edgeErosionPx;
+
+        ClockDateTextView(Context context) {
+            super(context);
+            setIncludeFontPadding(false);
+        }
+
+        void setEdgeErosionDp(float erosionDp) {
+            float density = getResources().getDisplayMetrics().density;
+            edgeErosionPx = Math.max(0f, erosionDp) * density;
+            invalidate();
+        }
+
+        @Override protected void onDraw(Canvas canvas) {
+            super.onDraw(canvas);
+            if (edgeErosionPx <= 0f) return;
+            Layout layout = getLayout();
+            if (layout == null) return;
+
+            Paint paint = getPaint();
+            int oldColor = paint.getColor();
+            Paint.Style oldStyle = paint.getStyle();
+            float oldStrokeWidth = paint.getStrokeWidth();
+            Paint.Join oldJoin = paint.getStrokeJoin();
+            Paint.Cap oldCap = paint.getStrokeCap();
+            android.graphics.Shader oldShader = paint.getShader();
+            android.graphics.PathEffect oldPathEffect = paint.getPathEffect();
+
+            int extendedTop = getExtendedPaddingTop();
+            int extendedBottom = getExtendedPaddingBottom();
+            int availableHeight = Math.max(0, getHeight() - extendedTop - extendedBottom);
+            int verticalGravity = getGravity() & Gravity.VERTICAL_GRAVITY_MASK;
+            int verticalOffset = 0;
+            if (verticalGravity == Gravity.CENTER_VERTICAL) {
+                verticalOffset = (availableHeight - layout.getHeight()) / 2;
+            } else if (verticalGravity == Gravity.BOTTOM) {
+                verticalOffset = availableHeight - layout.getHeight();
+            }
+
+            canvas.save();
+            canvas.clipRect(getCompoundPaddingLeft(), extendedTop,
+                    getWidth() - getCompoundPaddingRight(), getHeight() - extendedBottom);
+            canvas.translate(getCompoundPaddingLeft() - getScrollX(),
+                    extendedTop + verticalOffset - getScrollY());
+            paint.setColor(Color.BLACK);
+            paint.setShader(null);
+            paint.setPathEffect(null);
+            paint.setStyle(Paint.Style.STROKE);
+            paint.setStrokeJoin(Paint.Join.ROUND);
+            paint.setStrokeCap(Paint.Cap.ROUND);
+            paint.setStrokeWidth(edgeErosionPx);
+            layout.draw(canvas);
+            canvas.restore();
+
+            paint.setColor(oldColor);
+            paint.setStyle(oldStyle);
+            paint.setStrokeWidth(oldStrokeWidth);
+            paint.setStrokeJoin(oldJoin);
+            paint.setStrokeCap(oldCap);
+            paint.setShader(oldShader);
+            paint.setPathEffect(oldPathEffect);
+        }
     }
 
     private TextView textView(String text, float size, int color) {

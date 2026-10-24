@@ -187,11 +187,8 @@ public class SettingsActivity extends Activity {
         addColorChoices(font, "צבע",
                 new String[]{"לבן", "כסף", "אפור", "אפור בהיר", "כחול עדין"},
                 new String[]{"white", "silver", "gray", "light", "blue"}, "fontColor");
-        addDiscreteSlider(font, "עובי",
-                new String[]{"דק", "רגיל", "בינוני", "מודגש"},
-                new String[]{"-1", "0", "1", "2"}, "fontWeight");
         addSpinner(font, "סוג",
-                new String[]{"Sans Serif", "DL Adva", "Keter Aram Tsova", "Shofar",
+                new String[]{"ברירת מחדל", "DL Adva", "Keter Aram Tsova", "Shofar",
                         "Gveret Levin", "Yehuda CLM", "Stam Ashkenaz", "DL Apollo Black",
                         "DL Normador", "Ozrad CLM Bold", "Haim FB Black", "Coming Soon",
                         "Short Stack"},
@@ -207,6 +204,9 @@ public class SettingsActivity extends Activity {
         addDiscreteSlider(clockDateCard, "גודל",
                 new String[]{"קטן", "בינוני", "רגיל", "גדול", "גדול מאוד"},
                 new String[]{"48", "60", "72", "84", "96"}, "clockDateSize");
+        addDiscreteSlider(clockDateCard, "עובי הגופן",
+                new String[]{"דק", "רגיל", "בינוני", "מודגש"},
+                new String[]{"-1", "0", "1", "2"}, "fontWeight");
         addDiscreteSlider(clockDateCard, "מיקום",
                 new String[]{"למעלה", "25% מלמעלה", "באמצע"},
                 new String[]{"top", "upper", "middle"}, "clockDatePosition");

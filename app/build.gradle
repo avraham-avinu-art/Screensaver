@@ -2,6 +2,10 @@ plugins {
     id 'com.android.application'
 }
 
+def releaseKeystorePath = System.getenv("NIGHTSCREEN_RELEASE_KEYSTORE_PATH")
+def hasPersistentReleaseSigning = releaseKeystorePath != null
+        && !releaseKeystorePath.trim().isEmpty()
+
 android {
     namespace 'com.avrahamart.nightscreen'
     compileSdk 36
@@ -14,11 +18,23 @@ android {
         versionName '2.6.2'
     }
 
+    signingConfigs {
+        if (hasPersistentReleaseSigning) {
+            stableRelease {
+                storeFile file(releaseKeystorePath)
+                storePassword System.getenv("NIGHTSCREEN_RELEASE_STORE_PASSWORD")
+                keyAlias System.getenv("NIGHTSCREEN_RELEASE_KEY_ALIAS")
+                keyPassword System.getenv("NIGHTSCREEN_RELEASE_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
             shrinkResources false
-            signingConfig signingConfigs.debug
+            signingConfig hasPersistentReleaseSigning
+                    ? signingConfigs.stableRelease : signingConfigs.debug
         }
     }
 }

@@ -55,7 +55,29 @@ jobs:
             git push origin HEAD:main
           fi
 
+      - name: Configure persistent release signing
+        if: ${{ secrets.NIGHTSCREEN_RELEASE_KEYSTORE_BASE64 != '' }}
+        env:
+          NIGHTSCREEN_RELEASE_KEYSTORE_BASE64: ${{ secrets.NIGHTSCREEN_RELEASE_KEYSTORE_BASE64 }}
+        run: |
+          KEYSTORE_PATH="$RUNNER_TEMP/nightscreen-release.jks"
+          printf '%s' "$NIGHTSCREEN_RELEASE_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE_PATH"
+          chmod 600 "$KEYSTORE_PATH"
+          echo "NIGHTSCREEN_RELEASE_KEYSTORE_PATH=$KEYSTORE_PATH" >> "$GITHUB_ENV"
+
+      - name: Report release signing mode
+        run: |
+          if [ -n "${NIGHTSCREEN_RELEASE_KEYSTORE_PATH:-}" ]; then
+            echo "Using the configured persistent release signing key."
+          else
+            echo "::warning::Stable signing is not configured. This APK uses the temporary debug key and will not be upgrade-compatible across independent GitHub runners."
+          fi
+
       - name: Build release APK
+        env:
+          NIGHTSCREEN_RELEASE_STORE_PASSWORD: ${{ secrets.NIGHTSCREEN_RELEASE_STORE_PASSWORD }}
+          NIGHTSCREEN_RELEASE_KEY_ALIAS: ${{ secrets.NIGHTSCREEN_RELEASE_KEY_ALIAS }}
+          NIGHTSCREEN_RELEASE_KEY_PASSWORD: ${{ secrets.NIGHTSCREEN_RELEASE_KEY_PASSWORD }}
         run: gradle --version && gradle :app:assembleRelease --no-daemon
 
       - name: Verify APK
