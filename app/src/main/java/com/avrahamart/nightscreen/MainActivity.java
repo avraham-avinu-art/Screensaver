@@ -1175,7 +1175,8 @@ public class MainActivity extends Activity {
             case 72: return 84;
             case 84: return 96;
             case 96: return 108;
-            default: return 108;
+            case 108: return 120;
+            default: return 120;
         }
     }
 

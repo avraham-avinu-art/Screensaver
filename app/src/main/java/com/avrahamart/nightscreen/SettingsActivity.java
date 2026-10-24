@@ -579,7 +579,7 @@ public class SettingsActivity extends Activity {
         if ("clockDatePosition".equals(key)) return "clock-position";
         if ("showDetails".equals(key)) return "artist";
         if ("showProgress".equals(key)) return "progress";
-        if ("playerSize".equals(key)) return "music";
+        if ("playerSize".equals(key)) return "music-player";
         if ("playerPosition".equals(key)) return "player-position";
         if ("frameEnabled".equals(key)) return "frame";
         if ("frameColor".equals(key)) return "frame-color";
@@ -1122,8 +1122,28 @@ public class SettingsActivity extends Activity {
                     canvas.drawLine(12f, 6.5f, 12f, 12f, paint);
                     canvas.drawLine(12f, 12f, 16.5f, 14.5f, paint);
                     break;
+                case "music-player":
+                    // A compact music-player tile: album/note, track lines, and progress.
+                    canvas.drawRoundRect(new RectF(2.8f, 3.6f, 21.2f, 20.4f), 2.8f, 2.8f, paint);
+                    canvas.drawRoundRect(new RectF(4.8f, 6.1f, 11.2f, 13.5f), 1.1f, 1.1f, paint);
+                    paint.setStrokeWidth(1.45f);
+                    canvas.drawLine(8.5f, 7.7f, 8.5f, 10.8f, paint);
+                    path.moveTo(8.5f, 7.7f);
+                    path.lineTo(10f, 7.3f);
+                    path.lineTo(10f, 10.2f);
+                    canvas.drawPath(path, paint);
+                    paint.setStyle(Paint.Style.FILL);
+                    canvas.drawOval(new RectF(6.9f, 10.1f, 8.7f, 11.5f), paint);
+                    canvas.drawOval(new RectF(8.9f, 9.6f, 10.5f, 11f), paint);
+                    paint.setStyle(Paint.Style.STROKE);
+                    canvas.drawLine(13.1f, 7.5f, 18.9f, 7.5f, paint);
+                    canvas.drawLine(13.1f, 10.6f, 17.7f, 10.6f, paint);
+                    canvas.drawLine(5f, 16.5f, 19f, 16.5f, paint);
+                    paint.setStyle(Paint.Style.FILL);
+                    canvas.drawCircle(10.2f, 16.5f, 1.15f, paint);
+                    break;
                 case "music":
-                    // Compact, balanced double-note glyph, centered and not stretched horizontally.
+                    // Retained for any legacy references to the music-note glyph.
                     paint.setStrokeWidth(1.8f);
                     path.moveTo(13.5f, 5f);
                     path.lineTo(18f, 4f);
