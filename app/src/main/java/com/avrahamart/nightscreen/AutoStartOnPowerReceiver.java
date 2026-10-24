@@ -50,8 +50,8 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
             } else if (Build.VERSION.SDK_INT >= 33) {
                 pendingIntent = PendingIntent.getActivity(
                         context, 4307, launch, pendingFlags);
-                ActivityOptions options = ActivityOptions.makeBasic()
-                        .setPendingIntentBackgroundActivityLaunchAllowed(true);
+                ActivityOptions options = ActivityOptions.makeBasic();
+                options.setPendingIntentBackgroundActivityLaunchAllowed(true);
                 pendingIntent.send(context, 0, null, null, null, null, options.toBundle());
             } else {
                 // Legacy Android versions have no sender opt-in API.
