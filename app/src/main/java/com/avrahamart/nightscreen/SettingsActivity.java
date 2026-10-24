@@ -310,6 +310,7 @@ public class SettingsActivity extends Activity {
         heading.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         heading.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
         heading.setTextDirection(View.TEXT_DIRECTION_RTL);
+        heading.setPadding(0, 0, dp(3), 0);
         heading.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
         LinearLayout.LayoutParams headingTextParams =
                 new LinearLayout.LayoutParams(0, dp(42), 1f);
@@ -416,6 +417,7 @@ public class SettingsActivity extends Activity {
         settingLabel.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         settingLabel.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
         settingLabel.setTextDirection(View.TEXT_DIRECTION_RTL);
+        settingLabel.setPadding(0, 0, dp(3), 0);
         headingRow.addView(settingLabel, new LinearLayout.LayoutParams(0, dp(30), 1f));
 
         FrameLayout settingIcon = makeIconBadge(iconForSetting(key), dp(30));
@@ -481,6 +483,7 @@ public class SettingsActivity extends Activity {
         title.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         title.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         title.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
+        title.setPadding(0, 0, dp(3), 0);
         headingRow.addView(title, new LinearLayout.LayoutParams(0, dp(32), 1f));
         FrameLayout icon = makeIconBadge("color-options", dp(30));
         LinearLayout.LayoutParams iconParams =
@@ -609,7 +612,7 @@ public class SettingsActivity extends Activity {
             TextView heading = (TextView) headingView;
             heading.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
             heading.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
-            heading.setPadding(dp(2), 0, dp(2), 0);
+            heading.setPadding(dp(2), 0, dp(5), 0);
             heading.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
         }
     }
@@ -628,6 +631,7 @@ public class SettingsActivity extends Activity {
         labelView.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         labelView.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
         labelView.setTextDirection(View.TEXT_DIRECTION_RTL);
+        labelView.setPadding(0, 0, dp(3), 0);
 
         int selected = selectedIndex(key, values);
         if ("fontFamily".equals(key)) {
