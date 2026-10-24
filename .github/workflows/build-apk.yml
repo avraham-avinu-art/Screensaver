@@ -60,16 +60,21 @@ jobs:
           NIGHTSCREEN_SIGNING_BUNDLE_BASE64: ${{ secrets.NIGHTSCREEN_SIGNING_BUNDLE_BASE64 }}
         run: |
           if [ -z "$NIGHTSCREEN_SIGNING_BUNDLE_BASE64" ]; then
-            echo "No persistent signing key secret is configured."
-            exit 0
+            echo "::error::The NIGHTSCREEN_SIGNING_BUNDLE_BASE64 repository secret is missing."
+            exit 1
           fi
           python3 - <<'PY'
           import base64, json, os
           raw = base64.b64decode(os.environ["NIGHTSCREEN_SIGNING_BUNDLE_BASE64"], validate=True)
           bundle = json.loads(raw.decode("utf-8"))
+          if bundle.get("version") != 2:
+              raise SystemExit("Signing secret is outdated. Replace it with the supplied v2 bundle before building.")
+          keystore_bytes = base64.b64decode(bundle["keystore_base64"], validate=True)
+          if not keystore_bytes:
+              raise ValueError("Signing keystore is empty.")
           keystore_path = os.path.join(os.environ["RUNNER_TEMP"], "nightscreen-release.jks")
           with open(keystore_path, "wb") as keystore:
-              keystore.write(base64.b64decode(bundle["keystore_base64"], validate=True))
+              keystore.write(keystore_bytes)
           os.chmod(keystore_path, 0o600)
           env_path = os.environ["GITHUB_ENV"]
           values = {
@@ -80,25 +85,18 @@ jobs:
           }
           with open(env_path, "a", encoding="utf-8") as env_file:
               for key, value in values.items():
-                  if "\\n" in value or "\\r" in value:
+                  if "\n" in value or "\r" in value:
                       raise ValueError("Signing values must not contain line breaks")
-                  env_file.write(f"{key}={value}\\n")
+                  if key.endswith("_PASSWORD"):
+                      print(f"::add-mask::{value}")
+                  env_file.write(f"{key}={value}\n")
           print("Persistent release signing key configured.")
           PY
 
       - name: Report release signing mode
-        run: |
-          if [ -n "${NIGHTSCREEN_RELEASE_KEYSTORE_PATH:-}" ]; then
-            echo "Using the configured persistent release signing key."
-          else
-            echo "::warning::Stable signing is not configured. This APK uses the temporary debug key and will not be upgrade-compatible across independent GitHub runners."
-          fi
+        run: echo "Using the configured persistent release signing key."
 
       - name: Build release APK
-        env:
-          NIGHTSCREEN_RELEASE_STORE_PASSWORD: ${{ secrets.NIGHTSCREEN_RELEASE_STORE_PASSWORD }}
-          NIGHTSCREEN_RELEASE_KEY_ALIAS: ${{ secrets.NIGHTSCREEN_RELEASE_KEY_ALIAS }}
-          NIGHTSCREEN_RELEASE_KEY_PASSWORD: ${{ secrets.NIGHTSCREEN_RELEASE_KEY_PASSWORD }}
         run: gradle --version && gradle :app:assembleRelease --no-daemon
 
       - name: Verify APK
