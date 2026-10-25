@@ -276,16 +276,15 @@ public class SettingsActivity extends Activity {
         explanationParams.bottomMargin = dp(4);
         screenLockAdminCard.addView(explanation, explanationParams);
 
-        screenLockAdminStatus = textView("", 16, ON_SURFACE);
-        screenLockAdminStatus.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
+        // Match the overlay-permission status typography, color palette and spacing.
+        screenLockAdminStatus = textView("", 14, MUTED);
         screenLockAdminStatus.setGravity(Gravity.CENTER);
         screenLockAdminStatus.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         screenLockAdminStatus.setTextDirection(View.TEXT_DIRECTION_RTL);
-        screenLockAdminStatus.setPadding(0, 0, 0, 0);
+        screenLockAdminStatus.setLineSpacing(dp(1), 1f);
         LinearLayout.LayoutParams adminStatusParams =
                 new LinearLayout.LayoutParams(-1, -2);
-        adminStatusParams.topMargin = dp(6);
-        adminStatusParams.bottomMargin = dp(6);
+        adminStatusParams.topMargin = dp(7);
         screenLockAdminCard.addView(screenLockAdminStatus, adminStatusParams);
 
         screenLockAdminButton = makeActionButton("הפעל הרשאת מנהל מכשיר");
@@ -1137,6 +1136,7 @@ public class SettingsActivity extends Activity {
         screenLockAdminStatus.setText(active
                 ? "הרשאה פעילה — המכשיר יינעל בסיום הזמן."
                 : "ההרשאה עדיין לא ניתנה, כיבוי המסך תלוי בהגדרות המכשיר.");
+        screenLockAdminStatus.setTextColor(active ? ACCENT : MUTED);
         screenLockAdminButton.setText(active
                 ? "הרשאת מנהל מכשיר פעילה"
                 : "הפעל הרשאת מנהל מכשיר");
