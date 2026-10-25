@@ -54,6 +54,9 @@ public class SettingsActivity extends Activity {
     private LinearLayout clockDateCard;
     private LinearLayout playerFrameCard;
     private LinearLayout notificationAccessCard;
+    private LinearLayout overlayPermissionCard;
+    private TextView overlayPermissionStatus;
+    private Button overlayPermissionButton;
     private LinearLayout screenLockAdminCard;
     private TextView screenLockAdminStatus;
     private Button screenLockAdminButton;
@@ -166,6 +169,7 @@ public class SettingsActivity extends Activity {
         super.onResume();
         if (content != null) {
             updateNotificationAccessCardVisibility();
+            updateOverlayPermissionCardVisibility();
             updateScreenLockAdminCard();
             // Existing installations may already have charger auto-start enabled.
             // Auto-start requires explicit overlay permission on Android 10+.
@@ -300,6 +304,7 @@ public class SettingsActivity extends Activity {
         screenLockAdminCard.addView(screenLockAdminButton, adminButtonParams);
         screenLockAdminButton.setOnClickListener(v -> requestScreenLockAdmin());
         updateScreenLockAdminCard();
+        updateOverlayPermissionCardVisibility();
     }
 
     private LinearLayout addCard(LinearLayout parent, String title) {
@@ -409,6 +414,7 @@ public class SettingsActivity extends Activity {
                             .remove("autoStartOverlayDenialNotified")
                             .apply();
                 }
+                updateOverlayPermissionCardVisibility();
             }
         });
         row.setOnClickListener(v -> toggle.setChecked(!toggle.isChecked()));
@@ -631,6 +637,7 @@ public class SettingsActivity extends Activity {
         if ("תצוגת הנגן".equals(title)) return "music";
         if ("מסגרת לנגן".equals(title)) return "frame";
         if ("הרשאת גישה להתראות".equals(title)) return "bell";
+        if ("הרשאת פתיחה אוטומטית".equals(title)) return "auto-start";
         if ("הרשאת מנהל מכשיר".equals(title)) return "shield";
         return "settings";
     }
@@ -930,6 +937,94 @@ public class SettingsActivity extends Activity {
         return card;
     }
 
+    private LinearLayout addOverlayPermissionCard(LinearLayout parent) {
+        LinearLayout card = addCard(parent, "הרשאת פתיחה אוטומטית");
+        card.setPadding(dp(8), dp(9), dp(12), dp(15));
+        setPermissionCardHeadingTypeface(card);
+
+        TextView message = textView(
+                "ההרשאה מאפשרת לאנדרואיד לאשר ניסיון לפתוח את שומר המסך כשהאפליקציה ברקע. האפליקציה אינה מציגה חלונית צפה.",
+                15, ON_SURFACE);
+        message.setGravity(Gravity.CENTER);
+        message.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        message.setTextDirection(View.TEXT_DIRECTION_RTL);
+        message.setTypeface(Typeface.create("sans-serif-light", Typeface.NORMAL));
+        message.setLineSpacing(dp(1), 1f);
+        LinearLayout.LayoutParams messageParams = new LinearLayout.LayoutParams(-1, -2);
+        card.addView(message, messageParams);
+
+        overlayPermissionStatus = textView("", 14, MUTED);
+        overlayPermissionStatus.setGravity(Gravity.CENTER);
+        overlayPermissionStatus.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        overlayPermissionStatus.setTextDirection(View.TEXT_DIRECTION_RTL);
+        overlayPermissionStatus.setLineSpacing(dp(1), 1f);
+        LinearLayout.LayoutParams statusParams = new LinearLayout.LayoutParams(-1, -2);
+        statusParams.topMargin = dp(7);
+        card.addView(overlayPermissionStatus, statusParams);
+
+        overlayPermissionButton = makeActionButton("פתיחת הגדרות הרשאה");
+        LinearLayout.LayoutParams buttonParams =
+                new LinearLayout.LayoutParams(-2, dp(44));
+        buttonParams.gravity = Gravity.CENTER_HORIZONTAL;
+        buttonParams.topMargin = dp(10);
+        card.addView(overlayPermissionButton, buttonParams);
+        overlayPermissionButton.setOnClickListener(v -> openOverlayPermissionSettings());
+        updateOverlayPermissionCardState();
+        return card;
+    }
+
+    private void updateOverlayPermissionCardVisibility() {
+        boolean relevant = Build.VERSION.SDK_INT >= 29
+                && getBool("autoStartOnCharge", false);
+
+        if (!relevant) {
+            removeCard(overlayPermissionCard);
+            overlayPermissionCard = null;
+            overlayPermissionStatus = null;
+            overlayPermissionButton = null;
+            positionPermissionCards();
+            return;
+        }
+
+        if (overlayPermissionCard == null && content != null) {
+            overlayPermissionCard = addOverlayPermissionCard(content);
+        }
+        updateOverlayPermissionCardState();
+        positionPermissionCards();
+    }
+
+    private void updateOverlayPermissionCardState() {
+        if (overlayPermissionCard == null
+                || overlayPermissionStatus == null
+                || overlayPermissionButton == null) return;
+
+        boolean granted = Settings.canDrawOverlays(this);
+        overlayPermissionStatus.setText(granted
+                ? "ההרשאה פעילה — חיבור המטען ינסה לפתוח את שומר המסך אוטומטית."
+                : "נדרשת הרשאה זו כדי לאפשר ניסיון פתיחה אוטומטית כשהאפליקציה ברקע.");
+        overlayPermissionStatus.setTextColor(granted ? ACCENT : MUTED);
+        overlayPermissionButton.setText(granted
+                ? "ההרשאה פעילה"
+                : "פתיחת הגדרות הרשאה");
+        overlayPermissionButton.setEnabled(!granted);
+        overlayPermissionButton.setAlpha(granted ? 0.65f : 1f);
+    }
+
+    private void openOverlayPermissionSettings() {
+        try {
+            Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION);
+            // Android 11+ opens a system list, so the package URI is used only on Android 10.
+            if (Build.VERSION.SDK_INT < 30) {
+                intent.setData(Uri.parse("package:" + getPackageName()));
+            }
+            startActivity(intent);
+        } catch (Throwable ex) {
+            Toast.makeText(this,
+                    "לא ניתן לפתוח את הגדרת ההרשאה. פתח בהגדרות Android את \"הצגה מעל אפליקציות אחרות\".",
+                    Toast.LENGTH_LONG).show();
+        }
+    }
+
     private void updateNotificationAccessCardVisibility() {
         if (hasNotificationAccess()) {
             removeCard(notificationAccessCard);
@@ -942,20 +1037,28 @@ public class SettingsActivity extends Activity {
 
     private void positionPermissionCards() {
         if (content == null) return;
-        if (notificationAccessCard != null
-                && notificationAccessCard.getParent() == content
-                && playerFrameCard != null) {
+
+        // Reinsert permission cards in a stable order: notification access,
+        // charger auto-start overlay permission, then device-admin permission.
+        if (notificationAccessCard != null && notificationAccessCard.getParent() == content) {
             content.removeView(notificationAccessCard);
-            int frameIndex = content.indexOfChild(playerFrameCard);
-            int insertAt = frameIndex >= 0 ? frameIndex + 1 : content.getChildCount();
-            if (screenLockAdminCard != null
-                    && screenLockAdminCard.getParent() == content) {
-                int adminIndex = content.indexOfChild(screenLockAdminCard);
-                if (adminIndex >= 0) insertAt = Math.min(insertAt, adminIndex);
-            }
-            content.addView(notificationAccessCard,
-                    Math.max(0, Math.min(insertAt, content.getChildCount())));
         }
+        if (overlayPermissionCard != null && overlayPermissionCard.getParent() == content) {
+            content.removeView(overlayPermissionCard);
+        }
+
+        int frameIndex = playerFrameCard != null ? content.indexOfChild(playerFrameCard) : -1;
+        int insertAt = frameIndex >= 0 ? frameIndex + 1 : content.getChildCount();
+
+        if (notificationAccessCard != null) {
+            insertAt = Math.min(insertAt, content.getChildCount());
+            content.addView(notificationAccessCard, insertAt++);
+        }
+        if (overlayPermissionCard != null) {
+            insertAt = Math.min(insertAt, content.getChildCount());
+            content.addView(overlayPermissionCard, insertAt);
+        }
+
         if (screenLockAdminCard != null && screenLockAdminCard.getParent() == content
                 && content.indexOfChild(screenLockAdminCard) != content.getChildCount() - 1) {
             content.removeView(screenLockAdminCard);
