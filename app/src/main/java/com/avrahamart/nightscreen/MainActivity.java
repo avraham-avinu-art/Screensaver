@@ -342,7 +342,7 @@ public class MainActivity extends Activity {
         int initialClockHeight = Math.max(dp(62), dp(initialClockSize));
         clockBlock.addView(timeText, new LinearLayout.LayoutParams(-1, initialClockHeight));
 
-        gregorianText = clockDateTextView("", 22, dateTextColor);
+        gregorianText = clockDateTextView("", 2, dateTextColor);
         gregorianText.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         gregorianText.setGravity(Gravity.CENTER);
         gregorianText.setIncludeFontPadding(false);
