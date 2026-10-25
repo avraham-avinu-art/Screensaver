@@ -57,6 +57,7 @@ public class SettingsActivity extends Activity {
     private LinearLayout overlayPermissionCard;
     private TextView overlayPermissionStatus;
     private Button overlayPermissionButton;
+    private Switch showPlayerToggle;
     private LinearLayout screenLockAdminCard;
     private TextView screenLockAdminStatus;
     private Button screenLockAdminButton;
@@ -168,6 +169,7 @@ public class SettingsActivity extends Activity {
     protected void onResume() {
         super.onResume();
         if (content != null) {
+            handlePlayerPermissionResult();
             updateNotificationAccessCardVisibility();
             updateOverlayPermissionCardVisibility();
             updateScreenLockAdminCard();
@@ -186,23 +188,13 @@ public class SettingsActivity extends Activity {
         LinearLayout display = addCard(content, "תצוגה במסך");
         addCheck(display, "תאריך עברי", "showHebrew", true);
         addCheck(display, "תאריך לועזי", "showGregorian", true);
-        addCheck(display, "הצגת הנגן", "showPlayer", true);
+        addCheck(display, "הצגת הנגן", "showPlayer", false);
         addDiscreteSlider(display, "זמן פעילות",
                 new String[]{"לפי המכשיר", "דקה אחת", "חמש דקות", "ללא כיבוי"},
                 new String[]{"device", "1", "5", "0"}, "screenSaverDuration");
 
         LinearLayout charging = addCard(content, "שומר מסך בזמן טעינה");
         addCheck(charging, "הפעלה אוטומטית בטעינה", "autoStartOnCharge", false);
-        TextView chargerAutoStartHint = textView(
-                "כדי לפתוח את שומר המסך אוטומטית כשהאפליקציה ברקע, יש לאשר בהגדרות Android את ההרשאה \"הצגה מעל אפליקציות אחרות\". ההרשאה מאפשרת פתיחה ברקע; האפליקציה אינה מציגה חלונית צפה. ללא ההרשאה, Android עלול לחסום את הפתיחה האוטומטית.",
-                13, MUTED);
-        chargerAutoStartHint.setTextDirection(View.TEXT_DIRECTION_RTL);
-        chargerAutoStartHint.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        chargerAutoStartHint.setLineSpacing(dp(1), 1f);
-        LinearLayout.LayoutParams chargerHintParams =
-                new LinearLayout.LayoutParams(-1, -2);
-        chargerHintParams.setMargins(dp(2), 0, dp(2), dp(6));
-        charging.addView(chargerAutoStartHint, chargerHintParams);
         addCheck(charging, "ללא כיבוי בטעינה", "noShutdownWhileCharging", false);
         addCheck(charging, "הצגת אחוז הסוללה", "showBatteryPercent", false);
 
@@ -377,6 +369,7 @@ public class SettingsActivity extends Activity {
         toggle.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         toggle.setShowText(false);
         toggle.setContentDescription(label);
+        if ("showPlayer".equals(key)) showPlayerToggle = toggle;
         toggle.setChecked(getBool(key, defaultValue));
         if (Build.VERSION.SDK_INT >= 21) {
             toggle.setThumbTintList(new ColorStateList(
@@ -415,6 +408,13 @@ public class SettingsActivity extends Activity {
                             .apply();
                 }
                 updateOverlayPermissionCardVisibility();
+            } else if ("showPlayer".equals(key)) {
+                if (checked && !hasNotificationAccess()) {
+                    prefs.edit().putBoolean("showPlayerPermissionPending", true).apply();
+                    requestPlayerNotificationAccessIfNeeded();
+                } else {
+                    prefs.edit().putBoolean("showPlayerPermissionPending", false).apply();
+                }
             }
         });
         row.setOnClickListener(v -> toggle.setChecked(!toggle.isChecked()));
@@ -574,6 +574,35 @@ public class SettingsActivity extends Activity {
                 new LinearLayout.LayoutParams(-1, -2);
         blockParams.bottomMargin = dp(4);
         card.addView(block, blockParams);
+    }
+
+    private void requestPlayerNotificationAccessIfNeeded() {
+        if (hasNotificationAccess()) return;
+        Toast.makeText(this,
+                "כדי להציג את הנגן, צריך לאפשר לשומר מסך גישה להתראות במסך הבא. בחר את \"שומר מסך\" והפעל את ההרשאה.",
+                Toast.LENGTH_LONG).show();
+        if (!openNotificationAccessSettings()) {
+            prefs.edit()
+                    .putBoolean("showPlayerPermissionPending", false)
+                    .putBoolean("showPlayer", false)
+                    .apply();
+            if (showPlayerToggle != null) showPlayerToggle.setChecked(false);
+        }
+    }
+
+    private void handlePlayerPermissionResult() {
+        if (!prefs.getBoolean("showPlayerPermissionPending", false)) return;
+
+        prefs.edit().putBoolean("showPlayerPermissionPending", false).apply();
+        if (hasNotificationAccess()) return;
+
+        prefs.edit().putBoolean("showPlayer", false).apply();
+        if (showPlayerToggle != null && showPlayerToggle.isChecked()) {
+            showPlayerToggle.setChecked(false);
+        }
+        Toast.makeText(this,
+                "הצגת הנגן נשארה כבויה מפני שלא ניתנה הרשאת גישה להתראות.",
+                Toast.LENGTH_LONG).show();
     }
 
     private boolean requestChargerOverlayPermissionIfNeeded() {
@@ -1087,14 +1116,18 @@ public class SettingsActivity extends Activity {
         }
     }
 
-    private void openNotificationAccessSettings() {
+    private boolean openNotificationAccessSettings() {
         try {
             startActivity(new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS));
+            return true;
         } catch (ActivityNotFoundException ignored) {
             Toast.makeText(this, "לא ניתן לפתוח את הגדרות ההתראות במכשיר.",
                     Toast.LENGTH_LONG).show();
         } catch (Throwable ignored) {
+            Toast.makeText(this, "לא ניתן לפתוח את הגדרות ההתראות במכשיר.",
+                    Toast.LENGTH_LONG).show();
         }
+        return false;
     }
 
     private void updateScreenLockAdminCard() {
