@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="app_name">שומר מסך</string>
     <string name="screen_lock_admin_description">מאפשר לשומר מסך לנעול את המסך בתום זמן הפעילות שנבחר. ללא הרשאה זו, כיבוי המסך והנעילה נשארים לפי הגדרות המכשיר.</string>
 </resources>
