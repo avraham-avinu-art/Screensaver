@@ -169,6 +169,15 @@ public class SettingsActivity extends Activity {
         if (content != null) {
             updateNotificationAccessCardVisibility();
             updateScreenLockAdminCard();
+            // Existing installations may already have charger auto-start enabled.
+            // Request the fallback-notification permission once for those users too.
+            if (getBool("autoStartOnCharge", false)
+                    && Build.VERSION.SDK_INT >= 33
+                    && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED
+                    && !prefs.getBoolean("autoStartNotificationPermissionAsked", false)) {
+                requestChargerFallbackNotificationPermission();
+            }
         }
     }
 
@@ -391,8 +400,12 @@ public class SettingsActivity extends Activity {
                 prefs.edit().putBoolean(key, checked).apply();
             } catch (Throwable ignored) {
             }
-            if ("autoStartOnCharge".equals(key) && checked) {
-                requestChargerFallbackNotificationPermission();
+            if ("autoStartOnCharge".equals(key)) {
+                if (checked) {
+                    requestChargerFallbackNotificationPermission();
+                } else {
+                    prefs.edit().remove("autoStartNotificationPermissionAsked").apply();
+                }
             }
         });
         row.setOnClickListener(v -> toggle.setChecked(!toggle.isChecked()));
@@ -558,6 +571,7 @@ public class SettingsActivity extends Activity {
         if (Build.VERSION.SDK_INT >= 33
                 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
                 != PackageManager.PERMISSION_GRANTED) {
+            prefs.edit().putBoolean("autoStartNotificationPermissionAsked", true).apply();
             requestPermissions(
                     new String[]{Manifest.permission.POST_NOTIFICATIONS},
                     REQUEST_POST_NOTIFICATIONS_FOR_CHARGER);
