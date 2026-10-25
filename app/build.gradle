@@ -14,8 +14,8 @@ android {
         applicationId 'com.avrahamart.nightscreen'
         minSdk 26
         targetSdk 36
-        versionCode 20
-        versionName '2.6.2'
+        versionCode 1
+        versionName '1'
     }
 
     signingConfigs {
