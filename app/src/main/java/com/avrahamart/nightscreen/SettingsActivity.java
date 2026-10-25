@@ -1022,7 +1022,7 @@ public class SettingsActivity extends Activity {
                 ? (autoStartEnabled
                     ? "ההרשאה פעילה — ההפעלה האוטומטית בטעינה זמינה."
                     : "ההרשאה ניתנה, אך ההפעלה האוטומטית בטעינה כבויה.")
-                : "המתג \"הפעלה אוטומטית בטעינה\" נשאר כבוי מפני שלא ניתנה הרשאת \"הצגה מעל אפליקציות אחרות\".");
+                : "נדרשת הרשאה להפעלה אוטומטית בטעינה.");
         overlayPermissionStatus.setTextColor(granted ? ACCENT : MUTED);
         overlayPermissionButton.setText(granted
                 ? "ההרשאה פעילה"
