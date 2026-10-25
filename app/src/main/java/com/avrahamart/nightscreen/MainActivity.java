@@ -679,7 +679,17 @@ public class MainActivity extends Activity {
 
         e.putBoolean("showGregorian", getBool("showGregorian", true));
         e.putBoolean("showHebrew", getBool("showHebrew", true));
-        e.putBoolean("showPlayer", getBool("showPlayer", true));
+        boolean showPlayerSetting = getBool("showPlayer", false);
+        if (!getBool("showPlayerNotificationAccessFlowV1Applied", false)) {
+            // Earlier versions enabled the player by default without requiring notification access.
+            // Move old installs without that permission to an explicit opt-in; preserve the choice
+            // for installs that already have access.
+            if (!prefs.contains("showPlayer") || !hasNotificationAccess()) {
+                showPlayerSetting = false;
+            }
+            e.putBoolean("showPlayerNotificationAccessFlowV1Applied", true);
+        }
+        e.putBoolean("showPlayer", showPlayerSetting);
         e.putBoolean("showDetails", getBool("showDetails", true));
         e.putBoolean("showProgress", getBool("showProgress", true));
         lastTitle = getString("lastTitle", lastTitle);
@@ -1991,7 +2001,7 @@ public class MainActivity extends Activity {
             }
 
             applyMediaFrame(true);
-            mediaMirror.setVisibility(getBool("showPlayer", true) ? View.VISIBLE : View.GONE);
+            mediaMirror.setVisibility(getBool("showPlayer", false) ? View.VISIBLE : View.GONE);
             mediaMirror.requestLayout();
             View parent = mediaMirror.getParent() instanceof View ? (View) mediaMirror.getParent() : null;
             if (parent != null && parent.getParent() instanceof FrameLayout) {
