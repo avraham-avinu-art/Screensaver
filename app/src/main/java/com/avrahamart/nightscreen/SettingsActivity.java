@@ -923,7 +923,8 @@ public class SettingsActivity extends Activity {
         } else if ("fontWeight".equals(key) || "clockDateSize".equals(key)
                 || "playerSize".equals(key) || "frameWidth".equals(key)
                 || "frameRadius".equals(key)) {
-            int fallback = "clockDateSize".equals(key) ? 96 : parse(values[0], 0);
+            int fallback = "clockDateSize".equals(key) ? 84
+                    : ("fontWeight".equals(key) ? 0 : parse(values[0], 0));
             int stored = getInt(key, fallback);
             for (int i = 0; i < values.length; i++) {
                 if (parse(values[i], Integer.MIN_VALUE) == stored) return i;
