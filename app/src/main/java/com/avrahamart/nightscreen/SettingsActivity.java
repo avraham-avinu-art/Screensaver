@@ -3,6 +3,8 @@ package com.avrahamart.nightscreen;
 import android.app.Activity;
 import android.app.NotificationManager;
 import android.app.admin.DevicePolicyManager;
+import android.Manifest;
+import android.content.pm.PackageManager;
 import android.content.ActivityNotFoundException;
 import android.content.ComponentName;
 import android.content.Context;
@@ -37,6 +39,7 @@ import android.widget.Toast;
 
 public class SettingsActivity extends Activity {
     private static final int REQUEST_ENABLE_SCREEN_LOCK_ADMIN = 8142;
+    private static final int REQUEST_POST_NOTIFICATIONS_FOR_CHARGER = 8143;
     private static final int SURFACE = Color.rgb(9, 19, 33);
     private static final int CARD_SURFACE = Color.rgb(20, 36, 56);
     private static final int CONTROL_SURFACE = Color.rgb(27, 47, 70);
@@ -180,6 +183,16 @@ public class SettingsActivity extends Activity {
 
         LinearLayout charging = addCard(content, "שומר מסך בזמן טעינה");
         addCheck(charging, "הפעלה אוטומטית בטעינה", "autoStartOnCharge", false);
+        TextView chargerAutoStartHint = textView(
+                "בעת חיבור המטען שומר המסך ינסה להיפתח. אם Android יחסום פתיחה ברקע, תופיע התראה לפתיחה בלחיצה (נדרשת הרשאת התראות).",
+                13, MUTED);
+        chargerAutoStartHint.setTextDirection(View.TEXT_DIRECTION_RTL);
+        chargerAutoStartHint.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        chargerAutoStartHint.setLineSpacing(dp(1), 1f);
+        LinearLayout.LayoutParams chargerHintParams =
+                new LinearLayout.LayoutParams(-1, -2);
+        chargerHintParams.setMargins(dp(2), 0, dp(2), dp(6));
+        charging.addView(chargerAutoStartHint, chargerHintParams);
         addCheck(charging, "ללא כיבוי בטעינה", "noShutdownWhileCharging", false);
         addCheck(charging, "הצגת אחוז הסוללה", "showBatteryPercent", false);
 
@@ -378,6 +391,9 @@ public class SettingsActivity extends Activity {
                 prefs.edit().putBoolean(key, checked).apply();
             } catch (Throwable ignored) {
             }
+            if ("autoStartOnCharge".equals(key) && checked) {
+                requestChargerFallbackNotificationPermission();
+            }
         });
         row.setOnClickListener(v -> toggle.setChecked(!toggle.isChecked()));
         LinearLayout.LayoutParams rowParams =
@@ -536,6 +552,48 @@ public class SettingsActivity extends Activity {
                 new LinearLayout.LayoutParams(-1, -2);
         blockParams.bottomMargin = dp(4);
         card.addView(block, blockParams);
+    }
+
+    private void requestChargerFallbackNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= 33
+                && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(
+                    new String[]{Manifest.permission.POST_NOTIFICATIONS},
+                    REQUEST_POST_NOTIFICATIONS_FOR_CHARGER);
+            return;
+        }
+
+        // On Android 11–12 notification permission is not runtime-controlled,
+        // but notifications can still be disabled for this app in system settings.
+        try {
+            NotificationManager manager =
+                    (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+            if (manager != null && !manager.areNotificationsEnabled()) {
+                Toast.makeText(this,
+                        "כדי לקבל הודעת פתיחה חלופית, יש לאפשר התראות ליישום בהגדרות Android.",
+                        Toast.LENGTH_LONG).show();
+            }
+        } catch (Throwable ignored) {
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                                           int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode != REQUEST_POST_NOTIFICATIONS_FOR_CHARGER) return;
+
+        if (grantResults.length > 0
+                && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            Toast.makeText(this,
+                    "התראות אושרו. אם Android יחסום פתיחה אוטומטית, תוצג הודעה לפתיחת שומר המסך.",
+                    Toast.LENGTH_LONG).show();
+        } else {
+            Toast.makeText(this,
+                    "ההפעלה האוטומטית תנסה לפעול, אך ללא הרשאת התראות ייתכן שלא תוצג הודעת פתיחה חלופית.",
+                    Toast.LENGTH_LONG).show();
+        }
     }
 
     private void persistOption(String key, String value) {
