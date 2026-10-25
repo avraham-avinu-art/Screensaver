@@ -654,13 +654,15 @@ public class MainActivity extends Activity {
             prefs = getSharedPreferences("settings", MODE_PRIVATE);
         }
 
+        // Detect a clean installation before writing any defaults to preferences.
+        boolean freshInstall = prefs.getAll().isEmpty();
         SharedPreferences.Editor e = prefs.edit();
 
         e.putInt("fontColor", getInt("fontColor", dateTextColor));
         e.putInt("fontSize", getInt("fontSize", 17));
-        e.putInt("clockDateSize", getInt("clockDateSize", 96));
+        e.putInt("clockDateSize", getInt("clockDateSize", 84));
         e.putInt("playerSize", getInt("playerSize", 17));
-        e.putInt("fontWeight", getInt("fontWeight", 1));
+        e.putInt("fontWeight", getInt("fontWeight", 0));
         String savedFontFamily = getString("fontFamily", "sans-serif");
         // Earlier builds stored DL Adva as the initial default. Restore Sans Serif
         // once on upgrade, but preserve any other font the user explicitly chose.
@@ -711,7 +713,7 @@ public class MainActivity extends Activity {
         e.putInt("frameRadius", getInt("frameRadius", 10));
         e.putInt("buttonColor", getInt("buttonColor", Color.rgb(45,45,45)));
         e.putInt("buttonBorderColor", getInt("buttonBorderColor", Color.rgb(110,110,110)));
-        e.putString("screenSaverDuration", getString("screenSaverDuration", "0"));
+        e.putString("screenSaverDuration", getString("screenSaverDuration", "device"));
         e.putBoolean("autoStartOnCharge", getBool("autoStartOnCharge", false));
         e.putBoolean("noShutdownWhileCharging",
                 getBool("noShutdownWhileCharging", false));
@@ -789,17 +791,23 @@ public class MainActivity extends Activity {
         // Upgrade the existing five presets to the requested 60/72/84/96/108sp scale.
         // Run once to preserve the selected preset label across the update.
         if (!getBool("clockSizePresetsV6Applied", false)) {
-            int oldSize = getInt("clockDateSize", 96);
+            int oldSize = getInt("clockDateSize", 84);
             int newSize;
-            switch (oldSize) {
-                case 38:
-                case 48: newSize = 60; break;
-                case 60: newSize = 72; break;
-                case 72: newSize = 84; break;
-                case 84: newSize = 96; break;
-                case 96: newSize = 108; break;
-                case 108: newSize = 108; break;
-                default: newSize = 108; break;
+            if (freshInstall) {
+                // A clean install starts at the "רגיל" preset (84sp).
+                // Existing installations keep the established one-time size migration.
+                newSize = 84;
+            } else {
+                switch (oldSize) {
+                    case 38:
+                    case 48: newSize = 60; break;
+                    case 60: newSize = 72; break;
+                    case 72: newSize = 84; break;
+                    case 84: newSize = 96; break;
+                    case 96: newSize = 108; break;
+                    case 108: newSize = 108; break;
+                    default: newSize = 108; break;
+                }
             }
             prefs.edit()
                     .putInt("clockDateSize", newSize)
@@ -1357,7 +1365,7 @@ public class MainActivity extends Activity {
         if (settingsDialogOpen && !restartCountdown) {
             return;
         }
-        String value = getString("screenSaverDuration", "0");
+        String value = getString("screenSaverDuration", "device");
         boolean settingChanged = !value.equals(lastScheduledDurationValue);
         if (settingChanged) {
             lastScheduledDurationValue = value;
