@@ -8,7 +8,7 @@
         android:supportsRtl="true">
         <activity
             android:name=".SettingsActivity"
-            android:label="הגדרות"
+            android:label="שומר מסך"
             android:exported="false"
             android:screenOrientation="unspecified" />
         <activity
