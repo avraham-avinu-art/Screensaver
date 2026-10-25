@@ -611,7 +611,7 @@ public class SettingsActivity extends Activity {
 
         prefs.edit().putBoolean("autoStartOverlayPermissionAsked", true).apply();
         Toast.makeText(this,
-                "כדי לאפשר פתיחה אוטומטית באנדרואיד 10 ומעלה, בחר במסך הבא את \"שומר מסך\" ואפשר \"הצגה מעל אפליקציות אחרות\".",
+                "כדי לאפשר הפעלה אוטומטית בטעינה, בחר במסך הבא את \"שומר מסך\" ואפשר \"הצגה מעל אפליקציות אחרות\".",
                 Toast.LENGTH_LONG).show();
         try {
             Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION);
@@ -637,7 +637,7 @@ public class SettingsActivity extends Activity {
         }
         prefs.edit().putBoolean("autoStartOverlayDenialNotified", true).apply();
         Toast.makeText(this,
-                "ללא ההרשאה, Android עלול לחסום פתיחה אוטומטית כשהאפליקציה ברקע; במקרה כזה שומר המסך לא ייפתח מעצמו.",
+                "בלי ההרשאה, שומר המסך לא יופעל אוטומטית בטעינה.",
                 Toast.LENGTH_LONG).show();
     }
 
@@ -666,7 +666,7 @@ public class SettingsActivity extends Activity {
         if ("תצוגת הנגן".equals(title)) return "music";
         if ("מסגרת לנגן".equals(title)) return "frame";
         if ("הרשאת גישה להתראות".equals(title)) return "bell";
-        if ("הרשאת פתיחה אוטומטית".equals(title)) return "auto-start";
+        if ("הרשאת תצוגה על אפליקציות".equals(title)) return "auto-start";
         if ("הרשאת מנהל מכשיר".equals(title)) return "shield";
         return "settings";
     }
@@ -967,12 +967,12 @@ public class SettingsActivity extends Activity {
     }
 
     private LinearLayout addOverlayPermissionCard(LinearLayout parent) {
-        LinearLayout card = addCard(parent, "הרשאת פתיחה אוטומטית");
+        LinearLayout card = addCard(parent, "הרשאת תצוגה על אפליקציות");
         card.setPadding(dp(8), dp(9), dp(12), dp(15));
         setPermissionCardHeadingTypeface(card);
 
         TextView message = textView(
-                "ההרשאה מאפשרת לאנדרואיד לאשר ניסיון לפתוח את שומר המסך כשהאפליקציה ברקע. האפליקציה אינה מציגה חלונית צפה.",
+                "ההרשאה מאפשרת הפעלה אוטומטית של שומר המסך בחיבור לטעינה.",
                 15, ON_SURFACE);
         message.setGravity(Gravity.CENTER);
         message.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
@@ -1029,8 +1029,8 @@ public class SettingsActivity extends Activity {
 
         boolean granted = Settings.canDrawOverlays(this);
         overlayPermissionStatus.setText(granted
-                ? "ההרשאה פעילה — חיבור המטען ינסה לפתוח את שומר המסך אוטומטית."
-                : "נדרשת הרשאה זו כדי לאפשר ניסיון פתיחה אוטומטית כשהאפליקציה ברקע.");
+                ? "ההרשאה פעילה — שומר המסך יופעל אוטומטית בחיבור לטעינה."
+                : "נדרשת הרשאה להפעלה אוטומטית בטעינה.");
         overlayPermissionStatus.setTextColor(granted ? ACCENT : MUTED);
         overlayPermissionButton.setText(granted
                 ? "ההרשאה פעילה"
