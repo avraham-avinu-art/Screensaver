@@ -9,6 +9,7 @@ import android.content.ActivityNotFoundException;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
 import android.graphics.Canvas;
@@ -170,13 +171,19 @@ public class SettingsActivity extends Activity {
             updateNotificationAccessCardVisibility();
             updateScreenLockAdminCard();
             // Existing installations may already have charger auto-start enabled.
-            // Request the fallback-notification permission once for those users too.
-            if (getBool("autoStartOnCharge", false)
-                    && Build.VERSION.SDK_INT >= 33
-                    && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
-                    != PackageManager.PERMISSION_GRANTED
-                    && !prefs.getBoolean("autoStartNotificationPermissionAsked", false)) {
-                requestChargerFallbackNotificationPermission();
+            // Prompt once for the Android 10+ background-launch exception, then
+            // request notifications for the fallback path if background launch is denied.
+            if (getBool("autoStartOnCharge", false)) {
+                boolean openedOverlaySettings = requestChargerOverlayPermissionIfNeeded();
+                if (!openedOverlaySettings) {
+                    showOverlayPermissionFallbackNoticeIfNeeded();
+                    if (Build.VERSION.SDK_INT >= 33
+                            && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
+                            != PackageManager.PERMISSION_GRANTED
+                            && !prefs.getBoolean("autoStartNotificationPermissionAsked", false)) {
+                        requestChargerFallbackNotificationPermission();
+                    }
+                }
             }
         }
     }
@@ -193,7 +200,7 @@ public class SettingsActivity extends Activity {
         LinearLayout charging = addCard(content, "שומר מסך בזמן טעינה");
         addCheck(charging, "הפעלה אוטומטית בטעינה", "autoStartOnCharge", false);
         TextView chargerAutoStartHint = textView(
-                "בעת חיבור המטען שומר המסך ינסה להיפתח. אם Android יחסום פתיחה ברקע, תופיע התראה לפתיחה בלחיצה (נדרשת הרשאת התראות).",
+                "לפתיחה אוטומטית כשהאפליקציה ברקע, יש לאשר בהגדרות Android את ההרשאה \"הצגה מעל אפליקציות אחרות\". ההרשאה משמשת לאפשר פתיחה ברקע; האפליקציה אינה מציגה חלונית צפה. אם Android עדיין יחסום את הפתיחה, תוצג התראה חלופית.",
                 13, MUTED);
         chargerAutoStartHint.setTextDirection(View.TEXT_DIRECTION_RTL);
         chargerAutoStartHint.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
@@ -402,9 +409,17 @@ public class SettingsActivity extends Activity {
             }
             if ("autoStartOnCharge".equals(key)) {
                 if (checked) {
-                    requestChargerFallbackNotificationPermission();
+                    boolean openedOverlaySettings = requestChargerOverlayPermissionIfNeeded();
+                    if (!openedOverlaySettings) {
+                        showOverlayPermissionFallbackNoticeIfNeeded();
+                        requestChargerFallbackNotificationPermission();
+                    }
                 } else {
-                    prefs.edit().remove("autoStartNotificationPermissionAsked").apply();
+                    prefs.edit()
+                            .remove("autoStartNotificationPermissionAsked")
+                            .remove("autoStartOverlayPermissionAsked")
+                            .remove("autoStartOverlayDenialNotified")
+                            .apply();
                 }
             }
         });
@@ -565,6 +580,42 @@ public class SettingsActivity extends Activity {
                 new LinearLayout.LayoutParams(-1, -2);
         blockParams.bottomMargin = dp(4);
         card.addView(block, blockParams);
+    }
+
+    private boolean requestChargerOverlayPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT < 29 || Settings.canDrawOverlays(this)) return false;
+        if (prefs.getBoolean("autoStartOverlayPermissionAsked", false)) return false;
+
+        prefs.edit().putBoolean("autoStartOverlayPermissionAsked", true).apply();
+        Toast.makeText(this,
+                "כדי לנסות לפתוח את שומר המסך מעצמו באנדרואיד 11 ומעלה, בחר במסך הבא את \"שומר מסך\" ואפשר \"הצגה מעל אפליקציות אחרות\".",
+                Toast.LENGTH_LONG).show();
+        try {
+            Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION);
+            // Android 11+ ignores the package URI and shows the top-level list.
+            if (Build.VERSION.SDK_INT < 30) {
+                intent.setData(Uri.parse("package:" + getPackageName()));
+            }
+            startActivity(intent);
+            return true;
+        } catch (Throwable ex) {
+            Toast.makeText(this,
+                    "לא ניתן לפתוח את הגדרת \"הצגה מעל אפליקציות אחרות\". אפשר לפתוח אותה דרך הגדרות Android.",
+                    Toast.LENGTH_LONG).show();
+            return false;
+        }
+    }
+
+    private void showOverlayPermissionFallbackNoticeIfNeeded() {
+        if (Build.VERSION.SDK_INT < 29 || Settings.canDrawOverlays(this)
+                || !prefs.getBoolean("autoStartOverlayPermissionAsked", false)
+                || prefs.getBoolean("autoStartOverlayDenialNotified", false)) {
+            return;
+        }
+        prefs.edit().putBoolean("autoStartOverlayDenialNotified", true).apply();
+        Toast.makeText(this,
+                "ללא ההרשאה, Android עשוי לחסום פתיחה אוטומטית כשהאפליקציה ברקע; במקרה כזה תישאר התראה חלופית.",
+                Toast.LENGTH_LONG).show();
     }
 
     private void requestChargerFallbackNotificationPermission() {
