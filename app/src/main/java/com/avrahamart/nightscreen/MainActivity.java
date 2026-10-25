@@ -981,26 +981,27 @@ public class MainActivity extends Activity {
         // visible gaps for different font families. Calculate each margin from the actual
         // painted glyph bounds so the visible gap, rather than the font's empty line area,
         // is consistent between clock and date rows.
-        int targetVisualGapPx = dp(visualGapDp(effectiveClockSize));
+        int clockToDateGapPx = dp(visualGapDp(effectiveClockSize));
+        int dateToDateGapPx = dp(visualGapDp(effectiveClockSize) / 2);
         int gregorianTopMargin = 0;
         int hebrewTopMargin = 0;
         if (showGregorian) {
             gregorianTopMargin = visualGapMarginPx(
                     timeText, clockH, "0123456789:00",
                     gregorianText, gregorianH, "יום ה׳ · 22.10.2026",
-                    targetVisualGapPx);
+                    clockToDateGapPx);
         }
         if (showHebrew) {
             if (showGregorian) {
                 hebrewTopMargin = visualGapMarginPx(
                         gregorianText, gregorianH, "יום ה׳ · 22.10.2026",
                         hebrewText, hebrewH, "כ״ט בתשרי תשפ״ז אבגדהוזחטיכלמנסעפצקרשת",
-                        targetVisualGapPx);
+                        dateToDateGapPx);
             } else {
                 hebrewTopMargin = visualGapMarginPx(
                         timeText, clockH, "0123456789:00",
                         hebrewText, hebrewH, "כ״ט בתשרי תשפ״ז אבגדהוזחטיכלמנסעפצקרשת",
-                        targetVisualGapPx);
+                        clockToDateGapPx);
             }
         }
 
