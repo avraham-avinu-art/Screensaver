@@ -2,7 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
         android:allowBackup="false"
-        android:label="שומר מסך" android:icon="@drawable/ic_launcher"
+        android:label="שומר מסך"
+        android:icon="@drawable/ic_launcher"
         android:theme="@style/AppTheme"
         android:supportsRtl="true">
         <activity
@@ -12,6 +13,7 @@
             android:screenOrientation="unspecified" />
         <activity
             android:name=".MainActivity"
+            android:label="שומר מסך"
             android:theme="@style/AppTheme.Fullscreen"
             android:exported="true">
             <intent-filter>
@@ -22,6 +24,7 @@
 
         <receiver
             android:name=".AutoStartOnPowerReceiver"
+            android:label="שומר מסך"
             android:enabled="true"
             android:exported="true">
             <intent-filter>
@@ -45,7 +48,7 @@
 
         <service
             android:name=".SystemMediaNotificationListener"
-            android:label="Night Screen"
+            android:label="שומר מסך"
             android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
             android:exported="false">
             <intent-filter>
