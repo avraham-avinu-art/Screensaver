@@ -9,7 +9,9 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Build;
+import android.provider.Settings;
 
 public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
     public static final int POWER_NOTIFICATION_ID = 4307;
@@ -34,63 +36,44 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
                 | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         launch.putExtra(MainActivity.EXTRA_OPENED_BY_CHARGER, true);
 
-        int pendingFlags = PendingIntent.FLAG_UPDATE_CURRENT;
-        if (Build.VERSION.SDK_INT >= 23) pendingFlags |= PendingIntent.FLAG_IMMUTABLE;
+        PendingIntent fallbackIntent = createFallbackPendingIntent(context, launch);
+        if (fallbackIntent == null) return;
 
-        PendingIntent pendingIntent;
-        try {
-            if (Build.VERSION.SDK_INT >= 34) {
-                // The user explicitly enabled charger auto-start. Opt in to the
-                // creator's BAL privilege only for this app's own MainActivity.
-                ActivityOptions creatorOptions = ActivityOptions.makeBasic()
-                        .setPendingIntentCreatorBackgroundActivityStartMode(
-                                ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED);
-                pendingIntent = PendingIntent.getActivity(
-                        context, POWER_NOTIFICATION_ID, launch, pendingFlags,
-                        creatorOptions.toBundle());
-            } else {
-                pendingIntent = PendingIntent.getActivity(
-                        context, POWER_NOTIFICATION_ID, launch, pendingFlags);
-            }
-        } catch (Throwable pendingIntentFailure) {
-            // If PendingIntent creation fails, preserve a best-effort direct launch.
-            try {
-                context.startActivity(launch);
-            } catch (Throwable ignored) {
-            }
+        // Android 10+ restricts starting activities from the background. An
+        // explicit user-granted SYSTEM_ALERT_WINDOW permission is a documented
+        // exception. Ask for it while the auto-start toggle is enabled, then
+        // attempt a direct launch when it is granted.
+        if (Build.VERSION.SDK_INT >= 29 && !Settings.canDrawOverlays(context)) {
+            postFallbackNotification(context, fallbackIntent);
             return;
         }
 
-        // Keep a tappable fallback visible. If the Activity actually opens, it
-        // cancels this notification. If Android blocks the background launch,
-        // the user can open the screensaver from the notification.
-        postFallbackNotification(context, pendingIntent);
+        try {
+            context.startActivity(launch);
+        } catch (Throwable launchFailure) {
+            // Keep notification as a fallback only when the direct launch fails.
+            postFallbackNotification(context, fallbackIntent);
+        }
+    }
+
+    private PendingIntent createFallbackPendingIntent(Context context, Intent launch) {
+        int pendingFlags = PendingIntent.FLAG_UPDATE_CURRENT;
+        if (Build.VERSION.SDK_INT >= 23) pendingFlags |= PendingIntent.FLAG_IMMUTABLE;
 
         try {
             if (Build.VERSION.SDK_INT >= 34) {
-                ActivityOptions senderOptions = ActivityOptions.makeBasic()
-                        .setPendingIntentBackgroundActivityStartMode(
+                // Android 14+ requires an explicit creator-side BAL opt-in for
+                // PendingIntents targeting an Activity on Android 15+.
+                ActivityOptions creatorOptions = ActivityOptions.makeBasic()
+                        .setPendingIntentCreatorBackgroundActivityStartMode(
                                 ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED);
-                pendingIntent.send(
-                        context, 0, null, null, null, null, senderOptions.toBundle());
-            } else if (Build.VERSION.SDK_INT >= 33) {
-                // This API exists from Android 13 (API 33); do not call it on API 32 or lower.
-                ActivityOptions senderOptions = ActivityOptions.makeBasic();
-                senderOptions.setPendingIntentBackgroundActivityLaunchAllowed(true);
-                pendingIntent.send(
-                        context, 0, null, null, null, null, senderOptions.toBundle());
-            } else {
-                // Older versions have no PendingIntent sender opt-in API.
-                context.startActivity(launch);
+                return PendingIntent.getActivity(
+                        context, POWER_NOTIFICATION_ID, launch, pendingFlags,
+                        creatorOptions.toBundle());
             }
-        } catch (Throwable launchFailure) {
-            // Some Android/OEM builds reject background Activity starts.
-            // Leave the fallback notification available for a user-initiated launch.
-            try {
-                context.startActivity(launch);
-            } catch (Throwable ignored) {
-                // Do not remove the fallback notification: a background launch may be blocked silently.
-            }
+            return PendingIntent.getActivity(context, POWER_NOTIFICATION_ID, launch, pendingFlags);
+        } catch (Throwable ignored) {
+            return null;
         }
     }
 
@@ -104,7 +87,7 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
                 NotificationChannel channel = new NotificationChannel(
                         CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_DEFAULT);
                 channel.setDescription(
-                        "אפשרות לפתוח את שומר המסך כאשר Android חוסם פתיחה אוטומטית ברקע.");
+                        "אפשרות לפתוח את שומר המסך כאשר פתיחה אוטומטית נחסמת.");
                 manager.createNotificationChannel(channel);
             }
 
@@ -114,7 +97,7 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
 
             builder.setSmallIcon(android.R.drawable.ic_lock_idle_charging)
                     .setContentTitle("שומר מסך")
-                    .setContentText("לחץ כאן לפתיחת שומר המסך לאחר חיבור המטען")
+                    .setContentText("הפתיחה האוטומטית נחסמה. לחץ כאן לפתיחת שומר המסך.")
                     .setContentIntent(pendingIntent)
                     .setAutoCancel(true);
 
