@@ -58,6 +58,7 @@ public class SettingsActivity extends Activity {
     private TextView overlayPermissionStatus;
     private Button overlayPermissionButton;
     private Switch showPlayerToggle;
+    private Switch autoStartOnChargeToggle;
     private LinearLayout screenLockAdminCard;
     private TextView screenLockAdminStatus;
     private Button screenLockAdminButton;
@@ -170,17 +171,10 @@ public class SettingsActivity extends Activity {
         super.onResume();
         if (content != null) {
             handlePlayerPermissionResult();
+            handleChargerPermissionResult();
             updateNotificationAccessCardVisibility();
             updateOverlayPermissionCardVisibility();
             updateScreenLockAdminCard();
-            // Existing installations may already have charger auto-start enabled.
-            // Auto-start requires explicit overlay permission on Android 10+.
-            if (getBool("autoStartOnCharge", false)) {
-                boolean openedOverlaySettings = requestChargerOverlayPermissionIfNeeded();
-                if (!openedOverlaySettings) {
-                    showOverlayPermissionRequiredNoticeIfNeeded();
-                }
-            }
         }
     }
 
@@ -369,6 +363,7 @@ public class SettingsActivity extends Activity {
         toggle.setShowText(false);
         toggle.setContentDescription(label);
         if ("showPlayer".equals(key)) showPlayerToggle = toggle;
+        if ("autoStartOnCharge".equals(key)) autoStartOnChargeToggle = toggle;
         toggle.setChecked(getBool(key, defaultValue));
         if (Build.VERSION.SDK_INT >= 21) {
             toggle.setThumbTintList(new ColorStateList(
@@ -395,15 +390,18 @@ public class SettingsActivity extends Activity {
             } catch (Throwable ignored) {
             }
             if ("autoStartOnCharge".equals(key)) {
-                if (checked) {
-                    boolean openedOverlaySettings = requestChargerOverlayPermissionIfNeeded();
-                    if (!openedOverlaySettings) {
-                        showOverlayPermissionRequiredNoticeIfNeeded();
-                    }
+                if (checked && Build.VERSION.SDK_INT >= 29
+                        && !Settings.canDrawOverlays(this)) {
+                    prefs.edit().putBoolean("autoStartOverlayPermissionPending", true).apply();
+                    requestChargerOverlayPermission();
                 } else {
+                    prefs.edit().putBoolean("autoStartOverlayPermissionPending", false).apply();
+                }
+                if (!checked) {
                     prefs.edit()
                             .remove("autoStartOverlayPermissionAsked")
                             .remove("autoStartOverlayDenialNotified")
+                            .putBoolean("autoStartOverlayPermissionPending", false)
                             .apply();
                 }
                 updateOverlayPermissionCardVisibility();
@@ -604,37 +602,29 @@ public class SettingsActivity extends Activity {
                 Toast.LENGTH_LONG).show();
     }
 
-    private boolean requestChargerOverlayPermissionIfNeeded() {
-        if (Build.VERSION.SDK_INT < 29 || Settings.canDrawOverlays(this)) return false;
-        if (prefs.getBoolean("autoStartOverlayPermissionAsked", false)) return false;
+    private void requestChargerOverlayPermission() {
+        if (Build.VERSION.SDK_INT < 29 || Settings.canDrawOverlays(this)) return;
 
-        prefs.edit().putBoolean("autoStartOverlayPermissionAsked", true).apply();
         Toast.makeText(this,
                 "כדי לאפשר הפעלה אוטומטית בטעינה, בחר במסך הבא את \"שומר מסך\" ואפשר \"הצגה מעל אפליקציות אחרות\".",
                 Toast.LENGTH_LONG).show();
-        try {
-            Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION);
-            // Android 11+ ignores the package URI and shows the top-level list.
-            if (Build.VERSION.SDK_INT < 30) {
-                intent.setData(Uri.parse("package:" + getPackageName()));
-            }
-            startActivity(intent);
-            return true;
-        } catch (Throwable ex) {
-            Toast.makeText(this,
-                    "לא ניתן לפתוח את הגדרת \"הצגה מעל אפליקציות אחרות\". אפשר לפתוח אותה דרך הגדרות Android.",
-                    Toast.LENGTH_LONG).show();
-            return false;
+        if (!openOverlayPermissionSettings()) {
+            prefs.edit().putBoolean("autoStartOverlayPermissionPending", false)
+                    .putBoolean("autoStartOnCharge", false).apply();
+            if (autoStartOnChargeToggle != null) autoStartOnChargeToggle.setChecked(false);
         }
     }
 
-    private void showOverlayPermissionRequiredNoticeIfNeeded() {
-        if (Build.VERSION.SDK_INT < 29 || Settings.canDrawOverlays(this)
-                || !prefs.getBoolean("autoStartOverlayPermissionAsked", false)
-                || prefs.getBoolean("autoStartOverlayDenialNotified", false)) {
-            return;
+    private void handleChargerPermissionResult() {
+        if (!prefs.getBoolean("autoStartOverlayPermissionPending", false)) return;
+
+        prefs.edit().putBoolean("autoStartOverlayPermissionPending", false).apply();
+        if (Settings.canDrawOverlays(this)) return;
+
+        prefs.edit().putBoolean("autoStartOnCharge", false).apply();
+        if (autoStartOnChargeToggle != null && autoStartOnChargeToggle.isChecked()) {
+            autoStartOnChargeToggle.setChecked(false);
         }
-        prefs.edit().putBoolean("autoStartOverlayDenialNotified", true).apply();
         Toast.makeText(this,
                 "בלי ההרשאה, שומר המסך לא יופעל אוטומטית בטעינה.",
                 Toast.LENGTH_LONG).show();
@@ -1003,8 +993,7 @@ public class SettingsActivity extends Activity {
     }
 
     private void updateOverlayPermissionCardVisibility() {
-        boolean relevant = Build.VERSION.SDK_INT >= 29
-                && getBool("autoStartOnCharge", false);
+        boolean relevant = Build.VERSION.SDK_INT >= 29;
 
         if (!relevant) {
             removeCard(overlayPermissionCard);
@@ -1028,8 +1017,11 @@ public class SettingsActivity extends Activity {
                 || overlayPermissionButton == null) return;
 
         boolean granted = Settings.canDrawOverlays(this);
+        boolean autoStartEnabled = getBool("autoStartOnCharge", false);
         overlayPermissionStatus.setText(granted
-                ? "ההרשאה פעילה — שומר המסך יופעל אוטומטית בחיבור לטעינה."
+                ? (autoStartEnabled
+                    ? "ההרשאה פעילה — ההפעלה האוטומטית בטעינה זמינה."
+                    : "ההרשאה ניתנה, אך ההפעלה האוטומטית בטעינה כבויה.")
                 : "נדרשת הרשאה להפעלה אוטומטית בטעינה.");
         overlayPermissionStatus.setTextColor(granted ? ACCENT : MUTED);
         overlayPermissionButton.setText(granted
@@ -1039,7 +1031,7 @@ public class SettingsActivity extends Activity {
         overlayPermissionButton.setAlpha(granted ? 0.65f : 1f);
     }
 
-    private void openOverlayPermissionSettings() {
+    private boolean openOverlayPermissionSettings() {
         try {
             Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION);
             // Android 11+ opens a system list, so the package URI is used only on Android 10.
@@ -1047,10 +1039,12 @@ public class SettingsActivity extends Activity {
                 intent.setData(Uri.parse("package:" + getPackageName()));
             }
             startActivity(intent);
+            return true;
         } catch (Throwable ex) {
             Toast.makeText(this,
                     "לא ניתן לפתוח את הגדרת ההרשאה. פתח בהגדרות Android את \"הצגה מעל אפליקציות אחרות\".",
                     Toast.LENGTH_LONG).show();
+            return false;
         }
     }
 
