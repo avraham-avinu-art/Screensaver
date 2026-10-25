@@ -626,7 +626,7 @@ public class SettingsActivity extends Activity {
             autoStartOnChargeToggle.setChecked(false);
         }
         Toast.makeText(this,
-                "בלי ההרשאה, שומר המסך לא יופעל אוטומטית בטעינה.",
+                "המתג \"הפעלה אוטומטית בטעינה\" נשאר כבוי מפני שלא ניתנה הרשאת \"הצגה מעל אפליקציות אחרות\".",
                 Toast.LENGTH_LONG).show();
     }
 
@@ -1022,7 +1022,7 @@ public class SettingsActivity extends Activity {
                 ? (autoStartEnabled
                     ? "ההרשאה פעילה — ההפעלה האוטומטית בטעינה זמינה."
                     : "ההרשאה ניתנה, אך ההפעלה האוטומטית בטעינה כבויה.")
-                : "נדרשת הרשאה להפעלה אוטומטית בטעינה.");
+                : "המתג \"הפעלה אוטומטית בטעינה\" נשאר כבוי מפני שלא ניתנה הרשאת \"הצגה מעל אפליקציות אחרות\".");
         overlayPermissionStatus.setTextColor(granted ? ACCENT : MUTED);
         overlayPermissionButton.setText(granted
                 ? "ההרשאה פעילה"
