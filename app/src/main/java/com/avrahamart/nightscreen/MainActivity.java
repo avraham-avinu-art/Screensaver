@@ -976,16 +976,44 @@ public class MainActivity extends Activity {
         int hebrewH = Math.max(dateRowHeightForClockPreset(effectiveClockSize),
                 measuredLineHeight(hebrewText, "כ״ט בתשרי תשפ״ז אבגדהוזחטיכלמנסעפצקרשת", 0, 24));
 
+        // Custom fonts can declare unusually tall font metrics even when the painted
+        // characters are not tall. A fixed negative margin therefore leaves different
+        // visible gaps for different font families. Calculate each margin from the actual
+        // painted glyph bounds so the visible gap, rather than the font's empty line area,
+        // is consistent between clock and date rows.
+        int targetVisualGapPx = dp(visualGapDp(effectiveClockSize));
+        int gregorianTopMargin = 0;
+        int hebrewTopMargin = 0;
+        if (showGregorian) {
+            gregorianTopMargin = visualGapMarginPx(
+                    timeText, clockH, "0123456789:00",
+                    gregorianText, gregorianH, "יום ה׳ · 22.10.2026",
+                    targetVisualGapPx);
+        }
+        if (showHebrew) {
+            if (showGregorian) {
+                hebrewTopMargin = visualGapMarginPx(
+                        gregorianText, gregorianH, "יום ה׳ · 22.10.2026",
+                        hebrewText, hebrewH, "כ״ט בתשרי תשפ״ז אבגדהוזחטיכלמנסעפצקרשת",
+                        targetVisualGapPx);
+            } else {
+                hebrewTopMargin = visualGapMarginPx(
+                        timeText, clockH, "0123456789:00",
+                        hebrewText, hebrewH, "כ״ט בתשרי תשפ״ז אבגדהוזחטיכלמנסעפצקרשת",
+                        targetVisualGapPx);
+            }
+        }
+
         LinearLayout.LayoutParams tp = (LinearLayout.LayoutParams) timeText.getLayoutParams();
         tp.height = clockH;
         timeText.setLayoutParams(tp);
         LinearLayout.LayoutParams gp = (LinearLayout.LayoutParams) gregorianText.getLayoutParams();
         gp.height = gregorianH;
-        gp.topMargin = showGregorian ? dp(dateClockGapDp(effectiveClockSize)) : 0;
+        gp.topMargin = showGregorian ? gregorianTopMargin : 0;
         gregorianText.setLayoutParams(gp);
         LinearLayout.LayoutParams hp = (LinearLayout.LayoutParams) hebrewText.getLayoutParams();
         hp.height = hebrewH;
-        hp.topMargin = (!showGregorian && showHebrew) ? dp(dateClockGapDp(effectiveClockSize)) : 0;
+        hp.topMargin = showHebrew ? hebrewTopMargin : 0;
         hebrewText.setLayoutParams(hp);
 
         View clockParent = (View) timeText.getParent();
@@ -994,8 +1022,9 @@ public class MainActivity extends Activity {
             FrameLayout.LayoutParams cp = (FrameLayout.LayoutParams) cb.getLayoutParams();
             int dateRowsHeight = (showGregorian ? gregorianH : 0)
                     + (showHebrew ? hebrewH : 0);
-            int firstDateGap = visibleDates > 0 ? dp(dateClockGapDp(effectiveClockSize)) : 0;
-            cp.height = clockH + dateRowsHeight + firstDateGap
+            int visibleMargins = (showGregorian ? gregorianTopMargin : 0)
+                    + (showHebrew ? hebrewTopMargin : 0);
+            cp.height = clockH + dateRowsHeight + visibleMargins
                     + (visibleDates > 0 ? dp(2) : 0);
             cb.setLayoutParams(cp);
             cb.requestLayout();
@@ -1139,9 +1168,52 @@ public class MainActivity extends Activity {
     }
 
     private int dateClockGapDp(int clockSize) {
-        // Negative layout margin removes excess empty font-leading without shrinking
-        // the clock row itself, which previously caused large digits to be clipped.
+        // Used only for the initial layout before the selected font has been measured.
         return -8;
+    }
+
+    private int visualGapDp(int clockSize) {
+        if (clockSize >= 108) return 6;
+        if (clockSize >= 84) return 5;
+        return 4;
+    }
+
+    private int visualGapMarginPx(TextView upper, int upperHeight, String upperSample,
+                                  TextView lower, int lowerHeight, String lowerSample,
+                                  int desiredGapPx) {
+        int upperBottomInset = glyphBottomInsetPx(upper, upperHeight, upperSample);
+        int lowerTopInset = glyphTopInsetPx(lower, lowerHeight, lowerSample);
+        return desiredGapPx - upperBottomInset - lowerTopInset;
+    }
+
+    private int glyphTopInsetPx(TextView view, int rowHeight, String fallbackText) {
+        if (view == null) return 0;
+        android.graphics.Paint paint = view.getPaint();
+        android.graphics.Paint.FontMetricsInt metrics = paint.getFontMetricsInt();
+        int lineHeight = metrics.descent - metrics.ascent;
+        float baseline = (rowHeight - lineHeight) / 2f - metrics.ascent;
+
+        android.graphics.Rect bounds = new android.graphics.Rect();
+        CharSequence current = view.getText();
+        String text = current == null || current.length() == 0
+                ? fallbackText : current.toString();
+        paint.getTextBounds(text, 0, text.length(), bounds);
+        return Math.round(baseline + bounds.top);
+    }
+
+    private int glyphBottomInsetPx(TextView view, int rowHeight, String fallbackText) {
+        if (view == null) return 0;
+        android.graphics.Paint paint = view.getPaint();
+        android.graphics.Paint.FontMetricsInt metrics = paint.getFontMetricsInt();
+        int lineHeight = metrics.descent - metrics.ascent;
+        float baseline = (rowHeight - lineHeight) / 2f - metrics.ascent;
+
+        android.graphics.Rect bounds = new android.graphics.Rect();
+        CharSequence current = view.getText();
+        String text = current == null || current.length() == 0
+                ? fallbackText : current.toString();
+        paint.getTextBounds(text, 0, text.length(), bounds);
+        return Math.round(rowHeight - (baseline + bounds.bottom));
     }
 
     private float dateTextSizeForClockPreset(int clockSize) {
