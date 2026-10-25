@@ -353,7 +353,7 @@ public class MainActivity extends Activity {
         gregorianParams.topMargin = dp(dateClockGapDp(initialClockSize));
         clockBlock.addView(gregorianText, gregorianParams);
 
-        hebrewText = clockDateTextView("", 22, dateTextColor);
+        hebrewText = clockDateTextView("", 12, dateTextColor);
         hebrewText.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         hebrewText.setGravity(Gravity.CENTER);
         hebrewText.setTextDirection(View.TEXT_DIRECTION_ANY_RTL);
