@@ -342,7 +342,7 @@ public class MainActivity extends Activity {
         int initialClockHeight = Math.max(dp(62), dp(initialClockSize));
         clockBlock.addView(timeText, new LinearLayout.LayoutParams(-1, initialClockHeight));
 
-        gregorianText = clockDateTextView("", 2, dateTextColor);
+        gregorianText = clockDateTextView("", 22, dateTextColor);
         gregorianText.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         gregorianText.setGravity(Gravity.CENTER);
         gregorianText.setIncludeFontPadding(false);
@@ -353,7 +353,7 @@ public class MainActivity extends Activity {
         gregorianParams.topMargin = dp(dateClockGapDp(initialClockSize));
         clockBlock.addView(gregorianText, gregorianParams);
 
-        hebrewText = clockDateTextView("", 12, dateTextColor);
+        hebrewText = clockDateTextView("", 22, dateTextColor);
         hebrewText.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         hebrewText.setGravity(Gravity.CENTER);
         hebrewText.setTextDirection(View.TEXT_DIRECTION_ANY_RTL);
