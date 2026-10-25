@@ -1173,7 +1173,7 @@ public class MainActivity extends Activity {
     }
 
     private int visualGapDp(int clockSize) {
-        return 5;
+        return 12;
     }
 
     private int visualGapMarginPx(TextView upper, int upperHeight, String upperSample,
