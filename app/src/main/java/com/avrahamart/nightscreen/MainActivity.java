@@ -1173,9 +1173,7 @@ public class MainActivity extends Activity {
     }
 
     private int visualGapDp(int clockSize) {
-        if (clockSize >= 108) return 6;
-        if (clockSize >= 84) return 5;
-        return 4;
+        return 5;
     }
 
     private int visualGapMarginPx(TextView upper, int upperHeight, String upperSample,
