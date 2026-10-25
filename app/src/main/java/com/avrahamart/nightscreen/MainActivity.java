@@ -179,10 +179,6 @@ public class MainActivity extends Activity {
             getWindow().clearFlags(
                     android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
             applyChargingLaunchFlags(getIntent());
-            if (getIntent() != null
-                    && getIntent().getBooleanExtra(EXTRA_OPENED_BY_CHARGER, false)) {
-                AutoStartOnPowerReceiver.cancelLaunchNotification(this);
-            }
             hideSystemUi();
             buildUi();
             applySettings();
@@ -199,7 +195,6 @@ public class MainActivity extends Activity {
         setIntent(intent);
         if (intent != null && intent.getBooleanExtra(EXTRA_OPENED_BY_CHARGER, false)) {
             applyChargingLaunchFlags(intent);
-            AutoStartOnPowerReceiver.cancelLaunchNotification(this);
             hideSystemUi();
             scheduleAutoOff(true);
             showSettingsButtonForThreeSeconds();
