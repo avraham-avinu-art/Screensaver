@@ -310,8 +310,7 @@ public class SettingsActivity extends Activity {
         heading.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         heading.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
         heading.setTextDirection(View.TEXT_DIRECTION_RTL);
-        // Move every settings-card heading 3dp farther inward from the right edge.
-        heading.setPadding(0, 0, dp(6), 0);
+        heading.setPadding(0, 0, dp(3), 0);
         heading.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
         LinearLayout.LayoutParams headingTextParams =
                 new LinearLayout.LayoutParams(0, dp(42), 1f);

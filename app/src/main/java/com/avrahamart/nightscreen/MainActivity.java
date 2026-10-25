@@ -1173,10 +1173,7 @@ public class MainActivity extends Activity {
     }
 
     private int visualGapDp(int clockSize) {
-        // Keep the painted gap compact and consistent across fonts with different metrics.
-        if (clockSize >= 108) return 6;
-        if (clockSize >= 84) return 5;
-        return 4;
+        return 20;
     }
 
     private int visualGapMarginPx(TextView upper, int upperHeight, String upperSample,
@@ -1218,13 +1215,13 @@ public class MainActivity extends Activity {
     }
 
     private float dateTextSizeForClockPreset(int clockSize) {
-        // The date rows are always 28% of the effective clock size, for every preset.
-        return clockSize * 0.28f;
+        // Requested values: 60/72 use 30%; 84/96/108 use 28%.
+        return clockSize >= 84 ? clockSize * 0.28f : clockSize * 0.30f;
     }
 
     private int dateRowHeightForClockPreset(int clockSize) {
         // Let measured glyph metrics determine the line height; this is only a fallback minimum.
-        return Math.max(dp(24), dp(Math.round(clockSize * 0.28f)));
+        return Math.max(dp(24), dp(Math.round(clockSize * 0.30f)));
     }
 
     private int effectiveFontWeightForFamily(String fontFamily, int requestedWeight) {

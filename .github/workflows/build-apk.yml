@@ -121,12 +121,11 @@ jobs:
           retention-days: 30
 
       - name: Publish version 1 release
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main' && (github.event.head_commit.message == 'Set app version to 1' || github.event.head_commit.message == 'Publish version 1 release' || github.event.head_commit.message == 'Enable version 1 release publishing')
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v1
           name: Version 1
           target_commitish: main
           generate_release_notes: true
-          overwrite_files: true
           files: app/build/outputs/apk/release/app-release.apk
