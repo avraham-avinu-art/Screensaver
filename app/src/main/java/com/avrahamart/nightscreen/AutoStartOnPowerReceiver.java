@@ -13,12 +13,16 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        if (intent == null
-                || !Intent.ACTION_POWER_CONNECTED.equals(intent.getAction())) {
-            return;
-        }
+        if (intent == null || intent.getAction() == null) return;
 
         SharedPreferences prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE);
+        if (Intent.ACTION_POWER_DISCONNECTED.equals(intent.getAction())) {
+            saveStatus(prefs, "power_disconnected");
+            Log.i(TAG, "Power disconnected; waiting for the next connection.");
+            return;
+        }
+        if (!Intent.ACTION_POWER_CONNECTED.equals(intent.getAction())) return;
+
         if (!prefs.getBoolean("autoStartOnCharge", false)) {
             saveStatus(prefs, "switch_off");
             Log.i(TAG, "Power connected, but automatic start is disabled.");
