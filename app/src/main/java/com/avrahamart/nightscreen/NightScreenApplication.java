@@ -4,13 +4,11 @@ import android.app.Application;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Build;
-import android.util.Log;
 
 /**
- * Listens for charger events whenever the app process is alive.
- *
- * Manifest-declared receivers are restricted for most implicit broadcasts
- * on Android 8 and later, so charger events must also be registered at runtime.
+ * Registers charger monitoring while the app process is alive.
+ * The manifest receiver is retained for cases where Android starts the app
+ * process to deliver a charger event.
  */
 public final class NightScreenApplication extends Application {
     private AutoStartOnPowerReceiver chargerReceiver;
@@ -20,19 +18,15 @@ public final class NightScreenApplication extends Application {
         super.onCreate();
         chargerReceiver = new AutoStartOnPowerReceiver();
 
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(Intent.ACTION_POWER_CONNECTED);
-        filter.addAction(Intent.ACTION_POWER_DISCONNECTED);
-
+        IntentFilter filter = new IntentFilter(Intent.ACTION_POWER_CONNECTED);
         try {
             if (Build.VERSION.SDK_INT >= 33) {
                 registerReceiver(chargerReceiver, filter, RECEIVER_EXPORTED);
             } else {
                 registerReceiver(chargerReceiver, filter);
             }
-            Log.i("NightScreenAutoStart", "Runtime charger receiver registered.");
-        } catch (Throwable error) {
-            Log.e("NightScreenAutoStart", "Unable to register runtime charger receiver.", error);
+        } catch (Throwable ignored) {
+            // The manifest receiver remains available as a fallback.
         }
     }
 }
