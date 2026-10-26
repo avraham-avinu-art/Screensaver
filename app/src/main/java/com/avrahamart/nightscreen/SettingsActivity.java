@@ -641,9 +641,8 @@ public class SettingsActivity extends Activity {
                     + status.substring("launch_error:".length()) + ").";
             autoStartDiagnosticStatus.setTextColor(Color.rgb(255, 164, 130));
         } else {
-            message = "";
-            autoStartDiagnosticStatus.setVisibility(View.GONE);
-            return;
+            message = "בדיקת הפעלה אחרונה: עדיין לא נרשם ניסיון. כשהמתג מופעל, נתק את המטען וחבר אותו מחדש, ואז חזור למסך ההגדרות.";
+            autoStartDiagnosticStatus.setTextColor(MUTED);
         }
         autoStartDiagnosticStatus.setText(message);
         autoStartDiagnosticStatus.setVisibility(View.VISIBLE);
