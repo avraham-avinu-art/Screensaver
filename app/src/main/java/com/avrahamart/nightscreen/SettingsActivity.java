@@ -1498,9 +1498,9 @@ public class SettingsActivity extends Activity {
                     canvas.drawPath(path, paint);
                     break;
                 case "player-position-panel":
+                    // Choice #1: the panel-bottom glyph, with a divider above its bottom band.
                     canvas.drawRoundRect(new RectF(3f, 2.5f, 21f, 21.5f), 2f, 2f, paint);
                     canvas.drawLine(3.5f, 15f, 20.5f, 15f, paint);
-                    canvas.drawRoundRect(new RectF(6.5f, 16.5f, 17.5f, 19.5f), 0.8f, 0.8f, paint);
                     break;
                 case "frame-dashed":
                     // Choice #10: a square with distinct dashes on all four sides.
