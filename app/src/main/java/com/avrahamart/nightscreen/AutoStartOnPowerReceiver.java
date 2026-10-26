@@ -44,8 +44,32 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
                 && prefs.getBoolean("autoStartOnDeviceLock", false)
                 && canLaunchFromBackground(context)) {
             // Let Android finish applying the keyguard state before checking it.
-            new Handler(Looper.getMainLooper()).postDelayed(
-                    () -> launchOnDeviceLockIfStillLocked(context.getApplicationContext()), 600L);
+            PowerManager powerManager =
+                    (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+            PowerManager.WakeLock wakeLock = null;
+            try {
+                if (powerManager != null) {
+                    wakeLock = powerManager.newWakeLock(
+                            PowerManager.PARTIAL_WAKE_LOCK,
+                            "NightScreen:LockStart");
+                    wakeLock.acquire(3_000L);
+                }
+            } catch (Throwable ignored) {
+                wakeLock = null;
+            }
+            final PowerManager.WakeLock heldWakeLock = wakeLock;
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                try {
+                    launchOnDeviceLockIfStillLocked(context.getApplicationContext());
+                } finally {
+                    if (heldWakeLock != null) {
+                        try {
+                            if (heldWakeLock.isHeld()) heldWakeLock.release();
+                        } catch (Throwable ignored) {
+                        }
+                    }
+                }
+            }, 450L);
         }
     }
 

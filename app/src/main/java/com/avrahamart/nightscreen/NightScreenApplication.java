@@ -19,8 +19,6 @@ public final class NightScreenApplication extends Application {
 
         IntentFilter filter = new IntentFilter();
         filter.addAction(Intent.ACTION_POWER_CONNECTED);
-        filter.addAction(Intent.ACTION_SCREEN_OFF);
-        filter.addAction(Intent.ACTION_USER_PRESENT);
         try {
             if (Build.VERSION.SDK_INT >= 33) {
                 registerReceiver(chargerReceiver, filter, RECEIVER_EXPORTED);

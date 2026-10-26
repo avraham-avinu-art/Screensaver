@@ -194,6 +194,7 @@ public class MainActivity extends Activity {
         try {
             prefs = getSharedPreferences("settings", MODE_PRIVATE);
             initSettings();
+            LockScreenMonitorService.sync(this);
             getWindow().setFlags(
                     android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN,
                     android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN);
@@ -1443,11 +1444,19 @@ public class MainActivity extends Activity {
             screenSleepPending = false;
         }
 
-        // The dedicated charging option overrides every activity-time preset while plugged in.
+        // While charging, keep the screensaver active indefinitely. If it is permitted
+        // to show on the lock screen, do not hold the display awake: Android can lock
+        // normally and the saver remains available behind the keyguard. Only retain
+        // KEEP_SCREEN_ON when showing over the keyguard is disabled.
         if (getBool("noShutdownWhileCharging", false) && isDeviceCharging()) {
             activityDeadlineElapsedRealtime = 0L;
-            getWindow().addFlags(
-                    android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            if (getBool("showOnLockScreen", Build.VERSION.SDK_INT >= 26)) {
+                getWindow().clearFlags(
+                        android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            } else {
+                getWindow().addFlags(
+                        android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            }
             return;
         }
 

@@ -175,6 +175,7 @@ public class SettingsActivity extends Activity {
             handlePlayerPermissionResult();
             handleChargerPermissionResult();
             handleLockStartPermissionResult();
+            LockScreenMonitorService.sync(this);
             updateNotificationAccessCardVisibility();
             updateOverlayPermissionCardVisibility();
             updateScreenLockAdminCard();
@@ -192,7 +193,7 @@ public class SettingsActivity extends Activity {
                 new String[]{"device", "1", "5", "0"}, "screenSaverDuration");
         addCheck(activityTimes, "הצגה במסך הנעילה", "showOnLockScreen",
                 Build.VERSION.SDK_INT >= 26);
-        addCheck(activityTimes, "הפעלה אוטומטית בנעילת המכשיר",
+        addCheck(activityTimes, "הפעלה אוטומטית בנעילה",
                 "autoStartOnDeviceLock", false);
 
         LinearLayout charging = addCard(content, "שומר מסך בזמן טעינה");
@@ -435,6 +436,7 @@ public class SettingsActivity extends Activity {
                 if (!checked) {
                     prefs.edit().putBoolean("autoStartOnLockOverlayPermissionPending", false).apply();
                 }
+                LockScreenMonitorService.sync(this);
                 updateOverlayPermissionCardVisibility();
             } else if ("showOnLockScreen".equals(key) && !checked
                     && getBool("autoStartOnDeviceLock", false)) {
@@ -443,6 +445,7 @@ public class SettingsActivity extends Activity {
                 if (autoStartOnDeviceLockToggle != null && autoStartOnDeviceLockToggle.isChecked()) {
                     autoStartOnDeviceLockToggle.setChecked(false);
                 }
+                LockScreenMonitorService.sync(this);
                 Toast.makeText(this,
                         "ההפעלה האוטומטית בנעילה כובתה מפני שהצגה במסך הנעילה אינה פעילה.",
                         Toast.LENGTH_LONG).show();
