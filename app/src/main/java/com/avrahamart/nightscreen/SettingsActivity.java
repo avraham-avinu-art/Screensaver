@@ -642,6 +642,9 @@ public class SettingsActivity extends Activity {
         } else if ("switch_off".equals(status)) {
             message = "בדיקת הפעלה אחרונה: חיבור המטען זוהה, אך המתג היה כבוי.";
             autoStartDiagnosticStatus.setTextColor(MUTED);
+        } else if ("power_disconnected".equals(status)) {
+            message = "בדיקת הפעלה אחרונה: זוהה ניתוק של המטען. חבר אותו מחדש כדי לבדוק את ההפעלה האוטומטית.";
+            autoStartDiagnosticStatus.setTextColor(MUTED);
         } else if (status.startsWith("launch_error:")) {
             message = "בדיקת הפעלה אחרונה: הפעלת שומר המסך נכשלה (" 
                     + status.substring("launch_error:".length()) + ").";
