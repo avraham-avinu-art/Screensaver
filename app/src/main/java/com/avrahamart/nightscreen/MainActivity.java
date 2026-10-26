@@ -61,6 +61,10 @@ public class MainActivity extends Activity {
     private final Runnable autoOffRunnable = this::exitApplicationAtSelectedTime;
     private boolean screenSleepPending = false;
     private boolean deviceEventsRegistered = false;
+    private boolean openedByCharger = false;
+    private boolean bottomSwipeCandidate = false;
+    private float bottomSwipeStartX = 0f;
+    private float bottomSwipeStartY = 0f;
     private long activityDeadlineElapsedRealtime = 0L;
     private DevicePolicyManager devicePolicyManager;
     private ComponentName screenLockAdminComponent;
@@ -184,7 +188,6 @@ public class MainActivity extends Activity {
             applySettings();
             updateClock();
             scheduleAutoOff();
-            markChargerAutoStartOpened(getIntent());
         } catch (Throwable t) {
             showFatalError(t);
         }
@@ -203,21 +206,12 @@ public class MainActivity extends Activity {
                 stageView.post(() -> updateScreenPositions(
                         stageView, clockBlockView, mediaHolderView));
             }
-            markChargerAutoStartOpened(intent);
         }
-    }
-
-    private void markChargerAutoStartOpened(Intent intent) {
-        if (intent == null
-                || !intent.getBooleanExtra(EXTRA_OPENED_BY_CHARGER, false)) return;
-        getSharedPreferences("settings", MODE_PRIVATE).edit()
-                .putString("autoStartLastStatus", "opened")
-                .putLong("autoStartLastTime", System.currentTimeMillis())
-                .apply();
     }
 
     private void applyChargingLaunchFlags(Intent intent) {
         if (intent == null || !intent.getBooleanExtra(EXTRA_OPENED_BY_CHARGER, false)) return;
+        openedByCharger = true;
         if (Build.VERSION.SDK_INT >= 27) {
             setShowWhenLocked(true);
             setTurnScreenOn(true);
@@ -1580,16 +1574,56 @@ public class MainActivity extends Activity {
 
     @Override
     public boolean dispatchTouchEvent(android.view.MotionEvent event) {
-        if (event.getAction() == android.view.MotionEvent.ACTION_DOWN) {
+        int action = event.getActionMasked();
+        boolean exitBySwipe = false;
+
+        if (action == android.view.MotionEvent.ACTION_DOWN) {
             if (screenSleepPending) wakeSaverDisplay();
+
+            // When opened automatically on charging, a lock-screen-style upward
+            // gesture from the bottom edge dismisses the saver back to the lock screen.
+            bottomSwipeCandidate = false;
+            if (openedByCharger) {
+                int decorHeight = getWindow().getDecorView().getHeight();
+                if (decorHeight > 0 && event.getY() >= decorHeight - dp(96)) {
+                    bottomSwipeCandidate = true;
+                    bottomSwipeStartX = event.getX();
+                    bottomSwipeStartY = event.getY();
+                }
+            }
+
             if (stageView != null && stageView.getHeight() > 0) {
                 float localY = event.getY() - stageView.getTop();
                 if (localY >= 0 && localY <= stageView.getHeight() / 2f) {
                     showSettingsButtonForThreeSeconds();
                 }
             }
+        } else if (action == android.view.MotionEvent.ACTION_MOVE
+                && bottomSwipeCandidate) {
+            float deltaX = Math.abs(event.getX() - bottomSwipeStartX);
+            float downDistance = event.getY() - bottomSwipeStartY;
+            if (downDistance > dp(24) || deltaX > dp(96)) {
+                bottomSwipeCandidate = false;
+            }
+        } else if (action == android.view.MotionEvent.ACTION_UP) {
+            if (bottomSwipeCandidate) {
+                float upwardDistance = bottomSwipeStartY - event.getY();
+                float horizontalDistance = Math.abs(event.getX() - bottomSwipeStartX);
+                exitBySwipe = upwardDistance >= dp(120)
+                        && upwardDistance > horizontalDistance * 1.2f;
+            }
+            bottomSwipeCandidate = false;
+        } else if (action == android.view.MotionEvent.ACTION_CANCEL) {
+            bottomSwipeCandidate = false;
         }
-        return super.dispatchTouchEvent(event);
+
+        boolean handled = super.dispatchTouchEvent(event);
+        if (exitBySwipe && openedByCharger && !settingsDialogOpen) {
+            handler.removeCallbacks(autoOffRunnable);
+            finishAffinity();
+            return true;
+        }
+        return handled;
     }
 
     @Override
