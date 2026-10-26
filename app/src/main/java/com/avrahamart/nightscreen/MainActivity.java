@@ -184,6 +184,7 @@ public class MainActivity extends Activity {
             applySettings();
             updateClock();
             scheduleAutoOff();
+            markChargerAutoStartOpened(getIntent());
         } catch (Throwable t) {
             showFatalError(t);
         }
@@ -202,7 +203,17 @@ public class MainActivity extends Activity {
                 stageView.post(() -> updateScreenPositions(
                         stageView, clockBlockView, mediaHolderView));
             }
+            markChargerAutoStartOpened(intent);
         }
+    }
+
+    private void markChargerAutoStartOpened(Intent intent) {
+        if (intent == null
+                || !intent.getBooleanExtra(EXTRA_OPENED_BY_CHARGER, false)) return;
+        getSharedPreferences("settings", MODE_PRIVATE).edit()
+                .putString("autoStartLastStatus", "opened")
+                .putLong("autoStartLastTime", System.currentTimeMillis())
+                .apply();
     }
 
     private void applyChargingLaunchFlags(Intent intent) {
