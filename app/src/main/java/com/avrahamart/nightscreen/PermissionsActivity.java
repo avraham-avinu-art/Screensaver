@@ -1,7 +1,7 @@
 package com.avrahamart.nightscreen;
 
 import android.app.Activity;
-import android.app.DevicePolicyManager;
+import android.app.admin.DevicePolicyManager;
 import android.app.NotificationManager;
 import android.content.ActivityNotFoundException;
 import android.content.ComponentName;
@@ -106,9 +106,15 @@ public class PermissionsActivity extends Activity {
         notificationStatus = addStatus(card);
         notificationButton = addPermissionButton(card,
                 "הפעל הרשאת גישה להתראות", v -> {
-                    Toast.makeText(this,
-                            "כדי להציג את הנגן, צריך לאפשר לשומר מסך גישה להתראות במסך הבא. בחר את \"שומר מסך\" והפעל את ההרשאה.",
-                            Toast.LENGTH_LONG).show();
+                    if (hasNotificationAccess()) {
+                        Toast.makeText(this,
+                                "כדי לשנות או לבטל את ההרשאה, שנה במסך הבא את גישת ההתראות של שומר מסך.",
+                                Toast.LENGTH_LONG).show();
+                    } else {
+                        Toast.makeText(this,
+                                "כדי להציג את הנגן, צריך לאפשר לשומר מסך גישה להתראות במסך הבא. בחר את \"שומר מסך\" והפעל את ההרשאה.",
+                                Toast.LENGTH_LONG).show();
+                    }
                     openNotificationAccessSettings();
                 });
     }
@@ -119,9 +125,15 @@ public class PermissionsActivity extends Activity {
         overlayStatus = addStatus(card);
         overlayButton = addPermissionButton(card,
                 "הפעל הרשאת הצגה מעל אפליקציות", v -> {
-                    Toast.makeText(this,
-                            "כדי לאפשר הפעלה אוטומטית בטעינה, בחר במסך הבא את \"שומר מסך\" ואפשר \"הצגה מעל אפליקציות אחרות\".",
-                            Toast.LENGTH_LONG).show();
+                    if (Settings.canDrawOverlays(this)) {
+                        Toast.makeText(this,
+                                "כדי לשנות או לבטל את ההרשאה, שנה במסך הבא את הגדרת ההצגה מעל אפליקציות אחרות עבור שומר מסך.",
+                                Toast.LENGTH_LONG).show();
+                    } else {
+                        Toast.makeText(this,
+                                "כדי לאפשר הפעלה אוטומטית בטעינה, בחר במסך הבא את \"שומר מסך\" ואפשר \"הצגה מעל אפליקציות אחרות\".",
+                                Toast.LENGTH_LONG).show();
+                    }
                     openOverlayPermissionSettings();
                 });
     }
