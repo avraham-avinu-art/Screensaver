@@ -61,6 +61,11 @@
         </service>
 
         <receiver
+            android:name=".LockScreenServiceRestartReceiver"
+            android:enabled="true"
+            android:exported="false" />
+
+        <receiver
             android:name=".LockScreenBootReceiver"
             android:enabled="true"
             android:exported="true">

@@ -1,8 +1,10 @@
 package com.avrahamart.nightscreen;
 
+import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
@@ -11,11 +13,16 @@ import android.content.SharedPreferences;
 import android.content.pm.ServiceInfo;
 import android.os.Build;
 import android.os.IBinder;
+import android.os.SystemClock;
 import android.provider.Settings;
 
 public final class LockScreenMonitorService extends Service {
-    private static final String CHANNEL_ID = "screensaver_lock_monitor_v1";
+    // v2 enforces the minimum supported FGS notification importance; Android will
+    // retain the old channel's importance otherwise even after its settings change.
+    private static final String CHANNEL_ID = "screensaver_lock_monitor_v2";
     private static final int NOTIFICATION_ID = 6721;
+    private static final int RESTART_PENDING_INTENT_ID = 6722;
+    private static final long RESTART_DELAY_MS = 2_000L;
     private boolean receiverRegistered = false;
     private AutoStartOnPowerReceiver lockReceiver;
 
@@ -75,6 +82,7 @@ public final class LockScreenMonitorService extends Service {
             return START_NOT_STICKY;
         }
 
+        cancelScheduledRestart();
         Notification notification = buildQuietNotification();
         try {
             if (Build.VERSION.SDK_INT >= 34) {
@@ -96,7 +104,7 @@ public final class LockScreenMonitorService extends Service {
                 (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         if (manager == null) return;
         NotificationChannel channel = new NotificationChannel(
-                CHANNEL_ID, "שירות רקע", NotificationManager.IMPORTANCE_MIN);
+                CHANNEL_ID, "שירות רקע", NotificationManager.IMPORTANCE_LOW);
         channel.setDescription("שירות להפעלה אוטומטית בנעילת המכשיר");
         channel.setShowBadge(false);
         channel.setLockscreenVisibility(Notification.VISIBILITY_SECRET);
@@ -117,7 +125,7 @@ public final class LockScreenMonitorService extends Service {
                 .setOnlyAlertOnce(true)
                 .setShowWhen(false)
                 .setVisibility(Notification.VISIBILITY_SECRET);
-        builder.setPriority(Notification.PRIORITY_MIN)
+        builder.setPriority(Notification.PRIORITY_LOW)
                 .setSound(null)
                 .setVibrate(new long[0])
                 .setDefaults(0);
@@ -126,12 +134,16 @@ public final class LockScreenMonitorService extends Service {
 
     @Override
     public void onTaskRemoved(Intent rootIntent) {
-        // Deliberately keep monitoring when the user removes the app's task.
+        // The foreground service normally survives task removal. Schedule one
+        // recovery start as a fallback for devices that terminate it with the task.
+        scheduleRestartIfEnabled();
         super.onTaskRemoved(rootIntent);
     }
 
     @Override
     public void onDestroy() {
+        // Do not schedule a restart when the user explicitly turns the feature off.
+        scheduleRestartIfEnabled();
         if (receiverRegistered && lockReceiver != null) {
             try {
                 unregisterReceiver(lockReceiver);
@@ -139,6 +151,50 @@ public final class LockScreenMonitorService extends Service {
             }
         }
         super.onDestroy();
+    }
+
+    private void scheduleRestartIfEnabled() {
+        SharedPreferences prefs = getSharedPreferences("settings", MODE_PRIVATE);
+        if (!prefs.getBoolean("autoStartOnDeviceLock", false)) return;
+        if (Build.VERSION.SDK_INT >= 29 && !Settings.canDrawOverlays(this)) return;
+
+        AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+        if (alarmManager == null) return;
+        PendingIntent restartIntent = restartPendingIntent();
+        if (restartIntent == null) return;
+        try {
+            long triggerAt = SystemClock.elapsedRealtime() + RESTART_DELAY_MS;
+            if (Build.VERSION.SDK_INT >= 23) {
+                alarmManager.setAndAllowWhileIdle(
+                        AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerAt, restartIntent);
+            } else {
+                alarmManager.set(
+                        AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerAt, restartIntent);
+            }
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private void cancelScheduledRestart() {
+        AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+        PendingIntent restartIntent = restartPendingIntent();
+        if (alarmManager != null && restartIntent != null) {
+            try {
+                alarmManager.cancel(restartIntent);
+            } catch (Throwable ignored) {
+            }
+        }
+    }
+
+    private PendingIntent restartPendingIntent() {
+        Intent intent = new Intent(this, LockScreenServiceRestartReceiver.class);
+        int flags = PendingIntent.FLAG_UPDATE_CURRENT;
+        if (Build.VERSION.SDK_INT >= 23) flags |= PendingIntent.FLAG_IMMUTABLE;
+        try {
+            return PendingIntent.getBroadcast(this, RESTART_PENDING_INTENT_ID, intent, flags);
+        } catch (Throwable ignored) {
+            return null;
+        }
     }
 
     @Override
