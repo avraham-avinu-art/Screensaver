@@ -740,7 +740,7 @@ public class SettingsActivity extends Activity {
         if ("showPlayer".equals(key)) return "media-toggle";
         if ("screenSaverDuration".equals(key)) return "hourglass";
         if ("showOnLockScreen".equals(key)) return "lockscreen-phone";
-        if ("autoStartOnCharge".equals(key)) return "zap";
+        if ("autoStartOnCharge".equals(key)) return "cable";
         if ("autoStartOnDeviceLock".equals(key)) return "lock-play";
         if ("noShutdownWhileCharging".equals(key)) return "battery-hold";
         if ("showBatteryPercent".equals(key)) return "percent";
@@ -1382,13 +1382,18 @@ public class SettingsActivity extends Activity {
             Path path = new Path();
             switch (type) {
                 case "lockscreen-phone":
-                    // A single phone glyph with the lock integrated into its screen.
+                    // Choice #1: phone outline with one solid lock centered in its screen.
                     canvas.drawRoundRect(new RectF(5.8f, 1.2f, 18.2f, 22.8f), 2.3f, 2.3f, paint);
                     canvas.drawLine(9.6f, 4f, 14.4f, 4f, paint);
                     canvas.drawCircle(12f, 20.2f, 0.55f, paint);
-                    canvas.drawRoundRect(new RectF(8.5f, 11f, 15.5f, 17f), 1.2f, 1.2f, paint);
-                    canvas.drawArc(new RectF(9.8f, 7f, 14.2f, 13f), 180f, 180f, false, paint);
-                    canvas.drawCircle(12f, 13.8f, 0.55f, paint);
+                    canvas.drawArc(new RectF(9.2f, 7.8f, 14.8f, 14f), 180f, 180f, false, paint);
+                    paint.setStyle(Paint.Style.FILL);
+                    canvas.drawRoundRect(new RectF(8.2f, 11.1f, 15.8f, 17.2f), 1.2f, 1.2f, paint);
+                    paint.setColor(ICON_SURFACE);
+                    canvas.drawCircle(12f, 13.2f, 0.7f, paint);
+                    canvas.drawRoundRect(new RectF(11.5f, 13.2f, 12.5f, 15.1f), 0.5f, 0.5f, paint);
+                    paint.setColor(tint);
+                    paint.setStyle(Paint.Style.STROKE);
                     break;
                 case "lock-play":
                     // The play triangle is drawn inside the lock body as one combined glyph.
@@ -1431,6 +1436,19 @@ public class SettingsActivity extends Activity {
                     path.lineTo(12f, 13.5f);
                     path.close();
                     canvas.drawPath(path, paint);
+                    break;
+                case "cable":
+                    // Choice #7: a connected cable with connector ends, drawn as one continuous glyph.
+                    canvas.drawRoundRect(new RectF(2.8f, 3.2f, 9f, 9.1f), 1.2f, 1.2f, paint);
+                    canvas.drawLine(4.2f, 1.5f, 4.2f, 3.2f, paint);
+                    canvas.drawLine(7.3f, 1.5f, 7.3f, 3.2f, paint);
+                    path.moveTo(9f, 6.2f);
+                    path.cubicTo(13f, 6.2f, 13f, 11f, 13f, 13.5f);
+                    path.cubicTo(13f, 16f, 16f, 16.5f, 18f, 16.5f);
+                    canvas.drawPath(path, paint);
+                    canvas.drawRoundRect(new RectF(17.2f, 14.1f, 21.2f, 19f), 1.2f, 1.2f, paint);
+                    canvas.drawLine(18.1f, 19f, 18.1f, 21f, paint);
+                    canvas.drawLine(20.2f, 19f, 20.2f, 21f, paint);
                     break;
                 case "zap":
                     path.moveTo(13.5f, 1.5f);
@@ -1485,27 +1503,31 @@ public class SettingsActivity extends Activity {
                     canvas.drawRoundRect(new RectF(6.5f, 16.5f, 17.5f, 19.5f), 0.8f, 0.8f, paint);
                     break;
                 case "frame-dashed":
-                    // Dashed square outline in one icon, chosen for the frame toggle.
-                    canvas.drawLine(4f, 9f, 4f, 4f, paint);
-                    canvas.drawLine(4f, 4f, 9f, 4f, paint);
-                    canvas.drawLine(15f, 4f, 20f, 4f, paint);
-                    canvas.drawLine(20f, 4f, 20f, 9f, paint);
-                    canvas.drawLine(4f, 15f, 4f, 20f, paint);
-                    canvas.drawLine(4f, 20f, 9f, 20f, paint);
-                    canvas.drawLine(15f, 20f, 20f, 20f, paint);
-                    canvas.drawLine(20f, 15f, 20f, 20f, paint);
+                    // Choice #10: a square with distinct dashes on all four sides.
+                    float[][] dashSegments = new float[][]{
+                            {5f,4f,8f,4f},{11f,4f,14f,4f},{17f,4f,20f,4f},
+                            {5f,20f,8f,20f},{11f,20f,14f,20f},{17f,20f,20f,20f},
+                            {4f,5f,4f,8f},{4f,11f,4f,14f},{4f,17f,4f,20f},
+                            {21f,5f,21f,8f},{21f,11f,21f,14f},{21f,17f,21f,20f}
+                    };
+                    for (float[] dash : dashSegments) {
+                        canvas.drawLine(dash[0], dash[1], dash[2], dash[3], paint);
+                    }
                     break;
                 case "player-size-resize":
-                    // One music-player tile with resize arrows integrated around its corners.
+                    // Choice #1: musical-note player tile with four outward resize arrows.
                     canvas.drawRoundRect(new RectF(5f, 6f, 19f, 18f), 2f, 2f, paint);
-                    paint.setStrokeWidth(1.5f);
-                    path.moveTo(10f, 9f);
-                    path.lineTo(10f, 13f);
-                    path.lineTo(13.5f, 11f);
-                    path.close();
-                    paint.setStyle(Paint.Style.FILL);
+                    paint.setStrokeWidth(1.45f);
+                    path.moveTo(11.5f, 8.2f);
+                    path.lineTo(16f, 7.3f);
+                    path.lineTo(16f, 12.1f);
                     canvas.drawPath(path, paint);
+                    canvas.drawLine(11.5f, 8.2f, 11.5f, 13.3f, paint);
+                    paint.setStyle(Paint.Style.FILL);
+                    canvas.drawOval(new RectF(8.4f, 12.1f, 12.1f, 14.9f), paint);
+                    canvas.drawOval(new RectF(13.1f, 11.5f, 16.8f, 14.3f), paint);
                     paint.setStyle(Paint.Style.STROKE);
+                    paint.setStrokeWidth(1.5f);
                     path.reset();
                     path.moveTo(3f, 8f);
                     path.lineTo(3f, 3f);
@@ -1673,22 +1695,34 @@ public class SettingsActivity extends Activity {
                     canvas.drawPath(path, paint);
                     break;
                 case "hebrew-date":
+                    // Choice #1: a calendar with the Hebrew day marker א׳.
                     canvas.drawRoundRect(new RectF(3f, 4f, 21f, 20f), 2f, 2f, paint);
                     canvas.drawLine(3.5f, 9f, 20.5f, 9f, paint);
+                    canvas.drawLine(8f, 2.5f, 8f, 7f, paint);
+                    canvas.drawLine(16f, 2.5f, 16f, 7f, paint);
                     paint.setStyle(Paint.Style.FILL);
-                    paint.setTextSize(7f);
+                    paint.setTextSize(7.5f);
+                    paint.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
                     paint.setTextAlign(Paint.Align.CENTER);
-                    canvas.drawText("א", 12f, 17f, paint);
+                    canvas.drawText("א׳", 12f, 17f, paint);
+                    paint.setTypeface(Typeface.DEFAULT);
                     paint.setTextAlign(Paint.Align.LEFT);
                     break;
                 case "gregorian-date":
+                    // Choice #2: the calendar-days glyph, using a grid rather than the old "31".
                     canvas.drawRoundRect(new RectF(3f, 4f, 21f, 20f), 2f, 2f, paint);
                     canvas.drawLine(3.5f, 9f, 20.5f, 9f, paint);
+                    canvas.drawLine(8f, 2.5f, 8f, 7f, paint);
+                    canvas.drawLine(16f, 2.5f, 16f, 7f, paint);
                     paint.setStyle(Paint.Style.FILL);
-                    paint.setTextSize(7f);
-                    paint.setTextAlign(Paint.Align.CENTER);
-                    canvas.drawText("31", 12f, 17f, paint);
-                    paint.setTextAlign(Paint.Align.LEFT);
+                    float[] dayXs = new float[]{7f, 12f, 17f};
+                    float[] dayYs = new float[]{12f, 15.5f, 18.5f};
+                    for (float dayY : dayYs) {
+                        for (float dayX : dayXs) {
+                            canvas.drawCircle(dayX, dayY, 0.85f, paint);
+                        }
+                    }
+                    paint.setStyle(Paint.Style.STROKE);
                     break;
                 case "media-toggle":
                     canvas.drawRoundRect(new RectF(3f, 5f, 21f, 19f), 3f, 3f, paint);
@@ -1794,28 +1828,36 @@ public class SettingsActivity extends Activity {
                     canvas.drawText("Aa", 2f, 17f, paint);
                     break;
                 case "clock-size":
-                    // Clock face with integrated outward corner arrows to mean clock/date size.
-                    canvas.drawCircle(12f, 12f, 7f, paint);
+                    // Choice #1: clock face and outward diagonal resize arrows in a single glyph.
+                    canvas.drawCircle(12f, 12f, 6.5f, paint);
                     canvas.drawLine(12f, 7.5f, 12f, 12f, paint);
                     canvas.drawLine(12f, 12f, 15.5f, 14f, paint);
-                    path.moveTo(2.5f, 7f);
-                    path.lineTo(2.5f, 2.5f);
-                    path.lineTo(7f, 2.5f);
+                    path.moveTo(3f, 9f);
+                    path.lineTo(3f, 3f);
+                    path.lineTo(9f, 3f);
+                    path.moveTo(3f, 3f);
+                    path.lineTo(7f, 7f);
                     canvas.drawPath(path, paint);
                     path.reset();
-                    path.moveTo(17f, 2.5f);
-                    path.lineTo(21.5f, 2.5f);
-                    path.lineTo(21.5f, 7f);
+                    path.moveTo(15f, 3f);
+                    path.lineTo(21f, 3f);
+                    path.lineTo(21f, 9f);
+                    path.moveTo(21f, 3f);
+                    path.lineTo(17f, 7f);
                     canvas.drawPath(path, paint);
                     path.reset();
-                    path.moveTo(2.5f, 17f);
-                    path.lineTo(2.5f, 21.5f);
-                    path.lineTo(7f, 21.5f);
+                    path.moveTo(3f, 15f);
+                    path.lineTo(3f, 21f);
+                    path.lineTo(9f, 21f);
+                    path.moveTo(3f, 21f);
+                    path.lineTo(7f, 17f);
                     canvas.drawPath(path, paint);
                     path.reset();
-                    path.moveTo(17f, 21.5f);
-                    path.lineTo(21.5f, 21.5f);
-                    path.lineTo(21.5f, 17f);
+                    path.moveTo(15f, 21f);
+                    path.lineTo(21f, 21f);
+                    path.lineTo(21f, 15f);
+                    path.moveTo(21f, 21f);
+                    path.lineTo(17f, 17f);
                     canvas.drawPath(path, paint);
                     break;
                 case "clock-position":
