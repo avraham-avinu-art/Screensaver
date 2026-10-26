@@ -1463,8 +1463,13 @@ public class MainActivity extends Activity {
 
         if (minutes <= 0L) {
             activityDeadlineElapsedRealtime = 0L;
-            getWindow().addFlags(
-                    android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            if (getBool("showOnLockScreen", Build.VERSION.SDK_INT >= 26)) {
+                getWindow().clearFlags(
+                        android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            } else {
+                getWindow().addFlags(
+                        android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            }
             return;
         }
 
@@ -1483,16 +1488,21 @@ public class MainActivity extends Activity {
         // If the selected duration exceeds the system timeout, keep the screen on
         // for the full remaining duration, then release it at the selected deadline.
         // If it is at most the system timeout, leave the display timeout to Android.
-        boolean keepAwake = isScreenLockAdminActive();
-        if (!keepAwake) {
-            long systemTimeoutMs = getSystemScreenOffTimeoutMs();
-            if (systemTimeoutMs < 0L) {
-                // If the setting cannot be read, retain the existing safe behavior.
-                keepAwake = true;
-            } else {
-                long selectedDurationMs = minutes > Long.MAX_VALUE / 60_000L
-                        ? Long.MAX_VALUE : minutes * 60_000L;
-                keepAwake = selectedDurationMs > systemTimeoutMs;
+        boolean showOnLockScreen = getBool(
+                "showOnLockScreen", Build.VERSION.SDK_INT >= 26);
+        boolean keepAwake = false;
+        if (!showOnLockScreen) {
+            keepAwake = isScreenLockAdminActive();
+            if (!keepAwake) {
+                long systemTimeoutMs = getSystemScreenOffTimeoutMs();
+                if (systemTimeoutMs < 0L) {
+                    // If the setting cannot be read, retain the existing safe behavior.
+                    keepAwake = true;
+                } else {
+                    long selectedDurationMs = minutes > Long.MAX_VALUE / 60_000L
+                            ? Long.MAX_VALUE : minutes * 60_000L;
+                    keepAwake = selectedDurationMs > systemTimeoutMs;
+                }
             }
         }
 
@@ -1522,9 +1532,11 @@ public class MainActivity extends Activity {
         getWindow().clearFlags(
                 android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-        // Without the optional device-admin permission, only end the screensaver.
-        // Android's configured screen timeout and lock policy remain in control.
-        if (!isScreenLockAdminActive()) {
+        // If showing on the lock screen is enabled, allow Android's normal screen
+        // timeout and keyguard to operate while the activity timer runs in background.
+        // At the selected deadline we only end the screensaver; we do not issue lockNow().
+        if (getBool("showOnLockScreen", Build.VERSION.SDK_INT >= 26)
+                || !isScreenLockAdminActive()) {
             finishAffinity();
             return;
         }
