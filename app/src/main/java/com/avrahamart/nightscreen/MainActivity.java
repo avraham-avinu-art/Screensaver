@@ -183,6 +183,7 @@ public class MainActivity extends Activity {
             getWindow().clearFlags(
                     android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
             applyChargingLaunchFlags(getIntent());
+            applyShowOnLockScreenPreference();
             hideSystemUi();
             buildUi();
             applySettings();
@@ -199,6 +200,7 @@ public class MainActivity extends Activity {
         setIntent(intent);
         if (intent != null && intent.getBooleanExtra(EXTRA_OPENED_BY_CHARGER, false)) {
             applyChargingLaunchFlags(intent);
+            applyShowOnLockScreenPreference();
             hideSystemUi();
             scheduleAutoOff(true);
             showSettingsButtonForThreeSeconds();
@@ -213,13 +215,29 @@ public class MainActivity extends Activity {
         if (intent == null || !intent.getBooleanExtra(EXTRA_OPENED_BY_CHARGER, false)) return;
         openedByCharger = true;
         if (Build.VERSION.SDK_INT >= 27) {
-            setShowWhenLocked(true);
             setTurnScreenOn(true);
         }
         getWindow().addFlags(
                 android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
-                        | android.view.WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
-                        | android.view.WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED);
+                        | android.view.WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON);
+    }
+
+    /**
+     * Matches Android's "Show on lock screen" behavior: let this activity remain
+     * visible above the keyguard while preserving the device's normal lock and
+     * screen-timeout policy. This does not keep the display awake by itself.
+     */
+    private void applyShowOnLockScreenPreference() {
+        boolean enabled = getBool("showOnLockScreen", Build.VERSION.SDK_INT >= 26);
+        if (Build.VERSION.SDK_INT >= 27) {
+            setShowWhenLocked(enabled);
+        } else if (enabled) {
+            getWindow().addFlags(
+                    android.view.WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED);
+        } else {
+            getWindow().clearFlags(
+                    android.view.WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED);
+        }
     }
 
     @Override
@@ -231,6 +249,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        applyShowOnLockScreenPreference();
         try {
             if (settingsDialogOpen) {
                 String activeDuration = getString("screenSaverDuration", "0");
