@@ -678,7 +678,7 @@ public class SettingsActivity extends Activity {
         if (Build.VERSION.SDK_INT < 29 || Settings.canDrawOverlays(this)) return;
 
         Toast.makeText(this,
-                "כדי לאפשר הפעלה אוטומטית בנעילת המכשיר, אפשר במסך הבא לשומר מסך את ההרשאה \"הצגה מעל אפליקציות אחרות\".",
+                "כדי לאפשר הפעלה אוטומטית בנעילה, אפשר במסך הבא לשומר מסך את ההרשאה \"הצגה מעל אפליקציות אחרות\".",
                 Toast.LENGTH_LONG).show();
         if (!openOverlayPermissionSettings()) {
             prefs.edit().putBoolean("autoStartOnLockOverlayPermissionPending", false)

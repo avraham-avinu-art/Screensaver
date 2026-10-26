@@ -117,11 +117,10 @@ public final class LockScreenMonitorService extends Service {
                 .setOnlyAlertOnce(true)
                 .setShowWhen(false)
                 .setVisibility(Notification.VISIBILITY_SECRET);
-        if (Build.VERSION.SDK_INT >= 26) {
-            builder.setSilent(true);
-        } else {
-            builder.setPriority(Notification.PRIORITY_MIN);
-        }
+        builder.setPriority(Notification.PRIORITY_MIN)
+                .setSound(null)
+                .setVibrate(new long[0])
+                .setDefaults(0);
         return builder.build();
     }
 

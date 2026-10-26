@@ -6,8 +6,8 @@ import android.content.IntentFilter;
 import android.os.Build;
 
 /**
- * Registers power and screen-lock monitoring while the app process is alive.
- * ACTION_SCREEN_OFF and ACTION_USER_PRESENT must be registered at runtime.
+ * Keeps the existing charger-triggered launch receiver available while the
+ * application process is alive. Lock-state monitoring belongs to the foreground service.
  */
 public final class NightScreenApplication extends Application {
     private AutoStartOnPowerReceiver chargerReceiver;
