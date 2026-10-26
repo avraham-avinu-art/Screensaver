@@ -191,9 +191,9 @@ public class SettingsActivity extends Activity {
 
         LinearLayout charging = addCard(content, "שומר מסך בזמן טעינה");
         addCheck(charging, "הפעלה אוטומטית בטעינה", "autoStartOnCharge", false);
+        addAutoStartDiagnosticStatus(charging);
         addCheck(charging, "ללא כיבוי בטעינה", "noShutdownWhileCharging", false);
         addCheck(charging, "הצגת אחוז הסוללה", "showBatteryPercent", false);
-        addAutoStartDiagnosticStatus(charging);
 
         LinearLayout font = addCard(content, "גופן");
         addColorChoices(font, "צבע",
@@ -606,15 +606,21 @@ public class SettingsActivity extends Activity {
     }
 
     private void addAutoStartDiagnosticStatus(LinearLayout parent) {
-        autoStartDiagnosticStatus = textView("", 13, MUTED);
+        autoStartDiagnosticStatus = textView("", 14, ON_SURFACE);
         autoStartDiagnosticStatus.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         autoStartDiagnosticStatus.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
         autoStartDiagnosticStatus.setTextDirection(View.TEXT_DIRECTION_RTL);
-        autoStartDiagnosticStatus.setLineSpacing(dp(1), 1f);
-        autoStartDiagnosticStatus.setPadding(dp(2), dp(2), dp(2), dp(2));
+        autoStartDiagnosticStatus.setLineSpacing(dp(2), 1f);
+        autoStartDiagnosticStatus.setPadding(dp(9), dp(7), dp(9), dp(7));
+        autoStartDiagnosticStatus.setMinHeight(dp(44));
+        GradientDrawable statusBackground = new GradientDrawable();
+        statusBackground.setColor(CONTROL_SURFACE);
+        statusBackground.setCornerRadius(dp(10));
+        statusBackground.setStroke(dp(1), OUTLINE);
+        autoStartDiagnosticStatus.setBackground(statusBackground);
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, -2);
-        params.topMargin = dp(1);
-        params.bottomMargin = dp(4);
+        params.topMargin = dp(2);
+        params.bottomMargin = dp(9);
         parent.addView(autoStartDiagnosticStatus, params);
         updateAutoStartDiagnosticStatus();
     }
@@ -641,8 +647,8 @@ public class SettingsActivity extends Activity {
                     + status.substring("launch_error:".length()) + ").";
             autoStartDiagnosticStatus.setTextColor(Color.rgb(255, 164, 130));
         } else {
-            message = "בדיקת הפעלה אחרונה: עדיין לא נרשם ניסיון. כשהמתג מופעל, נתק את המטען וחבר אותו מחדש, ואז חזור למסך ההגדרות.";
-            autoStartDiagnosticStatus.setTextColor(MUTED);
+            message = "בדיקת הפעלה אחרונה: עדיין לא נרשם ניסיון. הפעל את המתג, נתק את המטען וחבר אותו מחדש.";
+            autoStartDiagnosticStatus.setTextColor(ACCENT);
         }
         autoStartDiagnosticStatus.setText(message);
         autoStartDiagnosticStatus.setVisibility(View.VISIBLE);
