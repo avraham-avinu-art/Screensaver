@@ -15,7 +15,8 @@ public final class LockScreenServiceRestartReceiver extends BroadcastReceiver {
         if (!prefs.getBoolean("autoStartOnDeviceLock", false)) return;
         if (Build.VERSION.SDK_INT >= 29 && !Settings.canDrawOverlays(context)) return;
 
-        Intent service = new Intent(context, LockScreenMonitorService.class);
+        Intent service = new Intent(context, LockScreenMonitorService.class)
+                .putExtra(LockScreenMonitorService.EXTRA_MONITOR_ENABLED, true);
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 context.startForegroundService(service);

@@ -51,6 +51,7 @@
 
         <service
             android:name=".LockScreenMonitorService"
+            android:process=":lockmonitor"
             android:label="שומר מסך"
             android:exported="false"
             android:stopWithTask="false"

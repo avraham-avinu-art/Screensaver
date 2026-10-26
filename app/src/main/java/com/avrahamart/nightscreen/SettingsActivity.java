@@ -750,7 +750,7 @@ public class SettingsActivity extends Activity {
         if ("clockDateSize".equals(key)) return "clock-size";
         if ("clockDatePosition".equals(key)) return "position-arrows";
         if ("showDetails".equals(key)) return "artist";
-        if ("showProgress".equals(key)) return "progress";
+        if ("showProgress".equals(key)) return "progress-time-digital";
         if ("playerSize".equals(key)) return "player-size-resize";
         if ("playerPosition".equals(key)) return "player-position-panel";
         if ("frameEnabled".equals(key)) return "frame-dashed";
@@ -1831,6 +1831,22 @@ public class SettingsActivity extends Activity {
                     canvas.drawArc(new RectF(2f, 13f, 16f, 24f), 180f, 180f, false, paint);
                     canvas.drawLine(17f, 6f, 22f, 6f, paint);
                     canvas.drawLine(17f, 11f, 22f, 11f, paint);
+                    break;
+                case "progress-time-digital":
+                    // One icon: a digital time readout with the playback progress line integrated below.
+                    canvas.drawRoundRect(new RectF(2.5f, 2.5f, 21.5f, 21.5f), 2.2f, 2.2f, paint);
+                    paint.setStyle(Paint.Style.FILL);
+                    paint.setTextSize(6.5f);
+                    paint.setTextAlign(Paint.Align.CENTER);
+                    paint.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+                    canvas.drawText("1:23", 12f, 12.1f, paint);
+                    paint.setTypeface(Typeface.DEFAULT);
+                    paint.setTextAlign(Paint.Align.LEFT);
+                    paint.setStyle(Paint.Style.STROKE);
+                    paint.setStrokeWidth(1.15f);
+                    canvas.drawLine(5f, 16.9f, 19f, 16.9f, paint);
+                    paint.setStrokeWidth(2.25f);
+                    canvas.drawLine(5f, 16.9f, 12f, 16.9f, paint);
                     break;
                 case "progress":
                     canvas.drawLine(3f, 12f, 21f, 12f, paint);

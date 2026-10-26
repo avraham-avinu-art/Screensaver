@@ -1,5 +1,6 @@
 package com.avrahamart.nightscreen;
 
+import android.app.ActivityManager;
 import android.app.KeyguardManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -41,7 +42,7 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
         }
 
         if (Intent.ACTION_SCREEN_OFF.equals(action)
-                && prefs.getBoolean("autoStartOnDeviceLock", false)
+                && LockScreenMonitorService.isLockMonitoringActive()
                 && canLaunchFromBackground(context)) {
             // Let Android finish applying the keyguard state before checking it.
             PowerManager powerManager =
@@ -75,10 +76,9 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
 
     private void launchOnDeviceLockIfStillLocked(Context context) {
         SharedPreferences prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE);
-        if (!prefs.getBoolean("autoStartOnDeviceLock", false)) return;
+        if (!LockScreenMonitorService.isLockMonitoringActive()) return;
         if (!prefs.getBoolean("showOnLockScreen", Build.VERSION.SDK_INT >= 26)) return;
-        if (MainActivity.isMainActivityResumed()
-                || MainActivity.wasMainActivityPausedByDeviceLock()) return;
+        if (isMainActivityVisible(context)) return;
 
         PowerManager powerManager =
                 (PowerManager) context.getSystemService(Context.POWER_SERVICE);
@@ -99,6 +99,26 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
         } catch (Throwable ignored) {
             // Background activity launch restrictions vary by Android build.
         }
+    }
+
+    private boolean isMainActivityVisible(Context context) {
+        ActivityManager activityManager =
+                (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+        if (activityManager == null) return false;
+        try {
+            java.util.List<ActivityManager.RunningAppProcessInfo> processes =
+                    activityManager.getRunningAppProcesses();
+            if (processes == null) return false;
+            for (ActivityManager.RunningAppProcessInfo process : processes) {
+                if (context.getPackageName().equals(process.processName)) {
+                    // Treat a visible, resumed, or top-sleeping Activity as already present.
+                    return process.importance
+                            <= ActivityManager.RunningAppProcessInfo.IMPORTANCE_VISIBLE;
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        return false;
     }
 
     private boolean canLaunchFromBackground(Context context) {

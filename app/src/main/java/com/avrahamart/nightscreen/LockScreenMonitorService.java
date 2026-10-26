@@ -23,8 +23,14 @@ public final class LockScreenMonitorService extends Service {
     private static final int NOTIFICATION_ID = 6721;
     private static final int RESTART_PENDING_INTENT_ID = 6722;
     private static final long RESTART_DELAY_MS = 2_000L;
+    static final String EXTRA_MONITOR_ENABLED = "com.avrahamart.nightscreen.EXTRA_MONITOR_ENABLED";
+    private static volatile boolean lockMonitoringActive = false;
     private boolean receiverRegistered = false;
     private AutoStartOnPowerReceiver lockReceiver;
+
+    static boolean isLockMonitoringActive() {
+        return lockMonitoringActive;
+    }
 
     /**
      * Starts monitoring only while the user has enabled automatic lock activation
@@ -35,7 +41,8 @@ public final class LockScreenMonitorService extends Service {
         SharedPreferences prefs = appContext.getSharedPreferences("settings", Context.MODE_PRIVATE);
         boolean enabled = prefs.getBoolean("autoStartOnDeviceLock", false);
         if (enabled && (Build.VERSION.SDK_INT < 29 || Settings.canDrawOverlays(appContext))) {
-            Intent intent = new Intent(appContext, LockScreenMonitorService.class);
+            Intent intent = new Intent(appContext, LockScreenMonitorService.class)
+                    .putExtra(EXTRA_MONITOR_ENABLED, true);
             try {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     appContext.startForegroundService(intent);
@@ -76,8 +83,11 @@ public final class LockScreenMonitorService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         SharedPreferences prefs = getSharedPreferences("settings", MODE_PRIVATE);
-        if (!prefs.getBoolean("autoStartOnDeviceLock", false)
-                || (Build.VERSION.SDK_INT >= 29 && !Settings.canDrawOverlays(this))) {
+        boolean enabled = intent != null && intent.hasExtra(EXTRA_MONITOR_ENABLED)
+                ? intent.getBooleanExtra(EXTRA_MONITOR_ENABLED, false)
+                : prefs.getBoolean("autoStartOnDeviceLock", false);
+        if (!enabled || (Build.VERSION.SDK_INT >= 29 && !Settings.canDrawOverlays(this))) {
+            lockMonitoringActive = false;
             stopSelf(startId);
             return START_NOT_STICKY;
         }
@@ -91,7 +101,9 @@ public final class LockScreenMonitorService extends Service {
             } else {
                 startForeground(NOTIFICATION_ID, notification);
             }
+            lockMonitoringActive = true;
         } catch (Throwable ex) {
+            lockMonitoringActive = false;
             stopSelf(startId);
             return START_NOT_STICKY;
         }
@@ -120,7 +132,7 @@ public final class LockScreenMonitorService extends Service {
                 ? new Notification.Builder(this, CHANNEL_ID)
                 : new Notification.Builder(this);
         builder.setSmallIcon(R.drawable.ic_notification_transparent)
-                .setContentTitle("הפעלה אוטומטית של השומר מסך בנעילת המכשיר")
+                .setContentTitle("הפעלה אוטומטית בנעילת המכשיר")
                 .setOngoing(true)
                 .setOnlyAlertOnce(true)
                 .setShowWhen(false)
@@ -142,6 +154,7 @@ public final class LockScreenMonitorService extends Service {
 
     @Override
     public void onDestroy() {
+        lockMonitoringActive = false;
         // Do not schedule a restart when the user explicitly turns the feature off.
         scheduleRestartIfEnabled();
         if (receiverRegistered && lockReceiver != null) {
