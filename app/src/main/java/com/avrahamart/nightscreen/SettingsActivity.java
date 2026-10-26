@@ -183,6 +183,8 @@ public class SettingsActivity extends Activity {
         addCheck(display, "תאריך עברי", "showHebrew", true);
         addCheck(display, "תאריך לועזי", "showGregorian", true);
         addCheck(display, "הצגת הנגן", "showPlayer", false);
+        addCheck(display, "הצגה במסך הנעילה", "showOnLockScreen",
+                Build.VERSION.SDK_INT >= 26);
         addDiscreteSlider(display, "זמן פעילות",
                 new String[]{"לפי המכשיר", "דקה אחת", "חמש דקות", "ללא כיבוי"},
                 new String[]{"device", "1", "5", "0"}, "screenSaverDuration");
