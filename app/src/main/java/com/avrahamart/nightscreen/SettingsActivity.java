@@ -30,6 +30,7 @@ import android.widget.FrameLayout;
 import android.widget.CompoundButton;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
+import android.widget.PopupMenu;
 import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.Switch;
@@ -97,8 +98,10 @@ public class SettingsActivity extends Activity {
 
         LinearLayout header = new LinearLayout(this);
         header.setOrientation(LinearLayout.HORIZONTAL);
-        header.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        header.setGravity(Gravity.CENTER);
+        // LTR child order pins the overflow button to the physical left and keeps
+        // the title centered with an equal-width spacer on the right.
+        header.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+        header.setGravity(Gravity.CENTER_VERTICAL);
         header.setPadding(dp(2), dp(7), dp(2), dp(12));
 
         LinearLayout titleBlock = new LinearLayout(this);
@@ -121,7 +124,20 @@ public class SettingsActivity extends Activity {
         subtitle.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
         titleBlock.addView(subtitle, new LinearLayout.LayoutParams(-1, -2));
 
-        header.addView(titleBlock, new LinearLayout.LayoutParams(-1, -2));
+        FrameLayout overflowButton = new FrameLayout(this);
+        overflowButton.setContentDescription("אפשרויות");
+        overflowButton.setClickable(true);
+        overflowButton.setFocusable(true);
+        overflowButton.setBackground(roundOutline(CARD_SURFACE, dp(12), CARD_OUTLINE));
+        GraphicIcon overflowGlyph = new GraphicIcon(this, "more-vertical", ACCENT);
+        overflowButton.addView(overflowGlyph,
+                new FrameLayout.LayoutParams(dp(22), dp(22), Gravity.CENTER));
+        header.addView(overflowButton, new LinearLayout.LayoutParams(dp(40), dp(40)));
+        overflowButton.setOnClickListener(v -> showOverflowMenu(overflowButton));
+
+        header.addView(titleBlock, new LinearLayout.LayoutParams(0, -2, 1f));
+        View headerSpacer = new View(this);
+        header.addView(headerSpacer, new LinearLayout.LayoutParams(dp(40), dp(40)));
 
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(false);
@@ -168,6 +184,19 @@ public class SettingsActivity extends Activity {
         setContentView(root);
     }
 
+    private void showOverflowMenu(View anchor) {
+        PopupMenu menu = new PopupMenu(this, anchor);
+        menu.getMenu().add("הרשאות");
+        menu.setOnMenuItemClickListener(item -> {
+            if ("הרשאות".contentEquals(item.getTitle())) {
+                startActivity(new Intent(this, PermissionsActivity.class));
+                return true;
+            }
+            return false;
+        });
+        menu.show();
+    }
+
     @Override
     protected void onResume() {
         super.onResume();
@@ -176,9 +205,6 @@ public class SettingsActivity extends Activity {
             handleChargerPermissionResult();
             handleLockStartPermissionResult();
             LockScreenMonitorService.sync(this);
-            updateNotificationAccessCardVisibility();
-            updateOverlayPermissionCardVisibility();
-            updateScreenLockAdminCard();
         }
     }
 
@@ -255,50 +281,8 @@ public class SettingsActivity extends Activity {
                 new String[]{"ישר", "עדין", "מעוגל"},
                 new String[]{"0", "10", "20"}, "frameRadius");
 
-        if (!hasNotificationAccess()) {
-            notificationAccessCard = addNotificationAccessCard(content);
-        }
+        // Permission cards are presented on the dedicated PermissionsActivity.
 
-        // Optional device-admin card remains the final settings card.
-        screenLockAdminCard = addCard(content, "הרשאת מנהל מכשיר");
-        setPermissionCardHeadingTypeface(screenLockAdminCard);
-        screenLockAdminCard.setPadding(dp(13), dp(10), dp(13), dp(14));
-        TextView explanation = textView(
-                "ההרשאה מאפשרת לנעול את המכשיר בכל מצב בסיום הזמן שנבחר.\n"
-                + "ללא ההרשאה, כיבוי המסך לא יהיה לפני הזמן המוגדר במכשיר.",
-                15, ON_SURFACE);
-        explanation.setGravity(Gravity.CENTER);
-        explanation.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-        explanation.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
-        explanation.setTextDirection(View.TEXT_DIRECTION_RTL);
-        explanation.setLineSpacing(dp(2), 1f);
-        explanation.setPadding(dp(2), 0, dp(2), 0);
-        LinearLayout.LayoutParams explanationParams =
-                new LinearLayout.LayoutParams(-1, -2);
-        explanationParams.topMargin = dp(4);
-        explanationParams.bottomMargin = dp(4);
-        screenLockAdminCard.addView(explanation, explanationParams);
-
-        // Match the overlay-permission status typography, color palette and spacing.
-        screenLockAdminStatus = textView("", 14, MUTED);
-        screenLockAdminStatus.setGravity(Gravity.CENTER);
-        screenLockAdminStatus.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-        screenLockAdminStatus.setTextDirection(View.TEXT_DIRECTION_RTL);
-        screenLockAdminStatus.setLineSpacing(dp(1), 1f);
-        LinearLayout.LayoutParams adminStatusParams =
-                new LinearLayout.LayoutParams(-1, -2);
-        adminStatusParams.topMargin = dp(7);
-        screenLockAdminCard.addView(screenLockAdminStatus, adminStatusParams);
-
-        screenLockAdminButton = makeActionButton("הפעל הרשאת מנהל מכשיר");
-        LinearLayout.LayoutParams adminButtonParams =
-                new LinearLayout.LayoutParams(-2, dp(46));
-        adminButtonParams.gravity = Gravity.CENTER_HORIZONTAL;
-        adminButtonParams.topMargin = dp(7);
-        screenLockAdminCard.addView(screenLockAdminButton, adminButtonParams);
-        screenLockAdminButton.setOnClickListener(v -> requestScreenLockAdmin());
-        updateScreenLockAdminCard();
-        updateOverlayPermissionCardVisibility();
     }
 
     private LinearLayout addCard(LinearLayout parent, String title) {
@@ -352,7 +336,7 @@ public class SettingsActivity extends Activity {
         // LTR child order places the switch at the left and the Hebrew label at the right.
         row.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         row.setTextDirection(View.TEXT_DIRECTION_RTL);
-        row.setPadding(dp(2), dp(2), dp(2), dp(2));
+        row.setPadding(dp(6), dp(2), dp(6), dp(2));
 
         TextView text = textView(label, 16, ON_SURFACE);
         text.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
@@ -473,10 +457,10 @@ public class SettingsActivity extends Activity {
         LinearLayout block = new LinearLayout(this);
         block.setOrientation(LinearLayout.VERTICAL);
         block.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        block.setPadding(dp(2), dp(2), dp(2), dp(3));
+        block.setPadding(dp(6), dp(2), dp(6), dp(3));
 
         final int initial = selectedIndex(key, values);
-        TextView chosenValue = textView(names[initial], 14, ACCENT);
+        TextView chosenValue = textView(names[initial], 16, ACCENT);
         chosenValue.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
         chosenValue.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
         chosenValue.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
@@ -488,6 +472,8 @@ public class SettingsActivity extends Activity {
         headingRow.setGravity(Gravity.CENTER_VERTICAL);
         LinearLayout.LayoutParams valueParams =
                 new LinearLayout.LayoutParams(-2, dp(30));
+        // Track starts after 8dp outer margin and 12dp SeekBar inner padding.
+        valueParams.leftMargin = dp(20);
         valueParams.rightMargin = dp(8);
         headingRow.addView(chosenValue, valueParams);
 
@@ -551,7 +537,7 @@ public class SettingsActivity extends Activity {
         LinearLayout block = new LinearLayout(this);
         block.setOrientation(LinearLayout.VERTICAL);
         block.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        block.setPadding(dp(2), dp(2), dp(2), dp(5));
+        block.setPadding(dp(6), dp(2), dp(6), dp(5));
 
         LinearLayout headingRow = new LinearLayout(this);
         headingRow.setOrientation(LinearLayout.HORIZONTAL);
@@ -793,7 +779,7 @@ public class SettingsActivity extends Activity {
         row.setGravity(Gravity.CENTER_VERTICAL);
         row.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         row.setTextDirection(View.TEXT_DIRECTION_RTL);
-        row.setPadding(dp(2), dp(2), dp(2), dp(4));
+        row.setPadding(dp(6), dp(2), dp(6), dp(4));
 
         TextView labelView = textView(label, 16, ON_SURFACE);
         labelView.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
@@ -1069,22 +1055,7 @@ public class SettingsActivity extends Activity {
     }
 
     private void updateOverlayPermissionCardVisibility() {
-        boolean relevant = Build.VERSION.SDK_INT >= 29;
-
-        if (!relevant) {
-            removeCard(overlayPermissionCard);
-            overlayPermissionCard = null;
-            overlayPermissionStatus = null;
-            overlayPermissionButton = null;
-            positionPermissionCards();
-            return;
-        }
-
-        if (overlayPermissionCard == null && content != null) {
-            overlayPermissionCard = addOverlayPermissionCard(content);
-        }
-        updateOverlayPermissionCardState();
-        positionPermissionCards();
+        // Overlay permission management now lives in PermissionsActivity.
     }
 
     private void updateOverlayPermissionCardState() {
@@ -1126,13 +1097,7 @@ public class SettingsActivity extends Activity {
     }
 
     private void updateNotificationAccessCardVisibility() {
-        if (hasNotificationAccess()) {
-            removeCard(notificationAccessCard);
-            notificationAccessCard = null;
-        } else if (notificationAccessCard == null && content != null) {
-            notificationAccessCard = addNotificationAccessCard(content);
-        }
-        positionPermissionCards();
+        // Notification access management now lives in PermissionsActivity.
     }
 
     private void positionPermissionCards() {
@@ -1548,6 +1513,12 @@ public class SettingsActivity extends Activity {
                     path.lineTo(21f, 21f);
                     path.lineTo(21f, 16f);
                     canvas.drawPath(path, paint);
+                    break;
+                case "more-vertical":
+                    paint.setStyle(Paint.Style.FILL);
+                    canvas.drawCircle(12f, 5f, 1.8f, paint);
+                    canvas.drawCircle(12f, 12f, 1.8f, paint);
+                    canvas.drawCircle(12f, 19f, 1.8f, paint);
                     break;
                 case "monitor":
                     canvas.drawRoundRect(new RectF(2.5f, 3.5f, 21.5f, 17f), 1.8f, 1.8f, paint);

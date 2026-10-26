@@ -17,6 +17,11 @@
             android:exported="false"
             android:screenOrientation="unspecified" />
         <activity
+            android:name=".PermissionsActivity"
+            android:label="הרשאות"
+            android:exported="false"
+            android:screenOrientation="unspecified" />
+        <activity
             android:name=".MainActivity"
             android:theme="@style/AppTheme.Fullscreen"
             android:exported="true">

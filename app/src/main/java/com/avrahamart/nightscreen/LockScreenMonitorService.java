@@ -19,7 +19,7 @@ import android.provider.Settings;
 public final class LockScreenMonitorService extends Service {
     // v2 enforces the minimum supported FGS notification importance; Android will
     // retain the old channel's importance otherwise even after its settings change.
-    private static final String CHANNEL_ID = "screensaver_lock_monitor_v2";
+    private static final String CHANNEL_ID = "screensaver_lock_monitor_v3";
     private static final int NOTIFICATION_ID = 6721;
     private static final int RESTART_PENDING_INTENT_ID = 6722;
     private static final long RESTART_DELAY_MS = 2_000L;
@@ -116,10 +116,10 @@ public final class LockScreenMonitorService extends Service {
                 (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         if (manager == null) return;
         NotificationChannel channel = new NotificationChannel(
-                CHANNEL_ID, "שירות רקע", NotificationManager.IMPORTANCE_LOW);
-        channel.setDescription("שירות להפעלה אוטומטית בנעילת המכשיר");
+                CHANNEL_ID, "הפעלה אוטומטית בנעילת המכשיר", NotificationManager.IMPORTANCE_LOW);
+        channel.setDescription("התראה מתמשכת לשירות ההפעלה האוטומטית בנעילת המכשיר");
         channel.setShowBadge(false);
-        channel.setLockscreenVisibility(Notification.VISIBILITY_SECRET);
+        channel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
         channel.enableLights(false);
         channel.enableVibration(false);
         channel.setSound(null, null);
@@ -131,12 +131,26 @@ public final class LockScreenMonitorService extends Service {
         Notification.Builder builder = Build.VERSION.SDK_INT >= 26
                 ? new Notification.Builder(this, CHANNEL_ID)
                 : new Notification.Builder(this);
+        Intent launchIntent = new Intent(this, MainActivity.class);
+        launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                | Intent.FLAG_ACTIVITY_CLEAR_TOP
+                | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        int pendingFlags = PendingIntent.FLAG_UPDATE_CURRENT;
+        if (Build.VERSION.SDK_INT >= 23) pendingFlags |= PendingIntent.FLAG_IMMUTABLE;
+        PendingIntent contentIntent = PendingIntent.getActivity(
+                this, NOTIFICATION_ID, launchIntent, pendingFlags);
+
+        // KeyMapper-style notification semantics: ongoing and silent, with an action
+        // that opens the app; it is not tied to the settings Activity lifecycle.
         builder.setSmallIcon(R.drawable.ic_notification_transparent)
                 .setContentTitle("הפעלה אוטומטית בנעילת המכשיר")
+                .setContentText("שירות ההפעלה האוטומטית פעיל.")
+                .setContentIntent(contentIntent)
                 .setOngoing(true)
                 .setOnlyAlertOnce(true)
                 .setShowWhen(false)
-                .setVisibility(Notification.VISIBILITY_SECRET);
+                .setCategory(Notification.CATEGORY_SERVICE)
+                .setVisibility(Notification.VISIBILITY_PUBLIC);
         builder.setPriority(Notification.PRIORITY_LOW)
                 .setSound(null)
                 .setVibrate(new long[0])
