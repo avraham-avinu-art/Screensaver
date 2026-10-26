@@ -59,6 +59,8 @@ public class SettingsActivity extends Activity {
     private Button overlayPermissionButton;
     private Switch showPlayerToggle;
     private Switch autoStartOnChargeToggle;
+    private Switch autoStartOnDeviceLockToggle;
+    private Switch showOnLockScreenToggle;
     private LinearLayout screenLockAdminCard;
     private TextView screenLockAdminStatus;
     private Button screenLockAdminButton;
@@ -172,6 +174,7 @@ public class SettingsActivity extends Activity {
         if (content != null) {
             handlePlayerPermissionResult();
             handleChargerPermissionResult();
+            handleLockStartPermissionResult();
             updateNotificationAccessCardVisibility();
             updateOverlayPermissionCardVisibility();
             updateScreenLockAdminCard();
@@ -185,6 +188,7 @@ public class SettingsActivity extends Activity {
         addCheck(display, "הצגת הנגן", "showPlayer", false);
         addCheck(display, "הצגה במסך הנעילה", "showOnLockScreen",
                 Build.VERSION.SDK_INT >= 26);
+        addCheck(display, "הפעלה אוטומטית בנעילת המכשיר", "autoStartOnDeviceLock", false);
         addDiscreteSlider(display, "זמן פעילות",
                 new String[]{"לפי המכשיר", "דקה אחת", "חמש דקות", "ללא כיבוי"},
                 new String[]{"device", "1", "5", "0"}, "screenSaverDuration");
@@ -366,6 +370,8 @@ public class SettingsActivity extends Activity {
         toggle.setContentDescription(label);
         if ("showPlayer".equals(key)) showPlayerToggle = toggle;
         if ("autoStartOnCharge".equals(key)) autoStartOnChargeToggle = toggle;
+        if ("autoStartOnDeviceLock".equals(key)) autoStartOnDeviceLockToggle = toggle;
+        if ("showOnLockScreen".equals(key)) showOnLockScreenToggle = toggle;
         toggle.setChecked(getBool(key, defaultValue));
         if (Build.VERSION.SDK_INT >= 21) {
             toggle.setThumbTintList(new ColorStateList(
@@ -407,6 +413,36 @@ public class SettingsActivity extends Activity {
                             .apply();
                 }
                 updateOverlayPermissionCardVisibility();
+            } else if ("autoStartOnDeviceLock".equals(key)) {
+                if (checked && !getBool("showOnLockScreen", Build.VERSION.SDK_INT >= 26)) {
+                    // Lock-triggered activation must be allowed to draw above the keyguard.
+                    prefs.edit().putBoolean("showOnLockScreen", true).apply();
+                    if (showOnLockScreenToggle != null && !showOnLockScreenToggle.isChecked()) {
+                        showOnLockScreenToggle.setChecked(true);
+                    }
+                    Toast.makeText(this,
+                            "כדי להציג את השומר מסך בעת נעילה, הופעלה גם האפשרות \"הצגה במסך הנעילה\".",
+                            Toast.LENGTH_LONG).show();
+                }
+                if (checked && Build.VERSION.SDK_INT >= 29 && !Settings.canDrawOverlays(this)) {
+                    prefs.edit().putBoolean("autoStartOnLockOverlayPermissionPending", true).apply();
+                    requestLockStartOverlayPermission();
+                } else {
+                    prefs.edit().putBoolean("autoStartOnLockOverlayPermissionPending", false).apply();
+                }
+                if (!checked) {
+                    prefs.edit().putBoolean("autoStartOnLockOverlayPermissionPending", false).apply();
+                }
+            } else if ("showOnLockScreen".equals(key) && !checked
+                    && getBool("autoStartOnDeviceLock", false)) {
+                prefs.edit().putBoolean("autoStartOnDeviceLock", false)
+                        .putBoolean("autoStartOnLockOverlayPermissionPending", false).apply();
+                if (autoStartOnDeviceLockToggle != null && autoStartOnDeviceLockToggle.isChecked()) {
+                    autoStartOnDeviceLockToggle.setChecked(false);
+                }
+                Toast.makeText(this,
+                        "ההפעלה האוטומטית בנעילה כובתה מפני שהצגה במסך הנעילה אינה פעילה.",
+                        Toast.LENGTH_LONG).show();
             } else if ("showPlayer".equals(key)) {
                 if (checked && !hasNotificationAccess()) {
                     prefs.edit().putBoolean("showPlayerPermissionPending", true).apply();
@@ -632,6 +668,36 @@ public class SettingsActivity extends Activity {
                 Toast.LENGTH_LONG).show();
     }
 
+    private void requestLockStartOverlayPermission() {
+        if (Build.VERSION.SDK_INT < 29 || Settings.canDrawOverlays(this)) return;
+
+        Toast.makeText(this,
+                "כדי לאפשר הפעלה אוטומטית בנעילת המכשיר, אפשר במסך הבא לשומר מסך את ההרשאה \"הצגה מעל אפליקציות אחרות\".",
+                Toast.LENGTH_LONG).show();
+        if (!openOverlayPermissionSettings()) {
+            prefs.edit().putBoolean("autoStartOnLockOverlayPermissionPending", false)
+                    .putBoolean("autoStartOnDeviceLock", false).apply();
+            if (autoStartOnDeviceLockToggle != null) {
+                autoStartOnDeviceLockToggle.setChecked(false);
+            }
+        }
+    }
+
+    private void handleLockStartPermissionResult() {
+        if (!prefs.getBoolean("autoStartOnLockOverlayPermissionPending", false)) return;
+
+        prefs.edit().putBoolean("autoStartOnLockOverlayPermissionPending", false).apply();
+        if (Settings.canDrawOverlays(this)) return;
+
+        prefs.edit().putBoolean("autoStartOnDeviceLock", false).apply();
+        if (autoStartOnDeviceLockToggle != null && autoStartOnDeviceLockToggle.isChecked()) {
+            autoStartOnDeviceLockToggle.setChecked(false);
+        }
+        Toast.makeText(this,
+                "ההפעלה האוטומטית בנעילת המכשיר נשארה כבויה מפני שלא ניתנה הרשאת \"הצגה מעל אפליקציות אחרות\".",
+                Toast.LENGTH_LONG).show();
+    }
+
     private void persistOption(String key, String value) {
         try {
             SharedPreferences.Editor editor = prefs.edit();
@@ -668,6 +734,7 @@ public class SettingsActivity extends Activity {
         if ("showPlayer".equals(key)) return "media-toggle";
         if ("screenSaverDuration".equals(key)) return "duration";
         if ("autoStartOnCharge".equals(key)) return "auto-start";
+        if ("autoStartOnDeviceLock".equals(key)) return "lock";
         if ("noShutdownWhileCharging".equals(key)) return "android-charge";
         if ("showBatteryPercent".equals(key)) return "battery-percent";
         if ("fontColor".equals(key)) return "text-color";
@@ -1019,12 +1086,13 @@ public class SettingsActivity extends Activity {
                 || overlayPermissionButton == null) return;
 
         boolean granted = Settings.canDrawOverlays(this);
-        boolean autoStartEnabled = getBool("autoStartOnCharge", false);
+        boolean autoStartEnabled = getBool("autoStartOnCharge", false)
+                || getBool("autoStartOnDeviceLock", false);
         overlayPermissionStatus.setText(granted
                 ? (autoStartEnabled
-                    ? "ההרשאה פעילה — ההפעלה האוטומטית בטעינה זמינה."
-                    : "ההרשאה ניתנה, אך ההפעלה האוטומטית בטעינה כבויה.")
-                : "נדרשת הרשאה להפעלה אוטומטית בטעינה.");
+                    ? "ההרשאה פעילה — ההפעלה האוטומטית זמינה."
+                    : "ההרשאה ניתנה, אך ההפעלה האוטומטית כבויה.")
+                : "נדרשת הרשאה להפעלה אוטומטית.");
         overlayPermissionStatus.setTextColor(granted ? ACCENT : MUTED);
         overlayPermissionButton.setText(granted
                 ? "ההרשאה פעילה"
@@ -1412,6 +1480,12 @@ public class SettingsActivity extends Activity {
                     canvas.drawPath(path, paint);
                     canvas.drawLine(4f, 18f, 20f, 18f, paint);
                     canvas.drawArc(new RectF(9.5f, 18f, 14.5f, 22f), 0f, 180f, false, paint);
+                    break;
+                case "lock":
+                    canvas.drawRoundRect(new RectF(4.5f, 10f, 19.5f, 21f), 2f, 2f, paint);
+                    canvas.drawArc(new RectF(7f, 3f, 17f, 15f), 180f, 180f, false, paint);
+                    canvas.drawCircle(12f, 15f, 1.2f, paint);
+                    canvas.drawLine(12f, 16f, 12f, 18f, paint);
                     break;
                 case "shield":
                     path.moveTo(12f, 2.5f);

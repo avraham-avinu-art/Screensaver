@@ -57,11 +57,28 @@ import java.util.Locale;
 public class MainActivity extends Activity {
     public static final String EXTRA_OPENED_BY_CHARGER =
             "com.avrahamart.nightscreen.EXTRA_OPENED_BY_CHARGER";
+    public static final String EXTRA_OPENED_BY_DEVICE_LOCK =
+            "com.avrahamart.nightscreen.EXTRA_OPENED_BY_DEVICE_LOCK";
+    private static volatile boolean mainActivityResumed = false;
+    private static volatile boolean mainActivityPausedByDeviceLock = false;
+
+    public static boolean isMainActivityResumed() {
+        return mainActivityResumed;
+    }
+
+    public static boolean wasMainActivityPausedByDeviceLock() {
+        return mainActivityPausedByDeviceLock;
+    }
+
+    public static void clearPausedByDeviceLockState() {
+        mainActivityPausedByDeviceLock = false;
+    }
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Runnable autoOffRunnable = this::exitApplicationAtSelectedTime;
     private boolean screenSleepPending = false;
     private boolean deviceEventsRegistered = false;
     private boolean openedByCharger = false;
+    private boolean openedByDeviceLock = false;
     private boolean bottomSwipeCandidate = false;
     private float bottomSwipeStartX = 0f;
     private float bottomSwipeStartY = 0f;
@@ -183,6 +200,7 @@ public class MainActivity extends Activity {
             getWindow().clearFlags(
                     android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
             applyChargingLaunchFlags(getIntent());
+            applyDeviceLockLaunchFlags(getIntent());
             applyShowOnLockScreenPreference();
             hideSystemUi();
             buildUi();
@@ -198,8 +216,10 @@ public class MainActivity extends Activity {
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         setIntent(intent);
-        if (intent != null && intent.getBooleanExtra(EXTRA_OPENED_BY_CHARGER, false)) {
+        if (intent != null && (intent.getBooleanExtra(EXTRA_OPENED_BY_CHARGER, false)
+                || intent.getBooleanExtra(EXTRA_OPENED_BY_DEVICE_LOCK, false))) {
             applyChargingLaunchFlags(intent);
+            applyDeviceLockLaunchFlags(intent);
             applyShowOnLockScreenPreference();
             hideSystemUi();
             scheduleAutoOff(true);
@@ -214,6 +234,18 @@ public class MainActivity extends Activity {
     private void applyChargingLaunchFlags(Intent intent) {
         if (intent == null || !intent.getBooleanExtra(EXTRA_OPENED_BY_CHARGER, false)) return;
         openedByCharger = true;
+        if (Build.VERSION.SDK_INT >= 27) {
+            setTurnScreenOn(true);
+        }
+        getWindow().addFlags(
+                android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
+                        | android.view.WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON);
+    }
+
+    private void applyDeviceLockLaunchFlags(Intent intent) {
+        if (intent == null
+                || !intent.getBooleanExtra(EXTRA_OPENED_BY_DEVICE_LOCK, false)) return;
+        openedByDeviceLock = true;
         if (Build.VERSION.SDK_INT >= 27) {
             setTurnScreenOn(true);
         }
@@ -249,6 +281,8 @@ public class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        mainActivityResumed = true;
+        mainActivityPausedByDeviceLock = false;
         applyShowOnLockScreenPreference();
         try {
             if (settingsDialogOpen) {
@@ -289,6 +323,11 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onPause() {
+        android.app.KeyguardManager keyguardManager =
+                (android.app.KeyguardManager) getSystemService(KEYGUARD_SERVICE);
+        mainActivityPausedByDeviceLock =
+                keyguardManager != null && keyguardManager.isKeyguardLocked();
+        mainActivityResumed = false;
         handler.removeCallbacks(ticker);
         unregisterActiveSessionsListener();
         detachMediaController();
@@ -1599,10 +1638,10 @@ public class MainActivity extends Activity {
         if (action == android.view.MotionEvent.ACTION_DOWN) {
             if (screenSleepPending) wakeSaverDisplay();
 
-            // When opened automatically on charging, a lock-screen-style upward
+            // When launched automatically by charging or device lock, an upward
             // gesture from the bottom edge dismisses the saver back to the lock screen.
             bottomSwipeCandidate = false;
-            if (openedByCharger) {
+            if (openedByCharger || openedByDeviceLock) {
                 int decorHeight = getWindow().getDecorView().getHeight();
                 if (decorHeight > 0 && event.getY() >= decorHeight - dp(96)) {
                     bottomSwipeCandidate = true;
@@ -1637,7 +1676,7 @@ public class MainActivity extends Activity {
         }
 
         boolean handled = super.dispatchTouchEvent(event);
-        if (exitBySwipe && openedByCharger && !settingsDialogOpen) {
+        if (exitBySwipe && (openedByCharger || openedByDeviceLock) && !settingsDialogOpen) {
             handler.removeCallbacks(autoOffRunnable);
             finishAffinity();
             return true;

@@ -6,9 +6,8 @@ import android.content.IntentFilter;
 import android.os.Build;
 
 /**
- * Registers charger monitoring while the app process is alive.
- * The manifest receiver is retained for cases where Android starts the app
- * process to deliver a charger event.
+ * Registers power and screen-lock monitoring while the app process is alive.
+ * ACTION_SCREEN_OFF and ACTION_USER_PRESENT must be registered at runtime.
  */
 public final class NightScreenApplication extends Application {
     private AutoStartOnPowerReceiver chargerReceiver;
@@ -18,7 +17,10 @@ public final class NightScreenApplication extends Application {
         super.onCreate();
         chargerReceiver = new AutoStartOnPowerReceiver();
 
-        IntentFilter filter = new IntentFilter(Intent.ACTION_POWER_CONNECTED);
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(Intent.ACTION_POWER_CONNECTED);
+        filter.addAction(Intent.ACTION_SCREEN_OFF);
+        filter.addAction(Intent.ACTION_USER_PRESENT);
         try {
             if (Build.VERSION.SDK_INT >= 33) {
                 registerReceiver(chargerReceiver, filter, RECEIVER_EXPORTED);
@@ -26,7 +28,7 @@ public final class NightScreenApplication extends Application {
                 registerReceiver(chargerReceiver, filter);
             }
         } catch (Throwable ignored) {
-            // The manifest receiver remains available as a fallback.
+            // The manifest receiver remains available as a fallback for charger events.
         }
     }
 }
