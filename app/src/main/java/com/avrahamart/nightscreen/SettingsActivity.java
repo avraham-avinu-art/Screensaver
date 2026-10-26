@@ -59,7 +59,6 @@ public class SettingsActivity extends Activity {
     private Button overlayPermissionButton;
     private Switch showPlayerToggle;
     private Switch autoStartOnChargeToggle;
-    private TextView autoStartDiagnosticStatus;
     private LinearLayout screenLockAdminCard;
     private TextView screenLockAdminStatus;
     private Button screenLockAdminButton;
@@ -176,7 +175,6 @@ public class SettingsActivity extends Activity {
             updateNotificationAccessCardVisibility();
             updateOverlayPermissionCardVisibility();
             updateScreenLockAdminCard();
-            updateAutoStartDiagnosticStatus();
         }
     }
 
@@ -191,7 +189,6 @@ public class SettingsActivity extends Activity {
 
         LinearLayout charging = addCard(content, "שומר מסך בזמן טעינה");
         addCheck(charging, "הפעלה אוטומטית בטעינה", "autoStartOnCharge", false);
-        addAutoStartDiagnosticStatus(charging);
         addCheck(charging, "ללא כיבוי בטעינה", "noShutdownWhileCharging", false);
         addCheck(charging, "הצגת אחוז הסוללה", "showBatteryPercent", false);
 
@@ -603,58 +600,6 @@ public class SettingsActivity extends Activity {
         Toast.makeText(this,
                 "הצגת הנגן נשארה כבויה מפני שלא ניתנה הרשאת גישה להתראות.",
                 Toast.LENGTH_LONG).show();
-    }
-
-    private void addAutoStartDiagnosticStatus(LinearLayout parent) {
-        autoStartDiagnosticStatus = textView("", 14, ON_SURFACE);
-        autoStartDiagnosticStatus.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        autoStartDiagnosticStatus.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
-        autoStartDiagnosticStatus.setTextDirection(View.TEXT_DIRECTION_RTL);
-        autoStartDiagnosticStatus.setLineSpacing(dp(2), 1f);
-        autoStartDiagnosticStatus.setPadding(dp(9), dp(7), dp(9), dp(7));
-        autoStartDiagnosticStatus.setMinHeight(dp(44));
-        GradientDrawable statusBackground = new GradientDrawable();
-        statusBackground.setColor(CONTROL_SURFACE);
-        statusBackground.setCornerRadius(dp(10));
-        statusBackground.setStroke(dp(1), OUTLINE);
-        autoStartDiagnosticStatus.setBackground(statusBackground);
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, -2);
-        params.topMargin = dp(2);
-        params.bottomMargin = dp(9);
-        parent.addView(autoStartDiagnosticStatus, params);
-        updateAutoStartDiagnosticStatus();
-    }
-
-    private void updateAutoStartDiagnosticStatus() {
-        if (autoStartDiagnosticStatus == null) return;
-
-        String status = getString("autoStartLastStatus", "");
-        String message;
-        if ("opened".equals(status)) {
-            message = "בדיקת הפעלה אחרונה: שומר המסך נפתח בעקבות חיבור המטען.";
-            autoStartDiagnosticStatus.setTextColor(ACCENT);
-        } else if ("launch_requested".equals(status)) {
-            message = "בדיקת הפעלה אחרונה: חיבור המטען זוהה ונשלחה בקשת פתיחה, אך שומר המסך לא דיווח שנפתח. ייתכן שהמכשיר חסם הפעלה ברקע.";
-            autoStartDiagnosticStatus.setTextColor(MUTED);
-        } else if ("permission_missing".equals(status)) {
-            message = "בדיקת הפעלה אחרונה: לא ניתן להפעיל כי חסרה הרשאת \"הצגה מעל אפליקציות אחרות\".";
-            autoStartDiagnosticStatus.setTextColor(MUTED);
-        } else if ("switch_off".equals(status)) {
-            message = "בדיקת הפעלה אחרונה: חיבור המטען זוהה, אך המתג היה כבוי.";
-            autoStartDiagnosticStatus.setTextColor(MUTED);
-        } else if ("power_disconnected".equals(status)) {
-            message = "בדיקת הפעלה אחרונה: זוהה ניתוק של המטען. חבר אותו מחדש כדי לבדוק את ההפעלה האוטומטית.";
-            autoStartDiagnosticStatus.setTextColor(MUTED);
-        } else if (status.startsWith("launch_error:")) {
-            message = "בדיקת הפעלה אחרונה: הפעלת שומר המסך נכשלה (" 
-                    + status.substring("launch_error:".length()) + ").";
-            autoStartDiagnosticStatus.setTextColor(Color.rgb(255, 164, 130));
-        } else {
-            message = "בדיקת הפעלה אחרונה: עדיין לא נרשם ניסיון. הפעל את המתג, נתק את המטען וחבר אותו מחדש.";
-            autoStartDiagnosticStatus.setTextColor(ACCENT);
-        }
-        autoStartDiagnosticStatus.setText(message);
-        autoStartDiagnosticStatus.setVisibility(View.VISIBLE);
     }
 
     private void requestChargerOverlayPermission() {
