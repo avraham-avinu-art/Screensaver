@@ -433,6 +433,7 @@ public class SettingsActivity extends Activity {
                 if (!checked) {
                     prefs.edit().putBoolean("autoStartOnLockOverlayPermissionPending", false).apply();
                 }
+                updateOverlayPermissionCardVisibility();
             } else if ("showOnLockScreen".equals(key) && !checked
                     && getBool("autoStartOnDeviceLock", false)) {
                 prefs.edit().putBoolean("autoStartOnDeviceLock", false)
