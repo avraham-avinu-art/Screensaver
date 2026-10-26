@@ -59,6 +59,7 @@ public class SettingsActivity extends Activity {
     private Button overlayPermissionButton;
     private Switch showPlayerToggle;
     private Switch autoStartOnChargeToggle;
+    private TextView autoStartDiagnosticStatus;
     private LinearLayout screenLockAdminCard;
     private TextView screenLockAdminStatus;
     private Button screenLockAdminButton;
@@ -175,6 +176,7 @@ public class SettingsActivity extends Activity {
             updateNotificationAccessCardVisibility();
             updateOverlayPermissionCardVisibility();
             updateScreenLockAdminCard();
+            updateAutoStartDiagnosticStatus();
         }
     }
 
@@ -191,6 +193,7 @@ public class SettingsActivity extends Activity {
         addCheck(charging, "הפעלה אוטומטית בטעינה", "autoStartOnCharge", false);
         addCheck(charging, "ללא כיבוי בטעינה", "noShutdownWhileCharging", false);
         addCheck(charging, "הצגת אחוז הסוללה", "showBatteryPercent", false);
+        addAutoStartDiagnosticStatus(charging);
 
         LinearLayout font = addCard(content, "גופן");
         addColorChoices(font, "צבע",
@@ -600,6 +603,50 @@ public class SettingsActivity extends Activity {
         Toast.makeText(this,
                 "הצגת הנגן נשארה כבויה מפני שלא ניתנה הרשאת גישה להתראות.",
                 Toast.LENGTH_LONG).show();
+    }
+
+    private void addAutoStartDiagnosticStatus(LinearLayout parent) {
+        autoStartDiagnosticStatus = textView("", 13, MUTED);
+        autoStartDiagnosticStatus.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        autoStartDiagnosticStatus.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
+        autoStartDiagnosticStatus.setTextDirection(View.TEXT_DIRECTION_RTL);
+        autoStartDiagnosticStatus.setLineSpacing(dp(1), 1f);
+        autoStartDiagnosticStatus.setPadding(dp(2), dp(2), dp(2), dp(2));
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, -2);
+        params.topMargin = dp(1);
+        params.bottomMargin = dp(4);
+        parent.addView(autoStartDiagnosticStatus, params);
+        updateAutoStartDiagnosticStatus();
+    }
+
+    private void updateAutoStartDiagnosticStatus() {
+        if (autoStartDiagnosticStatus == null) return;
+
+        String status = getString("autoStartLastStatus", "");
+        String message;
+        if ("opened".equals(status)) {
+            message = "בדיקת הפעלה אחרונה: שומר המסך נפתח בעקבות חיבור המטען.";
+            autoStartDiagnosticStatus.setTextColor(ACCENT);
+        } else if ("launch_requested".equals(status)) {
+            message = "בדיקת הפעלה אחרונה: חיבור המטען זוהה ונשלחה בקשת פתיחה, אך שומר המסך לא דיווח שנפתח. ייתכן שהמכשיר חסם הפעלה ברקע.";
+            autoStartDiagnosticStatus.setTextColor(MUTED);
+        } else if ("permission_missing".equals(status)) {
+            message = "בדיקת הפעלה אחרונה: לא ניתן להפעיל כי חסרה הרשאת \"הצגה מעל אפליקציות אחרות\".";
+            autoStartDiagnosticStatus.setTextColor(MUTED);
+        } else if ("switch_off".equals(status)) {
+            message = "בדיקת הפעלה אחרונה: חיבור המטען זוהה, אך המתג היה כבוי.";
+            autoStartDiagnosticStatus.setTextColor(MUTED);
+        } else if (status.startsWith("launch_error:")) {
+            message = "בדיקת הפעלה אחרונה: הפעלת שומר המסך נכשלה (" 
+                    + status.substring("launch_error:".length()) + ").";
+            autoStartDiagnosticStatus.setTextColor(Color.rgb(255, 164, 130));
+        } else {
+            message = "";
+            autoStartDiagnosticStatus.setVisibility(View.GONE);
+            return;
+        }
+        autoStartDiagnosticStatus.setText(message);
+        autoStartDiagnosticStatus.setVisibility(View.VISIBLE);
     }
 
     private void requestChargerOverlayPermission() {
