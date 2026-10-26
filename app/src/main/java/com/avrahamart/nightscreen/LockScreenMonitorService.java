@@ -119,8 +119,8 @@ public final class LockScreenMonitorService extends Service {
         Notification.Builder builder = Build.VERSION.SDK_INT >= 26
                 ? new Notification.Builder(this, CHANNEL_ID)
                 : new Notification.Builder(this);
-        builder.setSmallIcon(R.drawable.ic_launcher)
-                .setContentTitle("שומר מסך")
+        builder.setSmallIcon(R.drawable.ic_notification_transparent)
+                .setContentTitle("הפעלה אוטומטית של השומר מסך בנעילת המכשיר")
                 .setOngoing(true)
                 .setOnlyAlertOnce(true)
                 .setShowWhen(false)
