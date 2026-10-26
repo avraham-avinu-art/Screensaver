@@ -6,8 +6,11 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.provider.Settings;
+import android.util.Log;
 
 public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
+    private static final String TAG = "NightScreenAutoStart";
+
     @Override
     public void onReceive(Context context, Intent intent) {
         if (intent == null
@@ -17,14 +20,16 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
 
         SharedPreferences prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE);
         if (!prefs.getBoolean("autoStartOnCharge", false)) {
+            saveStatus(prefs, "switch_off");
+            Log.i(TAG, "Power connected, but automatic start is disabled.");
             return;
         }
 
         // Android 10+ restricts background activity launches. SYSTEM_ALERT_WINDOW
         // is a documented exception, and is requested explicitly in SettingsActivity.
-        // Without this permission, do not pretend that a notification is automatic
-        // launch: leave the screensaver closed and explain the missing permission in settings.
         if (Build.VERSION.SDK_INT >= 29 && !Settings.canDrawOverlays(context)) {
+            saveStatus(prefs, "permission_missing");
+            Log.w(TAG, "Power connected, but overlay permission is missing.");
             return;
         }
 
@@ -34,11 +39,23 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
                 | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         launch.putExtra(MainActivity.EXTRA_OPENED_BY_CHARGER, true);
 
+        // Store the attempt before launching. MainActivity changes this to "opened"
+        // once it receives the charger intent. If it stays at "launch_requested",
+        // Android or the device manufacturer may have blocked the background launch.
+        saveStatus(prefs, "launch_requested");
         try {
             context.startActivity(launch);
-        } catch (Throwable ignored) {
-            // Respect device-specific background-launch restrictions; do not
-            // substitute a manual notification for the requested auto-start behavior.
+            Log.i(TAG, "Power connected; requested MainActivity launch.");
+        } catch (Throwable error) {
+            saveStatus(prefs, "launch_error:" + error.getClass().getSimpleName());
+            Log.e(TAG, "Unable to launch MainActivity after power connected.", error);
         }
+    }
+
+    private static void saveStatus(SharedPreferences prefs, String status) {
+        prefs.edit()
+                .putString("autoStartLastStatus", status)
+                .putLong("autoStartLastTime", System.currentTimeMillis())
+                .apply();
     }
 }
