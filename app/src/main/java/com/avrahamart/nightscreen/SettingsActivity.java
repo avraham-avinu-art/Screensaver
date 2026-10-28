@@ -139,11 +139,13 @@ public class SettingsActivity extends Activity {
         }
         GraphicIcon overflowGlyph = new GraphicIcon(this, "more-vertical", ACCENT);
         overflowButton.addView(overflowGlyph,
-                new FrameLayout.LayoutParams(dp(18), dp(18), Gravity.CENTER));
-        // Compact, frameless Android-style overflow control. Translation only affects
-        // the icon button; it does not move or resize the settings title/content.
-        header.addView(overflowButton, new LinearLayout.LayoutParams(dp(32), dp(32)));
-        overflowButton.setTranslationY(-dp(7));
+                new FrameLayout.LayoutParams(dp(21), dp(21), Gravity.CENTER));
+        // Align the overflow control with the top title line so it stays clear of
+        // the subtitle; keep the hit target compact and leave the header layout intact.
+        LinearLayout.LayoutParams overflowParams =
+                new LinearLayout.LayoutParams(dp(32), dp(32));
+        overflowParams.gravity = Gravity.TOP;
+        header.addView(overflowButton, overflowParams);
         overflowButton.setOnClickListener(v -> showOverflowMenu(overflowButton));
 
         header.addView(titleBlock, new LinearLayout.LayoutParams(0, -2, 1f));
