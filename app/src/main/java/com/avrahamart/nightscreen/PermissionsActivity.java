@@ -84,11 +84,17 @@ public class PermissionsActivity extends Activity {
         scroll.addView(cards, new ScrollView.LayoutParams(-1, -2));
         root.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1f));
 
+        // Match the settings screen footer row exactly: 50dp row with 4dp top spacing.
+        FrameLayout footer = new FrameLayout(this);
+        LinearLayout.LayoutParams footerParams =
+                new LinearLayout.LayoutParams(-1, dp(50));
+        footerParams.topMargin = dp(4);
+        root.addView(footer, footerParams);
+
         Button done = makeButton("חזרה להגדרות");
-        LinearLayout.LayoutParams doneParams = new LinearLayout.LayoutParams(-2, dp(48));
-        doneParams.gravity = Gravity.CENTER_HORIZONTAL;
-        doneParams.topMargin = dp(8);
-        root.addView(done, doneParams);
+        FrameLayout.LayoutParams doneParams =
+                new FrameLayout.LayoutParams(-2, dp(50), Gravity.CENTER);
+        footer.addView(done, doneParams);
         done.setOnClickListener(v -> finish());
 
         setContentView(root);
