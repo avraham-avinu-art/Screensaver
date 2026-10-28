@@ -22,7 +22,6 @@ import android.os.Bundle;
 import android.provider.Settings;
 import android.view.Gravity;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.Window;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -31,7 +30,6 @@ import android.widget.FrameLayout;
 import android.widget.CompoundButton;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
-import android.widget.PopupWindow;
 import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.Switch;
@@ -125,32 +123,8 @@ public class SettingsActivity extends Activity {
         subtitle.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
         titleBlock.addView(subtitle, new LinearLayout.LayoutParams(-1, -2));
 
-        FrameLayout overflowButton = new FrameLayout(this);
-        overflowButton.setContentDescription("אפשרויות");
-        overflowButton.setClickable(true);
-        overflowButton.setFocusable(true);
-        overflowButton.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-        android.util.TypedValue rippleBackground = new android.util.TypedValue();
-        if (getTheme().resolveAttribute(
-                android.R.attr.selectableItemBackgroundBorderless, rippleBackground, true)) {
-            overflowButton.setBackgroundResource(rippleBackground.resourceId);
-        } else {
-            overflowButton.setBackgroundColor(Color.TRANSPARENT);
-        }
-        GraphicIcon overflowGlyph = new GraphicIcon(this, "more-vertical", ACCENT);
-        overflowButton.addView(overflowGlyph,
-                new FrameLayout.LayoutParams(dp(21), dp(21), Gravity.CENTER));
-        // Align the overflow control with the top title line so it stays clear of
-        // the subtitle; keep the hit target compact and leave the header layout intact.
-        LinearLayout.LayoutParams overflowParams =
-                new LinearLayout.LayoutParams(dp(32), dp(32));
-        overflowParams.gravity = Gravity.TOP;
-        header.addView(overflowButton, overflowParams);
-        overflowButton.setOnClickListener(v -> showOverflowMenu(overflowButton));
-
+        // Keep the title and subtitle centered and unobstructed by utility buttons.
         header.addView(titleBlock, new LinearLayout.LayoutParams(0, -2, 1f));
-        View headerSpacer = new View(this);
-        header.addView(headerSpacer, new LinearLayout.LayoutParams(dp(32), dp(32)));
 
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(false);
@@ -176,6 +150,12 @@ public class SettingsActivity extends Activity {
 
         buildSettingsCards();
 
+        FrameLayout footer = new FrameLayout(this);
+        LinearLayout.LayoutParams footerParams =
+                new LinearLayout.LayoutParams(-1, dp(50));
+        footerParams.topMargin = dp(4);
+        root.addView(footer, footerParams);
+
         Button done = new Button(this);
         done.setText("סיום ושמירה");
         done.setAllCaps(false);
@@ -187,40 +167,41 @@ public class SettingsActivity extends Activity {
         done.setPadding(dp(24), 0, dp(24), 0);
         done.setBackground(pillBackground(ACCENT, dp(22)));
         done.setElevation(dp(2));
-        LinearLayout.LayoutParams doneParams =
-                new LinearLayout.LayoutParams(-2, dp(50));
-        doneParams.gravity = Gravity.CENTER_HORIZONTAL;
-        doneParams.topMargin = dp(4);
-        root.addView(done, doneParams);
+        FrameLayout.LayoutParams doneParams =
+                new FrameLayout.LayoutParams(-2, dp(50), Gravity.CENTER);
+        footer.addView(done, doneParams);
         done.setOnClickListener(v -> finish());
+
+        FrameLayout permissionsButton = makeCircularIconButton("מעבר למסך הרשאות", "more-vertical");
+        FrameLayout.LayoutParams permissionsParams =
+                new FrameLayout.LayoutParams(dp(42), dp(42), Gravity.LEFT | Gravity.CENTER_VERTICAL);
+        footer.addView(permissionsButton, permissionsParams);
+        permissionsButton.setOnClickListener(v ->
+                startActivity(new Intent(this, PermissionsActivity.class)));
+
+        FrameLayout backButton = makeCircularIconButton("חזרה למסך הקודם", "triangle-right");
+        FrameLayout.LayoutParams backParams =
+                new FrameLayout.LayoutParams(dp(42), dp(42), Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        footer.addView(backButton, backParams);
+        backButton.setOnClickListener(v -> finish());
 
         setContentView(root);
     }
 
-    private void showOverflowMenu(View anchor) {
-        TextView permissionsItem = textView("הרשאות", 16, ON_SURFACE);
-        permissionsItem.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-        permissionsItem.setGravity(Gravity.CENTER);
-        permissionsItem.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-        permissionsItem.setPadding(dp(14), dp(8), dp(14), dp(8));
-        permissionsItem.setClickable(true);
-        permissionsItem.setFocusable(true);
-
-        PopupWindow menu = new PopupWindow(
-                permissionsItem, ViewGroup.LayoutParams.WRAP_CONTENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT, true);
-        menu.setBackgroundDrawable(roundOutline(CARD_SURFACE, dp(10), CARD_OUTLINE));
-        if (Build.VERSION.SDK_INT >= 21) menu.setElevation(dp(8));
-        menu.setOutsideTouchable(true);
-        permissionsItem.setOnClickListener(v -> {
-            menu.dismiss();
-            startActivity(new Intent(this, PermissionsActivity.class));
-        });
-        // Wrap content keeps this a short, text-sized menu row instead of a wide bar.
-        menu.showAsDropDown(anchor, 0, dp(2), Gravity.START);
+    private FrameLayout makeCircularIconButton(String description, String iconType) {
+        FrameLayout button = new FrameLayout(this);
+        button.setContentDescription(description);
+        button.setClickable(true);
+        button.setFocusable(true);
+        button.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+        button.setBackground(roundOutline(CARD_SURFACE, dp(21), CARD_OUTLINE));
+        GraphicIcon glyph = new GraphicIcon(this, iconType, ACCENT);
+        button.addView(glyph,
+                new FrameLayout.LayoutParams(dp(22), dp(22), Gravity.CENTER));
+        return button;
     }
 
-    @Override
+@Override
     protected void onResume() {
         super.onResume();
         if (content != null) {
@@ -1542,6 +1523,15 @@ public class SettingsActivity extends Activity {
                     canvas.drawCircle(12f, 5f, 1.8f, paint);
                     canvas.drawCircle(12f, 12f, 1.8f, paint);
                     canvas.drawCircle(12f, 19f, 1.8f, paint);
+                    break;
+                case "triangle-right":
+                    paint.setStyle(Paint.Style.FILL);
+                    path.reset();
+                    path.moveTo(5f, 3.5f);
+                    path.lineTo(20f, 12f);
+                    path.lineTo(5f, 20.5f);
+                    path.close();
+                    canvas.drawPath(path, paint);
                     break;
                 case "monitor":
                     canvas.drawRoundRect(new RectF(2.5f, 3.5f, 21.5f, 17f), 1.8f, 1.8f, paint);
