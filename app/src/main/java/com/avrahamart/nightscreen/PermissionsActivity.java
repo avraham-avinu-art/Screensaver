@@ -55,7 +55,14 @@ public class PermissionsActivity extends Activity {
         root.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         root.setTextDirection(View.TEXT_DIRECTION_RTL);
         root.setBackgroundColor(SURFACE);
-        root.setPadding(dp(14), dp(6), dp(14), dp(10));
+        root.setPadding(dp(14), dp(6), dp(14), dp(8));
+        if (Build.VERSION.SDK_INT >= 21) {
+            root.setOnApplyWindowInsetsListener((view, insets) -> {
+                int bottomInset = insets.getSystemWindowInsetBottom();
+                view.setPadding(dp(14), dp(6), dp(14), dp(8) + bottomInset);
+                return insets;
+            });
+        }
 
         FrameLayout header = new FrameLayout(this);
         header.setPadding(dp(4), dp(3), dp(4), dp(12));
