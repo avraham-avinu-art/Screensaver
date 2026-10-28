@@ -22,6 +22,7 @@ import android.os.Bundle;
 import android.provider.Settings;
 import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.Window;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -30,7 +31,7 @@ import android.widget.FrameLayout;
 import android.widget.CompoundButton;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
-import android.widget.PopupMenu;
+import android.widget.PopupWindow;
 import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.Switch;
@@ -128,16 +129,26 @@ public class SettingsActivity extends Activity {
         overflowButton.setContentDescription("אפשרויות");
         overflowButton.setClickable(true);
         overflowButton.setFocusable(true);
-        overflowButton.setBackground(roundOutline(CARD_SURFACE, dp(12), CARD_OUTLINE));
+        overflowButton.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+        android.util.TypedValue rippleBackground = new android.util.TypedValue();
+        if (getTheme().resolveAttribute(
+                android.R.attr.selectableItemBackgroundBorderless, rippleBackground, true)) {
+            overflowButton.setBackgroundResource(rippleBackground.resourceId);
+        } else {
+            overflowButton.setBackgroundColor(Color.TRANSPARENT);
+        }
         GraphicIcon overflowGlyph = new GraphicIcon(this, "more-vertical", ACCENT);
         overflowButton.addView(overflowGlyph,
-                new FrameLayout.LayoutParams(dp(22), dp(22), Gravity.CENTER));
-        header.addView(overflowButton, new LinearLayout.LayoutParams(dp(40), dp(40)));
+                new FrameLayout.LayoutParams(dp(18), dp(18), Gravity.CENTER));
+        // Compact, frameless Android-style overflow control. Translation only affects
+        // the icon button; it does not move or resize the settings title/content.
+        header.addView(overflowButton, new LinearLayout.LayoutParams(dp(32), dp(32)));
+        overflowButton.setTranslationY(-dp(7));
         overflowButton.setOnClickListener(v -> showOverflowMenu(overflowButton));
 
         header.addView(titleBlock, new LinearLayout.LayoutParams(0, -2, 1f));
         View headerSpacer = new View(this);
-        header.addView(headerSpacer, new LinearLayout.LayoutParams(dp(40), dp(40)));
+        header.addView(headerSpacer, new LinearLayout.LayoutParams(dp(32), dp(32)));
 
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(false);
@@ -185,16 +196,26 @@ public class SettingsActivity extends Activity {
     }
 
     private void showOverflowMenu(View anchor) {
-        PopupMenu menu = new PopupMenu(this, anchor);
-        menu.getMenu().add("הרשאות");
-        menu.setOnMenuItemClickListener(item -> {
-            if ("הרשאות".contentEquals(item.getTitle())) {
-                startActivity(new Intent(this, PermissionsActivity.class));
-                return true;
-            }
-            return false;
+        TextView permissionsItem = textView("הרשאות", 16, ON_SURFACE);
+        permissionsItem.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        permissionsItem.setGravity(Gravity.CENTER);
+        permissionsItem.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        permissionsItem.setPadding(dp(14), dp(8), dp(14), dp(8));
+        permissionsItem.setClickable(true);
+        permissionsItem.setFocusable(true);
+
+        PopupWindow menu = new PopupWindow(
+                permissionsItem, ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT, true);
+        menu.setBackgroundDrawable(roundOutline(CARD_SURFACE, dp(10), CARD_OUTLINE));
+        if (Build.VERSION.SDK_INT >= 21) menu.setElevation(dp(8));
+        menu.setOutsideTouchable(true);
+        permissionsItem.setOnClickListener(v -> {
+            menu.dismiss();
+            startActivity(new Intent(this, PermissionsActivity.class));
         });
-        menu.show();
+        // Wrap content keeps this a short, text-sized menu row instead of a wide bar.
+        menu.showAsDropDown(anchor, 0, dp(2), Gravity.START);
     }
 
     @Override
