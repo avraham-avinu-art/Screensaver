@@ -179,7 +179,7 @@ public class SettingsActivity extends Activity {
         permissionsButton.setOnClickListener(v ->
                 startActivity(new Intent(this, PermissionsActivity.class)));
 
-        FrameLayout backButton = makeCircularIconButton("חזרה למסך הקודם", "triangle-right");
+        FrameLayout backButton = makeCircularIconButton("חזרה למסך הקודם", "arrow-right");
         FrameLayout.LayoutParams backParams =
                 new FrameLayout.LayoutParams(dp(42), dp(42), Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         footer.addView(backButton, backParams);
@@ -1524,13 +1524,17 @@ public class SettingsActivity extends Activity {
                     canvas.drawCircle(12f, 12f, 1.8f, paint);
                     canvas.drawCircle(12f, 19f, 1.8f, paint);
                     break;
-                case "triangle-right":
-                    paint.setStyle(Paint.Style.FILL);
+                case "arrow-right":
+                    // Centered right-pointing back/navigation arrow for the RTL layout.
+                    paint.setStyle(Paint.Style.STROKE);
+                    paint.setStrokeWidth(2.2f);
+                    paint.setStrokeCap(Paint.Cap.ROUND);
+                    paint.setStrokeJoin(Paint.Join.ROUND);
+                    canvas.drawLine(4.5f, 12f, 19.5f, 12f, paint);
                     path.reset();
-                    path.moveTo(5f, 3.5f);
-                    path.lineTo(20f, 12f);
-                    path.lineTo(5f, 20.5f);
-                    path.close();
+                    path.moveTo(13f, 5.5f);
+                    path.lineTo(19.5f, 12f);
+                    path.lineTo(13f, 18.5f);
                     canvas.drawPath(path, paint);
                     break;
                 case "monitor":
