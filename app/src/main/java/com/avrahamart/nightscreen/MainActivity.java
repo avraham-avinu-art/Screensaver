@@ -164,6 +164,7 @@ public class MainActivity extends Activity {
     private String lastTitle = "";
     private String lastArtist = "";
     private String lastObservedTrackIdentity = null;
+    private long lastObservedTrackPositionMs = -1L;
     private boolean lastPlaybackWasActive = false;
     private boolean playerIntroWindowVisible = false;
     private long playerIntroWindowDeadlineElapsedRealtime = 0L;
@@ -2442,6 +2443,10 @@ public class MainActivity extends Activity {
         boolean firstObservedTrack = lastObservedTrackIdentity == null;
         boolean trackChanged = !firstObservedTrack
                 && !trackIdentity.equals(lastObservedTrackIdentity);
+        boolean repeatedOrRestartedTrack = !firstObservedTrack && !trackChanged
+                && lastObservedTrackPositionMs > PLAYER_START_WINDOW_MS
+                && positionMs < PLAYER_START_WINDOW_MS
+                && lastObservedTrackPositionMs - positionMs > 5_000L;
         boolean playbackJustStarted = playbackActive && !lastPlaybackWasActive;
         boolean introOnly = getBool("showPlayerOnlyAtStart", false);
 
@@ -2449,8 +2454,8 @@ public class MainActivity extends Activity {
             handler.removeCallbacks(hidePlayerIntroWindowRunnable);
             playerIntroWindowVisible = false;
             playerIntroWindowDeadlineElapsedRealtime = 0L;
-        } else if (playbackActive && trackChanged) {
-            // A metadata identity change covers manual skips and automatic next-track transitions.
+        } else if (playbackActive && (trackChanged || repeatedOrRestartedTrack)) {
+            // This includes manual/automatic track changes and repeat/restart of the same track.
             startPlayerIntroWindow(PLAYER_START_WINDOW_MS);
         } else if (playbackActive && (firstObservedTrack || playbackJustStarted)
                 && positionMs < PLAYER_START_WINDOW_MS) {
@@ -2460,6 +2465,7 @@ public class MainActivity extends Activity {
         }
 
         lastObservedTrackIdentity = trackIdentity;
+        lastObservedTrackPositionMs = positionMs;
         lastPlaybackWasActive = playbackActive;
     }
 
