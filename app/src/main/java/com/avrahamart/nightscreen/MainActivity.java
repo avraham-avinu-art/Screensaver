@@ -166,6 +166,7 @@ public class MainActivity extends Activity {
     private String lastObservedTrackIdentity = null;
     private long lastObservedTrackPositionMs = -1L;
     private boolean lastPlaybackWasActive = false;
+    private boolean lastPlayerIntroOnlySetting = false;
     private boolean playerIntroWindowVisible = false;
     private long playerIntroWindowDeadlineElapsedRealtime = 0L;
     private final Runnable hidePlayerIntroWindowRunnable = () -> {
@@ -2449,6 +2450,7 @@ public class MainActivity extends Activity {
                 && lastObservedTrackPositionMs - positionMs > 5_000L;
         boolean playbackJustStarted = playbackActive && !lastPlaybackWasActive;
         boolean introOnly = getBool("showPlayerOnlyAtStart", false);
+        boolean introOnlyJustEnabled = introOnly && !lastPlayerIntroOnlySetting;
 
         if (!introOnly) {
             handler.removeCallbacks(hidePlayerIntroWindowRunnable);
@@ -2457,16 +2459,18 @@ public class MainActivity extends Activity {
         } else if (playbackActive && (trackChanged || repeatedOrRestartedTrack)) {
             // This includes manual/automatic track changes and repeat/restart of the same track.
             startPlayerIntroWindow(PLAYER_START_WINDOW_MS);
-        } else if (playbackActive && (firstObservedTrack || playbackJustStarted)
+        } else if (playbackActive
+                && (firstObservedTrack || playbackJustStarted || introOnlyJustEnabled)
                 && positionMs < PLAYER_START_WINDOW_MS) {
-            // On the first observation or playback start, show only the part of the first
-            // four seconds that remains; launching the screensaver mid-song must not replay it.
+            // On first observation, playback start, or enabling this option during a song's
+            // first four seconds, show only the portion of that four-second window remaining.
             startPlayerIntroWindow(PLAYER_START_WINDOW_MS - Math.max(0L, positionMs));
         }
 
         lastObservedTrackIdentity = trackIdentity;
         lastObservedTrackPositionMs = positionMs;
         lastPlaybackWasActive = playbackActive;
+        lastPlayerIntroOnlySetting = introOnly;
     }
 
     private void startPlayerIntroWindow(long durationMs) {
