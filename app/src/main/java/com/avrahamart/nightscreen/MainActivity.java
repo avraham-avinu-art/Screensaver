@@ -56,6 +56,11 @@ import java.util.List;
 import java.util.Locale;
 
 public class MainActivity extends Activity {
+    private static final int SCREEN_TIMEOUT_PROFILE_RELEASE_RESTARTS = 1;
+    private static final int SCREEN_TIMEOUT_PROFILE_ELAPSED_DURING_HOLD = 2;
+    private static final double SCREEN_TIMEOUT_EARLY_OFF_THRESHOLD = 0.40;
+    private static final double SCREEN_TIMEOUT_RESTART_THRESHOLD = 0.60;
+
     public static final String EXTRA_OPENED_BY_CHARGER =
             "com.avrahamart.nightscreen.EXTRA_OPENED_BY_CHARGER";
     public static final String EXTRA_OPENED_BY_DEVICE_LOCK =
@@ -79,6 +84,9 @@ public class MainActivity extends Activity {
     private final Runnable screenOnReleaseRunnable = this::releaseScreenOnHoldForSystemTimeout;
     private boolean waitingForScreenWakeAfterActivityEnd = false;
     private boolean deviceEventsRegistered = false;
+    private boolean screenTimeoutObservationPending = false;
+    private long screenHoldReleasedAtElapsedRealtime = 0L;
+    private long screenTimeoutAtHoldReleaseMs = -1L;
     private ContentObserver screenOffTimeoutObserver;
     private boolean screenOffTimeoutObserverRegistered = false;
     private boolean openedByCharger = false;
@@ -103,9 +111,20 @@ public class MainActivity extends Activity {
                 }
             } else if (Intent.ACTION_BATTERY_CHANGED.equals(action)) {
                 updateBatteryPercentView();
-            } else if (Intent.ACTION_SCREEN_ON.equals(action)
-                    && waitingForScreenWakeAfterActivityEnd) {
-                resumeScreensaverAfterScreenWake();
+            } else if (Intent.ACTION_SCREEN_OFF.equals(action)) {
+                learnScreenTimeoutBehaviorFromScreenOff();
+            } else if (Intent.ACTION_SCREEN_ON.equals(action)) {
+                if (waitingForScreenWakeAfterActivityEnd) {
+                    resumeScreensaverAfterScreenWake();
+                } else if (activityDeadlineElapsedRealtime > SystemClock.elapsedRealtime()
+                        && getScreenTimeoutBehaviorProfile()
+                        == SCREEN_TIMEOUT_PROFILE_ELAPSED_DURING_HOLD) {
+                    // If this device's timeout kept counting while held, restore the hold
+                    // after the user wakes the display and keep the original deadline.
+                    getWindow().addFlags(
+                            android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+                    scheduleAutoOff(false);
+                }
             }
         }
     };
@@ -1442,6 +1461,15 @@ public class MainActivity extends Activity {
     private void scheduleAutoOff(boolean restartCountdown) {
         handler.removeCallbacks(autoOffRunnable);
         handler.removeCallbacks(screenOnReleaseRunnable);
+        if (screenTimeoutObservationPending) {
+            long currentTimeoutMs = getSystemScreenOffTimeoutMs();
+            if (currentTimeoutMs > 0L
+                    && currentTimeoutMs != screenTimeoutAtHoldReleaseMs) {
+                screenTimeoutObservationPending = false;
+                screenHoldReleasedAtElapsedRealtime = 0L;
+                screenTimeoutAtHoldReleaseMs = -1L;
+            }
+        }
         if (settingsDialogOpen && !restartCountdown) {
             return;
         }
@@ -1495,31 +1523,36 @@ public class MainActivity extends Activity {
             return;
         }
 
-        // Android's timeout is allowed to finish after this hold is released. Schedule
-        // the release before the activity deadline by exactly the current system timeout:
-        // e.g. a 5-minute activity and a 1-minute device timeout means hold for 4 minutes,
-        // then let Android's own 1-minute countdown complete at the activity deadline.
-        // If device-admin is active, keep the display on to the deadline and lock there.
+        // Select the hold policy from the behavior observed on this device model/OS.
+        // The initial profile matches the already observed behavior: the system timeout
+        // runs after KEEP_SCREEN_ON is released. Measurements update this profile if the
+        // device instead continues counting inactivity during the hold.
         long systemTimeoutMs = getSystemScreenOffTimeoutMs();
         boolean adminActive = isScreenLockAdminActive();
-        boolean keepAwake = adminActive || systemTimeoutMs < 0L
-                || remaining > systemTimeoutMs;
+        int behaviorProfile = getScreenTimeoutBehaviorProfile();
+        boolean timeoutKnown = systemTimeoutMs > 0L;
+        boolean timeoutAlreadyElapsed =
+                behaviorProfile == SCREEN_TIMEOUT_PROFILE_ELAPSED_DURING_HOLD;
+        boolean keepAwake = adminActive || !timeoutKnown
+                || timeoutAlreadyElapsed || remaining > systemTimeoutMs;
 
         if (keepAwake) {
             getWindow().addFlags(
                     android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         } else {
-            getWindow().clearFlags(
-                    android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            releaseScreenOnHoldForObservation(systemTimeoutMs);
         }
 
-        if (keepAwake && !adminActive && systemTimeoutMs >= 0L) {
+        // For devices whose timeout starts after release, release exactly one system
+        // timeout before the selected activity deadline. If the timeout has already
+        // counted down while the hold was active, keep the display on until the deadline
+        // and release it there instead.
+        if (keepAwake && !adminActive && timeoutKnown && !timeoutAlreadyElapsed) {
             long releaseDelay = remaining - systemTimeoutMs;
             if (releaseDelay > 0L) {
                 handler.postDelayed(screenOnReleaseRunnable, releaseDelay);
-            } else {
-                getWindow().clearFlags(
-                        android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            } else if (remaining <= systemTimeoutMs) {
+                releaseScreenOnHoldForObservation(systemTimeoutMs);
             }
         }
         handler.postDelayed(autoOffRunnable, remaining);
@@ -1559,6 +1592,15 @@ public class MainActivity extends Activity {
             return;
         }
 
+        if (getScreenTimeoutBehaviorProfile()
+                == SCREEN_TIMEOUT_PROFILE_ELAPSED_DURING_HOLD) {
+            // This device keeps counting the timeout while the hold is active. Keep the
+            // display awake until the selected activity deadline; release is handled there.
+            getWindow().addFlags(
+                    android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            return;
+        }
+
         if (remaining > systemTimeoutMs) {
             // The timeout changed after this callback was scheduled. Keep the display
             // awake and recompute the release time from the unchanged activity deadline.
@@ -1566,9 +1608,7 @@ public class MainActivity extends Activity {
                     android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
             handler.postDelayed(screenOnReleaseRunnable, remaining - systemTimeoutMs);
         } else {
-            // Release now, allowing the device's normal timeout to finish the display cycle.
-            getWindow().clearFlags(
-                    android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            releaseScreenOnHoldForObservation(systemTimeoutMs);
         }
     }
 
@@ -1577,8 +1617,7 @@ public class MainActivity extends Activity {
         handler.removeCallbacks(autoOffRunnable);
         handler.removeCallbacks(screenOnReleaseRunnable);
         activityDeadlineElapsedRealtime = 0L;
-        getWindow().clearFlags(
-                android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        releaseScreenOnHoldForObservation(getSystemScreenOffTimeoutMs());
 
         boolean showOnLockScreen = getBool(
                 "showOnLockScreen", Build.VERSION.SDK_INT >= 26);
@@ -1625,6 +1664,61 @@ public class MainActivity extends Activity {
             // The selected screensaver duration has ended even if immediate locking fails.
         }
         finishAffinity();
+    }
+
+    private String screenTimeoutBehaviorPreferenceKey() {
+        String identity = (Build.MANUFACTURER + "_" + Build.BRAND + "_"
+                + Build.MODEL + "_sdk" + Build.VERSION.SDK_INT)
+                .toLowerCase(Locale.US)
+                .replaceAll("[^a-z0-9]+", "_");
+        return "screenOffBehaviorProfileV1_" + identity;
+    }
+
+    private int getScreenTimeoutBehaviorProfile() {
+        return getSharedPreferences("settings", MODE_PRIVATE).getInt(
+                screenTimeoutBehaviorPreferenceKey(),
+                SCREEN_TIMEOUT_PROFILE_RELEASE_RESTARTS);
+    }
+
+    private void releaseScreenOnHoldForObservation(long systemTimeoutMs) {
+        int flags = getWindow().getAttributes().flags;
+        boolean wasKeepingScreenOn =
+                (flags & android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) != 0;
+        if (wasKeepingScreenOn && !isScreenLockAdminActive()
+                && systemTimeoutMs > 0L) {
+            screenTimeoutObservationPending = true;
+            screenHoldReleasedAtElapsedRealtime = SystemClock.elapsedRealtime();
+            screenTimeoutAtHoldReleaseMs = systemTimeoutMs;
+        }
+        getWindow().clearFlags(
+                android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+    }
+
+    private void learnScreenTimeoutBehaviorFromScreenOff() {
+        if (!screenTimeoutObservationPending || screenTimeoutAtHoldReleaseMs <= 0L) return;
+
+        long elapsedSinceRelease = Math.max(
+                0L, SystemClock.elapsedRealtime() - screenHoldReleasedAtElapsedRealtime);
+        long measuredTimeout = screenTimeoutAtHoldReleaseMs;
+        screenTimeoutObservationPending = false;
+        screenHoldReleasedAtElapsedRealtime = 0L;
+        screenTimeoutAtHoldReleaseMs = -1L;
+
+        int observedProfile = 0;
+        if (elapsedSinceRelease <= measuredTimeout * SCREEN_TIMEOUT_EARLY_OFF_THRESHOLD) {
+            observedProfile = SCREEN_TIMEOUT_PROFILE_ELAPSED_DURING_HOLD;
+        } else if (elapsedSinceRelease >= measuredTimeout * SCREEN_TIMEOUT_RESTART_THRESHOLD
+                && elapsedSinceRelease <= measuredTimeout * 3L) {
+            observedProfile = SCREEN_TIMEOUT_PROFILE_RELEASE_RESTARTS;
+        }
+
+        // Ignore ambiguous measurements (for example, a manual power-button press
+        // shortly after release); retain the last confirmed behavior instead.
+        if (observedProfile != 0) {
+            getSharedPreferences("settings", MODE_PRIVATE).edit()
+                    .putInt(screenTimeoutBehaviorPreferenceKey(), observedProfile)
+                    .apply();
+        }
     }
 
     private boolean isScreenLockAdminActive() {
