@@ -1754,6 +1754,13 @@ public class MainActivity extends Activity {
     private void resumeScreensaverAfterScreenWake() {
         if (!waitingForScreenWakeAfterActivityEnd || !isScreenInteractive()) return;
         waitingForScreenWakeAfterActivityEnd = false;
+
+        // If this device/OS did not deliver ACTION_SCREEN_OFF to this Activity,
+        // discard the stale sample rather than measuring from the wrong release cycle.
+        screenTimeoutObservationPending = false;
+        screenHoldReleasedAtElapsedRealtime = 0L;
+        screenTimeoutAtHoldReleaseMs = -1L;
+
         scheduleAutoOff(true);
         showSettingsButtonForThreeSeconds();
     }
