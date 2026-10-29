@@ -75,6 +75,7 @@ public class MainActivity extends Activity {
     }
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Runnable autoOffRunnable = this::exitApplicationAtSelectedTime;
+    private boolean waitingForScreenWakeAfterActivityEnd = false;
     private boolean deviceEventsRegistered = false;
     private boolean openedByCharger = false;
     private boolean openedByDeviceLock = false;
@@ -98,6 +99,9 @@ public class MainActivity extends Activity {
                 }
             } else if (Intent.ACTION_BATTERY_CHANGED.equals(action)) {
                 updateBatteryPercentView();
+            } else if (Intent.ACTION_SCREEN_ON.equals(action)
+                    && waitingForScreenWakeAfterActivityEnd) {
+                resumeScreensaverAfterScreenWake();
             }
         }
     };
@@ -312,7 +316,11 @@ public class MainActivity extends Activity {
                 }
             }
 
-            scheduleAutoOff();
+            if (waitingForScreenWakeAfterActivityEnd) {
+                if (isScreenInteractive()) resumeScreensaverAfterScreenWake();
+            } else {
+                scheduleAutoOff();
+            }
             hideSystemUi();
             handler.removeCallbacks(ticker);
             handler.post(ticker);
@@ -1524,15 +1532,38 @@ public class MainActivity extends Activity {
         getWindow().clearFlags(
                 android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-        // End the screensaver at the selected deadline. Without device-admin
-        // permission, let Android complete screen-off and locking according to its policy.
-        if (!isScreenLockAdminActive()) {
-            finishAffinity();
+        boolean showOnLockScreen = getBool(
+                "showOnLockScreen", Build.VERSION.SDK_INT >= 26);
+        boolean adminActive = isScreenLockAdminActive();
+
+        if (showOnLockScreen) {
+            // Keep this Activity in the task and above the keyguard. Removing it here
+            // would expose the normal lock screen and prevent the saver reappearing on wake.
+            waitingForScreenWakeAfterActivityEnd = true;
+            if (adminActive) {
+                try {
+                    if (devicePolicyManager == null) {
+                        devicePolicyManager = (DevicePolicyManager) getSystemService(
+                                Context.DEVICE_POLICY_SERVICE);
+                    }
+                    if (devicePolicyManager == null) {
+                        throw new IllegalStateException("Device policy unavailable");
+                    }
+                    devicePolicyManager.lockNow();
+                } catch (Throwable ignored) {
+                    // The saver remains active over the lock screen; Android still owns
+                    // screen-off if immediate device-admin locking is unavailable.
+                }
+            }
             return;
         }
 
-        // Device-admin permission only adds an immediate lock at the selected deadline.
-        // Do not restart the screensaver when the user later wakes the device.
+        // When lock-screen display is disabled, preserve the previous end-of-cycle
+        // behavior: close the saver, and optionally lock immediately with device-admin.
+        if (!adminActive) {
+            finishAffinity();
+            return;
+        }
         try {
             if (devicePolicyManager == null) {
                 devicePolicyManager = (DevicePolicyManager) getSystemService(
@@ -1565,6 +1596,23 @@ public class MainActivity extends Activity {
         }
     }
 
+    private boolean isScreenInteractive() {
+        try {
+            android.os.PowerManager power = (android.os.PowerManager)
+                    getSystemService(POWER_SERVICE);
+            return power != null && power.isInteractive();
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    private void resumeScreensaverAfterScreenWake() {
+        if (!waitingForScreenWakeAfterActivityEnd || !isScreenInteractive()) return;
+        waitingForScreenWakeAfterActivityEnd = false;
+        scheduleAutoOff(true);
+        showSettingsButtonForThreeSeconds();
+    }
+
     private boolean isDeviceCharging() {
         try {
             Intent battery = registerReceiver(null,
@@ -1586,6 +1634,7 @@ public class MainActivity extends Activity {
         filter.addAction(Intent.ACTION_POWER_CONNECTED);
         filter.addAction(Intent.ACTION_POWER_DISCONNECTED);
         filter.addAction(Intent.ACTION_BATTERY_CHANGED);
+        filter.addAction(Intent.ACTION_SCREEN_ON);
         try {
             if (Build.VERSION.SDK_INT >= 33) {
                 registerReceiver(deviceStateReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
