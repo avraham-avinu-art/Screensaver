@@ -338,7 +338,7 @@ public class SettingsActivity extends Activity {
             infoButton.setClickable(true);
             infoButton.setFocusable(true);
             infoButton.setBackground(roundOutline(CONTROL_SURFACE, dp(17), OUTLINE));
-            GraphicIcon infoGlyph = new GraphicIcon(this, "info-bubble", ACCENT);
+            GraphicIcon infoGlyph = new GraphicIcon(this, "help-dialog", ACCENT);
             infoButton.addView(infoGlyph,
                     new FrameLayout.LayoutParams(dp(26), dp(26), Gravity.CENTER));
             LinearLayout.LayoutParams infoParams =
@@ -482,8 +482,8 @@ public class SettingsActivity extends Activity {
         message.setText(styledHelp);
         scroll.addView(message, new ScrollView.LayoutParams(-1, -2));
 
-        int maxBodyHeight = Math.min(dp(430),
-                Math.max(dp(210), getResources().getDisplayMetrics().heightPixels - dp(300)));
+        int maxBodyHeight = Math.max(dp(150),
+                Math.min(dp(430), getResources().getDisplayMetrics().heightPixels - dp(265)));
         panel.addView(scroll, new LinearLayout.LayoutParams(-1, maxBodyHeight));
 
         Button close = new Button(this);
