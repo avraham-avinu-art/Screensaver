@@ -10,6 +10,7 @@ import android.content.SharedPreferences;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.IntentFilter;
+import android.database.ContentObserver;
 import android.graphics.drawable.GradientDrawable;
 import android.text.Layout;
 import android.text.TextUtils;
@@ -77,6 +78,8 @@ public class MainActivity extends Activity {
     private final Runnable autoOffRunnable = this::exitApplicationAtSelectedTime;
     private boolean waitingForScreenWakeAfterActivityEnd = false;
     private boolean deviceEventsRegistered = false;
+    private ContentObserver screenOffTimeoutObserver;
+    private boolean screenOffTimeoutObserverRegistered = false;
     private boolean openedByCharger = false;
     private boolean openedByDeviceLock = false;
     private boolean bottomSwipeCandidate = false;
@@ -288,6 +291,7 @@ public class MainActivity extends Activity {
     protected void onStart() {
         super.onStart();
         registerDeviceStateReceiver();
+        registerScreenOffTimeoutObserver();
     }
 
     @Override
@@ -347,6 +351,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onStop() {
         unregisterDeviceStateReceiver();
+        unregisterScreenOffTimeoutObserver();
         super.onStop();
     }
 
@@ -1488,21 +1493,28 @@ public class MainActivity extends Activity {
             return;
         }
 
-        // Read Android's actual timeout; do not assume it is one or five minutes.
-        // Keep the display awake when the selected activity duration outlasts that
-        // timeout, or when device-admin must lock immediately at the selected deadline.
-        // FLAG_ALLOW_LOCK_WHILE_SCREEN_ON lets Android lock normally during this period
-        // when the user has enabled showing the screensaver on the lock screen.
+        // Read Android's actual inactivity timeout; do not assume it is one or five minutes.
+        // If this cycle already holds the display awake, keep it held until the selected
+        // activity deadline. Android's timeout is measured from prior user activity and
+        // does not restart merely because FLAG_KEEP_SCREEN_ON is removed; releasing early
+        // by (duration - timeout) could therefore switch the screen off too soon.
+        // FLAG_ALLOW_LOCK_WHILE_SCREEN_ON independently lets Android lock while the
+        // display stays lit when the user enabled screensaver-on-lock-screen.
         boolean keepAwake = isScreenLockAdminActive();
+        int currentWindowFlags = getWindow().getAttributes().flags;
+        boolean alreadyKeepingAwake =
+                (currentWindowFlags
+                        & android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) != 0;
+        if (!keepAwake && !restartCountdown && alreadyKeepingAwake) {
+            keepAwake = true;
+        }
         if (!keepAwake) {
             long systemTimeoutMs = getSystemScreenOffTimeoutMs();
             if (systemTimeoutMs < 0L) {
                 // If the setting cannot be read, retain the existing safe behavior.
                 keepAwake = true;
             } else {
-                long selectedDurationMs = minutes > Long.MAX_VALUE / 60_000L
-                        ? Long.MAX_VALUE : minutes * 60_000L;
-                keepAwake = selectedDurationMs > systemTimeoutMs;
+                keepAwake = remaining > systemTimeoutMs;
             }
         }
 
@@ -1651,6 +1663,41 @@ public class MainActivity extends Activity {
         if (!deviceEventsRegistered) return;
         try { unregisterReceiver(deviceStateReceiver); } catch (Throwable ignored) {}
         deviceEventsRegistered = false;
+    }
+
+    private void registerScreenOffTimeoutObserver() {
+        if (screenOffTimeoutObserverRegistered) return;
+        if (screenOffTimeoutObserver == null) {
+            screenOffTimeoutObserver = new ContentObserver(handler) {
+                @Override
+                public void onChange(boolean selfChange) {
+                    super.onChange(selfChange);
+                    // Re-evaluate the policy without restarting the activity deadline.
+                    // Once the activity timer has ended, its next cycle starts on screen wake.
+                    if (mainActivityResumed && !settingsDialogOpen
+                            && !waitingForScreenWakeAfterActivityEnd) {
+                        scheduleAutoOff(false);
+                    }
+                }
+            };
+        }
+        try {
+            getContentResolver().registerContentObserver(
+                    Settings.System.getUriFor(Settings.System.SCREEN_OFF_TIMEOUT),
+                    false, screenOffTimeoutObserver);
+            screenOffTimeoutObserverRegistered = true;
+        } catch (Throwable ignored) {
+            screenOffTimeoutObserverRegistered = false;
+        }
+    }
+
+    private void unregisterScreenOffTimeoutObserver() {
+        if (!screenOffTimeoutObserverRegistered || screenOffTimeoutObserver == null) return;
+        try {
+            getContentResolver().unregisterContentObserver(screenOffTimeoutObserver);
+        } catch (Throwable ignored) {
+        }
+        screenOffTimeoutObserverRegistered = false;
     }
 
     private void showSettingsButtonForThreeSeconds() {
