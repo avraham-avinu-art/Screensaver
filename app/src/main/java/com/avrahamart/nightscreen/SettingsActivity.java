@@ -18,6 +18,12 @@ import android.graphics.Path;
 import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
+import android.text.style.StyleSpan;
+import android.text.style.RelativeSizeSpan;
+import android.text.style.ForegroundColorSpan;
+import android.text.Spanned;
+import android.text.SpannableStringBuilder;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
@@ -334,7 +340,7 @@ public class SettingsActivity extends Activity {
             infoButton.setBackground(roundOutline(CONTROL_SURFACE, dp(17), OUTLINE));
             GraphicIcon infoGlyph = new GraphicIcon(this, "info-bubble", ACCENT);
             infoButton.addView(infoGlyph,
-                    new FrameLayout.LayoutParams(dp(20), dp(20), Gravity.CENTER));
+                    new FrameLayout.LayoutParams(dp(26), dp(26), Gravity.CENTER));
             LinearLayout.LayoutParams infoParams =
                     new LinearLayout.LayoutParams(dp(34), dp(34));
             infoParams.leftMargin = dp(3);
@@ -383,19 +389,137 @@ public class SettingsActivity extends Activity {
                 + "היא אינה נדרשת להצגת השומר מסך או לנעילה האוטומטית הרגילה של המכשיר. ללא ההרשאה, "
                 + "המכשיר ממשיך לפעול לפי מדיניות הנעילה שלו.\n"
                 + "• גישה להתראות נוגעת לנגן המערכת ואינה קובעת את זמן הפעילות.";
-        AlertDialog dialog = new AlertDialog.Builder(this)
-                .setTitle("הסבר על הגדרות זמני הפעילות")
-                .setMessage(help)
-                .setPositiveButton("הבנתי", null)
-                .create();
-        dialog.setOnShowListener(ignored -> {
-            TextView message = dialog.findViewById(android.R.id.message);
-            if (message != null) {
-                message.setTextDirection(View.TEXT_DIRECTION_RTL);
-                message.setGravity(Gravity.RIGHT | Gravity.TOP);
+
+        AlertDialog dialog = new AlertDialog.Builder(this).create();
+
+        LinearLayout panel = new LinearLayout(this);
+        panel.setOrientation(LinearLayout.VERTICAL);
+        panel.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        panel.setTextDirection(View.TEXT_DIRECTION_RTL);
+        panel.setPadding(dp(18), dp(16), dp(18), dp(14));
+        panel.setBackground(roundOutline(CARD_SURFACE, dp(22), CARD_OUTLINE));
+        if (Build.VERSION.SDK_INT >= 21) panel.setElevation(dp(3));
+
+        LinearLayout heading = new LinearLayout(this);
+        heading.setOrientation(LinearLayout.HORIZONTAL);
+        heading.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        heading.setGravity(Gravity.CENTER_VERTICAL);
+
+        FrameLayout helpIconShell = new FrameLayout(this);
+        helpIconShell.setBackground(roundOutline(CONTROL_SURFACE, dp(21), OUTLINE));
+        GraphicIcon helpIcon = new GraphicIcon(this, "help-dialog", ACCENT);
+        helpIconShell.addView(helpIcon,
+                new FrameLayout.LayoutParams(dp(28), dp(28), Gravity.CENTER));
+        heading.addView(helpIconShell, new LinearLayout.LayoutParams(dp(42), dp(42)));
+
+        LinearLayout titleBlock = new LinearLayout(this);
+        titleBlock.setOrientation(LinearLayout.VERTICAL);
+        titleBlock.setGravity(Gravity.CENTER_VERTICAL);
+        titleBlock.setPadding(dp(11), 0, 0, 0);
+
+        TextView title = textView("הגדרות זמני הפעילות", 20, ON_SURFACE);
+        title.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        title.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        title.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
+        titleBlock.addView(title, new LinearLayout.LayoutParams(-1, -2));
+
+        TextView subtitle = textView("מדריך קצר להבנת האפשרויות", 13, MUTED);
+        subtitle.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        subtitle.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
+        subtitle.setPadding(0, dp(2), 0, 0);
+        titleBlock.addView(subtitle, new LinearLayout.LayoutParams(-1, -2));
+        heading.addView(titleBlock, new LinearLayout.LayoutParams(0, -2, 1f));
+        panel.addView(heading, new LinearLayout.LayoutParams(-1, -2));
+
+        View divider = new View(this);
+        divider.setBackgroundColor(CARD_OUTLINE);
+        LinearLayout.LayoutParams dividerParams = new LinearLayout.LayoutParams(-1, dp(1));
+        dividerParams.topMargin = dp(13);
+        dividerParams.bottomMargin = dp(10);
+        panel.addView(divider, dividerParams);
+
+        ScrollView scroll = new ScrollView(this);
+        scroll.setFillViewport(false);
+        scroll.setVerticalScrollBarEnabled(false);
+        scroll.setOverScrollMode(View.OVER_SCROLL_IF_CONTENT_SCROLLS);
+        scroll.setClipToPadding(false);
+
+        TextView message = textView("", 15, ON_SURFACE);
+        message.setGravity(Gravity.RIGHT | Gravity.TOP);
+        message.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
+        message.setTextDirection(View.TEXT_DIRECTION_RTL);
+        message.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
+        message.setLineSpacing(dp(4), 1.0f);
+        message.setPadding(dp(2), dp(2), dp(2), dp(4));
+
+        SpannableStringBuilder styledHelp = new SpannableStringBuilder();
+        String[] lines = help.split("\n", -1);
+        for (int i = 0; i < lines.length; i++) {
+            String line = lines[i];
+            int start = styledHelp.length();
+            styledHelp.append(line);
+            int end = styledHelp.length();
+            if (!line.isEmpty() && !line.startsWith("•")) {
+                styledHelp.setSpan(new ForegroundColorSpan(ACCENT), start, end,
+                        Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                styledHelp.setSpan(new StyleSpan(Typeface.BOLD), start, end,
+                        Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                styledHelp.setSpan(new RelativeSizeSpan(1.04f), start, end,
+                        Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            } else if (line.startsWith("•")) {
+                styledHelp.setSpan(new ForegroundColorSpan(ACCENT), start, start + 1,
+                        Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             }
-        });
+            if (i < lines.length - 1) {
+                int newlineStart = styledHelp.length();
+                styledHelp.append('\n');
+                if (line.isEmpty()) {
+                    styledHelp.setSpan(new RelativeSizeSpan(0.55f), newlineStart, newlineStart + 1,
+                            Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                }
+            }
+        }
+        message.setText(styledHelp);
+        scroll.addView(message, new ScrollView.LayoutParams(-1, -2));
+
+        int maxBodyHeight = Math.min(dp(430),
+                Math.max(dp(210), getResources().getDisplayMetrics().heightPixels - dp(300)));
+        panel.addView(scroll, new LinearLayout.LayoutParams(-1, maxBodyHeight));
+
+        Button close = new Button(this);
+        close.setText("הבנתי");
+        close.setAllCaps(false);
+        close.setTextSize(15);
+        close.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        close.setTextColor(Color.rgb(7, 31, 49));
+        close.setMinWidth(0);
+        close.setMinHeight(0);
+        close.setPadding(dp(28), 0, dp(28), 0);
+        close.setBackground(pillBackground(ACCENT, dp(22)));
+        LinearLayout.LayoutParams closeParams =
+                new LinearLayout.LayoutParams(dp(124), dp(44));
+        closeParams.gravity = Gravity.CENTER_HORIZONTAL;
+        closeParams.topMargin = dp(12);
+        panel.addView(close, closeParams);
+        close.setOnClickListener(v -> dialog.dismiss());
+
+        dialog.setView(panel);
+        dialog.setCancelable(true);
+        dialog.setCanceledOnTouchOutside(true);
         dialog.show();
+
+        Window window = dialog.getWindow();
+        if (window != null) {
+            window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            window.addFlags(android.view.WindowManager.LayoutParams.FLAG_DIM_BEHIND);
+            android.util.DisplayMetrics metrics = getResources().getDisplayMetrics();
+            android.view.WindowManager.LayoutParams params = window.getAttributes();
+            params.width = Math.min(dp(520), metrics.widthPixels - dp(28));
+            params.height = android.view.WindowManager.LayoutParams.WRAP_CONTENT;
+            params.gravity = Gravity.CENTER;
+            params.dimAmount = 0.62f;
+            window.setAttributes(params);
+        }
     }
 
     private void addCheck(LinearLayout card, String label, String key, boolean defaultValue) {
@@ -1415,12 +1539,21 @@ public class SettingsActivity extends Activity {
 
             Path path = new Path();
             switch (type) {
-                case "info-bubble":
-                    canvas.drawCircle(12f, 12f, 9f, paint);
-                    paint.setStyle(Paint.Style.FILL);
-                    canvas.drawCircle(12f, 7f, 1.0f, paint);
-                    paint.setStyle(Paint.Style.STROKE);
-                    canvas.drawLine(12f, 10f, 12f, 17f, paint);
+                case "help-dialog":
+                    // An elegant help bubble: speech outline with a clear question mark.
+                    canvas.drawRoundRect(new RectF(3f, 3.5f, 21f, 18.5f), 4.5f, 4.5f, paint);
+                    path.moveTo(7f, 18.2f);
+                    path.lineTo(5.5f, 21f);
+                    path.lineTo(11f, 18.2f);
+                    canvas.drawPath(path, paint);
+                    path.reset();
+                    path.moveTo(9f, 8.2f);
+                    path.cubicTo(9.2f, 6.2f, 10.7f, 5.3f, 12.5f, 5.3f);
+                    path.cubicTo(14.7f, 5.3f, 16f, 6.5f, 16f, 8.1f);
+                    path.cubicTo(16f, 9.5f, 14.9f, 10.4f, 13.3f, 11.3f);
+                    path.cubicTo(12.4f, 11.8f, 12f, 12.4f, 12f, 13.3f);
+                    canvas.drawPath(path, paint);
+                    canvas.drawCircle(12f, 15.8f, 0.75f, paint);
                     break;
                 case "lockscreen-phone":
                     // Choice #1: phone outline with one solid lock centered in its screen.
