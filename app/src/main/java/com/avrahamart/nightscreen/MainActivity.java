@@ -75,7 +75,6 @@ public class MainActivity extends Activity {
     }
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Runnable autoOffRunnable = this::exitApplicationAtSelectedTime;
-    private boolean screenSleepPending = false;
     private boolean deviceEventsRegistered = false;
     private boolean openedByCharger = false;
     private boolean openedByDeviceLock = false;
@@ -99,8 +98,6 @@ public class MainActivity extends Activity {
                 }
             } else if (Intent.ACTION_BATTERY_CHANGED.equals(action)) {
                 updateBatteryPercentView();
-            } else if (Intent.ACTION_SCREEN_ON.equals(action) && screenSleepPending) {
-                wakeSaverDisplay();
             }
         }
     };
@@ -271,6 +268,16 @@ public class MainActivity extends Activity {
             getWindow().clearFlags(
                     android.view.WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED);
         }
+
+        // Keep the screensaver visible above the keyguard, while still allowing
+        // Android to activate the lock screen when the system timeout is reached.
+        if (enabled) {
+            getWindow().addFlags(
+                    android.view.WindowManager.LayoutParams.FLAG_ALLOW_LOCK_WHILE_SCREEN_ON);
+        } else {
+            getWindow().clearFlags(
+                    android.view.WindowManager.LayoutParams.FLAG_ALLOW_LOCK_WHILE_SCREEN_ON);
+        }
     }
 
     @Override
@@ -305,13 +312,7 @@ public class MainActivity extends Activity {
                 }
             }
 
-            if (screenSleepPending) {
-                if (isScreenInteractive()) wakeSaverDisplay();
-                else getWindow().clearFlags(
-                        android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-            } else {
-                scheduleAutoOff();
-            }
+            scheduleAutoOff();
             hideSystemUi();
             handler.removeCallbacks(ticker);
             handler.post(ticker);
@@ -1438,25 +1439,17 @@ public class MainActivity extends Activity {
 
         // Layout changes, media refreshes and returning from system settings must not
         // restart an already running inactivity countdown.
-        if (screenSleepPending && !restartCountdown) return;
         if (restartCountdown) {
             activityDeadlineElapsedRealtime = 0L;
-            screenSleepPending = false;
         }
 
-        // While charging, keep the screensaver active indefinitely. If it is permitted
-        // to show on the lock screen, do not hold the display awake: Android can lock
-        // normally and the saver remains available behind the keyguard. Only retain
-        // KEEP_SCREEN_ON when showing over the keyguard is disabled.
+        // While charging with "no shutdown" enabled, keep the display on indefinitely.
+        // FLAG_ALLOW_LOCK_WHILE_SCREEN_ON independently determines whether Android may
+        // activate the lock screen while the screensaver remains visible.
         if (getBool("noShutdownWhileCharging", false) && isDeviceCharging()) {
             activityDeadlineElapsedRealtime = 0L;
-            if (getBool("showOnLockScreen", Build.VERSION.SDK_INT >= 26)) {
-                getWindow().clearFlags(
-                        android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-            } else {
-                getWindow().addFlags(
-                        android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-            }
+            getWindow().addFlags(
+                    android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
             return;
         }
 
@@ -1472,13 +1465,8 @@ public class MainActivity extends Activity {
 
         if (minutes <= 0L) {
             activityDeadlineElapsedRealtime = 0L;
-            if (getBool("showOnLockScreen", Build.VERSION.SDK_INT >= 26)) {
-                getWindow().clearFlags(
-                        android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-            } else {
-                getWindow().addFlags(
-                        android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-            }
+            getWindow().addFlags(
+                    android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
             return;
         }
 
@@ -1493,25 +1481,20 @@ public class MainActivity extends Activity {
         }
 
         // Read Android's actual timeout; do not assume it is one or five minutes.
-        // The inactivity timer does not restart when KEEP_SCREEN_ON is released.
-        // If the selected duration exceeds the system timeout, keep the screen on
-        // for the full remaining duration, then release it at the selected deadline.
-        // If it is at most the system timeout, leave the display timeout to Android.
-        boolean showOnLockScreen = getBool(
-                "showOnLockScreen", Build.VERSION.SDK_INT >= 26);
-        boolean keepAwake = false;
-        if (!showOnLockScreen) {
-            keepAwake = isScreenLockAdminActive();
-            if (!keepAwake) {
-                long systemTimeoutMs = getSystemScreenOffTimeoutMs();
-                if (systemTimeoutMs < 0L) {
-                    // If the setting cannot be read, retain the existing safe behavior.
-                    keepAwake = true;
-                } else {
-                    long selectedDurationMs = minutes > Long.MAX_VALUE / 60_000L
-                            ? Long.MAX_VALUE : minutes * 60_000L;
-                    keepAwake = selectedDurationMs > systemTimeoutMs;
-                }
+        // Keep the display awake when the selected activity duration outlasts that
+        // timeout, or when device-admin must lock immediately at the selected deadline.
+        // FLAG_ALLOW_LOCK_WHILE_SCREEN_ON lets Android lock normally during this period
+        // when the user has enabled showing the screensaver on the lock screen.
+        boolean keepAwake = isScreenLockAdminActive();
+        if (!keepAwake) {
+            long systemTimeoutMs = getSystemScreenOffTimeoutMs();
+            if (systemTimeoutMs < 0L) {
+                // If the setting cannot be read, retain the existing safe behavior.
+                keepAwake = true;
+            } else {
+                long selectedDurationMs = minutes > Long.MAX_VALUE / 60_000L
+                        ? Long.MAX_VALUE : minutes * 60_000L;
+                keepAwake = selectedDurationMs > systemTimeoutMs;
             }
         }
 
@@ -1535,34 +1518,34 @@ public class MainActivity extends Activity {
     }
 
     private void exitApplicationAtSelectedTime() {
-        if (isFinishing() || screenSleepPending) return;
+        if (isFinishing()) return;
         handler.removeCallbacks(autoOffRunnable);
         activityDeadlineElapsedRealtime = 0L;
         getWindow().clearFlags(
                 android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-        // If showing on the lock screen is enabled, allow Android's normal screen
-        // timeout and keyguard to operate while the activity timer runs in background.
-        // At the selected deadline we only end the screensaver; we do not issue lockNow().
-        if (getBool("showOnLockScreen", Build.VERSION.SDK_INT >= 26)
-                || !isScreenLockAdminActive()) {
+        // End the screensaver at the selected deadline. Without device-admin
+        // permission, let Android complete screen-off and locking according to its policy.
+        if (!isScreenLockAdminActive()) {
             finishAffinity();
             return;
         }
 
-        // When explicitly enabled by the user, lock the device at the chosen time.
-        screenSleepPending = true;
+        // Device-admin permission only adds an immediate lock at the selected deadline.
+        // Do not restart the screensaver when the user later wakes the device.
         try {
             if (devicePolicyManager == null) {
                 devicePolicyManager = (DevicePolicyManager) getSystemService(
                         Context.DEVICE_POLICY_SERVICE);
             }
-            if (devicePolicyManager == null) throw new IllegalStateException("Device policy unavailable");
+            if (devicePolicyManager == null) {
+                throw new IllegalStateException("Device policy unavailable");
+            }
             devicePolicyManager.lockNow();
         } catch (Throwable ignored) {
-            screenSleepPending = false;
-            finishAffinity();
+            // The selected screensaver duration has ended even if immediate locking fails.
         }
+        finishAffinity();
     }
 
     private boolean isScreenLockAdminActive() {
@@ -1579,27 +1562,6 @@ public class MainActivity extends Activity {
                     && devicePolicyManager.isAdminActive(screenLockAdminComponent);
         } catch (Throwable ignored) {
             return false;
-        }
-    }
-
-    private boolean isScreenInteractive() {
-        try {
-            android.os.PowerManager power = (android.os.PowerManager)
-                    getSystemService(POWER_SERVICE);
-            return power != null && power.isInteractive();
-        } catch (Throwable ignored) {
-            return true;
-        }
-    }
-
-    private void wakeSaverDisplay() {
-        if (!screenSleepPending) return;
-        screenSleepPending = false;
-        scheduleAutoOff(true);
-        showSettingsButtonForThreeSeconds();
-        if (stageView != null) {
-            stageView.post(() -> updateScreenPositions(
-                    stageView, clockBlockView, mediaHolderView));
         }
     }
 
@@ -1624,7 +1586,6 @@ public class MainActivity extends Activity {
         filter.addAction(Intent.ACTION_POWER_CONNECTED);
         filter.addAction(Intent.ACTION_POWER_DISCONNECTED);
         filter.addAction(Intent.ACTION_BATTERY_CHANGED);
-        filter.addAction(Intent.ACTION_SCREEN_ON);
         try {
             if (Build.VERSION.SDK_INT >= 33) {
                 registerReceiver(deviceStateReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
@@ -1657,8 +1618,6 @@ public class MainActivity extends Activity {
         boolean exitBySwipe = false;
 
         if (action == android.view.MotionEvent.ACTION_DOWN) {
-            if (screenSleepPending) wakeSaverDisplay();
-
             // When launched automatically by charging or device lock, an upward
             // gesture from the bottom edge dismisses the saver back to the lock screen.
             bottomSwipeCandidate = false;
@@ -1707,7 +1666,6 @@ public class MainActivity extends Activity {
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-        if (screenSleepPending) wakeSaverDisplay();
         if (keyCode != KeyEvent.KEYCODE_BACK) {
             showSettingsButtonForThreeSeconds();
         }
@@ -2556,9 +2514,6 @@ public class MainActivity extends Activity {
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
-        if (hasFocus && screenSleepPending && isScreenInteractive()) {
-            wakeSaverDisplay();
-        }
         if (hasFocus && !settingsDialogOpen) {
             hideSystemUi();
         }
