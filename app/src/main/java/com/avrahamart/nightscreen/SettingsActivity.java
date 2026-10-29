@@ -1,6 +1,7 @@
 package com.avrahamart.nightscreen;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.NotificationManager;
 import android.app.admin.DevicePolicyManager;
 import android.content.ActivityNotFoundException;
@@ -260,6 +261,7 @@ public class SettingsActivity extends Activity {
                 new String[]{"top", "upper", "middle"}, "clockDatePosition");
 
         LinearLayout player = addCard(content, "תצוגת הנגן");
+        addCheck(player, "הצגה רק בתחילת שיר", "showPlayerOnlyAtStart", false);
         addCheck(player, "פרטי אמן", "showDetails", getBool("showDetails", true));
         addCheck(player, "שורת מיקום + זמן", "showProgress", true);
         addDiscreteSlider(player, "גודל הנגן",
@@ -322,6 +324,24 @@ public class SettingsActivity extends Activity {
                 new LinearLayout.LayoutParams(0, dp(42), 1f);
         headingRow.addView(heading, headingTextParams);
 
+        // Only the activity-time card gets a compact information control at its
+        // heading height; no other settings card changes.
+        if ("הגדרת זמני הפעילות".equals(title)) {
+            FrameLayout infoButton = new FrameLayout(this);
+            infoButton.setContentDescription("הסבר על הגדרות זמני הפעילות");
+            infoButton.setClickable(true);
+            infoButton.setFocusable(true);
+            infoButton.setBackground(roundOutline(CONTROL_SURFACE, dp(17), OUTLINE));
+            GraphicIcon infoGlyph = new GraphicIcon(this, "info-bubble", ACCENT);
+            infoButton.addView(infoGlyph,
+                    new FrameLayout.LayoutParams(dp(20), dp(20), Gravity.CENTER));
+            LinearLayout.LayoutParams infoParams =
+                    new LinearLayout.LayoutParams(dp(34), dp(34));
+            infoParams.leftMargin = dp(3);
+            headingRow.addView(infoButton, 0, infoParams);
+            infoButton.setOnClickListener(v -> showActivityTimeHelpDialog());
+        }
+
         card.addView(headingRow, new LinearLayout.LayoutParams(-1, dp(42)));
 
         View separator = new View(this);
@@ -331,6 +351,51 @@ public class SettingsActivity extends Activity {
         separatorParams.setMargins(dp(2), dp(5), dp(2), dp(10));
         card.addView(separator, separatorParams);
         return card;
+    }
+
+    private void showActivityTimeHelpDialog() {
+        String help =
+                "זמן פעילות\n"
+                + "• לפי המכשיר — משך ההצגה נשען על זמן הכיבוי שמוגדר באנדרואיד.\n"
+                + "• דקה אחת / חמש דקות — השומר מסך נשאר מוצג למשך הזמן שנבחר באפליקציה. "
+                + "האפליקציה מתאמת את שחרור מניעת הכיבוי לזמן המכשיר, כדי למנוע תוספת זמן או כיבוי מוקדם.\n"
+                + "• ללא כיבוי — השומר מסך נשאר מוצג ללא מגבלת זמן, עד ליציאה יזומה או שינוי מצב מתאים.\n\n"
+                + "הצגה במסך הנעילה\n"
+                + "• פעילה — השומר מסך יכול להישאר מעל מסך הנעילה גם אחרי שהמכשיר ננעל אוטומטית. "
+                + "האפשרות הזו אינה מפעילה את השומר מסך מעצמה.\n"
+                + "• כבויה — השומר מסך אינו אמור להופיע מעל מסך הנעילה. אם גם ההפעלה האוטומטית בנעילה פעילה, "
+                + "היא תכובה כדי למנוע מצב סותר.\n\n"
+                + "הפעלה אוטומטית בנעילה\n"
+                + "• פעילה יחד עם הצגה במסך הנעילה — האפליקציה מנסה לפתוח את השומר מסך כאשר המכשיר ננעל.\n"
+                + "• כבויה — נעילת המכשיר לבדה לא מפעילה את השומר מסך; אפשר עדיין להפעיל אותו ידנית או בטעינה.\n\n"
+                + "איך ההגדרות פועלות יחד?\n"
+                + "• זמן פעילות קובע כמה זמן השומר מסך מוצג; הצגה במסך הנעילה קובעת אם הוא יכול להישאר מעל מסך הנעילה. "
+                + "אלה שתי מטרות שונות.\n"
+                + "• הצגה במסך הנעילה פעילה, אך הפעלה אוטומטית בנעילה כבויה — השומר מסך יכול להמשיך להופיע אם הופעל קודם, "
+                + "אך אינו מתחיל מעצמו בגלל הנעילה.\n"
+                + "• שתי האפשרויות פעילות — השומר מסך יכול להתחיל אוטומטית בנעילה וגם להישאר מוצג מעליה.\n"
+                + "• הפעלה אוטומטית בטעינה היא הגדרה נפרדת; היא אינה משנה את זמן הפעילות הרגיל. "
+                + "ההגדרה ללא כיבוי בטעינה יכולה להשאיר את המסך פעיל כל עוד הטעינה נמשכת.\n\n"
+                + "הרשאות שמשפיעות על ההתנהגות\n"
+                + "• הצגה מעל אפליקציות אחרות — נדרשת להפעלה אוטומטית ברקע בחלק מגרסאות Android, "
+                + "לרבות Android 10 ומעלה. בלעדיה, ההפעלה האוטומטית עלולה לא לפעול.\n"
+                + "• מנהל מכשיר — הרשאה נפרדת שמאפשרת לשומר מסך לבקש נעילה מיידית בסוף זמן הפעילות. "
+                + "היא אינה נדרשת להצגת השומר מסך או לנעילה האוטומטית הרגילה של המכשיר. ללא ההרשאה, "
+                + "המכשיר ממשיך לפעול לפי מדיניות הנעילה שלו.\n"
+                + "• גישה להתראות נוגעת לנגן המערכת ואינה קובעת את זמן הפעילות.";
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setTitle("הסבר על הגדרות זמני הפעילות")
+                .setMessage(help)
+                .setPositiveButton("הבנתי", null)
+                .create();
+        dialog.setOnShowListener(ignored -> {
+            TextView message = dialog.findViewById(android.R.id.message);
+            if (message != null) {
+                message.setTextDirection(View.TEXT_DIRECTION_RTL);
+                message.setGravity(Gravity.RIGHT | Gravity.TOP);
+            }
+        });
+        dialog.show();
     }
 
     private void addCheck(LinearLayout card, String label, String key, boolean defaultValue) {
@@ -1350,6 +1415,13 @@ public class SettingsActivity extends Activity {
 
             Path path = new Path();
             switch (type) {
+                case "info-bubble":
+                    canvas.drawCircle(12f, 12f, 9f, paint);
+                    paint.setStyle(Paint.Style.FILL);
+                    canvas.drawCircle(12f, 7f, 1.0f, paint);
+                    paint.setStyle(Paint.Style.STROKE);
+                    canvas.drawLine(12f, 10f, 12f, 17f, paint);
+                    break;
                 case "lockscreen-phone":
                     // Choice #1: phone outline with one solid lock centered in its screen.
                     canvas.drawRoundRect(new RectF(5.8f, 1.2f, 18.2f, 22.8f), 2.3f, 2.3f, paint);
