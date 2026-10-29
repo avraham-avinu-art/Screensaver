@@ -338,7 +338,7 @@ public class SettingsActivity extends Activity {
             infoButton.setClickable(true);
             infoButton.setFocusable(true);
             infoButton.setBackground(roundOutline(CONTROL_SURFACE, dp(17), OUTLINE));
-            GraphicIcon infoGlyph = new GraphicIcon(this, "help-dialog", ACCENT);
+            GraphicIcon infoGlyph = new GraphicIcon(this, "message-circle-question", ACCENT);
             infoButton.addView(infoGlyph,
                     new FrameLayout.LayoutParams(dp(26), dp(26), Gravity.CENTER));
             LinearLayout.LayoutParams infoParams =
@@ -1537,6 +1537,28 @@ public class SettingsActivity extends Activity {
 
             Path path = new Path();
             switch (type) {
+                case "message-circle-question":
+                    // Match the selected Lucide-style message-circle-question outline:
+                    // circular speech bubble, lower-left tail, and question mark.
+                    path.moveTo(2.992f, 16.342f);
+                    path.cubicTo(3.12f, 16.72f, 3.12f, 17.15f, 3.086f, 17.509f);
+                    path.lineTo(2.021f, 20.799f);
+                    path.cubicTo(1.78f, 21.53f, 2.45f, 22.2f, 3.257f, 21.967f);
+                    path.lineTo(6.67f, 20.969f);
+                    path.cubicTo(7.04f, 20.86f, 7.4f, 20.9f, 7.769f, 21.061f);
+                    path.arcTo(new RectF(2f, 2f, 22f, 22f), 116f, -322f, false);
+                    path.close();
+                    canvas.drawPath(path, paint);
+                    path.reset();
+                    path.moveTo(9.09f, 9f);
+                    path.cubicTo(9.5f, 5.8f, 14.7f, 5.8f, 14.92f, 10f);
+                    path.cubicTo(14.92f, 12f, 11.92f, 13f, 11.92f, 13f);
+                    canvas.drawPath(path, paint);
+                    path.reset();
+                    path.moveTo(12f, 17f);
+                    path.lineTo(12.01f, 17f);
+                    canvas.drawPath(path, paint);
+                    break;
                 case "help-dialog":
                     // An elegant help bubble: speech outline with a clear question mark.
                     canvas.drawRoundRect(new RectF(3f, 3.5f, 21f, 18.5f), 4.5f, 4.5f, paint);
