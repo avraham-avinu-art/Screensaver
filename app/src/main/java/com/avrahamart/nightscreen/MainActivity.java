@@ -76,6 +76,7 @@ public class MainActivity extends Activity {
     }
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Runnable autoOffRunnable = this::exitApplicationAtSelectedTime;
+    private final Runnable screenOnReleaseRunnable = this::releaseScreenOnHoldForSystemTimeout;
     private boolean waitingForScreenWakeAfterActivityEnd = false;
     private boolean deviceEventsRegistered = false;
     private ContentObserver screenOffTimeoutObserver;
@@ -1440,6 +1441,7 @@ public class MainActivity extends Activity {
 
     private void scheduleAutoOff(boolean restartCountdown) {
         handler.removeCallbacks(autoOffRunnable);
+        handler.removeCallbacks(screenOnReleaseRunnable);
         if (settingsDialogOpen && !restartCountdown) {
             return;
         }
@@ -1493,30 +1495,15 @@ public class MainActivity extends Activity {
             return;
         }
 
-        // Read Android's actual inactivity timeout; do not assume it is one or five minutes.
-        // If this cycle already holds the display awake, keep it held until the selected
-        // activity deadline. Android's timeout is measured from prior user activity and
-        // does not restart merely because FLAG_KEEP_SCREEN_ON is removed; releasing early
-        // by (duration - timeout) could therefore switch the screen off too soon.
-        // FLAG_ALLOW_LOCK_WHILE_SCREEN_ON independently lets Android lock while the
-        // display stays lit when the user enabled screensaver-on-lock-screen.
-        boolean keepAwake = isScreenLockAdminActive();
-        int currentWindowFlags = getWindow().getAttributes().flags;
-        boolean alreadyKeepingAwake =
-                (currentWindowFlags
-                        & android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) != 0;
-        if (!keepAwake && !restartCountdown && alreadyKeepingAwake) {
-            keepAwake = true;
-        }
-        if (!keepAwake) {
-            long systemTimeoutMs = getSystemScreenOffTimeoutMs();
-            if (systemTimeoutMs < 0L) {
-                // If the setting cannot be read, retain the existing safe behavior.
-                keepAwake = true;
-            } else {
-                keepAwake = remaining > systemTimeoutMs;
-            }
-        }
+        // Android's timeout is allowed to finish after this hold is released. Schedule
+        // the release before the activity deadline by exactly the current system timeout:
+        // e.g. a 5-minute activity and a 1-minute device timeout means hold for 4 minutes,
+        // then let Android's own 1-minute countdown complete at the activity deadline.
+        // If device-admin is active, keep the display on to the deadline and lock there.
+        long systemTimeoutMs = getSystemScreenOffTimeoutMs();
+        boolean adminActive = isScreenLockAdminActive();
+        boolean keepAwake = adminActive || systemTimeoutMs < 0L
+                || remaining > systemTimeoutMs;
 
         if (keepAwake) {
             getWindow().addFlags(
@@ -1524,6 +1511,16 @@ public class MainActivity extends Activity {
         } else {
             getWindow().clearFlags(
                     android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        }
+
+        if (keepAwake && !adminActive && systemTimeoutMs >= 0L) {
+            long releaseDelay = remaining - systemTimeoutMs;
+            if (releaseDelay > 0L) {
+                handler.postDelayed(screenOnReleaseRunnable, releaseDelay);
+            } else {
+                getWindow().clearFlags(
+                        android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            }
         }
         handler.postDelayed(autoOffRunnable, remaining);
     }
@@ -1537,9 +1534,48 @@ public class MainActivity extends Activity {
         }
     }
 
+    private void releaseScreenOnHoldForSystemTimeout() {
+        if (isFinishing() || waitingForScreenWakeAfterActivityEnd
+                || activityDeadlineElapsedRealtime <= 0L) return;
+
+        String value = getString("screenSaverDuration", "device");
+        if ("device".equals(value)) return;
+        long minutes = 0L;
+        try { minutes = Long.parseLong(value); } catch (Throwable ignored) {}
+        if (minutes <= 0L || (getBool("noShutdownWhileCharging", false)
+                && isDeviceCharging()) || isScreenLockAdminActive()) return;
+
+        long remaining = activityDeadlineElapsedRealtime - SystemClock.elapsedRealtime();
+        if (remaining <= 0L) {
+            exitApplicationAtSelectedTime();
+            return;
+        }
+
+        long systemTimeoutMs = getSystemScreenOffTimeoutMs();
+        if (systemTimeoutMs < 0L) {
+            // If the current system timeout cannot be read, keep the screen on safely.
+            getWindow().addFlags(
+                    android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            return;
+        }
+
+        if (remaining > systemTimeoutMs) {
+            // The timeout changed after this callback was scheduled. Keep the display
+            // awake and recompute the release time from the unchanged activity deadline.
+            getWindow().addFlags(
+                    android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            handler.postDelayed(screenOnReleaseRunnable, remaining - systemTimeoutMs);
+        } else {
+            // Release now, allowing the device's normal timeout to finish the display cycle.
+            getWindow().clearFlags(
+                    android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        }
+    }
+
     private void exitApplicationAtSelectedTime() {
         if (isFinishing()) return;
         handler.removeCallbacks(autoOffRunnable);
+        handler.removeCallbacks(screenOnReleaseRunnable);
         activityDeadlineElapsedRealtime = 0L;
         getWindow().clearFlags(
                 android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
