@@ -379,6 +379,7 @@ public class MainActivity extends Activity {
     protected void onDestroy() {
         handler.removeCallbacks(ticker);
         handler.removeCallbacks(autoOffRunnable);
+        handler.removeCallbacks(screenOnReleaseRunnable);
         handler.removeCallbacks(hideSettingsButtonRunnable);
         handler.removeCallbacks(hideProgressRowAfterMetadataChange);
         handler.removeCallbacks(hidePreviousButtonIfStillUnsupported);
