@@ -405,7 +405,7 @@ public class SettingsActivity extends Activity {
 
         FrameLayout helpIconShell = new FrameLayout(this);
         helpIconShell.setBackground(roundOutline(CONTROL_SURFACE, dp(21), OUTLINE));
-        GraphicIcon helpIcon = new GraphicIcon(this, "help-dialog", ACCENT);
+        GraphicIcon helpIcon = new GraphicIcon(this, "message-circle-question", ACCENT);
         helpIconShell.addView(helpIcon,
                 new FrameLayout.LayoutParams(dp(28), dp(28), Gravity.CENTER));
         heading.addView(helpIconShell, new LinearLayout.LayoutParams(dp(42), dp(42)));
