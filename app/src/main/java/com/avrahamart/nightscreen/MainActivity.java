@@ -1667,11 +1667,13 @@ public class MainActivity extends Activity {
     }
 
     private String screenTimeoutBehaviorPreferenceKey() {
-        String identity = (Build.MANUFACTURER + "_" + Build.BRAND + "_"
-                + Build.MODEL + "_sdk" + Build.VERSION.SDK_INT)
-                .toLowerCase(Locale.US)
-                .replaceAll("[^a-z0-9]+", "_");
-        return "screenOffBehaviorProfileV1_" + identity;
+        // Include the device software fingerprint, because OEM changes can alter
+        // power-timeout behavior even when the model and Android API level are equal.
+        String identity = (Build.MANUFACTURER + "|" + Build.BRAND + "|"
+                + Build.MODEL + "|sdk=" + Build.VERSION.SDK_INT + "|"
+                + Build.FINGERPRINT).toLowerCase(Locale.US);
+        return "screenOffBehaviorProfileV1_"
+                + Integer.toHexString(identity.hashCode());
     }
 
     private int getScreenTimeoutBehaviorProfile() {
