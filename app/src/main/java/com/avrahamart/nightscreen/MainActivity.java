@@ -56,6 +56,7 @@ import java.util.List;
 import java.util.Locale;
 
 public class MainActivity extends Activity {
+    private static final long PLAYER_START_WINDOW_MS = 4_000L;
     private static final int SCREEN_TIMEOUT_PROFILE_RELEASE_RESTARTS = 1;
     private static final int SCREEN_TIMEOUT_PROFILE_ELAPSED_DURING_HOLD = 2;
     private static final double SCREEN_TIMEOUT_EARLY_OFF_THRESHOLD = 0.40;
@@ -92,6 +93,8 @@ public class MainActivity extends Activity {
     private boolean openedByCharger = false;
     private boolean openedByDeviceLock = false;
     private boolean bottomSwipeCandidate = false;
+    private boolean bottomSwipeDragging = false;
+    private boolean bottomSwipeDismissAnimating = false;
     private float bottomSwipeStartX = 0f;
     private float bottomSwipeStartY = 0f;
     private long activityDeadlineElapsedRealtime = 0L;
@@ -160,6 +163,16 @@ public class MainActivity extends Activity {
     private int mediaProgressBaseWidth;
     private String lastTitle = "";
     private String lastArtist = "";
+    private String lastObservedTrackIdentity = null;
+    private boolean lastPlaybackWasActive = false;
+    private boolean playerIntroWindowVisible = false;
+    private long playerIntroWindowDeadlineElapsedRealtime = 0L;
+    private final Runnable hidePlayerIntroWindowRunnable = () -> {
+        playerIntroWindowVisible = false;
+        playerIntroWindowDeadlineElapsedRealtime = 0L;
+        updatePlayerMirrorVisibility();
+        refreshMediaHolderPosition();
+    };
 
     private LinearLayout mediaSetup;
     private LinearLayout mediaMirror;
@@ -1850,14 +1863,22 @@ public class MainActivity extends Activity {
 
     @Override
     public boolean dispatchTouchEvent(android.view.MotionEvent event) {
+        if (bottomSwipeDismissAnimating) return true;
+
         int action = event.getActionMasked();
         boolean exitBySwipe = false;
+        boolean consumeForSwipe = bottomSwipeDragging;
 
         if (action == android.view.MotionEvent.ACTION_DOWN) {
-            // When launched automatically by charging or device lock, an upward
-            // gesture from the bottom edge dismisses the saver back to the lock screen.
             bottomSwipeCandidate = false;
-            if (openedByCharger || openedByDeviceLock) {
+            bottomSwipeDragging = false;
+            if (stageView != null) {
+                stageView.animate().cancel();
+                stageView.setTranslationY(0f);
+            }
+
+            // Use the same bottom-edge swipe no matter how the screensaver was opened.
+            if (!settingsDialogOpen) {
                 int decorHeight = getWindow().getDecorView().getHeight();
                 if (decorHeight > 0 && event.getY() >= decorHeight - dp(96)) {
                     bottomSwipeCandidate = true;
@@ -1876,28 +1897,91 @@ public class MainActivity extends Activity {
                 && bottomSwipeCandidate) {
             float deltaX = Math.abs(event.getX() - bottomSwipeStartX);
             float downDistance = event.getY() - bottomSwipeStartY;
-            if (downDistance > dp(24) || deltaX > dp(96)) {
-                bottomSwipeCandidate = false;
+
+            if (!bottomSwipeDragging) {
+                if (downDistance > dp(24) || deltaX > dp(96)) {
+                    bottomSwipeCandidate = false;
+                } else if (downDistance <= -dp(12)
+                        && -downDistance > deltaX * 1.2f) {
+                    bottomSwipeDragging = true;
+                    consumeForSwipe = true;
+
+                    // Cancel the child control's touch gesture once an upward drag is
+                    // recognized, so the drag moves the screensaver rather than a control.
+                    android.view.MotionEvent cancel =
+                            android.view.MotionEvent.obtain(event);
+                    cancel.setAction(android.view.MotionEvent.ACTION_CANCEL);
+                    super.dispatchTouchEvent(cancel);
+                    cancel.recycle();
+                }
+            }
+
+            if (bottomSwipeDragging && stageView != null) {
+                stageView.setTranslationY(Math.min(0f, downDistance));
+                consumeForSwipe = true;
             }
         } else if (action == android.view.MotionEvent.ACTION_UP) {
-            if (bottomSwipeCandidate) {
+            if (bottomSwipeDragging) {
+                float upwardDistance = bottomSwipeStartY - event.getY();
+                float horizontalDistance = Math.abs(event.getX() - bottomSwipeStartX);
+                float stageHeight = stageView == null ? dp(600) : stageView.getHeight();
+                float dismissThreshold = Math.max(
+                        dp(90), Math.min(dp(160), stageHeight * 0.18f));
+                exitBySwipe = upwardDistance >= dismissThreshold
+                        && upwardDistance > horizontalDistance * 1.2f;
+                consumeForSwipe = true;
+                if (!exitBySwipe && stageView != null) {
+                    stageView.animate().cancel();
+                    stageView.animate().translationY(0f)
+                            .setDuration(160L).start();
+                }
+            } else if (bottomSwipeCandidate) {
+                // Fallback for a short stream in which Android delivers no MOVE events.
                 float upwardDistance = bottomSwipeStartY - event.getY();
                 float horizontalDistance = Math.abs(event.getX() - bottomSwipeStartX);
                 exitBySwipe = upwardDistance >= dp(120)
                         && upwardDistance > horizontalDistance * 1.2f;
+                consumeForSwipe = exitBySwipe;
             }
             bottomSwipeCandidate = false;
+            bottomSwipeDragging = false;
         } else if (action == android.view.MotionEvent.ACTION_CANCEL) {
+            if (bottomSwipeDragging && stageView != null) {
+                stageView.animate().cancel();
+                stageView.animate().translationY(0f).setDuration(160L).start();
+            }
+            consumeForSwipe = bottomSwipeDragging;
             bottomSwipeCandidate = false;
+            bottomSwipeDragging = false;
         }
 
-        boolean handled = super.dispatchTouchEvent(event);
-        if (exitBySwipe && (openedByCharger || openedByDeviceLock) && !settingsDialogOpen) {
-            handler.removeCallbacks(autoOffRunnable);
-            finishAffinity();
+        boolean handled = consumeForSwipe ? true : super.dispatchTouchEvent(event);
+        if (exitBySwipe && !settingsDialogOpen) {
+            dismissScreensaverWithUpwardSlide();
             return true;
         }
         return handled;
+    }
+
+    private void dismissScreensaverWithUpwardSlide() {
+        if (bottomSwipeDismissAnimating || settingsDialogOpen) return;
+        bottomSwipeDismissAnimating = true;
+        handler.removeCallbacks(autoOffRunnable);
+        handler.removeCallbacks(screenOnReleaseRunnable);
+
+        if (stageView == null || stageView.getHeight() <= 0) {
+            finishAffinity();
+            return;
+        }
+
+        float exitY = -Math.max(stageView.getHeight(), getWindow().getDecorView().getHeight());
+        stageView.animate().cancel();
+        stageView.animate()
+                .translationY(exitY)
+                .setDuration(190L)
+                .setInterpolator(new android.view.animation.AccelerateInterpolator())
+                .withEndAction(this::finishAffinity)
+                .start();
     }
 
     @Override
@@ -2213,6 +2297,7 @@ public class MainActivity extends Activity {
             PlaybackState state = mediaController.getPlaybackState();
             MediaMetadata metadata = mediaController.getMetadata();
             if (state == null) {
+                lastPlaybackWasActive = false;
                 hideMediaMirror();
                 return;
             }
@@ -2221,6 +2306,7 @@ public class MainActivity extends Activity {
             if (playback != PlaybackState.STATE_PLAYING &&
                     playback != PlaybackState.STATE_BUFFERING &&
                     playback != PlaybackState.STATE_PAUSED) {
+                lastPlaybackWasActive = false;
                 hideMediaMirror();
                 return;
             }
@@ -2263,6 +2349,21 @@ public class MainActivity extends Activity {
             long duration = metadata == null ? 0L : metadata.getLong(MediaMetadata.METADATA_KEY_DURATION);
             long position = Math.max(0L, state.getPosition());
             if (duration > 0) position = Math.min(position, duration);
+
+            String mediaId = metadata == null ? null
+                    : metadata.getString(MediaMetadata.METADATA_KEY_MEDIA_ID);
+            String trackIdentity = mediaId != null && !mediaId.trim().isEmpty()
+                    ? "id:" + mediaId.trim()
+                    : (!"מדיה".equals(title) && !title.trim().isEmpty()
+                            ? "title:" + title.trim() : "");
+            boolean playbackActive = playback == PlaybackState.STATE_PLAYING
+                    || playback == PlaybackState.STATE_BUFFERING;
+            if (!trackIdentity.isEmpty()) {
+                observeTrackForPlayerIntro(trackIdentity, playbackActive, position);
+            } else {
+                lastPlaybackWasActive = playbackActive;
+            }
+
             boolean showDetails = getBool("showDetails", true);
             if (artistChanged) {
                 stopArtistMarquee();
@@ -2327,15 +2428,68 @@ public class MainActivity extends Activity {
             }
 
             applyMediaFrame(true);
-            mediaMirror.setVisibility(getBool("showPlayer", false) ? View.VISIBLE : View.GONE);
+            updatePlayerMirrorVisibility();
             mediaMirror.requestLayout();
-            View parent = mediaMirror.getParent() instanceof View ? (View) mediaMirror.getParent() : null;
-            if (parent != null && parent.getParent() instanceof FrameLayout) {
-                FrameLayout stage = (FrameLayout) parent.getParent();
-                stage.post(() -> updateScreenPositions(stageView, clockBlockView, mediaHolderView));
-            }
+            refreshMediaHolderPosition();
         } catch (Throwable ignored) {
             hideMediaMirror();
+        }
+    }
+
+    private void observeTrackForPlayerIntro(String trackIdentity,
+                                            boolean playbackActive,
+                                            long positionMs) {
+        boolean firstObservedTrack = lastObservedTrackIdentity == null;
+        boolean trackChanged = !firstObservedTrack
+                && !trackIdentity.equals(lastObservedTrackIdentity);
+        boolean playbackJustStarted = playbackActive && !lastPlaybackWasActive;
+        boolean introOnly = getBool("showPlayerOnlyAtStart", false);
+
+        if (!introOnly) {
+            handler.removeCallbacks(hidePlayerIntroWindowRunnable);
+            playerIntroWindowVisible = false;
+            playerIntroWindowDeadlineElapsedRealtime = 0L;
+        } else if (playbackActive && trackChanged) {
+            // A metadata identity change covers manual skips and automatic next-track transitions.
+            startPlayerIntroWindow(PLAYER_START_WINDOW_MS);
+        } else if (playbackActive && (firstObservedTrack || playbackJustStarted)
+                && positionMs < PLAYER_START_WINDOW_MS) {
+            // On the first observation or playback start, show only the part of the first
+            // four seconds that remains; launching the screensaver mid-song must not replay it.
+            startPlayerIntroWindow(PLAYER_START_WINDOW_MS - Math.max(0L, positionMs));
+        }
+
+        lastObservedTrackIdentity = trackIdentity;
+        lastPlaybackWasActive = playbackActive;
+    }
+
+    private void startPlayerIntroWindow(long durationMs) {
+        if (!getBool("showPlayerOnlyAtStart", false)) return;
+        long delay = Math.max(1L, durationMs);
+        playerIntroWindowVisible = true;
+        playerIntroWindowDeadlineElapsedRealtime = SystemClock.elapsedRealtime() + delay;
+        handler.removeCallbacks(hidePlayerIntroWindowRunnable);
+        handler.postDelayed(hidePlayerIntroWindowRunnable, delay);
+    }
+
+    private void updatePlayerMirrorVisibility() {
+        if (mediaMirror == null) return;
+        boolean enabled = getBool("showPlayer", false);
+        boolean introOnly = getBool("showPlayerOnlyAtStart", false);
+        boolean introWindowOpen = playerIntroWindowVisible
+                && SystemClock.elapsedRealtime() < playerIntroWindowDeadlineElapsedRealtime;
+        if (introOnly && !introWindowOpen) enabled = false;
+        mediaMirror.setVisibility(enabled ? View.VISIBLE : View.GONE);
+        if (!enabled) {
+            stopTitleMarquee();
+            stopArtistMarquee();
+        }
+    }
+
+    private void refreshMediaHolderPosition() {
+        if (stageView != null) {
+            stageView.post(() -> updateScreenPositions(
+                    stageView, clockBlockView, mediaHolderView));
         }
     }
 
