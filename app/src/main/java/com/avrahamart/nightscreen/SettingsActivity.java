@@ -362,31 +362,27 @@ public class SettingsActivity extends Activity {
     private void showActivityTimeHelpDialog() {
         String help =
                 "זמן פעילות\n"
-                + "• לפי המכשיר - משך ההצגה נשען על זמן הכיבוי שמוגדר באנדרואיד.\n"
-                + "• דקה אחת / חמש דקות - השומר מסך נשאר מוצג למשך הזמן שנבחר באפליקציה. "
-                + "האפליקציה מתאמת את שחרור מניעת הכיבוי לזמן המכשיר, כדי למנוע תוספת זמן או כיבוי מוקדם.\n"
-                + "• ללא כיבוי - השומר מסך נשאר מוצג ללא מגבלת זמן, עד ליציאה יזומה או שינוי מצב מתאים.\n\n"
+                + "ההגדרה קובעת את משך הזמן שהשומר מסך יהיה מוצג על המסך.\n"
+                + "• ניתן להגדיר אם משך זמן התצוגה יהיה לפי זמן המסך שמוגדר במכשיר, או לפי משך זמן שונה כפי שמוגדר באפליקציה.\n"
+                + "• בבחירת האפשרות ללא כיבוי - השומר מסך נשאר מוצג ללא מגבלת זמן, עד ליציאה יזומה או עד לשינוי המצב.\n\n"
                 + "הצגה במסך הנעילה\n"
-                + "• פעילה - השומר מסך יכול להישאר מעל מסך הנעילה גם אחרי שהמכשיר ננעל אוטומטית. "
-                + "האפשרות הזו אינה מפעילה את השומר מסך מעצמה.\n"
-                + "• כבויה - השומר מסך אינו אמור להופיע מעל מסך הנעילה. אם גם ההפעלה האוטומטית בנעילה פעילה, "
-                + "היא תכובה כדי למנוע מצב סותר.\n\n"
+                + "ההגדרה קובעת האם הצגת השומר מסך תהיה גם מעל מסך הנעילה, או דווקא ללא נעילת המכשיר.\n"
+                + "• כאשר ההגדרה פעילה - השומר מסך אינו מונע את כיבוי ונעילת המסך האוטומטית של המכשיר, וממשיך להיות מוצג במסך גם לאחר שהמכשיר ננעל.\n"
+                + "• כשההגדרה כבויה - לצורך הצגת השומר מסך, האפליקציה מונעת את כיבוי ונעילת המסך עד לסוף הזמן המוגדר, ואינו מופיע מעל מסך הנעילה.\n"
+                + "• ההגדרה משפיעה רק על נעילת המכשיר, ובכל מקרה כיבוי המסך יהיה רק בסיום הזמן המוגדר.\n\n"
                 + "הפעלה אוטומטית בנעילה\n"
-                + "• פעילה יחד עם הצגה במסך הנעילה - האפליקציה מנסה לפתוח את השומר מסך כאשר המכשיר ננעל.\n"
-                + "• כבויה - נעילת המכשיר לבדה לא מפעילה את השומר מסך; אפשר עדיין להפעיל אותו ידנית.\n\n"
-                + "איך ההגדרות פועלות יחד?\n"
-                + "• זמן פעילות קובע כמה זמן השומר מסך מוצג; הצגה במסך הנעילה קובעת אם הוא יכול להישאר מעל מסך הנעילה. "
-                + "אלה שתי מטרות שונות.\n"
-                + "• הצגה במסך הנעילה פעילה, אך הפעלה אוטומטית בנעילה כבויה - השומר מסך יכול להמשיך להופיע אם הופעל קודם, "
-                + "אך אינו מתחיל מעצמו בגלל הנעילה.\n"
-                + "• שתי האפשרויות פעילות - השומר מסך יכול להתחיל אוטומטית בנעילה וגם להישאר מוצג מעליה.\n\n"
-                + "הרשאות שמשפיעות על ההתנהגות\n"
-                + "• הצגה מעל אפליקציות אחרות - נדרשת להפעלה אוטומטית ברקע בחלק מגרסאות Android, "
-                + "לרבות Android 10 ומעלה. בלעדיה, ההפעלה האוטומטית עלולה לא לפעול.\n"
-                + "• מנהל מכשיר - הרשאה נפרדת שמאפשרת לשומר מסך לבקש נעילה מיידית בסוף זמן הפעילות. "
-                + "היא אינה נדרשת להצגת השומר מסך או לנעילה האוטומטית הרגילה של המכשיר. ללא ההרשאה, "
-                + "המכשיר ממשיך לפעול לפי מדיניות הנעילה שלו.\n";
-
+                + "• ההגדרה מפעילה את השומר מסך אוטומטית בכל מצב כאשר המכשיר ננעל, גם בנעילה יזומה וגם בנעילה אוטומטית.\n"
+                + "• כשההגדרה כבויה - נעילת המכשיר לבדה לא מפעילה את השומר מסך.\n"
+                + "• ההגדרה הזאת עובדת רק כאשר היא פעילה ביחד עם ההגדרה הצגה במסך הנעילה, ולכן במצב שההגדרה הצגה במסך הנעילה כבויה, גם ההגדרה הזאת תכובה כדי למנוע מצב סותר.\n\n"
+                + "מה ההבדל בין הצגה במסך הנעילה לבין הפעלה אוטומטית בנעילה?\n"
+                + "אלה שתי הגדרות עם מטרות שונות.\n"
+                + "• כאשר הצגה במסך הנעילה פעילה, אך הפעלה אוטומטית בנעילה כבויה - השומר מסך יכול להופיע במסך הנעילה רק אם הופעל קודם, אך אינו מתחיל לפעול מעצמו בגלל הנעילה.\n"
+                + "• וכאשר שתי האפשרויות פעילות - השומר מסך יכול גם להתחיל אוטומטית בנעילת המכשיר, וגם להישאר מוצג מעליה אם הופעל קודם.\n\n"
+                + "הרשאות שמשפיעות על ההתנהגות האפליקציה\n"
+                + "• הצגה מעל אפליקציות אחרות - נדרשת להפעלה אוטומטית ברקע בחלק מגרסאות Android, לרבות Android 10 ומעלה. בלעדיה, ההפעלה האוטומטית עלולה לא לפעול.\n"
+                + "• הרשאת מנהל מכשיר - הרשאה נפרדת שניתן להפעיל ממסך ההרשאות, ההרשאה אינה נדרשת לצורך הצגת השומר מסך עצמו.\n"
+                + "היא נועדה רק כדי לאפשר לאפליקציה לכבות את המסך ולנעול את המכשיר בעצמה בכל מצב בסיום זמן הפעילות שמוגדר באפליקציה.\n"
+                + "ללא ההרשאה, האפליקציה אינה נועלת את המכשיר, אלא רק מתאמת את כיבוי המסך ונעילת המסך לזמן המוגדר במכשיר, ולכן נעילה מיידית תתאפשר רק כשזמן הפעילות שמוגדר באפליקציה זהה לזמן המוגדר במכשיר או יותר ממנו, אבל כאשר זמן פעילות המוגדר קצר מהזמן המוגדר במכשיר לא תתבצע נעילה מיידית בסיום הפעילות.";
 
         AlertDialog dialog = new AlertDialog.Builder(this).create();
 
@@ -397,6 +393,20 @@ public class SettingsActivity extends Activity {
         panel.setPadding(dp(18), dp(16), dp(18), dp(14));
         panel.setBackground(roundOutline(CARD_SURFACE, dp(22), CARD_OUTLINE));
         if (Build.VERSION.SDK_INT >= 21) panel.setElevation(dp(3));
+
+        // The heading, separator and full help text live in one scrollable column.
+        // This allows the title itself to scroll away with the content.
+        ScrollView scroll = new ScrollView(this);
+        scroll.setFillViewport(false);
+        scroll.setVerticalScrollBarEnabled(false);
+        scroll.setOverScrollMode(View.OVER_SCROLL_IF_CONTENT_SCROLLS);
+        scroll.setClipToPadding(false);
+
+        LinearLayout scrollContent = new LinearLayout(this);
+        scrollContent.setOrientation(LinearLayout.VERTICAL);
+        scrollContent.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        scrollContent.setTextDirection(View.TEXT_DIRECTION_RTL);
+        scrollContent.setPadding(0, 0, 0, dp(4));
 
         LinearLayout heading = new LinearLayout(this);
         heading.setOrientation(LinearLayout.HORIZONTAL);
@@ -427,20 +437,14 @@ public class SettingsActivity extends Activity {
         subtitle.setPadding(0, dp(2), 0, 0);
         titleBlock.addView(subtitle, new LinearLayout.LayoutParams(-1, -2));
         heading.addView(titleBlock, new LinearLayout.LayoutParams(0, -2, 1f));
-        panel.addView(heading, new LinearLayout.LayoutParams(-1, -2));
+        scrollContent.addView(heading, new LinearLayout.LayoutParams(-1, -2));
 
         View divider = new View(this);
         divider.setBackgroundColor(CARD_OUTLINE);
         LinearLayout.LayoutParams dividerParams = new LinearLayout.LayoutParams(-1, dp(1));
         dividerParams.topMargin = dp(13);
         dividerParams.bottomMargin = dp(10);
-        panel.addView(divider, dividerParams);
-
-        ScrollView scroll = new ScrollView(this);
-        scroll.setFillViewport(false);
-        scroll.setVerticalScrollBarEnabled(false);
-        scroll.setOverScrollMode(View.OVER_SCROLL_IF_CONTENT_SCROLLS);
-        scroll.setClipToPadding(false);
+        scrollContent.addView(divider, dividerParams);
 
         TextView message = textView("", 15, ON_SURFACE);
         message.setGravity(Gravity.RIGHT | Gravity.TOP);
@@ -457,7 +461,15 @@ public class SettingsActivity extends Activity {
             int start = styledHelp.length();
             styledHelp.append(line);
             int end = styledHelp.length();
-            if (!line.isEmpty() && !line.startsWith("•")) {
+
+            boolean sectionHeading =
+                    line.equals("זמן פעילות")
+                    || line.equals("הצגה במסך הנעילה")
+                    || line.equals("הפעלה אוטומטית בנעילה")
+                    || line.equals("מה ההבדל בין הצגה במסך הנעילה לבין הפעלה אוטומטית בנעילה?")
+                    || line.equals("הרשאות שמשפיעות על ההתנהגות האפליקציה");
+
+            if (sectionHeading) {
                 styledHelp.setSpan(new ForegroundColorSpan(ACCENT), start, end,
                         Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 styledHelp.setSpan(new StyleSpan(Typeface.BOLD), start, end,
@@ -468,6 +480,7 @@ public class SettingsActivity extends Activity {
                 styledHelp.setSpan(new ForegroundColorSpan(ACCENT), start, start + 1,
                         Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             }
+
             if (i < lines.length - 1) {
                 int newlineStart = styledHelp.length();
                 styledHelp.append('\n');
@@ -478,7 +491,8 @@ public class SettingsActivity extends Activity {
             }
         }
         message.setText(styledHelp);
-        scroll.addView(message, new ScrollView.LayoutParams(-1, -2));
+        scrollContent.addView(message, new LinearLayout.LayoutParams(-1, -2));
+        scroll.addView(scrollContent, new ScrollView.LayoutParams(-1, -2));
 
         int maxBodyHeight = Math.max(dp(150),
                 Math.min(dp(430), getResources().getDisplayMetrics().heightPixels - dp(265)));
