@@ -56,7 +56,7 @@ import java.util.List;
 import java.util.Locale;
 
 public class MainActivity extends Activity {
-    private static final long PLAYER_START_WINDOW_MS = 4_000L;
+    private static final long PLAYER_START_WINDOW_MS = 6_000L;
     private static final int SCREEN_TIMEOUT_PROFILE_RELEASE_RESTARTS = 1;
     private static final int SCREEN_TIMEOUT_PROFILE_ELAPSED_DURING_HOLD = 2;
     private static final double SCREEN_TIMEOUT_EARLY_OFF_THRESHOLD = 0.40;
@@ -428,8 +428,8 @@ public class MainActivity extends Activity {
         settingsButton = new ImageView(this);
         settingsButton.setImageResource(R.drawable.ic_settings);
         settingsButton.setScaleType(ImageView.ScaleType.FIT_CENTER);
-        settingsButton.setColorFilter(Color.WHITE);
-        settingsButton.setAlpha(0.48f);
+        settingsButton.setColorFilter(Color.rgb(247, 247, 247));
+        settingsButton.setAlpha(1f);
         settingsButton.setPadding(dp(4), dp(4), dp(4), dp(4));
         settingsButton.setBackgroundColor(Color.TRANSPARENT);
         settingsButton.setContentDescription("הגדרות");
@@ -1859,7 +1859,7 @@ public class MainActivity extends Activity {
         if (settingsButton == null || settingsButtonHitArea == null || settingsDialogOpen) return;
         handler.removeCallbacks(hideSettingsButtonRunnable);
         settingsButtonHitArea.setVisibility(View.VISIBLE);
-        settingsButton.setAlpha(0.58f);
+        settingsButton.setAlpha(1f);
         handler.postDelayed(hideSettingsButtonRunnable, 3_000L);
     }
 
@@ -1879,10 +1879,10 @@ public class MainActivity extends Activity {
                 stageView.setTranslationY(0f);
             }
 
-            // Use the same bottom-edge swipe no matter how the screensaver was opened.
+            // Accept an upward-dismiss gesture from anywhere in the lower third.
             if (!settingsDialogOpen) {
                 int decorHeight = getWindow().getDecorView().getHeight();
-                if (decorHeight > 0 && event.getY() >= decorHeight - dp(96)) {
+                if (decorHeight > 0 && event.getY() >= decorHeight * (2f / 3f)) {
                     bottomSwipeCandidate = true;
                     bottomSwipeStartX = event.getX();
                     bottomSwipeStartY = event.getY();
@@ -1926,10 +1926,15 @@ public class MainActivity extends Activity {
             if (bottomSwipeDragging) {
                 float upwardDistance = bottomSwipeStartY - event.getY();
                 float horizontalDistance = Math.abs(event.getX() - bottomSwipeStartX);
-                float stageHeight = stageView == null ? dp(600) : stageView.getHeight();
-                float dismissThreshold = Math.max(
-                        dp(90), Math.min(dp(160), stageHeight * 0.18f));
-                exitBySwipe = upwardDistance >= dismissThreshold
+                int decorHeight = getWindow().getDecorView().getHeight();
+                float gestureHeight = decorHeight > 0
+                        ? decorHeight : (stageView == null ? dp(600) : stageView.getHeight());
+                boolean startedInLowerThird =
+                        bottomSwipeStartY >= gestureHeight * (2f / 3f);
+                boolean reachedUpperThird = event.getY() <= gestureHeight / 3f;
+                float dismissThreshold = gestureHeight / 3f;
+                exitBySwipe = startedInLowerThird && reachedUpperThird
+                        && upwardDistance >= dismissThreshold
                         && upwardDistance > horizontalDistance * 1.2f;
                 consumeForSwipe = true;
                 if (!exitBySwipe && stageView != null) {
@@ -1941,7 +1946,12 @@ public class MainActivity extends Activity {
                 // Fallback for a short stream in which Android delivers no MOVE events.
                 float upwardDistance = bottomSwipeStartY - event.getY();
                 float horizontalDistance = Math.abs(event.getX() - bottomSwipeStartX);
-                exitBySwipe = upwardDistance >= dp(120)
+                int decorHeight = getWindow().getDecorView().getHeight();
+                float gestureHeight = decorHeight > 0
+                        ? decorHeight : (stageView == null ? dp(600) : stageView.getHeight());
+                exitBySwipe = bottomSwipeStartY >= gestureHeight * (2f / 3f)
+                        && event.getY() <= gestureHeight / 3f
+                        && upwardDistance >= gestureHeight / 3f
                         && upwardDistance > horizontalDistance * 1.2f;
                 consumeForSwipe = exitBySwipe;
             }
@@ -1988,10 +1998,20 @@ public class MainActivity extends Activity {
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-        if (keyCode != KeyEvent.KEYCODE_BACK) {
-            showSettingsButtonForThreeSeconds();
+        if (keyCode == KeyEvent.KEYCODE_MENU) {
+            if (event == null || event.getRepeatCount() == 0) {
+                showSettings();
+            }
+            return true;
         }
+        // Other physical keys do not reveal the hidden settings icon.
         return super.onKeyDown(keyCode, event);
+    }
+
+    @Override
+    public boolean onKeyUp(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_MENU) return true;
+        return super.onKeyUp(keyCode, event);
     }
 
     private void showSettings() {
@@ -2463,7 +2483,7 @@ public class MainActivity extends Activity {
                 && (firstObservedTrack || playbackJustStarted || introOnlyJustEnabled)
                 && positionMs < PLAYER_START_WINDOW_MS) {
             // On first observation, playback start, or enabling this option during a song's
-            // first four seconds, show only the portion of that four-second window remaining.
+            // first six seconds, show only the portion of that six-second window remaining.
             startPlayerIntroWindow(PLAYER_START_WINDOW_MS - Math.max(0L, positionMs));
         }
 
