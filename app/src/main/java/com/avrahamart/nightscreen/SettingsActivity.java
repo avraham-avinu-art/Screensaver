@@ -434,12 +434,14 @@ public class SettingsActivity extends Activity {
         title.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         title.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         title.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
+        title.setIncludeFontPadding(false);
         titleBlock.addView(title, new LinearLayout.LayoutParams(-1, -2));
 
         TextView subtitle = textView("הסבר קצר להבנת האפשרויות", 13, MUTED);
         subtitle.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         subtitle.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
-        subtitle.setPadding(0, dp(2), 0, 0);
+        subtitle.setIncludeFontPadding(false);
+        subtitle.setPadding(0, 0, 0, 0);
         titleBlock.addView(subtitle, new LinearLayout.LayoutParams(-1, -2));
         LinearLayout.LayoutParams titleBlockParams =
                 new LinearLayout.LayoutParams(0, -2, 1f);
@@ -451,7 +453,7 @@ public class SettingsActivity extends Activity {
         View divider = new View(this);
         divider.setBackgroundColor(CARD_OUTLINE);
         LinearLayout.LayoutParams dividerParams = new LinearLayout.LayoutParams(-1, dp(1));
-        dividerParams.topMargin = dp(13);
+        dividerParams.topMargin = dp(9);
         dividerParams.bottomMargin = dp(10);
         scrollContent.addView(divider, dividerParams);
 
