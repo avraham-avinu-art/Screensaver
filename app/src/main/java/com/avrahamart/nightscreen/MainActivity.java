@@ -1462,20 +1462,26 @@ public class MainActivity extends Activity {
 
         try {
             int radius = Math.max(0, getInt("frameRadius", 10));
-            int width = Math.max(1, getInt("frameWidth", 1));
+            int selectedWidth = Math.max(1, Math.min(3, getInt("frameWidth", 1)));
             int frameColor = getInt("frameColor", Color.WHITE);
 
-            // Use the same card treatment as Settings: a deep blue surface,
-            // rounded corners and a clean outline in the selected frame color.
-            // A single drawable keeps frame rendering independent of player visibility.
+            // Settings cards use a 1dp outline. Keep the thin player frame
+            // exactly at that base thickness, and reduce the other two levels
+            // from 2/3dp to 1.25/1.5dp so they remain distinct but lighter.
+            float strokeWidthDp = selectedWidth == 1 ? 1.0f
+                    : selectedWidth == 2 ? 1.25f : 1.5f;
+            int strokeWidthPx = Math.max(1, Math.round(
+                    strokeWidthDp * getResources().getDisplayMetrics().density));
+
+            // Keep the same settings-card surface, with one clean outline.
             GradientDrawable background = new GradientDrawable();
             background.setColor(Color.rgb(20, 36, 56));
             background.setCornerRadius(dp(radius));
-            background.setStroke(dp(width), frameColor);
+            background.setStroke(strokeWidthPx, frameColor);
             mediaMirror.setBackground(background);
 
             // Keep the text and controls inside the card outline.
-            int inset = dp(Math.max(5, width + 3));
+            int inset = Math.max(dp(5), strokeWidthPx + dp(3));
             mediaMirror.setPadding(inset, inset, inset, inset);
         } catch (Throwable ignored) {
             // A frame drawing problem must never make the media player disappear.
