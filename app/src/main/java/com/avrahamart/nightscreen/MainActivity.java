@@ -11,7 +11,9 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.IntentFilter;
 import android.database.ContentObserver;
+import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.LayerDrawable;
 import android.text.Layout;
 import android.text.TextUtils;
 import android.content.ActivityNotFoundException;
@@ -1455,14 +1457,32 @@ public class MainActivity extends Activity {
         if (mediaMirror == null) return;
         boolean enabled = getBool("frameEnabled", false) && hasActiveSong;
         if (enabled) {
-            GradientDrawable bg = new GradientDrawable();
-            bg.setColor(Color.BLACK);
-            bg.setCornerRadius(dp(Math.max(0, getInt("frameRadius", 10))));
-            bg.setStroke(dp(Math.max(1, getInt("frameWidth", 1))),
-                    getInt("frameColor", Color.WHITE));
-            mediaMirror.setBackground(bg);
-            // Keep the text and controls inside the visible outline.
-            int inset = dp(Math.max(3, getInt("frameWidth", 1) + 2));
+            int radius = Math.max(0, getInt("frameRadius", 10));
+            int width = Math.max(1, getInt("frameWidth", 1));
+            int accentColor = getInt("frameColor", Color.WHITE);
+
+            // Match the settings cards: a deep blue surface and a restrained,
+            // blue-gray outer outline, with the user's selected frame color as
+            // a second inset accent. The same treatment applies to all radii.
+            GradientDrawable cardSurface = new GradientDrawable();
+            cardSurface.setColor(Color.rgb(20, 36, 56));
+            cardSurface.setCornerRadius(dp(radius));
+            cardSurface.setStroke(dp(1), Color.rgb(42, 67, 95));
+
+            GradientDrawable accentOutline = new GradientDrawable();
+            accentOutline.setColor(Color.TRANSPARENT);
+            accentOutline.setCornerRadius(dp(Math.max(0, radius - 3)));
+            accentOutline.setStroke(dp(width), accentColor);
+
+            LayerDrawable background = new LayerDrawable(
+                    new Drawable[]{cardSurface, accentOutline});
+            int accentInset = dp(3);
+            background.setLayerInset(1, accentInset, accentInset,
+                    accentInset, accentInset);
+            mediaMirror.setBackground(background);
+
+            // Keep the text and controls comfortably inside both outlines.
+            int inset = dp(Math.max(8, width + 6));
             mediaMirror.setPadding(inset, inset, inset, inset);
         } else {
             mediaMirror.setBackgroundColor(Color.BLACK);
