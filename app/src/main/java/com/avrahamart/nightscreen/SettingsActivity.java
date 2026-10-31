@@ -394,13 +394,14 @@ public class SettingsActivity extends Activity {
         panel.setBackground(roundOutline(CARD_SURFACE, dp(22), CARD_OUTLINE));
         if (Build.VERSION.SDK_INT >= 21) panel.setElevation(dp(3));
 
-        // The heading, separator and full help text live in one scrollable column.
-        // This allows the title itself to scroll away with the content.
+        // The heading and help text scroll as one. The close X stays fixed and accessible.
+        FrameLayout scrollViewport = new FrameLayout(this);
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(false);
         scroll.setVerticalScrollBarEnabled(false);
         scroll.setOverScrollMode(View.OVER_SCROLL_IF_CONTENT_SCROLLS);
         scroll.setClipToPadding(false);
+        scrollViewport.addView(scroll, new FrameLayout.LayoutParams(-1, -1));
 
         LinearLayout scrollContent = new LinearLayout(this);
         scrollContent.setOrientation(LinearLayout.VERTICAL);
@@ -412,6 +413,8 @@ public class SettingsActivity extends Activity {
         heading.setOrientation(LinearLayout.HORIZONTAL);
         heading.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         heading.setGravity(Gravity.CENTER_VERTICAL);
+        // Reserve the physical upper-left corner for the fixed close button.
+        heading.setPadding(dp(40), 0, 0, 0);
 
         FrameLayout helpIconShell = new FrameLayout(this);
         helpIconShell.setBackground(roundOutline(CONTROL_SURFACE, dp(21), OUTLINE));
@@ -423,15 +426,16 @@ public class SettingsActivity extends Activity {
         LinearLayout titleBlock = new LinearLayout(this);
         titleBlock.setOrientation(LinearLayout.VERTICAL);
         titleBlock.setGravity(Gravity.CENTER_VERTICAL);
-        titleBlock.setPadding(dp(11), 0, 0, 0);
+        // Extra spacing between the icon and title block.
+        titleBlock.setPadding(dp(18), 0, 0, 0);
 
-        TextView title = textView("הגדרות זמני הפעילות", 20, ON_SURFACE);
+        TextView title = textView("הגדרת זמני הפעילות", 20, ON_SURFACE);
         title.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         title.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         title.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
         titleBlock.addView(title, new LinearLayout.LayoutParams(-1, -2));
 
-        TextView subtitle = textView("מדריך קצר להבנת האפשרויות", 13, MUTED);
+        TextView subtitle = textView("הסבר קצר להבנת האפשרויות", 13, MUTED);
         subtitle.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         subtitle.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
         subtitle.setPadding(0, dp(2), 0, 0);
@@ -458,9 +462,9 @@ public class SettingsActivity extends Activity {
         String[] lines = help.split("\n", -1);
         for (int i = 0; i < lines.length; i++) {
             String line = lines[i];
-            int start = styledHelp.length();
+            int lineStart = styledHelp.length();
             styledHelp.append(line);
-            int end = styledHelp.length();
+            int lineEnd = styledHelp.length();
 
             boolean sectionHeading =
                     line.equals("זמן פעילות")
@@ -470,14 +474,14 @@ public class SettingsActivity extends Activity {
                     || line.equals("הרשאות שמשפיעות על ההתנהגות האפליקציה");
 
             if (sectionHeading) {
-                styledHelp.setSpan(new ForegroundColorSpan(ACCENT), start, end,
+                styledHelp.setSpan(new ForegroundColorSpan(ACCENT), lineStart, lineEnd,
                         Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                styledHelp.setSpan(new StyleSpan(Typeface.BOLD), start, end,
+                styledHelp.setSpan(new StyleSpan(Typeface.BOLD), lineStart, lineEnd,
                         Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                styledHelp.setSpan(new RelativeSizeSpan(1.04f), start, end,
+                styledHelp.setSpan(new RelativeSizeSpan(1.04f), lineStart, lineEnd,
                         Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             } else if (line.startsWith("•")) {
-                styledHelp.setSpan(new ForegroundColorSpan(ACCENT), start, start + 1,
+                styledHelp.setSpan(new ForegroundColorSpan(ACCENT), lineStart, lineStart + 1,
                         Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             }
 
@@ -492,11 +496,6 @@ public class SettingsActivity extends Activity {
         }
         message.setText(styledHelp);
         scrollContent.addView(message, new LinearLayout.LayoutParams(-1, -2));
-        scroll.addView(scrollContent, new ScrollView.LayoutParams(-1, -2));
-
-        int maxBodyHeight = Math.max(dp(150),
-                Math.min(dp(430), getResources().getDisplayMetrics().heightPixels - dp(265)));
-        panel.addView(scroll, new LinearLayout.LayoutParams(-1, maxBodyHeight));
 
         Button close = new Button(this);
         close.setText("הבנתי");
@@ -512,8 +511,30 @@ public class SettingsActivity extends Activity {
                 new LinearLayout.LayoutParams(dp(124), dp(44));
         closeParams.gravity = Gravity.CENTER_HORIZONTAL;
         closeParams.topMargin = dp(12);
-        panel.addView(close, closeParams);
+        scrollContent.addView(close, closeParams);
         close.setOnClickListener(v -> dialog.dismiss());
+
+        scroll.addView(scrollContent, new ScrollView.LayoutParams(-1, -2));
+
+        TextView closeX = textView("×", 25, ACCENT);
+        closeX.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        closeX.setGravity(Gravity.CENTER);
+        closeX.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        closeX.setContentDescription("סגירת חלונית ההסבר");
+        closeX.setBackground(roundOutline(CONTROL_SURFACE, dp(17), OUTLINE));
+        closeX.setClickable(true);
+        closeX.setFocusable(true);
+        if (Build.VERSION.SDK_INT >= 21) closeX.setElevation(dp(4));
+        closeX.setOnClickListener(v -> dialog.dismiss());
+        FrameLayout.LayoutParams closeXParams =
+                new FrameLayout.LayoutParams(dp(34), dp(34), Gravity.LEFT | Gravity.TOP);
+        scrollViewport.addView(closeX, closeXParams);
+
+        // Keep the outer dialog height unchanged: the old fixed close button occupied 56dp.
+        int maxBodyHeight = Math.max(dp(150),
+                Math.min(dp(430), getResources().getDisplayMetrics().heightPixels - dp(265)));
+        int scrollViewportHeight = maxBodyHeight + dp(56);
+        panel.addView(scrollViewport, new LinearLayout.LayoutParams(-1, scrollViewportHeight));
 
         dialog.setView(panel);
         dialog.setCancelable(true);
