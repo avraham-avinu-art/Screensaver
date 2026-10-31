@@ -17,8 +17,8 @@ import android.os.SystemClock;
 import android.provider.Settings;
 
 public final class LockScreenMonitorService extends Service {
-    // v2 enforces the minimum supported FGS notification importance; Android will
-    // retain the old channel's importance otherwise even after its settings change.
+    // Keep the channel ID so Android preserves existing user notification settings.
+    // Newly created channels default to hiding this service notification on the lockscreen.
     private static final String CHANNEL_ID = "screensaver_lock_monitor_v3";
     private static final int NOTIFICATION_ID = 6721;
     private static final int RESTART_PENDING_INTENT_ID = 6722;
@@ -119,7 +119,7 @@ public final class LockScreenMonitorService extends Service {
                 CHANNEL_ID, "הפעלה אוטומטית בנעילת המכשיר", NotificationManager.IMPORTANCE_LOW);
         channel.setDescription("התראה מתמשכת לשירות ההפעלה האוטומטית בנעילת המכשיר");
         channel.setShowBadge(false);
-        channel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
+        channel.setLockscreenVisibility(Notification.VISIBILITY_SECRET);
         channel.enableLights(false);
         channel.enableVibration(false);
         channel.setSound(null, null);
@@ -150,7 +150,7 @@ public final class LockScreenMonitorService extends Service {
                 .setOnlyAlertOnce(true)
                 .setShowWhen(false)
                 .setCategory(Notification.CATEGORY_SERVICE)
-                .setVisibility(Notification.VISIBILITY_PUBLIC);
+                .setVisibility(Notification.VISIBILITY_SECRET);
         builder.setPriority(Notification.PRIORITY_LOW)
                 .setSound(null)
                 .setVibrate(new long[0])
