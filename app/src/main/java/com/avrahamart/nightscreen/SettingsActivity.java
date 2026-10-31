@@ -390,7 +390,7 @@ public class SettingsActivity extends Activity {
         panel.setOrientation(LinearLayout.VERTICAL);
         panel.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         panel.setTextDirection(View.TEXT_DIRECTION_RTL);
-        panel.setPadding(dp(18), dp(16), dp(18), dp(14));
+        panel.setPadding(dp(18), dp(14), dp(18), dp(13));
         panel.setBackground(roundOutline(CARD_SURFACE, dp(22), CARD_OUTLINE));
         if (Build.VERSION.SDK_INT >= 21) panel.setElevation(dp(3));
 
@@ -440,7 +440,11 @@ public class SettingsActivity extends Activity {
         subtitle.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
         subtitle.setPadding(0, dp(2), 0, 0);
         titleBlock.addView(subtitle, new LinearLayout.LayoutParams(-1, -2));
-        heading.addView(titleBlock, new LinearLayout.LayoutParams(0, -2, 1f));
+        LinearLayout.LayoutParams titleBlockParams =
+                new LinearLayout.LayoutParams(0, -2, 1f);
+        // Add spacing at the physical side next to the icon (the heading is RTL).
+        titleBlockParams.rightMargin = dp(12);
+        heading.addView(titleBlock, titleBlockParams);
         scrollContent.addView(heading, new LinearLayout.LayoutParams(-1, -2));
 
         View divider = new View(this);
@@ -516,15 +520,15 @@ public class SettingsActivity extends Activity {
 
         scroll.addView(scrollContent, new ScrollView.LayoutParams(-1, -2));
 
-        TextView closeX = textView("×", 25, ACCENT);
-        closeX.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-        closeX.setGravity(Gravity.CENTER);
-        closeX.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        FrameLayout closeX = new FrameLayout(this);
         closeX.setContentDescription("סגירת חלונית ההסבר");
         closeX.setBackground(roundOutline(CONTROL_SURFACE, dp(17), OUTLINE));
         closeX.setClickable(true);
         closeX.setFocusable(true);
         if (Build.VERSION.SDK_INT >= 21) closeX.setElevation(dp(4));
+        GraphicIcon closeXGlyph = new GraphicIcon(this, "close-x", ACCENT);
+        closeX.addView(closeXGlyph,
+                new FrameLayout.LayoutParams(dp(16), dp(16), Gravity.CENTER));
         closeX.setOnClickListener(v -> dialog.dismiss());
         FrameLayout.LayoutParams closeXParams =
                 new FrameLayout.LayoutParams(dp(34), dp(34), Gravity.LEFT | Gravity.TOP);
@@ -1572,6 +1576,12 @@ public class SettingsActivity extends Activity {
 
             Path path = new Path();
             switch (type) {
+                case "close-x":
+                    // A geometrically centered close mark; the icon view itself is
+                    // centered inside the circular close button by FrameLayout.
+                    canvas.drawLine(7.5f, 7.5f, 16.5f, 16.5f, paint);
+                    canvas.drawLine(16.5f, 7.5f, 7.5f, 16.5f, paint);
+                    break;
                 case "message-circle-question":
                     // Match the selected Lucide-style message-circle-question outline:
                     // circular speech bubble, lower-left tail, and question mark.
