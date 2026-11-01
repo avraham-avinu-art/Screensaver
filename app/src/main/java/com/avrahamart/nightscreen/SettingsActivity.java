@@ -1056,7 +1056,8 @@ public class SettingsActivity extends Activity {
                 : "bold".equals(iconName) ? dp(24)
                 : "power-off".equals(iconName) ? dp(19)
                 : ("history".equals(iconName) || "panel-bottom".equals(iconName)) ? dp(24)
-                : "position-arrows".equals(iconName) ? dp(23)
+                : "position-arrows".equals(iconName) ? dp(27)
+                : "gregorian-date".equals(iconName) ? dp(25)
                 : dp(21);
         FrameLayout.LayoutParams graphicParams =
                 new FrameLayout.LayoutParams(glyphSize, glyphSize, Gravity.CENTER);
