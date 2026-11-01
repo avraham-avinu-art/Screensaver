@@ -1025,8 +1025,9 @@ public class SettingsActivity extends Activity {
         FrameLayout badge = new FrameLayout(this);
         badge.setBackground(roundOutline(ICON_SURFACE, dp(10), CARD_OUTLINE));
         GraphicIcon graphic = new GraphicIcon(this, iconName, Color.rgb(168, 200, 232));
+        int glyphSize = "bold".equals(iconName) ? dp(24) : dp(21);
         FrameLayout.LayoutParams graphicParams =
-                new FrameLayout.LayoutParams(dp(21), dp(21), Gravity.CENTER);
+                new FrameLayout.LayoutParams(glyphSize, glyphSize, Gravity.CENTER);
         badge.addView(graphic, graphicParams);
         return badge;
     }
@@ -1629,27 +1630,67 @@ public class SettingsActivity extends Activity {
             Path path = new Path();
             switch (type) {
                 case "history":
-                    // Lucide-style history: open circular arrow with a clock hand pair.
-                    canvas.drawArc(new RectF(3f, 3f, 21f, 21f), -42f, 304f, false, paint);
-                    canvas.drawLine(3f, 3f, 3f, 8.5f, paint);
-                    canvas.drawLine(3f, 8.5f, 8.5f, 8.5f, paint);
+                    // Lucide 0.456.0 history: open circular arrow, return arrowhead and clock hands.
+                    paint.setStrokeWidth(2f);
+                    canvas.drawArc(new RectF(3f, 3f, 21f, 21f), 180f, 270f, false, paint);
+                    path.moveTo(12f, 3f);
+                    path.cubicTo(9.45f, 3f, 7.1f, 4.1f, 5.26f, 5.74f);
+                    path.lineTo(3f, 8f);
+                    canvas.drawPath(path, paint);
+                    path.reset();
+                    path.moveTo(3f, 3f);
+                    path.lineTo(3f, 8f);
+                    path.lineTo(8f, 8f);
+                    canvas.drawPath(path, paint);
                     canvas.drawLine(12f, 7f, 12f, 12f, paint);
-                    canvas.drawLine(12f, 12f, 16f, 14.5f, paint);
+                    canvas.drawLine(12f, 12f, 16f, 14f, paint);
                     break;
                 case "usb":
-                    canvas.drawLine(12f, 21f, 12f, 4f, paint);
-                    canvas.drawLine(12f, 11.5f, 6f, 17f, paint);
-                    canvas.drawLine(12f, 11.5f, 18f, 17f, paint);
-                    canvas.drawLine(12f, 4f, 9.2f, 7f, paint);
-                    canvas.drawLine(12f, 4f, 14.8f, 7f, paint);
-                    canvas.drawCircle(6f, 18.2f, 1.8f, paint);
-                    canvas.drawRect(new RectF(16.2f, 16f, 19.8f, 19.6f), paint);
-                    canvas.drawLine(12f, 21f, 12f, 18.3f, paint);
+                    // Lucide 0.456.0 USB symbol, preserving its diagonal stem and three terminals.
+                    paint.setStrokeWidth(2f);
+                    canvas.drawCircle(10f, 7f, 1f, paint);
+                    canvas.drawCircle(4f, 20f, 1f, paint);
+                    path.moveTo(4.7f, 19.3f);
+                    path.lineTo(19f, 5f);
+                    canvas.drawPath(path, paint);
+                    path.reset();
+                    path.moveTo(21f, 3f);
+                    path.lineTo(18f, 4f);
+                    path.lineTo(20f, 6f);
+                    path.close();
+                    canvas.drawPath(path, paint);
+                    path.reset();
+                    path.moveTo(9.26f, 7.68f);
+                    path.lineTo(5f, 12f);
+                    path.lineTo(7f, 17f);
+                    canvas.drawPath(path, paint);
+                    path.reset();
+                    path.moveTo(10f, 14f);
+                    path.lineTo(15f, 16f);
+                    path.lineTo(18.5f, 12.5f);
+                    canvas.drawPath(path, paint);
+                    path.reset();
+                    path.moveTo(18f, 12f);
+                    path.lineTo(19f, 11f);
+                    path.lineTo(20f, 12f);
+                    path.lineTo(19f, 13f);
+                    path.close();
+                    canvas.drawPath(path, paint);
                     break;
                 case "power-off":
-                    canvas.drawCircle(12f, 13f, 8f, paint);
-                    canvas.drawLine(12f, 2f, 12f, 11f, paint);
-                    canvas.drawLine(5f, 5f, 19f, 21f, paint);
+                    // Lucide 0.456.0 power-off: broken power ring, stem and diagonal slash.
+                    paint.setStrokeWidth(2f);
+                    path.moveTo(18.36f, 6.64f);
+                    path.cubicTo(19.9f, 8.2f, 20.77f, 10.4f, 20.77f, 12.75f);
+                    path.lineTo(20.77f, 15f);
+                    canvas.drawPath(path, paint);
+                    path.reset();
+                    path.moveTo(6.16f, 6.16f);
+                    path.cubicTo(2.65f, 9.67f, 2.65f, 15.33f, 6.16f, 18.84f);
+                    path.cubicTo(9.67f, 22.35f, 14.33f, 22.35f, 18.84f, 18.84f);
+                    canvas.drawPath(path, paint);
+                    canvas.drawLine(12f, 2f, 12f, 6f, paint);
+                    canvas.drawLine(2f, 2f, 22f, 22f, paint);
                     break;
                 case "battery-medium":
                     canvas.drawRoundRect(new RectF(2.5f, 6f, 20f, 18f), 2f, 2f, paint);
@@ -1659,22 +1700,25 @@ public class SettingsActivity extends Activity {
                     paint.setStyle(Paint.Style.STROKE);
                     break;
                 case "sun-dim":
-                    canvas.drawCircle(9f, 9f, 4f, paint);
-                    canvas.drawLine(9f, 1.5f, 9f, 3f, paint);
-                    canvas.drawLine(9f, 15f, 9f, 16.5f, paint);
-                    canvas.drawLine(1.5f, 9f, 3f, 9f, paint);
-                    canvas.drawLine(15f, 9f, 16.5f, 9f, paint);
-                    canvas.drawLine(3.7f, 3.7f, 4.8f, 4.8f, paint);
-                    canvas.drawLine(13.2f, 13.2f, 14.3f, 14.3f, paint);
-                    canvas.drawLine(17f, 15.5f, 22f, 15.5f, paint);
-                    canvas.drawLine(17f, 18.5f, 22f, 18.5f, paint);
-                    canvas.drawLine(17f, 21f, 20f, 21f, paint);
+                    // Lucide 0.456.0 sun-dim: centered sun with eight small round ray marks.
+                    paint.setStrokeWidth(2f);
+                    canvas.drawCircle(12f, 12f, 4f, paint);
+                    paint.setStyle(Paint.Style.FILL);
+                    canvas.drawCircle(12f, 4f, 1f, paint);
+                    canvas.drawCircle(20f, 12f, 1f, paint);
+                    canvas.drawCircle(12f, 20f, 1f, paint);
+                    canvas.drawCircle(4f, 12f, 1f, paint);
+                    canvas.drawCircle(17.657f, 6.343f, 1f, paint);
+                    canvas.drawCircle(17.657f, 17.657f, 1f, paint);
+                    canvas.drawCircle(6.343f, 17.657f, 1f, paint);
+                    canvas.drawCircle(6.343f, 6.343f, 1f, paint);
+                    paint.setStyle(Paint.Style.STROKE);
                     break;
                 case "bold":
                     paint.setStyle(Paint.Style.FILL);
                     paint.setTypeface(Typeface.create("sans-serif-black", Typeface.NORMAL));
-                    paint.setTextSize(18f);
-                    canvas.drawText("B", 5f, 18f, paint);
+                    paint.setTextSize(20.5f);
+                    canvas.drawText("B", 3.7f, 19f, paint);
                     paint.setTypeface(Typeface.DEFAULT);
                     break;
                 case "circle-play":
@@ -1686,19 +1730,38 @@ public class SettingsActivity extends Activity {
                     canvas.drawPath(path, paint);
                     break;
                 case "panel-bottom":
+                    // Lucide 0.456.0 panel-bottom.
+                    paint.setStrokeWidth(2f);
                     canvas.drawRoundRect(new RectF(3f, 3f, 21f, 21f), 2f, 2f, paint);
-                    canvas.drawLine(3.5f, 14.5f, 20.5f, 14.5f, paint);
+                    canvas.drawLine(3f, 15f, 21f, 15f, paint);
                     break;
                 case "pipette":
-                    path.moveTo(7f, 17f);
-                    path.lineTo(16.5f, 7.5f);
-                    path.lineTo(19f, 10f);
-                    path.lineTo(9.5f, 19.5f);
-                    path.close();
+                    // Lucide 0.456.0 pipette: long lower stem and angled glass body.
+                    paint.setStrokeWidth(2f);
+                    path.moveTo(2f, 22f);
+                    path.lineTo(3f, 21f);
+                    path.lineTo(6f, 21f);
+                    path.lineTo(15f, 12f);
                     canvas.drawPath(path, paint);
-                    canvas.drawLine(14.5f, 9.5f, 17f, 12f, paint);
-                    canvas.drawLine(7f, 17f, 4f, 20f, paint);
-                    canvas.drawLine(4f, 20f, 3f, 21f, paint);
+                    path.reset();
+                    path.moveTo(3f, 21f);
+                    path.lineTo(3f, 18f);
+                    path.lineTo(12f, 9f);
+                    canvas.drawPath(path, paint);
+                    path.reset();
+                    path.moveTo(15f, 6f);
+                    path.lineTo(18.4f, 2.6f);
+                    path.cubicTo(19.2f, 1.8f, 20.5f, 1.8f, 21.3f, 2.6f);
+                    path.cubicTo(22.1f, 3.4f, 22.1f, 4.7f, 21.3f, 5.5f);
+                    path.lineTo(18f, 9f);
+                    path.lineTo(18.4f, 9.4f);
+                    path.cubicTo(19.2f, 10.2f, 19.2f, 11.5f, 18.4f, 12.3f);
+                    path.cubicTo(17.6f, 13.1f, 16.3f, 13.1f, 15.5f, 12.3f);
+                    path.lineTo(11.7f, 8.5f);
+                    path.cubicTo(10.9f, 7.7f, 10.9f, 6.4f, 11.7f, 5.6f);
+                    path.cubicTo(12.5f, 4.8f, 13.8f, 4.8f, 14.6f, 5.6f);
+                    path.lineTo(15f, 6f);
+                    canvas.drawPath(path, paint);
                     break;
                 case "shield-alert":
                     path.moveTo(12f, 2.5f);
@@ -1714,16 +1777,17 @@ public class SettingsActivity extends Activity {
                     canvas.drawCircle(12f, 16.5f, 0.9f, paint);
                     break;
                 case "corner-up-left":
-                    // A clear right-to-left return path that turns upward to the left.
-                    path.moveTo(20f, 20f);
-                    path.lineTo(20f, 14f);
-                    path.quadTo(20f, 9f, 15f, 9f);
-                    path.lineTo(5f, 9f);
+                    // Lucide 0.456.0 corner-up-left; same orientation as the approved preview.
+                    paint.setStrokeWidth(2f);
+                    path.moveTo(9f, 14f);
+                    path.lineTo(4f, 9f);
+                    path.lineTo(9f, 4f);
                     canvas.drawPath(path, paint);
                     path.reset();
-                    path.moveTo(10f, 4f);
-                    path.lineTo(5f, 9f);
-                    path.lineTo(10f, 14f);
+                    path.moveTo(20f, 20f);
+                    path.lineTo(20f, 13f);
+                    path.cubicTo(20f, 10.79f, 18.21f, 9f, 16f, 9f);
+                    path.lineTo(4f, 9f);
                     canvas.drawPath(path, paint);
                     break;
                 case "close-x":
@@ -1861,12 +1925,19 @@ public class SettingsActivity extends Activity {
                     canvas.drawLine(7.5f, 17.5f, 16.5f, 6.5f, paint);
                     break;
                 case "paint-roller":
-                    canvas.drawRoundRect(new RectF(3f, 4f, 17f, 11f), 1.4f, 1.4f, paint);
-                    canvas.drawLine(17f, 7.5f, 20.5f, 7.5f, paint);
-                    canvas.drawLine(20.5f, 7.5f, 20.5f, 14f, paint);
-                    canvas.drawLine(20.5f, 14f, 13f, 14f, paint);
-                    canvas.drawLine(13f, 14f, 13f, 21f, paint);
-                    canvas.drawLine(10f, 21f, 16f, 21f, paint);
+                    // Lucide 0.456.0 paint-roller with the hanging handle and lower grip.
+                    paint.setStrokeWidth(2f);
+                    canvas.drawRoundRect(new RectF(2f, 2f, 18f, 8f), 2f, 2f, paint);
+                    path.moveTo(10f, 16f);
+                    path.lineTo(10f, 14f);
+                    path.cubicTo(10f, 12.9f, 10.9f, 12f, 12f, 12f);
+                    path.lineTo(20f, 12f);
+                    path.cubicTo(21.1f, 12f, 22f, 11.1f, 22f, 10f);
+                    path.lineTo(22f, 7f);
+                    path.cubicTo(22f, 5.9f, 21.1f, 5f, 20f, 5f);
+                    path.lineTo(18f, 5f);
+                    canvas.drawPath(path, paint);
+                    canvas.drawRoundRect(new RectF(8f, 16f, 12f, 22f), 1f, 1f, paint);
                     break;
                 case "uppercase-font":
                     paint.setStyle(Paint.Style.FILL);
@@ -1907,15 +1978,19 @@ public class SettingsActivity extends Activity {
                     }
                     break;
                 case "player-size-resize":
-                    // Music note alone, surrounded by four outward resize corners.
-                    paint.setStrokeWidth(1.7f);
-                    path.moveTo(10f, 7f);
-                    path.lineTo(17f, 5.5f);
-                    path.lineTo(17f, 15f);
+                    // Keep the four approved resize corners; use the same circle-play symbol as "show only at song start".
+                    canvas.save();
+                    canvas.translate(12f, 12f);
+                    canvas.scale(0.55f, 0.55f);
+                    canvas.translate(-12f, -12f);
+                    paint.setStrokeWidth(2f);
+                    canvas.drawCircle(12f, 12f, 10f, paint);
+                    path.moveTo(10f, 8f);
+                    path.lineTo(16f, 12f);
+                    path.lineTo(10f, 16f);
+                    path.close();
                     canvas.drawPath(path, paint);
-                    paint.setStyle(Paint.Style.FILL);
-                    canvas.drawOval(new RectF(6.8f, 13.2f, 11.2f, 16.6f), paint);
-                    paint.setStyle(Paint.Style.STROKE);
+                    canvas.restore();
                     paint.setStrokeWidth(1.5f);
                     path.reset();
                     path.moveTo(2.5f, 8f);
@@ -2103,16 +2178,16 @@ public class SettingsActivity extends Activity {
                     canvas.drawPath(path, paint);
                     break;
                 case "hebrew-date":
-                    // Choice #1: a calendar with the Hebrew day marker א׳.
+                    // Hebrew calendar: rounded binding loops distinguish it from the Gregorian calendar.
                     canvas.drawRoundRect(new RectF(2.5f, 4f, 21.5f, 21f), 2.2f, 2.2f, paint);
                     canvas.drawLine(3f, 9.5f, 21f, 9.5f, paint);
-                    canvas.drawLine(8f, 2.5f, 8f, 7f, paint);
-                    canvas.drawLine(16f, 2.5f, 16f, 7f, paint);
+                    canvas.drawRoundRect(new RectF(6.9f, 1.5f, 9.1f, 7f), 1.1f, 1.1f, paint);
+                    canvas.drawRoundRect(new RectF(14.9f, 1.5f, 17.1f, 7f), 1.1f, 1.1f, paint);
                     paint.setStyle(Paint.Style.FILL);
                     paint.setTextSize(11.5f);
                     paint.setTypeface(Typeface.create("sans-serif-bold", Typeface.NORMAL));
                     paint.setTextAlign(Paint.Align.CENTER);
-                    canvas.drawText("א׳", 12f, 17.5f, paint);
+                    canvas.drawText("א", 12f, 18.2f, paint);
                     paint.setTypeface(Typeface.DEFAULT);
                     paint.setTextAlign(Paint.Align.LEFT);
                     break;
