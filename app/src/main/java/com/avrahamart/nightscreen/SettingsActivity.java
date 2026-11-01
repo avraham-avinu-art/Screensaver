@@ -241,9 +241,9 @@ public class SettingsActivity extends Activity {
         LinearLayout design = addCard(content, "עיצוב");
         addColorChoices(design, "צבע המסך",
                 new String[]{"שחור", "כחול", "כחול כהה", "טורקיז",
-                        "אפור גרפיט", "כחול פלדה", "אינדיגו עמוק", "סגול פחם",
-                        "בורדו כהה", "ירוק אורן", "ירוק אמרלד עמוק", "כחול פטרול",
-                        "זית כהה", "אפור צפחה"},
+                        "גרפיט", "כחול פלדה", "אינדיגו", "סגול פחם",
+                        "בורדו", "ירוק אורן", "אמרלד כהה", "כחול פטרול",
+                        "זית", "אפור צפחה"},
                 new String[]{"#000000", "#142438", "#091321", "#12313A",
                         "#252B33", "#26384A", "#24263D", "#30283B",
                         "#3B252E", "#20362E", "#163A34", "#193740",
@@ -821,7 +821,8 @@ public class SettingsActivity extends Activity {
         LinearLayout choiceRow = null;
 
         for (int i = 0; i < names.length; i++) {
-            if (i % 5 == 0) {
+            int columnsPerRow = names.length > 5 ? 4 : 5;
+            if (i % columnsPerRow == 0) {
                 choiceRow = new LinearLayout(this);
                 choiceRow.setOrientation(LinearLayout.HORIZONTAL);
                 choiceRow.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
