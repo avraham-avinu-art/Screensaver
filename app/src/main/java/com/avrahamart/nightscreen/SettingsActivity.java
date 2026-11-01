@@ -179,14 +179,14 @@ public class SettingsActivity extends Activity {
         footer.addView(done, doneParams);
         done.setOnClickListener(v -> finish());
 
-        FrameLayout permissionsButton = makeCircularIconButton("מעבר למסך הרשאות", "more-vertical");
+        FrameLayout permissionsButton = makeCircularIconButton("מעבר למסך הרשאות", "shield-alert");
         FrameLayout.LayoutParams permissionsParams =
                 new FrameLayout.LayoutParams(dp(42), dp(42), Gravity.LEFT | Gravity.CENTER_VERTICAL);
         footer.addView(permissionsButton, permissionsParams);
         permissionsButton.setOnClickListener(v ->
                 startActivity(new Intent(this, PermissionsActivity.class)));
 
-        FrameLayout backButton = makeCircularIconButton("חזרה למסך הקודם", "arrow-right");
+        FrameLayout backButton = makeCircularIconButton("חזרה למסך הקודם", "corner-up-left");
         FrameLayout.LayoutParams backParams =
                 new FrameLayout.LayoutParams(dp(42), dp(42), Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         footer.addView(backButton, backParams);
