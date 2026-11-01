@@ -64,12 +64,25 @@ public final class LockScreenMonitorService extends Service {
     public void onCreate() {
         super.onCreate();
         createNotificationChannel();
+        updateLockReceiverRegistration();
+    }
+
+    private void updateLockReceiverRegistration() {
+        if (receiverRegistered && lockReceiver != null) {
+            try {
+                unregisterReceiver(lockReceiver);
+            } catch (Throwable ignored) {
+            }
+            receiverRegistered = false;
+        }
+
         lockReceiver = new AutoStartOnPowerReceiver();
         IntentFilter filter = new IntentFilter();
         filter.addAction(Intent.ACTION_SCREEN_OFF);
         filter.addAction(Intent.ACTION_USER_PRESENT);
         // NotificationListenerService owns charger detection whenever its
-        // permission is granted; avoid a second receiver for the same event.
+        // permission is granted; otherwise the lock-monitor process is the
+        // persistent fallback when automatic activation on lock is enabled.
         if (!NightScreenApplication.hasNotificationAccess(this)) {
             filter.addAction(Intent.ACTION_POWER_CONNECTED);
         }
@@ -81,6 +94,7 @@ public final class LockScreenMonitorService extends Service {
             }
             receiverRegistered = true;
         } catch (Throwable ignored) {
+            lockReceiver = null;
             receiverRegistered = false;
         }
     }
@@ -98,6 +112,7 @@ public final class LockScreenMonitorService extends Service {
         }
 
         cancelScheduledRestart();
+        updateLockReceiverRegistration();
         Notification notification = buildQuietNotification();
         try {
             if (Build.VERSION.SDK_INT >= 34) {
