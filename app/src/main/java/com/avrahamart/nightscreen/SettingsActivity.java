@@ -188,7 +188,7 @@ public class SettingsActivity extends Activity {
         permissionsButton.setOnClickListener(v ->
                 startActivity(new Intent(this, PermissionsActivity.class)));
 
-        FrameLayout backButton = makeCircularIconButton("חזרה למסך הקודם", "corner-up-left");
+        FrameLayout backButton = makeCircularIconButton("חזרה למסך הקודם", "back-arrow");
         FrameLayout.LayoutParams backParams =
                 new FrameLayout.LayoutParams(dp(42), dp(42), Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         footer.addView(backButton, backParams);
@@ -537,15 +537,15 @@ public class SettingsActivity extends Activity {
 
         FrameLayout closeX = new FrameLayout(this);
         closeX.setContentDescription("סגירת חלונית ההסבר");
-        closeX.setBackground(roundOutline(CONTROL_SURFACE, dp(17), OUTLINE));
+        closeX.setBackgroundColor(Color.TRANSPARENT);
         closeX.setClickable(true);
         closeX.setFocusable(true);
         closeX.setPadding(0, 0, 0, 0);
         closeX.setForegroundGravity(Gravity.CENTER);
         if (Build.VERSION.SDK_INT >= 21) closeX.setElevation(dp(4));
-        View closeXGlyph = makeIconGlyph("close-x", ACCENT);
+        View closeXGlyph = makeIconGlyph("close-circle", ACCENT);
         FrameLayout.LayoutParams closeGlyphParams =
-                new FrameLayout.LayoutParams(dp(24), dp(24), Gravity.CENTER);
+                new FrameLayout.LayoutParams(dp(34), dp(34), Gravity.CENTER);
         closeGlyphParams.gravity = Gravity.CENTER;
         closeX.addView(closeXGlyph, closeGlyphParams);
         closeX.setOnClickListener(v -> dialog.dismiss());
@@ -1031,7 +1031,8 @@ public class SettingsActivity extends Activity {
         android.widget.ImageView image = new android.widget.ImageView(this);
         image.setImageResource(resourceId);
         if (!"hebrew-date".equals(iconName) && !"lock-play".equals(iconName)
-                && !"lockscreen-phone".equals(iconName)) {
+                && !"lockscreen-phone".equals(iconName)
+                && !"close-circle".equals(iconName)) {
             image.setColorFilter(tint);
         }
         image.setScaleType(android.widget.ImageView.ScaleType.FIT_CENTER);
