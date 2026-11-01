@@ -1052,7 +1052,7 @@ public class SettingsActivity extends Activity {
         // Keep the standard square badge behind every settings glyph, including progress/time.
         badge.setBackground(roundOutline(ICON_SURFACE, dp(10), CARD_OUTLINE));
         View graphic = makeIconGlyph(iconName, Color.rgb(168, 200, 232));
-        int glyphSize = progressTimeGlyph ? dp(27)
+        int glyphSize = "progress-time-digital".equals(iconName) ? dp(27)
                 : "bold".equals(iconName) ? dp(24)
                 : "power-off".equals(iconName) ? dp(19)
                 : ("history".equals(iconName) || "panel-bottom".equals(iconName)) ? dp(24)
