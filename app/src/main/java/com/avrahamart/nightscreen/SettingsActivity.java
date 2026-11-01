@@ -1210,7 +1210,9 @@ public class SettingsActivity extends Activity {
         int index = 0;
         if ("fontColor".equals(key) || "frameColor".equals(key)
                 || "screenBackgroundColor".equals(key)) {
-            if (!prefs.contains(key)) return -1;
+            if (!prefs.contains(key)) {
+                return "screenBackgroundColor".equals(key) ? 0 : -1;
+            }
             int stored = getInt(key, colorValue(values[0]));
             for (int i = 0; i < values.length; i++) {
                 if (colorValue(values[i]) == stored) return i;
@@ -2258,8 +2260,9 @@ public class SettingsActivity extends Activity {
                 radius -= dp(3);
             }
 
+            int swatchColor = colorValue(value);
             paint.setStyle(Paint.Style.FILL);
-            paint.setColor(colorValue(value));
+            paint.setColor(swatchColor);
             canvas.drawCircle(cx, cy, radius, paint);
 
             paint.setStyle(Paint.Style.STROKE);
@@ -2268,11 +2271,17 @@ public class SettingsActivity extends Activity {
             canvas.drawCircle(cx, cy, radius, paint);
 
             if (selected) {
+                // Use a contrasting checkmark: dark ink on light font-color
+                // swatches, and white on the dark screen-background swatches.
+                int luminance = Math.round(
+                        Color.red(swatchColor) * 0.299f
+                        + Color.green(swatchColor) * 0.587f
+                        + Color.blue(swatchColor) * 0.114f);
                 paint.setStyle(Paint.Style.STROKE);
                 paint.setStrokeWidth(dp(2));
                 paint.setStrokeCap(Paint.Cap.ROUND);
                 paint.setStrokeJoin(Paint.Join.ROUND);
-                paint.setColor(Color.rgb(8, 26, 42));
+                paint.setColor(luminance < 145 ? Color.WHITE : Color.rgb(8, 26, 42));
                 Path check = new Path();
                 check.moveTo(cx - dp(5), cy);
                 check.lineTo(cx - dp(1), cy + dp(4));
