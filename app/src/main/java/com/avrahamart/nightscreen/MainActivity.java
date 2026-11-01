@@ -410,12 +410,13 @@ public class MainActivity extends Activity {
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setGravity(Gravity.CENTER_HORIZONTAL);
-        root.setBackgroundColor(Color.BLACK);
+        int initialScreenBackground = getInt("screenBackgroundColor", Color.BLACK);
+        root.setBackgroundColor(initialScreenBackground);
         root.setPadding(dp(10), 0, dp(10), dp(4));
 
         FrameLayout stage = new FrameLayout(this);
         stageView = stage;
-        stage.setBackgroundColor(Color.BLACK);
+        stage.setBackgroundColor(initialScreenBackground);
         root.addView(stage, new LinearLayout.LayoutParams(-1, 0, 1f));
 
         settingsButtonHitArea = new FrameLayout(this);
@@ -619,7 +620,7 @@ public class MainActivity extends Activity {
         mediaMirror.setOrientation(LinearLayout.VERTICAL);
         mediaMirror.setGravity(Gravity.TOP | Gravity.CENTER_HORIZONTAL);
         mediaMirror.setPadding(0, 0, 0, 0);
-        mediaMirror.setBackgroundColor(Color.BLACK);
+        mediaMirror.setBackgroundColor(getScreenBackgroundColor());
         mediaMirror.setVisibility(View.GONE);
 
         // The reference player is intentionally clean: the position row is
@@ -773,6 +774,8 @@ public class MainActivity extends Activity {
         SharedPreferences.Editor e = prefs.edit();
 
         e.putInt("fontColor", getInt("fontColor", dateTextColor));
+        e.putInt("screenBackgroundColor", getInt("screenBackgroundColor", Color.BLACK));
+        e.putInt("screenBrightness", getInt("screenBrightness", -1));
         e.putInt("fontSize", getInt("fontSize", 17));
         e.putInt("clockDateSize", getInt("clockDateSize", 84));
         e.putInt("playerSize", getInt("playerSize", 17));
@@ -1025,6 +1028,7 @@ public class MainActivity extends Activity {
     private void applySettings() {
         if (prefs == null || gregorianText == null) return;
 
+        applyScreenAppearance();
         int color = getInt("fontColor", dateTextColor);
         int size = getInt("fontSize", 17);
         int clockDateSize = getInt("clockDateSize", 96);
@@ -1451,11 +1455,35 @@ public class MainActivity extends Activity {
         }
     }
 
+    private int getScreenBackgroundColor() {
+        return getInt("screenBackgroundColor", Color.BLACK);
+    }
+
+    private void applyScreenAppearance() {
+        int backgroundColor = getScreenBackgroundColor();
+        if (stageView != null) {
+            stageView.setBackgroundColor(backgroundColor);
+            if (stageView.getParent() instanceof View) {
+                ((View) stageView.getParent()).setBackgroundColor(backgroundColor);
+            }
+        }
+        getWindow().getDecorView().setBackgroundColor(backgroundColor);
+
+        // -1 means follow the device's brightness setting. A percentage applies
+        // only to this Activity and does not modify the user's system setting.
+        int brightnessPercent = getInt("screenBrightness", -1);
+        android.view.WindowManager.LayoutParams attributes = getWindow().getAttributes();
+        attributes.screenBrightness = brightnessPercent < 0
+                ? android.view.WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+                : Math.max(0.01f, Math.min(1.0f, brightnessPercent / 100.0f));
+        getWindow().setAttributes(attributes);
+    }
+
     private void applyMediaFrame(boolean hasActiveSong) {
         if (mediaMirror == null) return;
         boolean enabled = getBool("frameEnabled", false) && hasActiveSong;
         if (!enabled) {
-            mediaMirror.setBackgroundColor(Color.BLACK);
+            mediaMirror.setBackgroundColor(getScreenBackgroundColor());
             mediaMirror.setPadding(0, 0, 0, 0);
             return;
         }
@@ -1485,7 +1513,7 @@ public class MainActivity extends Activity {
             mediaMirror.setPadding(inset, inset, inset, inset);
         } catch (Throwable ignored) {
             // A frame drawing problem must never make the media player disappear.
-            mediaMirror.setBackgroundColor(Color.BLACK);
+            mediaMirror.setBackgroundColor(getScreenBackgroundColor());
             mediaMirror.setPadding(0, 0, 0, 0);
         }
     }
