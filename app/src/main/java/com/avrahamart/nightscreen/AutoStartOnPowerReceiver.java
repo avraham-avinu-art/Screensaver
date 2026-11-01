@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Build;
+import android.os.SystemClock;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.PowerManager;
@@ -27,6 +28,7 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
         if (Intent.ACTION_POWER_CONNECTED.equals(action)) {
             if (!prefs.getBoolean("autoStartOnCharge", false)) return;
             if (!canLaunchFromBackground(context)) return;
+            if (!claimPowerConnectedEvent(context)) return;
 
             Intent launch = new Intent(context, MainActivity.class);
             launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
@@ -98,6 +100,21 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
             context.startActivity(launch);
         } catch (Throwable ignored) {
             // Background activity launch restrictions vary by Android build.
+        }
+    }
+
+    private boolean claimPowerConnectedEvent(Context context) {
+        // The runtime Application receiver is the primary path; the manifest
+        // receiver is retained only to cold-start a dead process. If Android
+        // delivers both for the same physical event, launch the Activity once.
+        synchronized (AutoStartOnPowerReceiver.class) {
+            SharedPreferences prefs =
+                    context.getSharedPreferences("settings", Context.MODE_PRIVATE);
+            long now = SystemClock.elapsedRealtime();
+            long previous = prefs.getLong("lastPowerConnectedHandledElapsed", -10_000L);
+            if (now >= previous && now - previous < 3_000L) return false;
+            prefs.edit().putLong("lastPowerConnectedHandledElapsed", now).apply();
+            return true;
         }
     }
 

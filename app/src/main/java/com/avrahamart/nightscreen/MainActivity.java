@@ -115,6 +115,17 @@ public class MainActivity extends Activity {
                 }
             } else if (Intent.ACTION_BATTERY_CHANGED.equals(action)) {
                 updateBatteryPercentView();
+            } else if (Intent.ACTION_TIME_TICK.equals(action)
+                    || Intent.ACTION_TIME_CHANGED.equals(action)
+                    || Intent.ACTION_DATE_CHANGED.equals(action)
+                    || Intent.ACTION_TIMEZONE_CHANGED.equals(action)) {
+                if (Intent.ACTION_TIME_CHANGED.equals(action)
+                        || Intent.ACTION_DATE_CHANGED.equals(action)
+                        || Intent.ACTION_TIMEZONE_CHANGED.equals(action)) {
+                    lastFormattedHebrewDateKey = null;
+                }
+                updateClock();
+                scheduleNextClockUpdate();
             } else if (Intent.ACTION_SCREEN_OFF.equals(action)) {
                 learnScreenTimeoutBehaviorFromScreenOff();
             } else if (Intent.ACTION_SCREEN_ON.equals(action)) {
@@ -220,13 +231,38 @@ public class MainActivity extends Activity {
         }
     };
 
-    private final Runnable ticker = new Runnable() {
+    private final Runnable clockUpdateRunnable = new Runnable() {
         @Override public void run() {
+            if (!mainActivityResumed || isFinishing()) return;
             updateClock();
-            refreshSystemMediaMirror();
+            scheduleNextClockUpdate();
+        }
+    };
+    private final Runnable mediaSessionRefreshRunnable = this::refreshSystemMediaMirror;
+    private final Runnable mediaProgressTicker = new Runnable() {
+        @Override public void run() {
+            if (!mainActivityResumed || !updateCurrentMediaProgress()) return;
             handler.postDelayed(this, 1000L);
         }
     };
+    private String lastFormattedHebrewDateKey = null;
+
+    private void startClockUpdates() {
+        handler.removeCallbacks(clockUpdateRunnable);
+        updateClock();
+        scheduleNextClockUpdate();
+    }
+
+    private void stopClockUpdates() {
+        handler.removeCallbacks(clockUpdateRunnable);
+    }
+
+    private void scheduleNextClockUpdate() {
+        long nowMillis = System.currentTimeMillis();
+        long delay = 60_000L - (nowMillis % 60_000L) + 40L;
+        handler.removeCallbacks(clockUpdateRunnable);
+        handler.postDelayed(clockUpdateRunnable, Math.max(250L, delay));
+    }
 
     @Override
     protected void onCreate(Bundle state) {
@@ -362,10 +398,17 @@ public class MainActivity extends Activity {
                 scheduleAutoOff();
             }
             hideSystemUi();
-            handler.removeCallbacks(ticker);
-            handler.post(ticker);
-            registerActiveSessionsListener();
-            handler.postDelayed(this::refreshSystemMediaMirror, 250L);
+            startClockUpdates();
+            if (getBool("showPlayer", false)) {
+                registerActiveSessionsListener();
+                handler.removeCallbacks(mediaSessionRefreshRunnable);
+                handler.postDelayed(mediaSessionRefreshRunnable, 250L);
+            } else {
+                unregisterActiveSessionsListener();
+                detachMediaController();
+                stopMediaProgressTicker();
+                hideMediaMirror();
+            }
         } catch (Throwable t) {
             showFatalError(t);
         }
@@ -378,7 +421,9 @@ public class MainActivity extends Activity {
         mainActivityPausedByDeviceLock =
                 keyguardManager != null && keyguardManager.isKeyguardLocked();
         mainActivityResumed = false;
-        handler.removeCallbacks(ticker);
+        stopClockUpdates();
+        handler.removeCallbacks(mediaSessionRefreshRunnable);
+        stopMediaProgressTicker();
         unregisterActiveSessionsListener();
         detachMediaController();
         super.onPause();
@@ -393,7 +438,9 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
-        handler.removeCallbacks(ticker);
+        handler.removeCallbacks(clockUpdateRunnable);
+        handler.removeCallbacks(mediaSessionRefreshRunnable);
+        handler.removeCallbacks(mediaProgressTicker);
         handler.removeCallbacks(autoOffRunnable);
         handler.removeCallbacks(screenOnReleaseRunnable);
         handler.removeCallbacks(hideSettingsButtonRunnable);
@@ -1588,8 +1635,16 @@ public class MainActivity extends Activity {
         // activate the lock screen while the screensaver remains visible.
         if (getBool("noShutdownWhileCharging", false) && isDeviceCharging()) {
             activityDeadlineElapsedRealtime = 0L;
-            getWindow().addFlags(
-                    android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            if (getBool("showOnLockScreen", Build.VERSION.SDK_INT >= 26)) {
+                // Keep the screensaver available over the keyguard, but let Android
+                // turn the display off normally to avoid unnecessary charging heat/power.
+                getWindow().clearFlags(
+                        android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            } else {
+                // Without lock-screen display, keep the visible saver on while charging.
+                getWindow().addFlags(
+                        android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            }
             return;
         }
 
@@ -1883,6 +1938,10 @@ public class MainActivity extends Activity {
         filter.addAction(Intent.ACTION_POWER_DISCONNECTED);
         filter.addAction(Intent.ACTION_BATTERY_CHANGED);
         filter.addAction(Intent.ACTION_SCREEN_ON);
+        filter.addAction(Intent.ACTION_TIME_TICK);
+        filter.addAction(Intent.ACTION_TIME_CHANGED);
+        filter.addAction(Intent.ACTION_DATE_CHANGED);
+        filter.addAction(Intent.ACTION_TIMEZONE_CHANGED);
         try {
             if (Build.VERSION.SDK_INT >= 33) {
                 registerReceiver(deviceStateReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
@@ -2133,29 +2192,46 @@ public class MainActivity extends Activity {
     }
 
     private void updateClock() {
+        if (timeText == null || gregorianText == null || hebrewText == null) return;
         now.setTimeInMillis(System.currentTimeMillis());
-        timeText.setText(numericTime());
-        gregorianText.setText(hebrewWeekday() + " " +
-                numericDateFormat.format(now.getTime()));
 
-        try {
-            JewishDate jewishDate = new JewishDate(now);
-            HebrewDateFormatter formatter = new HebrewDateFormatter();
-            formatter.setHebrewFormat(true);
-            formatter.setUseGershGershayim(true);
-            formatter.setUseLongHebrewYears(false);
-            String formattedHebrewDate = formatter.format(jewishDate)
-                    .replace("מרחשוון", "חשוון")
-                    .replace("מרחשון", "חשוון")
-                    .replace("חשון", "חשוון")
-                    .replace("\u05F3", "'")
-                    .replace("\u05F4", "\"")
-                    .replace("’", "'")
-                    .replace("”", "\"")
-                    .replace("“", "\"");
-            hebrewText.setText(formattedHebrewDate);
-        } catch (Throwable t) {
-            hebrewText.setText("");
+        String formattedTime = numericTime();
+        if (!formattedTime.contentEquals(timeText.getText())) {
+            timeText.setText(formattedTime);
+        }
+
+        String formattedGregorianDate = hebrewWeekday() + " "
+                + numericDateFormat.format(now.getTime());
+        if (!formattedGregorianDate.contentEquals(gregorianText.getText())) {
+            gregorianText.setText(formattedGregorianDate);
+        }
+
+        String hebrewDateKey = now.get(Calendar.ERA) + "-"
+                + now.get(Calendar.YEAR) + "-"
+                + now.get(Calendar.DAY_OF_YEAR);
+        if (!hebrewDateKey.equals(lastFormattedHebrewDateKey)) {
+            try {
+                JewishDate jewishDate = new JewishDate(now);
+                HebrewDateFormatter formatter = new HebrewDateFormatter();
+                formatter.setHebrewFormat(true);
+                formatter.setUseGershGershayim(true);
+                formatter.setUseLongHebrewYears(false);
+                String formattedHebrewDate = formatter.format(jewishDate)
+                        .replace("מרחשוון", "חשוון")
+                        .replace("מרחשון", "חשוון")
+                        .replace("חשון", "חשוון")
+                        .replace("\u05F3", "'")
+                        .replace("\u05F4", "\"")
+                        .replace("’", "'")
+                        .replace("”", "\"")
+                        .replace("“", "\"");
+                if (!formattedHebrewDate.contentEquals(hebrewText.getText())) {
+                    hebrewText.setText(formattedHebrewDate);
+                }
+            } catch (Throwable t) {
+                hebrewText.setText("");
+            }
+            lastFormattedHebrewDateKey = hebrewDateKey;
         }
     }
 
@@ -2188,10 +2264,14 @@ public class MainActivity extends Activity {
 
             final ComponentName listenerComponent = new ComponentName(
                     this, SystemMediaNotificationListener.class);
+            if (!getBool("showPlayer", false)) return;
             activeSessionsListener = controllers -> {
                 // A media session can be created after the screen saver starts.
-                // Refresh immediately instead of waiting for the next lifecycle event.
-                handler.post(this::refreshSystemMediaMirror);
+                // Only inspect sessions while the player setting is enabled.
+                if (mainActivityResumed && getBool("showPlayer", false)) {
+                    handler.removeCallbacks(mediaSessionRefreshRunnable);
+                    handler.post(mediaSessionRefreshRunnable);
+                }
             };
             mediaSessionManager.addOnActiveSessionsChangedListener(
                     activeSessionsListener,
@@ -2223,6 +2303,12 @@ public class MainActivity extends Activity {
 
     private void refreshSystemMediaMirror() {
         if (mediaMirror == null) return;
+        if (!mainActivityResumed || !getBool("showPlayer", false)) {
+            stopMediaProgressTicker();
+            detachMediaController();
+            hideMediaMirror();
+            return;
+        }
 
         try {
             if (!hasNotificationAccess()) {
@@ -2383,6 +2469,7 @@ public class MainActivity extends Activity {
     }
 
     private void detachMediaController() {
+        stopMediaProgressTicker();
         if (mediaController != null && mediaCallback != null) {
             try {
                 mediaController.unregisterCallback(mediaCallback);
@@ -2448,7 +2535,18 @@ public class MainActivity extends Activity {
                     ? "" : mediaDetails.getText().toString();
             boolean artistChanged = !artist.equals(previousArtistText);
             lastArtist = artist;
-            prefs.edit().putString("lastTitle", lastTitle).putString("lastArtist", lastArtist).apply();
+            boolean savedTrackMetadataChanged = false;
+            SharedPreferences.Editor metadataEditor = prefs.edit();
+            if (!title.equals(getString("lastTitle", ""))) {
+                metadataEditor.putString("lastTitle", title);
+                savedTrackMetadataChanged = true;
+            }
+            if (!artist.equals(getString("lastArtist", ""))) {
+                metadataEditor.putString("lastArtist", artist);
+                savedTrackMetadataChanged = true;
+            }
+            if (savedTrackMetadataChanged) metadataEditor.apply();
+
             long duration = metadata == null ? 0L : metadata.getLong(MediaMetadata.METADATA_KEY_DURATION);
             long position = Math.max(0L, state.getPosition());
             if (duration > 0) position = Math.min(position, duration);
@@ -2484,12 +2582,7 @@ public class MainActivity extends Activity {
             } else if (duration > 0L) {
                 handler.removeCallbacks(hideProgressRowAfterMetadataChange);
                 progressHidePending = false;
-                setProgressRowVisible(true);
-                position = Math.max(0L, Math.min(position, duration));
-                mediaCurrentText.setText(formatMs(position));
-                mediaTotalText.setText(formatMs(duration));
-                mediaSeekBar.setMax(1000);
-                mediaSeekBar.setProgress((int)Math.min(1000L, (position * 1000L) / duration));
+                updateMediaProgressViews(state, metadata);
             } else if (mediaProgressRow.getVisibility() == View.VISIBLE) {
                 // Track changes can briefly publish metadata without a duration. Keep the
                 // last progress row visible instead of blinking it off during the hand-off.
@@ -2594,6 +2687,83 @@ public class MainActivity extends Activity {
         if (!enabled) {
             stopTitleMarquee();
             stopArtistMarquee();
+            stopMediaProgressTicker();
+        } else {
+            scheduleMediaProgressTicker();
+        }
+    }
+
+    private boolean isMediaProgressPollingEnabled() {
+        if (!mainActivityResumed || !getBool("showPlayer", false)
+                || !getBool("showProgress", true)
+                || mediaMirror == null || mediaMirror.getVisibility() != View.VISIBLE
+                || mediaController == null) return false;
+        try {
+            PlaybackState state = mediaController.getPlaybackState();
+            return state != null && state.getState() == PlaybackState.STATE_PLAYING
+                    && getCurrentMediaDuration() > 0L;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    private void scheduleMediaProgressTicker() {
+        handler.removeCallbacks(mediaProgressTicker);
+        if (isMediaProgressPollingEnabled()) {
+            handler.postDelayed(mediaProgressTicker, 1000L);
+        }
+    }
+
+    private void stopMediaProgressTicker() {
+        handler.removeCallbacks(mediaProgressTicker);
+    }
+
+    private boolean updateCurrentMediaProgress() {
+        if (!isMediaProgressPollingEnabled()) return false;
+        try {
+            PlaybackState state = mediaController.getPlaybackState();
+            MediaMetadata metadata = mediaController.getMetadata();
+            if (state == null || state.getState() != PlaybackState.STATE_PLAYING
+                    || metadata == null) return false;
+            updateMediaProgressViews(state, metadata);
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    private void updateMediaProgressViews(PlaybackState state, MediaMetadata metadata) {
+        if (state == null || metadata == null || mediaCurrentText == null
+                || mediaTotalText == null || mediaSeekBar == null) return;
+        long duration = Math.max(0L,
+                metadata.getLong(MediaMetadata.METADATA_KEY_DURATION));
+        if (duration <= 0L || !getBool("showProgress", true)) {
+            setProgressRowVisible(false);
+            return;
+        }
+
+        long position = Math.max(0L, state.getPosition());
+        if (state.getState() == PlaybackState.STATE_PLAYING) {
+            long lastUpdate = state.getLastPositionUpdateTime();
+            if (lastUpdate > 0L) {
+                long elapsed = Math.max(0L, SystemClock.elapsedRealtime() - lastUpdate);
+                position += Math.round(elapsed * Math.max(0f, state.getPlaybackSpeed()));
+            }
+        }
+        position = Math.min(position, duration);
+        setProgressRowVisible(true);
+        String currentText = formatMs(position);
+        String totalText = formatMs(duration);
+        if (!currentText.contentEquals(mediaCurrentText.getText())) {
+            mediaCurrentText.setText(currentText);
+        }
+        if (!totalText.contentEquals(mediaTotalText.getText())) {
+            mediaTotalText.setText(totalText);
+        }
+        if (mediaSeekBar.getMax() != 1000) mediaSeekBar.setMax(1000);
+        int progress = (int) Math.min(1000L, (position * 1000L) / duration);
+        if (mediaSeekBar.getProgress() != progress) {
+            mediaSeekBar.setProgress(progress);
         }
     }
 
@@ -2665,6 +2835,7 @@ public class MainActivity extends Activity {
     }
 
     private void hideMediaMirror() {
+        stopMediaProgressTicker();
         if (mediaMirror != null) {
             mediaMirror.setVisibility(View.GONE);
         }
