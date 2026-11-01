@@ -204,7 +204,7 @@ public class SettingsActivity extends Activity {
         button.setBackgroundColor(Color.TRANSPARENT);
         GraphicIcon glyph = new GraphicIcon(this, iconType, ACCENT);
         button.addView(glyph,
-                new FrameLayout.LayoutParams(dp(22), dp(22), Gravity.CENTER));
+                new FrameLayout.LayoutParams(dp(28), dp(28), Gravity.CENTER));
         return button;
     }
 
@@ -353,9 +353,9 @@ public class SettingsActivity extends Activity {
             infoButton.setBackgroundColor(Color.TRANSPARENT);
             GraphicIcon infoGlyph = new GraphicIcon(this, "message-circle-question", ACCENT);
             infoButton.addView(infoGlyph,
-                    new FrameLayout.LayoutParams(dp(26), dp(26), Gravity.CENTER));
+                    new FrameLayout.LayoutParams(dp(30), dp(30), Gravity.CENTER));
             LinearLayout.LayoutParams infoParams =
-                    new LinearLayout.LayoutParams(dp(34), dp(34));
+                    new LinearLayout.LayoutParams(dp(38), dp(38));
             infoParams.leftMargin = dp(3);
             headingRow.addView(infoButton, 0, infoParams);
             infoButton.setOnClickListener(v -> showActivityTimeHelpDialog());
@@ -431,11 +431,11 @@ public class SettingsActivity extends Activity {
         heading.setPadding(dp(40), 0, 0, 0);
 
         FrameLayout helpIconShell = new FrameLayout(this);
-        helpIconShell.setBackground(roundOutline(CONTROL_SURFACE, dp(21), OUTLINE));
+        helpIconShell.setBackgroundColor(Color.TRANSPARENT);
         GraphicIcon helpIcon = new GraphicIcon(this, "message-circle-question", ACCENT);
         helpIconShell.addView(helpIcon,
-                new FrameLayout.LayoutParams(dp(28), dp(28), Gravity.CENTER));
-        heading.addView(helpIconShell, new LinearLayout.LayoutParams(dp(42), dp(42)));
+                new FrameLayout.LayoutParams(dp(34), dp(34), Gravity.CENTER));
+        heading.addView(helpIconShell, new LinearLayout.LayoutParams(dp(46), dp(46)));
 
         LinearLayout titleBlock = new LinearLayout(this);
         titleBlock.setOrientation(LinearLayout.VERTICAL);
@@ -796,7 +796,7 @@ public class SettingsActivity extends Activity {
         title.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
         title.setPadding(0, 0, dp(3), 0);
         headingRow.addView(title, new LinearLayout.LayoutParams(0, dp(32), 1f));
-        FrameLayout icon = makeIconBadge("color-options", dp(30));
+        FrameLayout icon = makeIconBadge(iconForSetting(key), dp(30));
         LinearLayout.LayoutParams iconParams =
                 new LinearLayout.LayoutParams(dp(30), dp(30));
         iconParams.leftMargin = dp(9);
@@ -1629,29 +1629,27 @@ public class SettingsActivity extends Activity {
             Path path = new Path();
             switch (type) {
                 case "history":
-                    canvas.drawCircle(11f, 12f, 8f, paint);
-                    canvas.drawLine(11f, 7f, 11f, 12f, paint);
-                    canvas.drawLine(11f, 12f, 15f, 14f, paint);
-                    path.moveTo(3.5f, 8f);
-                    path.lineTo(3.5f, 3.5f);
-                    path.lineTo(8f, 3.5f);
-                    canvas.drawPath(path, paint);
-                    canvas.drawLine(3.5f, 3.5f, 7f, 7f, paint);
+                    // Lucide-style history: open circular arrow with a clock hand pair.
+                    canvas.drawArc(new RectF(3f, 3f, 21f, 21f), -42f, 304f, false, paint);
+                    canvas.drawLine(3f, 3f, 3f, 8.5f, paint);
+                    canvas.drawLine(3f, 8.5f, 8.5f, 8.5f, paint);
+                    canvas.drawLine(12f, 7f, 12f, 12f, paint);
+                    canvas.drawLine(12f, 12f, 16f, 14.5f, paint);
                     break;
                 case "usb":
-                    canvas.drawLine(12f, 20.5f, 12f, 5f, paint);
-                    canvas.drawLine(12f, 11f, 6f, 16f, paint);
-                    canvas.drawLine(12f, 11f, 18f, 15.5f, paint);
-                    path.moveTo(8.5f, 5f);
-                    path.lineTo(12f, 1.8f);
-                    path.lineTo(15.5f, 5f);
-                    canvas.drawPath(path, paint);
-                    canvas.drawCircle(5f, 17f, 2f, paint);
-                    canvas.drawRect(new RectF(16.5f, 14f, 20f, 17.5f), paint);
+                    canvas.drawLine(12f, 21f, 12f, 4f, paint);
+                    canvas.drawLine(12f, 11.5f, 6f, 17f, paint);
+                    canvas.drawLine(12f, 11.5f, 18f, 17f, paint);
+                    canvas.drawLine(12f, 4f, 9.2f, 7f, paint);
+                    canvas.drawLine(12f, 4f, 14.8f, 7f, paint);
+                    canvas.drawCircle(6f, 18.2f, 1.8f, paint);
+                    canvas.drawRect(new RectF(16.2f, 16f, 19.8f, 19.6f), paint);
+                    canvas.drawLine(12f, 21f, 12f, 18.3f, paint);
                     break;
                 case "power-off":
-                    canvas.drawArc(new RectF(4.5f, 6f, 19.5f, 21f), 45f, 270f, false, paint);
-                    canvas.drawLine(12f, 2.5f, 12f, 12f, paint);
+                    canvas.drawCircle(12f, 13f, 8f, paint);
+                    canvas.drawLine(12f, 2f, 12f, 11f, paint);
+                    canvas.drawLine(5f, 5f, 19f, 21f, paint);
                     break;
                 case "battery-medium":
                     canvas.drawRoundRect(new RectF(2.5f, 6f, 20f, 18f), 2f, 2f, paint);
@@ -1661,13 +1659,16 @@ public class SettingsActivity extends Activity {
                     paint.setStyle(Paint.Style.STROKE);
                     break;
                 case "sun-dim":
-                    canvas.drawCircle(12f, 12f, 4f, paint);
-                    canvas.drawLine(12f, 2f, 12f, 5f, paint);
-                    canvas.drawLine(12f, 19f, 12f, 22f, paint);
-                    canvas.drawLine(2f, 12f, 5f, 12f, paint);
-                    canvas.drawLine(19f, 12f, 22f, 12f, paint);
-                    canvas.drawLine(4.7f, 4.7f, 6.8f, 6.8f, paint);
-                    canvas.drawLine(17.2f, 17.2f, 19.3f, 19.3f, paint);
+                    canvas.drawCircle(9f, 9f, 4f, paint);
+                    canvas.drawLine(9f, 1.5f, 9f, 3f, paint);
+                    canvas.drawLine(9f, 15f, 9f, 16.5f, paint);
+                    canvas.drawLine(1.5f, 9f, 3f, 9f, paint);
+                    canvas.drawLine(15f, 9f, 16.5f, 9f, paint);
+                    canvas.drawLine(3.7f, 3.7f, 4.8f, 4.8f, paint);
+                    canvas.drawLine(13.2f, 13.2f, 14.3f, 14.3f, paint);
+                    canvas.drawLine(17f, 15.5f, 22f, 15.5f, paint);
+                    canvas.drawLine(17f, 18.5f, 22f, 18.5f, paint);
+                    canvas.drawLine(17f, 21f, 20f, 21f, paint);
                     break;
                 case "bold":
                     paint.setStyle(Paint.Style.FILL);
@@ -1686,8 +1687,7 @@ public class SettingsActivity extends Activity {
                     break;
                 case "panel-bottom":
                     canvas.drawRoundRect(new RectF(3f, 3f, 21f, 21f), 2f, 2f, paint);
-                    canvas.drawLine(3.5f, 15.5f, 20.5f, 15.5f, paint);
-                    canvas.drawLine(8f, 18.5f, 16f, 18.5f, paint);
+                    canvas.drawLine(3.5f, 14.5f, 20.5f, 14.5f, paint);
                     break;
                 case "pipette":
                     path.moveTo(7f, 17f);
@@ -1714,16 +1714,16 @@ public class SettingsActivity extends Activity {
                     canvas.drawCircle(12f, 16.5f, 0.9f, paint);
                     break;
                 case "corner-up-left":
-                    path.moveTo(20f, 19f);
-                    path.lineTo(20f, 15f);
-                    path.quadTo(20f, 12f, 17f, 12f);
-                    path.lineTo(8f, 12f);
-                    path.lineTo(8f, 5f);
+                    // A clear right-to-left return path that turns upward to the left.
+                    path.moveTo(20f, 20f);
+                    path.lineTo(20f, 14f);
+                    path.quadTo(20f, 9f, 15f, 9f);
+                    path.lineTo(5f, 9f);
                     canvas.drawPath(path, paint);
                     path.reset();
-                    path.moveTo(3.5f, 9.5f);
-                    path.lineTo(8f, 5f);
-                    path.lineTo(12.5f, 9.5f);
+                    path.moveTo(10f, 4f);
+                    path.lineTo(5f, 9f);
+                    path.lineTo(10f, 14f);
                     canvas.drawPath(path, paint);
                     break;
                 case "close-x":
@@ -1907,28 +1907,35 @@ public class SettingsActivity extends Activity {
                     }
                     break;
                 case "player-size-resize":
-                    // A clear music-player tile with two small resize arrows.
-                    canvas.drawRoundRect(new RectF(4f, 5f, 20f, 19f), 2.2f, 2.2f, paint);
-                    paint.setStrokeWidth(1.6f);
-                    path.moveTo(10.5f, 8f);
-                    path.lineTo(16f, 7f);
-                    path.lineTo(16f, 12.4f);
+                    // Music note alone, surrounded by four outward resize corners.
+                    paint.setStrokeWidth(1.7f);
+                    path.moveTo(10f, 7f);
+                    path.lineTo(17f, 5.5f);
+                    path.lineTo(17f, 15f);
                     canvas.drawPath(path, paint);
-                    canvas.drawLine(10.5f, 8f, 10.5f, 13.5f, paint);
                     paint.setStyle(Paint.Style.FILL);
-                    canvas.drawOval(new RectF(7.8f, 12.5f, 11.6f, 15.4f), paint);
-                    canvas.drawOval(new RectF(13.2f, 11.8f, 17f, 14.7f), paint);
+                    canvas.drawOval(new RectF(6.8f, 13.2f, 11.2f, 16.6f), paint);
                     paint.setStyle(Paint.Style.STROKE);
                     paint.setStrokeWidth(1.5f);
                     path.reset();
-                    path.moveTo(2.5f, 6.5f);
+                    path.moveTo(2.5f, 8f);
                     path.lineTo(2.5f, 2.5f);
-                    path.lineTo(6.5f, 2.5f);
+                    path.lineTo(8f, 2.5f);
                     canvas.drawPath(path, paint);
                     path.reset();
-                    path.moveTo(17.5f, 21.5f);
+                    path.moveTo(16f, 2.5f);
+                    path.lineTo(21.5f, 2.5f);
+                    path.lineTo(21.5f, 8f);
+                    canvas.drawPath(path, paint);
+                    path.reset();
+                    path.moveTo(2.5f, 16f);
+                    path.lineTo(2.5f, 21.5f);
+                    path.lineTo(8f, 21.5f);
+                    canvas.drawPath(path, paint);
+                    path.reset();
+                    path.moveTo(16f, 21.5f);
                     path.lineTo(21.5f, 21.5f);
-                    path.lineTo(21.5f, 17.5f);
+                    path.lineTo(21.5f, 16f);
                     canvas.drawPath(path, paint);
                     break;
                 case "more-vertical":
@@ -2102,10 +2109,10 @@ public class SettingsActivity extends Activity {
                     canvas.drawLine(8f, 2.5f, 8f, 7f, paint);
                     canvas.drawLine(16f, 2.5f, 16f, 7f, paint);
                     paint.setStyle(Paint.Style.FILL);
-                    paint.setTextSize(8.5f);
-                    paint.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+                    paint.setTextSize(11.5f);
+                    paint.setTypeface(Typeface.create("sans-serif-bold", Typeface.NORMAL));
                     paint.setTextAlign(Paint.Align.CENTER);
-                    canvas.drawText("א׳", 12f, 17f, paint);
+                    canvas.drawText("א׳", 12f, 17.5f, paint);
                     paint.setTypeface(Typeface.DEFAULT);
                     paint.setTextAlign(Paint.Align.LEFT);
                     break;
