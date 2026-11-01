@@ -92,12 +92,12 @@ public class SettingsActivity extends Activity {
         root.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         root.setTextDirection(View.TEXT_DIRECTION_RTL);
         root.setBackgroundColor(SURFACE);
-        root.setPadding(dp(14), dp(4), dp(14), dp(8));
+        root.setPadding(dp(14), dp(2), dp(14), dp(8));
         if (Build.VERSION.SDK_INT >= 21) {
             root.setOnApplyWindowInsetsListener((view, insets) -> {
                 int topInset = insets.getSystemWindowInsetTop();
                 int bottomInset = insets.getSystemWindowInsetBottom();
-                view.setPadding(dp(14), dp(4) + topInset, dp(14), dp(8) + bottomInset);
+                view.setPadding(dp(14), dp(2) + topInset, dp(14), dp(8) + bottomInset);
                 return insets;
             });
         }
@@ -108,7 +108,7 @@ public class SettingsActivity extends Activity {
         // the title centered with an equal-width spacer on the right.
         header.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         header.setGravity(Gravity.CENTER_VERTICAL);
-        header.setPadding(dp(2), dp(7), dp(2), dp(12));
+        header.setPadding(dp(2), dp(5), dp(2), dp(8));
 
         LinearLayout titleBlock = new LinearLayout(this);
         titleBlock.setOrientation(LinearLayout.VERTICAL);
@@ -117,6 +117,7 @@ public class SettingsActivity extends Activity {
         titleBlock.setPadding(0, 0, 0, 0);
 
         TextView title = textView("הגדרות", 28, ON_SURFACE);
+        title.setIncludeFontPadding(false);
         title.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         title.setGravity(Gravity.CENTER);
         title.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
@@ -124,6 +125,7 @@ public class SettingsActivity extends Activity {
         titleBlock.addView(title, new LinearLayout.LayoutParams(-1, -2));
 
         TextView subtitle = textView("התאמה אישית של השומר מסך", 18, MUTED);
+        subtitle.setIncludeFontPadding(false);
         subtitle.setGravity(Gravity.CENTER);
         subtitle.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         subtitle.setTextDirection(View.TEXT_DIRECTION_RTL);
@@ -201,10 +203,11 @@ public class SettingsActivity extends Activity {
         button.setClickable(true);
         button.setFocusable(true);
         button.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-        button.setBackgroundColor(Color.TRANSPARENT);
-        GraphicIcon glyph = new GraphicIcon(this, iconType, ACCENT);
+        button.setBackground(pillBackground(ACCENT, dp(22)));
+        if (Build.VERSION.SDK_INT >= 21) button.setElevation(dp(2));
+        View glyph = makeIconGlyph(iconType, Color.rgb(7, 31, 49));
         button.addView(glyph,
-                new FrameLayout.LayoutParams(dp(28), dp(28), Gravity.CENTER));
+                new FrameLayout.LayoutParams(dp(24), dp(24), Gravity.CENTER));
         return button;
     }
 
@@ -544,7 +547,7 @@ public class SettingsActivity extends Activity {
         if (Build.VERSION.SDK_INT >= 21) closeX.setElevation(dp(4));
         GraphicIcon closeXGlyph = new GraphicIcon(this, "close-x", ACCENT);
         closeX.addView(closeXGlyph,
-                new FrameLayout.LayoutParams(dp(16), dp(16), Gravity.CENTER));
+                new FrameLayout.LayoutParams(dp(22), dp(22), Gravity.CENTER));
         closeX.setOnClickListener(v -> dialog.dismiss());
         FrameLayout.LayoutParams closeXParams =
                 new FrameLayout.LayoutParams(dp(34), dp(34), Gravity.LEFT | Gravity.TOP);
@@ -1021,11 +1024,34 @@ public class SettingsActivity extends Activity {
         return "settings";
     }
 
+    private View makeIconGlyph(String iconName, int tint) {
+        int vectorResource = 0;
+        if ("history".equals(iconName)) {
+            vectorResource = R.drawable.ic_settings_activity_history;
+        } else if ("panel-bottom".equals(iconName)) {
+            vectorResource = R.drawable.ic_settings_panel_bottom;
+        } else if ("corner-up-left".equals(iconName)) {
+            vectorResource = R.drawable.ic_settings_corner_up_left;
+        }
+        if (vectorResource != 0) {
+            android.widget.ImageView image = new android.widget.ImageView(this);
+            image.setImageResource(vectorResource);
+            image.setColorFilter(tint);
+            image.setScaleType(android.widget.ImageView.ScaleType.FIT_CENTER);
+            image.setContentDescription(iconName);
+            return image;
+        }
+        return new GraphicIcon(this, iconName, tint);
+    }
+
     private FrameLayout makeIconBadge(String iconName, int size) {
         FrameLayout badge = new FrameLayout(this);
         badge.setBackground(roundOutline(ICON_SURFACE, dp(10), CARD_OUTLINE));
-        GraphicIcon graphic = new GraphicIcon(this, iconName, Color.rgb(168, 200, 232));
-        int glyphSize = "bold".equals(iconName) ? dp(24) : dp(21);
+        View graphic = makeIconGlyph(iconName, Color.rgb(168, 200, 232));
+        int glyphSize = "bold".equals(iconName) ? dp(24)
+                : "power-off".equals(iconName) ? dp(19)
+                : ("history".equals(iconName) || "panel-bottom".equals(iconName)) ? dp(24)
+                : dp(21);
         FrameLayout.LayoutParams graphicParams =
                 new FrameLayout.LayoutParams(glyphSize, glyphSize, Gravity.CENTER);
         badge.addView(graphic, graphicParams);
@@ -1678,7 +1704,7 @@ public class SettingsActivity extends Activity {
                     canvas.drawPath(path, paint);
                     break;
                 case "power-off":
-                    // Lucide 0.456.0 power-off: broken power ring, stem and diagonal slash.
+                    // Slightly smaller no-shutdown symbol; its stem crosses and extends past the slash.
                     paint.setStrokeWidth(2f);
                     path.moveTo(18.36f, 6.64f);
                     path.cubicTo(19.9f, 8.2f, 20.77f, 10.4f, 20.77f, 12.75f);
@@ -1689,7 +1715,7 @@ public class SettingsActivity extends Activity {
                     path.cubicTo(2.65f, 9.67f, 2.65f, 15.33f, 6.16f, 18.84f);
                     path.cubicTo(9.67f, 22.35f, 14.33f, 22.35f, 18.84f, 18.84f);
                     canvas.drawPath(path, paint);
-                    canvas.drawLine(12f, 2f, 12f, 6f, paint);
+                    canvas.drawLine(12f, 2f, 12f, 14f, paint);
                     canvas.drawLine(2f, 2f, 22f, 22f, paint);
                     break;
                 case "battery-medium":
@@ -1718,7 +1744,9 @@ public class SettingsActivity extends Activity {
                     paint.setStyle(Paint.Style.FILL);
                     paint.setTypeface(Typeface.create("sans-serif-black", Typeface.NORMAL));
                     paint.setTextSize(20.5f);
-                    canvas.drawText("B", 3.7f, 19f, paint);
+                    paint.setTextAlign(Paint.Align.CENTER);
+                    canvas.drawText("B", 12f, 19f, paint);
+                    paint.setTextAlign(Paint.Align.LEFT);
                     paint.setTypeface(Typeface.DEFAULT);
                     break;
                 case "circle-play":
@@ -2178,16 +2206,23 @@ public class SettingsActivity extends Activity {
                     canvas.drawPath(path, paint);
                     break;
                 case "hebrew-date":
-                    // Hebrew calendar: rounded binding loops distinguish it from the Gregorian calendar.
+                    // Calendar binding rings are hollow and the center letter sits slightly lower.
                     canvas.drawRoundRect(new RectF(2.5f, 4f, 21.5f, 21f), 2.2f, 2.2f, paint);
+                    // Open the top border at the two binding points.
+                    paint.setStyle(Paint.Style.FILL);
+                    paint.setColor(ICON_SURFACE);
+                    canvas.drawRect(new RectF(6.3f, 3.55f, 9.7f, 4.55f), paint);
+                    canvas.drawRect(new RectF(14.3f, 3.55f, 17.7f, 4.55f), paint);
+                    paint.setColor(tint);
+                    paint.setStyle(Paint.Style.STROKE);
+                    canvas.drawOval(new RectF(6.3f, 1.6f, 9.7f, 5.4f), paint);
+                    canvas.drawOval(new RectF(14.3f, 1.6f, 17.7f, 5.4f), paint);
                     canvas.drawLine(3f, 9.5f, 21f, 9.5f, paint);
-                    canvas.drawRoundRect(new RectF(6.9f, 1.5f, 9.1f, 7f), 1.1f, 1.1f, paint);
-                    canvas.drawRoundRect(new RectF(14.9f, 1.5f, 17.1f, 7f), 1.1f, 1.1f, paint);
                     paint.setStyle(Paint.Style.FILL);
                     paint.setTextSize(11.5f);
                     paint.setTypeface(Typeface.create("sans-serif-bold", Typeface.NORMAL));
                     paint.setTextAlign(Paint.Align.CENTER);
-                    canvas.drawText("א", 12f, 18.2f, paint);
+                    canvas.drawText("א", 12f, 19.1f, paint);
                     paint.setTypeface(Typeface.DEFAULT);
                     paint.setTextAlign(Paint.Align.LEFT);
                     break;
