@@ -812,7 +812,8 @@ public class SettingsActivity extends Activity {
             item.setGravity(Gravity.CENTER);
             item.setPadding(dp(1), dp(2), dp(1), 0);
 
-            ColorSwatchView swatch = new ColorSwatchView(this, values[i], i == initial);
+            ColorSwatchView swatch = new ColorSwatchView(
+                    this, values[i], i == initial, "screenBackgroundColor".equals(key));
             swatches[i] = swatch;
             item.addView(swatch, new LinearLayout.LayoutParams(dp(34), dp(34)));
 
@@ -2232,12 +2233,15 @@ public class SettingsActivity extends Activity {
     private class ColorSwatchView extends View {
         private final String value;
         private boolean selected;
+        private final boolean screenBackgroundPalette;
         private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
-        ColorSwatchView(Context context, String value, boolean selected) {
+        ColorSwatchView(Context context, String value, boolean selected,
+                        boolean screenBackgroundPalette) {
             super(context);
             this.value = value;
             this.selected = selected;
+            this.screenBackgroundPalette = screenBackgroundPalette;
             setClickable(false);
         }
 
@@ -2265,12 +2269,14 @@ public class SettingsActivity extends Activity {
             paint.setColor(swatchColor);
             canvas.drawCircle(cx, cy, radius, paint);
 
-            // Give every color swatch the same subtle outline for consistent
-            // separation from the settings-card surface.
-            paint.setStyle(Paint.Style.STROKE);
-            paint.setStrokeWidth(dp(1));
-            paint.setColor(CARD_OUTLINE);
-            canvas.drawCircle(cx, cy, radius - dp(1), paint);
+            // Only unselected screen-background swatches need the subtle outline.
+            // The selected swatch already has its accent selection ring.
+            if (screenBackgroundPalette && !selected) {
+                paint.setStyle(Paint.Style.STROKE);
+                paint.setStrokeWidth(dp(1));
+                paint.setColor(CARD_OUTLINE);
+                canvas.drawCircle(cx, cy, radius - dp(1), paint);
+            }
 
             if (selected) {
                 // Use a contrasting checkmark: dark ink on light font-color
