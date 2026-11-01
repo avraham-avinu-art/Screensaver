@@ -68,7 +68,11 @@ public final class LockScreenMonitorService extends Service {
         IntentFilter filter = new IntentFilter();
         filter.addAction(Intent.ACTION_SCREEN_OFF);
         filter.addAction(Intent.ACTION_USER_PRESENT);
-        filter.addAction(Intent.ACTION_POWER_CONNECTED);
+        // NotificationListenerService owns charger detection whenever its
+        // permission is granted; avoid a second receiver for the same event.
+        if (!NightScreenApplication.hasNotificationAccess(this)) {
+            filter.addAction(Intent.ACTION_POWER_CONNECTED);
+        }
         try {
             if (Build.VERSION.SDK_INT >= 33) {
                 registerReceiver(lockReceiver, filter, RECEIVER_NOT_EXPORTED);

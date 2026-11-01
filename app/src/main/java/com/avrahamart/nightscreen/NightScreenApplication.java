@@ -79,13 +79,13 @@ public final class NightScreenApplication extends Application {
                 && chargingEnabled && !notificationAccess && !lockMonitorEnabled;
     }
 
-    private boolean hasNotificationAccess() {
+    static boolean hasNotificationAccess(android.content.Context context) {
         ComponentName component =
-                new ComponentName(this, SystemMediaNotificationListener.class);
+                new ComponentName(context, SystemMediaNotificationListener.class);
         try {
             if (Build.VERSION.SDK_INT >= 27) {
                 NotificationManager manager =
-                        (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+                        (NotificationManager) context.getSystemService(android.content.Context.NOTIFICATION_SERVICE);
                 if (manager != null
                         && manager.isNotificationListenerAccessGranted(component)) {
                     return true;
@@ -95,7 +95,7 @@ public final class NightScreenApplication extends Application {
         }
         try {
             String enabled = Settings.Secure.getString(
-                    getContentResolver(), "enabled_notification_listeners");
+                    context.getContentResolver(), "enabled_notification_listeners");
             return enabled != null && enabled.contains(component.flattenToString());
         } catch (Throwable ignored) {
             return false;
