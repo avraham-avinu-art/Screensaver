@@ -2265,14 +2265,12 @@ public class SettingsActivity extends Activity {
             paint.setColor(swatchColor);
             canvas.drawCircle(cx, cy, radius, paint);
 
-            // The blue swatch matches the settings-card surface, so give only
-            // this color a subtle light outline to keep it visually distinct.
-            if ("#142438".equalsIgnoreCase(value)) {
-                paint.setStyle(Paint.Style.STROKE);
-                paint.setStrokeWidth(dp(1));
-                paint.setColor(CARD_OUTLINE);
-                canvas.drawCircle(cx, cy, radius - dp(1), paint);
-            }
+            // Give every color swatch the same subtle outline for consistent
+            // separation from the settings-card surface.
+            paint.setStyle(Paint.Style.STROKE);
+            paint.setStrokeWidth(dp(1));
+            paint.setColor(CARD_OUTLINE);
+            canvas.drawCircle(cx, cy, radius - dp(1), paint);
 
             if (selected) {
                 // Use a contrasting checkmark: dark ink on light font-color
