@@ -1668,6 +1668,63 @@ public class SettingsActivity extends Activity {
                     canvas.drawLine(4.7f, 4.7f, 6.8f, 6.8f, paint);
                     canvas.drawLine(17.2f, 17.2f, 19.3f, 19.3f, paint);
                     break;
+                case "bold":
+                    paint.setStyle(Paint.Style.FILL);
+                    paint.setTypeface(Typeface.create("sans-serif-black", Typeface.NORMAL));
+                    paint.setTextSize(18f);
+                    canvas.drawText("B", 5f, 18f, paint);
+                    paint.setTypeface(Typeface.DEFAULT);
+                    break;
+                case "circle-play":
+                    canvas.drawCircle(12f, 12f, 9f, paint);
+                    path.moveTo(10f, 7.5f);
+                    path.lineTo(17f, 12f);
+                    path.lineTo(10f, 16.5f);
+                    path.close();
+                    canvas.drawPath(path, paint);
+                    break;
+                case "panel-bottom":
+                    canvas.drawRoundRect(new RectF(3f, 3f, 21f, 21f), 2f, 2f, paint);
+                    canvas.drawLine(3.5f, 15.5f, 20.5f, 15.5f, paint);
+                    canvas.drawLine(8f, 18.5f, 16f, 18.5f, paint);
+                    break;
+                case "pipette":
+                    path.moveTo(7f, 17f);
+                    path.lineTo(16.5f, 7.5f);
+                    path.lineTo(19f, 10f);
+                    path.lineTo(9.5f, 19.5f);
+                    path.close();
+                    canvas.drawPath(path, paint);
+                    canvas.drawLine(14.5f, 9.5f, 17f, 12f, paint);
+                    canvas.drawLine(7f, 17f, 4f, 20f, paint);
+                    canvas.drawLine(4f, 20f, 3f, 21f, paint);
+                    break;
+                case "shield-alert":
+                    path.moveTo(12f, 2.5f);
+                    path.lineTo(20f, 5.5f);
+                    path.lineTo(19f, 13.5f);
+                    path.cubicTo(18.4f, 17f, 15.5f, 20f, 12f, 21.5f);
+                    path.cubicTo(8.5f, 20f, 5.6f, 17f, 5f, 13.5f);
+                    path.lineTo(4f, 5.5f);
+                    path.close();
+                    canvas.drawPath(path, paint);
+                    canvas.drawLine(12f, 7.5f, 12f, 13f, paint);
+                    paint.setStyle(Paint.Style.FILL);
+                    canvas.drawCircle(12f, 16.5f, 0.9f, paint);
+                    break;
+                case "corner-up-left":
+                    path.moveTo(20f, 19f);
+                    path.lineTo(20f, 15f);
+                    path.quadTo(20f, 12f, 17f, 12f);
+                    path.lineTo(8f, 12f);
+                    path.lineTo(8f, 5f);
+                    canvas.drawPath(path, paint);
+                    path.reset();
+                    path.moveTo(3.5f, 9.5f);
+                    path.lineTo(8f, 5f);
+                    path.lineTo(12.5f, 9.5f);
+                    canvas.drawPath(path, paint);
+                    break;
                 case "close-x":
                     // A geometrically centered close mark; the icon view itself is
                     // centered inside the circular close button by FrameLayout.
