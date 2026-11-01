@@ -56,7 +56,7 @@ public final class NightScreenApplication extends Application {
     private boolean shouldListenForChargerEvents() {
         String processName = currentProcessName();
         String packageName = getPackageName();
-        boolean notificationAccess = hasNotificationAccess();
+        boolean notificationAccess = hasNotificationAccess(this);
         android.content.SharedPreferences prefs =
                 getSharedPreferences("settings", MODE_PRIVATE);
         boolean chargingEnabled = prefs.getBoolean("autoStartOnCharge", false);
