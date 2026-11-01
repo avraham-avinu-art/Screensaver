@@ -2271,7 +2271,7 @@ public class SettingsActivity extends Activity {
                 paint.setStyle(Paint.Style.STROKE);
                 paint.setStrokeWidth(dp(1));
                 paint.setColor(MUTED);
-                canvas.drawCircle(cx, cy, radius - dp(0.5f), paint);
+                canvas.drawCircle(cx, cy, radius - dp(1), paint);
             }
 
             if (selected) {
