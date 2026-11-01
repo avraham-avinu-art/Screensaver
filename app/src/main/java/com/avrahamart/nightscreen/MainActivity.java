@@ -377,6 +377,7 @@ public class MainActivity extends Activity {
         super.onResume();
         mainActivityResumed = true;
         mainActivityPausedByDeviceLock = false;
+        NightScreenApplication.syncChargerReceiver(this);
         applyShowOnLockScreenPreference();
         try {
             if (settingsDialogOpen) {

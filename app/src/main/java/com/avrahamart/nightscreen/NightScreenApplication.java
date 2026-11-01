@@ -2,41 +2,109 @@ package com.avrahamart.nightscreen;
 
 import android.app.ActivityManager;
 import android.app.Application;
+import android.app.NotificationManager;
+import android.content.ComponentName;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Build;
 import android.os.Process;
+import android.provider.Settings;
 
-/**
- * Keeps a runtime charger receiver in the main app process while it is alive.
- * Background lock-monitor and notification-listener processes intentionally do
- * not register duplicate charger receivers.
- */
 public final class NightScreenApplication extends Application {
     private AutoStartOnPowerReceiver chargerReceiver;
 
     @Override
     public void onCreate() {
         super.onCreate();
-        if (!isMainApplicationProcess()) return;
+        updateChargerReceiverRegistration();
+    }
 
-        chargerReceiver = new AutoStartOnPowerReceiver();
-        IntentFilter filter = new IntentFilter(Intent.ACTION_POWER_CONNECTED);
-        try {
-            if (Build.VERSION.SDK_INT >= 33) {
-                registerReceiver(chargerReceiver, filter, RECEIVER_NOT_EXPORTED);
-            } else {
-                registerReceiver(chargerReceiver, filter);
-            }
-        } catch (Throwable ignored) {
-            // The manifest receiver remains the cold-start fallback.
+    /**
+     * Re-evaluates the best already-running process for charger events after
+     * the user changes charger, lock-monitor, or notification-listener settings.
+     */
+    public static void syncChargerReceiver(android.content.Context context) {
+        android.content.Context app = context.getApplicationContext();
+        if (app instanceof NightScreenApplication) {
+            ((NightScreenApplication) app).updateChargerReceiverRegistration();
         }
     }
 
-    private boolean isMainApplicationProcess() {
-        if (Build.VERSION.SDK_INT >= 28) {
-            return getPackageName().equals(Application.getProcessName());
+    private void updateChargerReceiverRegistration() {
+        boolean enabled = shouldListenForChargerEvents();
+        if (enabled && chargerReceiver == null) {
+            chargerReceiver = new AutoStartOnPowerReceiver();
+            IntentFilter filter = new IntentFilter(Intent.ACTION_POWER_CONNECTED);
+            try {
+                if (Build.VERSION.SDK_INT >= 33) {
+                    registerReceiver(chargerReceiver, filter, RECEIVER_NOT_EXPORTED);
+                } else {
+                    registerReceiver(chargerReceiver, filter);
+                }
+            } catch (Throwable ignored) {
+                chargerReceiver = null;
+            }
+        } else if (!enabled && chargerReceiver != null) {
+            try {
+                unregisterReceiver(chargerReceiver);
+            } catch (Throwable ignored) {
+            }
+            chargerReceiver = null;
         }
+    }
+
+    private boolean shouldListenForChargerEvents() {
+        String processName = currentProcessName();
+        String packageName = getPackageName();
+        boolean notificationAccess = hasNotificationAccess();
+        android.content.SharedPreferences prefs =
+                getSharedPreferences("settings", MODE_PRIVATE);
+        boolean chargingEnabled = prefs.getBoolean("autoStartOnCharge", false);
+        boolean lockMonitorEnabled = prefs.getBoolean("autoStartOnDeviceLock", false);
+
+        // The system-bound notification-listener process remains available while
+        // notification access is granted, without pinning the screensaver UI process.
+        if ((packageName + ":notifications").equals(processName)) {
+            return notificationAccess;
+        }
+
+        // The separate foreground lock monitor is the persistent listener when
+        // notification access is not granted but lock-triggered activation is on.
+        if ((packageName + ":lockmonitor").equals(processName)) {
+            return !notificationAccess && lockMonitorEnabled && chargingEnabled;
+        }
+
+        // The default process listens only while the UI process is alive and no
+        // other persistent process already owns the charger event receiver.
+        return packageName.equals(processName)
+                && chargingEnabled && !notificationAccess && !lockMonitorEnabled;
+    }
+
+    private boolean hasNotificationAccess() {
+        ComponentName component =
+                new ComponentName(this, SystemMediaNotificationListener.class);
+        try {
+            if (Build.VERSION.SDK_INT >= 27) {
+                NotificationManager manager =
+                        (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+                if (manager != null
+                        && manager.isNotificationListenerAccessGranted(component)) {
+                    return true;
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        try {
+            String enabled = Settings.Secure.getString(
+                    getContentResolver(), "enabled_notification_listeners");
+            return enabled != null && enabled.contains(component.flattenToString());
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    private String currentProcessName() {
+        if (Build.VERSION.SDK_INT >= 28) return Application.getProcessName();
         ActivityManager manager =
                 (ActivityManager) getSystemService(ACTIVITY_SERVICE);
         if (manager != null) {
@@ -45,14 +113,12 @@ public final class NightScreenApplication extends Application {
                         manager.getRunningAppProcesses();
                 if (processes != null) {
                     for (ActivityManager.RunningAppProcessInfo process : processes) {
-                        if (process.pid == Process.myPid()) {
-                            return getPackageName().equals(process.processName);
-                        }
+                        if (process.pid == Process.myPid()) return process.processName;
                     }
                 }
             } catch (Throwable ignored) {
             }
         }
-        return false;
+        return getPackageName();
     }
 }

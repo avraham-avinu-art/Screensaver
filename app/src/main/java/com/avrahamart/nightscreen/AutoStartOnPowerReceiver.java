@@ -12,6 +12,10 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.PowerManager;
 import android.provider.Settings;
+import java.io.File;
+import java.io.RandomAccessFile;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
 
 public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
     @Override
@@ -104,17 +108,29 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
     }
 
     private boolean claimPowerConnectedEvent(Context context) {
-        // The runtime Application receiver is the primary path; the manifest
-        // receiver is retained only to cold-start a dead process. If Android
-        // delivers both for the same physical event, launch the Activity once.
+        // A short cross-process file lock prevents two already-running monitor
+        // processes from launching the screensaver twice for one plug-in event.
         synchronized (AutoStartOnPowerReceiver.class) {
-            SharedPreferences prefs =
-                    context.getSharedPreferences("settings", Context.MODE_PRIVATE);
+            File guardFile = new File(
+                    context.getNoBackupFilesDir(), "power_connected_guard.bin");
             long now = SystemClock.elapsedRealtime();
-            long previous = prefs.getLong("lastPowerConnectedHandledElapsed", -10_000L);
-            if (now >= previous && now - previous < 3_000L) return false;
-            prefs.edit().putLong("lastPowerConnectedHandledElapsed", now).apply();
-            return true;
+            try (RandomAccessFile file = new RandomAccessFile(guardFile, "rw");
+                 FileChannel channel = file.getChannel();
+                 FileLock ignored = channel.lock()) {
+                long previous = -10_000L;
+                if (file.length() >= 8L) {
+                    file.seek(0L);
+                    previous = file.readLong();
+                }
+                if (now >= previous && now - previous < 3_000L) return false;
+                file.setLength(0L);
+                file.seek(0L);
+                file.writeLong(now);
+                return true;
+            } catch (Throwable ignored) {
+                // Preserve the charger action if storage locking is unavailable.
+                return true;
+            }
         }
     }
 

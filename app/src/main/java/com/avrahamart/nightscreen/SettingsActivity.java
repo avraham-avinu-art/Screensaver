@@ -219,6 +219,7 @@ public class SettingsActivity extends Activity {
             handleChargerPermissionResult();
             handleLockStartPermissionResult();
             LockScreenMonitorService.sync(this);
+            NightScreenApplication.syncChargerReceiver(this);
         }
     }
 
@@ -631,6 +632,9 @@ public class SettingsActivity extends Activity {
         toggle.setOnCheckedChangeListener((button, checked) -> {
             try {
                 prefs.edit().putBoolean(key, checked).apply();
+                if ("autoStartOnCharge".equals(key)) {
+                    NightScreenApplication.syncChargerReceiver(this);
+                }
             } catch (Throwable ignored) {
             }
             if ("autoStartOnCharge".equals(key)) {
