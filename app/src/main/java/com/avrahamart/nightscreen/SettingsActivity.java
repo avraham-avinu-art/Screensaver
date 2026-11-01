@@ -234,7 +234,7 @@ public class SettingsActivity extends Activity {
                 new String[]{"לפי המכשיר", "דקה אחת", "חמש דקות", "ללא כיבוי"},
                 new String[]{"device", "1", "5", "0"}, "screenSaverDuration");
         addCheck(activityTimes, "מניעת נעילה בזמן פעילות",
-                "preventLockWhileActive", true);
+                "preventLockWhileActive", false);
         addCheck(activityTimes, "הפעלה אוטומטית בנעילה",
                 "autoStartOnDeviceLock", false);
 
@@ -978,10 +978,10 @@ public class SettingsActivity extends Activity {
         if ("showGregorian".equals(key)) return "gregorian-date";
         if ("showPlayer".equals(key)) return "media-toggle";
         if ("screenSaverDuration".equals(key)) return "activity-history";
-        if ("preventLockWhileActive".equals(key)) return "lockscreen-phone";
+        if ("preventLockWhileActive".equals(key)) return "power-off";
         if ("autoStartOnCharge".equals(key)) return "usb";
         if ("autoStartOnDeviceLock".equals(key)) return "lock-play";
-        if ("noShutdownWhileCharging".equals(key)) return "power-off";
+        if ("noShutdownWhileCharging".equals(key)) return "phone-charging";
         if ("showBatteryPercent".equals(key)) return "battery-medium";
         if ("screenBackgroundColor".equals(key)) return "palette";
         if ("screenBrightness".equals(key)) return "sun-dim";
@@ -1015,7 +1015,6 @@ public class SettingsActivity extends Activity {
         android.widget.ImageView image = new android.widget.ImageView(this);
         image.setImageResource(resourceId);
         if (!"hebrew-date".equals(iconName) && !"lock-play".equals(iconName)
-                && !"lockscreen-phone".equals(iconName)
                 && !"close-circle".equals(iconName)) {
             image.setColorFilter(tint);
         }
@@ -1032,6 +1031,7 @@ public class SettingsActivity extends Activity {
         View graphic = makeIconGlyph(iconName, Color.rgb(168, 200, 232));
         int glyphSize = "progress-time-digital".equals(iconName) ? dp(27)
                 : "bold".equals(iconName) ? dp(24)
+                : "phone-charging".equals(iconName) ? dp(24)
                 : "power-off".equals(iconName) ? dp(19)
                 : ("history".equals(iconName) || "panel-bottom".equals(iconName)) ? dp(24)
                 : "position-arrows".equals(iconName) ? dp(27)
