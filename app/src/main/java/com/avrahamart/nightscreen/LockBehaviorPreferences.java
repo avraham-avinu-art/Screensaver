@@ -9,7 +9,7 @@ import android.content.SharedPreferences;
  *
  * The previous "showOnLockScreen" preference had the opposite meaning.
  * Its explicit value is inverted once during migration; an unset old preference
- * receives the new default (prevention enabled).
+ * receives the new default (prevention disabled).
  */
 public final class LockBehaviorPreferences {
     private static final String PREFS_NAME = "settings";
