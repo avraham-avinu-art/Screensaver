@@ -684,7 +684,7 @@ public class SettingsActivity extends Activity {
         LinearLayout block = new LinearLayout(this);
         block.setOrientation(LinearLayout.VERTICAL);
         block.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        block.setPadding(dp(6), dp(2), dp(6), dp(3));
+        block.setPadding(dp(6), dp(2), dp(6), dp(1));
 
         final int initial = selectedIndex(key, values);
         TextView chosenValue = textView(names[initial], 16, ACCENT);
@@ -752,7 +752,7 @@ public class SettingsActivity extends Activity {
 
         LinearLayout.LayoutParams blockParams =
                 new LinearLayout.LayoutParams(-1, -2);
-        blockParams.bottomMargin = dp(5);
+        blockParams.bottomMargin = dp(2);
         card.addView(block, blockParams);
     }
 
@@ -1151,7 +1151,12 @@ public class SettingsActivity extends Activity {
                 new LinearLayout.LayoutParams(dp(30), dp(30));
         settingIconParams.leftMargin = dp(9);
         row.addView(settingIcon, settingIconParams);
-        card.addView(row, new LinearLayout.LayoutParams(-1, -2));
+        LinearLayout.LayoutParams spinnerRowParams =
+                new LinearLayout.LayoutParams(-1, -2);
+        if ("fontFamily".equals(key)) {
+            spinnerRowParams.bottomMargin = dp(6);
+        }
+        card.addView(row, spinnerRowParams);
 
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             private boolean initialSelectionPending = true;
