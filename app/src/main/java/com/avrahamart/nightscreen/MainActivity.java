@@ -496,6 +496,7 @@ public class MainActivity extends Activity {
         batteryPercentText.setBackground(new BatteryOutlineDrawable());
         batteryPercentText.setGravity(Gravity.CENTER);
         batteryPercentText.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        batteryPercentText.setTextDirection(View.TEXT_DIRECTION_LTR);
         batteryPercentText.setIncludeFontPadding(false);
         batteryPercentText.setVisibility(View.GONE);
         FrameLayout.LayoutParams batteryPercentParams = new FrameLayout.LayoutParams(
