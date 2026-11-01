@@ -1627,6 +1627,47 @@ public class SettingsActivity extends Activity {
 
             Path path = new Path();
             switch (type) {
+                case "history":
+                    canvas.drawCircle(11f, 12f, 8f, paint);
+                    canvas.drawLine(11f, 7f, 11f, 12f, paint);
+                    canvas.drawLine(11f, 12f, 15f, 14f, paint);
+                    path.moveTo(3.5f, 8f);
+                    path.lineTo(3.5f, 3.5f);
+                    path.lineTo(8f, 3.5f);
+                    canvas.drawPath(path, paint);
+                    canvas.drawLine(3.5f, 3.5f, 7f, 7f, paint);
+                    break;
+                case "usb":
+                    canvas.drawLine(12f, 20.5f, 12f, 5f, paint);
+                    canvas.drawLine(12f, 11f, 6f, 16f, paint);
+                    canvas.drawLine(12f, 11f, 18f, 15.5f, paint);
+                    path.moveTo(8.5f, 5f);
+                    path.lineTo(12f, 1.8f);
+                    path.lineTo(15.5f, 5f);
+                    canvas.drawPath(path, paint);
+                    canvas.drawCircle(5f, 17f, 2f, paint);
+                    canvas.drawRect(new RectF(16.5f, 14f, 20f, 17.5f), paint);
+                    break;
+                case "power-off":
+                    canvas.drawArc(new RectF(4.5f, 6f, 19.5f, 21f), 45f, 270f, false, paint);
+                    canvas.drawLine(12f, 2.5f, 12f, 12f, paint);
+                    break;
+                case "battery-medium":
+                    canvas.drawRoundRect(new RectF(2.5f, 6f, 20f, 18f), 2f, 2f, paint);
+                    canvas.drawRoundRect(new RectF(20.5f, 9.5f, 22.5f, 14.5f), 0.8f, 0.8f, paint);
+                    paint.setStyle(Paint.Style.FILL);
+                    canvas.drawRoundRect(new RectF(5f, 8.5f, 12.5f, 15.5f), 1f, 1f, paint);
+                    paint.setStyle(Paint.Style.STROKE);
+                    break;
+                case "sun-dim":
+                    canvas.drawCircle(12f, 12f, 4f, paint);
+                    canvas.drawLine(12f, 2f, 12f, 5f, paint);
+                    canvas.drawLine(12f, 19f, 12f, 22f, paint);
+                    canvas.drawLine(2f, 12f, 5f, 12f, paint);
+                    canvas.drawLine(19f, 12f, 22f, 12f, paint);
+                    canvas.drawLine(4.7f, 4.7f, 6.8f, 6.8f, paint);
+                    canvas.drawLine(17.2f, 17.2f, 19.3f, 19.3f, paint);
+                    break;
                 case "close-x":
                     // A geometrically centered close mark; the icon view itself is
                     // centered inside the circular close button by FrameLayout.
