@@ -2265,11 +2265,6 @@ public class SettingsActivity extends Activity {
             paint.setColor(swatchColor);
             canvas.drawCircle(cx, cy, radius, paint);
 
-            paint.setStyle(Paint.Style.STROKE);
-            paint.setStrokeWidth(dp(1));
-            paint.setColor(CARD_OUTLINE);
-            canvas.drawCircle(cx, cy, radius, paint);
-
             if (selected) {
                 // Use a contrasting checkmark: dark ink on light font-color
                 // swatches, and white on the dark screen-background swatches.
