@@ -1037,11 +1037,6 @@ public class SettingsActivity extends Activity {
         image.setScaleType(android.widget.ImageView.ScaleType.FIT_CENTER);
         image.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         image.setContentDescription(iconName);
-        if ("close-x".equals(iconName)) {
-            // Optical correction: lower and right shift inside the unchanged circular button.
-            image.setTranslationX(dp(2));
-            image.setTranslationY(dp(2));
-        }
         return image;
     }
 
