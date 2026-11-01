@@ -201,7 +201,7 @@ public class SettingsActivity extends Activity {
         button.setClickable(true);
         button.setFocusable(true);
         button.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-        button.setBackground(roundOutline(CARD_SURFACE, dp(21), CARD_OUTLINE));
+        button.setBackgroundColor(Color.TRANSPARENT);
         GraphicIcon glyph = new GraphicIcon(this, iconType, ACCENT);
         button.addView(glyph,
                 new FrameLayout.LayoutParams(dp(22), dp(22), Gravity.CENTER));
@@ -240,8 +240,14 @@ public class SettingsActivity extends Activity {
 
         LinearLayout design = addCard(content, "עיצוב");
         addColorChoices(design, "צבע המסך",
-                new String[]{"שחור", "כחול", "כחול כהה", "חום כהה", "טורקיז"},
-                new String[]{"#000000", "#142438", "#091321", "#332820", "#12313A"},
+                new String[]{"שחור", "כחול", "כחול כהה", "טורקיז",
+                        "אפור גרפיט", "כחול פלדה", "אינדיגו עמוק", "סגול פחם",
+                        "בורדו כהה", "ירוק אורן", "ירוק אמרלד עמוק", "כחול פטרול",
+                        "זית כהה", "אפור צפחה"},
+                new String[]{"#000000", "#142438", "#091321", "#12313A",
+                        "#252B33", "#26384A", "#24263D", "#30283B",
+                        "#3B252E", "#20362E", "#163A34", "#193740",
+                        "#343729", "#303943"},
                 "screenBackgroundColor");
         addDiscreteSlider(design, "בהירות המסך",
                 new String[]{"לפי המכשיר", "25%", "50%", "75%", "100%"},
@@ -344,7 +350,7 @@ public class SettingsActivity extends Activity {
             infoButton.setContentDescription("הסבר על הגדרות זמני הפעילות");
             infoButton.setClickable(true);
             infoButton.setFocusable(true);
-            infoButton.setBackground(roundOutline(CONTROL_SURFACE, dp(17), OUTLINE));
+            infoButton.setBackgroundColor(Color.TRANSPARENT);
             GraphicIcon infoGlyph = new GraphicIcon(this, "message-circle-question", ACCENT);
             infoButton.addView(infoGlyph,
                     new FrameLayout.LayoutParams(dp(26), dp(26), Gravity.CENTER));
@@ -798,14 +804,34 @@ public class SettingsActivity extends Activity {
         block.addView(headingRow, new LinearLayout.LayoutParams(-1, dp(32)));
 
         LinearLayout choices = new LinearLayout(this);
-        choices.setOrientation(LinearLayout.HORIZONTAL);
+        choices.setOrientation(LinearLayout.VERTICAL);
         choices.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        choices.setGravity(Gravity.CENTER_VERTICAL);
-        final int initial = selectedIndex(key, values);
+        choices.setGravity(Gravity.CENTER);
+        int initial = selectedIndex(key, values);
+        // Migrate the previously offered brown background to graphite so existing
+        // installations retain a valid selected swatch.
+        if ("screenBackgroundColor".equals(key) && prefs.contains(key)
+                && getInt(key, Color.TRANSPARENT) == colorValue("#332820")) {
+            initial = 4;
+            persistOption(key, values[initial]);
+        }
+        final int selectedInitially = initial;
         final ColorSwatchView[] swatches = new ColorSwatchView[names.length];
         final TextView[] captions = new TextView[names.length];
+        LinearLayout choiceRow = null;
 
         for (int i = 0; i < names.length; i++) {
+            if (i % 5 == 0) {
+                choiceRow = new LinearLayout(this);
+                choiceRow.setOrientation(LinearLayout.HORIZONTAL);
+                choiceRow.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+                choiceRow.setGravity(Gravity.CENTER_VERTICAL);
+                LinearLayout.LayoutParams choiceRowParams =
+                        new LinearLayout.LayoutParams(-1, -2);
+                if (i > 0) choiceRowParams.topMargin = dp(4);
+                choices.addView(choiceRow, choiceRowParams);
+            }
+
             final int index = i;
             LinearLayout item = new LinearLayout(this);
             item.setOrientation(LinearLayout.VERTICAL);
@@ -813,14 +839,17 @@ public class SettingsActivity extends Activity {
             item.setPadding(dp(1), dp(2), dp(1), 0);
 
             ColorSwatchView swatch = new ColorSwatchView(
-                    this, values[i], i == initial, "screenBackgroundColor".equals(key));
+                    this, values[i], i == selectedInitially,
+                    "screenBackgroundColor".equals(key));
             swatches[i] = swatch;
             item.addView(swatch, new LinearLayout.LayoutParams(dp(34), dp(34)));
 
-            TextView caption = textView(names[i], 12, i == initial ? ACCENT : MUTED);
+            TextView caption = textView(names[i], 12,
+                    i == selectedInitially ? ACCENT : MUTED);
             caption.setGravity(Gravity.CENTER);
             caption.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
             caption.setSingleLine(true);
+            caption.setEllipsize(android.text.TextUtils.TruncateAt.END);
             captions[i] = caption;
             LinearLayout.LayoutParams captionParams =
                     new LinearLayout.LayoutParams(-1, dp(22));
@@ -834,7 +863,7 @@ public class SettingsActivity extends Activity {
                     captions[j].setTextColor(j == index ? ACCENT : MUTED);
                 }
             });
-            choices.addView(item, new LinearLayout.LayoutParams(0, -2, 1f));
+            choiceRow.addView(item, new LinearLayout.LayoutParams(0, -2, 1f));
         }
 
         block.addView(choices, new LinearLayout.LayoutParams(-1, -2));
@@ -966,25 +995,26 @@ public class SettingsActivity extends Activity {
         if ("showHebrew".equals(key)) return "hebrew-date";
         if ("showGregorian".equals(key)) return "gregorian-date";
         if ("showPlayer".equals(key)) return "media-toggle";
-        if ("screenSaverDuration".equals(key)) return "hourglass";
+        if ("screenSaverDuration".equals(key)) return "history";
         if ("showOnLockScreen".equals(key)) return "lockscreen-phone";
-        if ("autoStartOnCharge".equals(key)) return "cable";
+        if ("autoStartOnCharge".equals(key)) return "usb";
         if ("autoStartOnDeviceLock".equals(key)) return "lock-play";
-        if ("noShutdownWhileCharging".equals(key)) return "battery-hold";
-        if ("showBatteryPercent".equals(key)) return "percent";
+        if ("noShutdownWhileCharging".equals(key)) return "power-off";
+        if ("showBatteryPercent".equals(key)) return "battery-medium";
         if ("screenBackgroundColor".equals(key)) return "palette";
-        if ("screenBrightness".equals(key)) return "sun";
+        if ("screenBrightness".equals(key)) return "sun-dim";
         if ("fontColor".equals(key)) return "paint-roller";
-        if ("fontWeight".equals(key)) return "uppercase-font";
+        if ("fontWeight".equals(key)) return "bold";
         if ("fontFamily".equals(key)) return "font-family";
         if ("clockDateSize".equals(key)) return "clock-size";
         if ("clockDatePosition".equals(key)) return "position-arrows";
+        if ("showPlayerOnlyAtStart".equals(key)) return "circle-play";
         if ("showDetails".equals(key)) return "artist";
         if ("showProgress".equals(key)) return "progress-time-digital";
         if ("playerSize".equals(key)) return "player-size-resize";
-        if ("playerPosition".equals(key)) return "player-position-panel";
+        if ("playerPosition".equals(key)) return "panel-bottom";
         if ("frameEnabled".equals(key)) return "frame-dashed";
-        if ("frameColor".equals(key)) return "palette";
+        if ("frameColor".equals(key)) return "pipette";
         if ("frameWidth".equals(key)) return "border-width";
         if ("frameRadius".equals(key)) return "corners";
         return "settings";
@@ -1614,7 +1644,10 @@ public class SettingsActivity extends Activity {
                     path.cubicTo(7.04f, 20.86f, 7.4f, 20.9f, 7.769f, 21.061f);
                     path.arcTo(new RectF(2f, 2f, 22f, 22f), 116f, -322f, false);
                     path.close();
+                    canvas.save();
+                    canvas.scale(-1f, 1f, 12f, 12f);
                     canvas.drawPath(path, paint);
+                    canvas.restore();
                     path.reset();
                     path.moveTo(9.09f, 9f);
                     path.cubicTo(9.5f, 5.8f, 14.7f, 5.8f, 14.92f, 10f);
@@ -1643,15 +1676,15 @@ public class SettingsActivity extends Activity {
                     break;
                 case "lockscreen-phone":
                     // Choice #1: phone outline with one solid lock centered in its screen.
-                    canvas.drawRoundRect(new RectF(5.8f, 1.2f, 18.2f, 22.8f), 2.3f, 2.3f, paint);
-                    canvas.drawLine(9.6f, 4f, 14.4f, 4f, paint);
-                    canvas.drawCircle(12f, 20.2f, 0.55f, paint);
-                    canvas.drawArc(new RectF(9.2f, 7.8f, 14.8f, 14f), 180f, 180f, false, paint);
+                    canvas.drawRoundRect(new RectF(5.2f, 1.2f, 18.8f, 22.8f), 2.5f, 2.5f, paint);
+                    canvas.drawLine(9f, 4f, 15f, 4f, paint);
+                    canvas.drawCircle(12f, 20.2f, 0.7f, paint);
+                    canvas.drawArc(new RectF(8.8f, 7.2f, 15.2f, 14.6f), 180f, 180f, false, paint);
                     paint.setStyle(Paint.Style.FILL);
-                    canvas.drawRoundRect(new RectF(8.2f, 11.1f, 15.8f, 17.2f), 1.2f, 1.2f, paint);
+                    canvas.drawRoundRect(new RectF(7.8f, 11.2f, 16.2f, 18f), 1.5f, 1.5f, paint);
                     paint.setColor(ICON_SURFACE);
-                    canvas.drawCircle(12f, 13.2f, 0.7f, paint);
-                    canvas.drawRoundRect(new RectF(11.5f, 13.2f, 12.5f, 15.1f), 0.5f, 0.5f, paint);
+                    canvas.drawCircle(12f, 13.6f, 0.9f, paint);
+                    canvas.drawRoundRect(new RectF(11.4f, 13.6f, 12.6f, 16.1f), 0.6f, 0.6f, paint);
                     paint.setColor(tint);
                     paint.setStyle(Paint.Style.STROKE);
                     break;
@@ -1775,38 +1808,28 @@ public class SettingsActivity extends Activity {
                     }
                     break;
                 case "player-size-resize":
-                    // Choice #1: musical-note player tile with four outward resize arrows.
-                    canvas.drawRoundRect(new RectF(5f, 6f, 19f, 18f), 2f, 2f, paint);
-                    paint.setStrokeWidth(1.45f);
-                    path.moveTo(11.5f, 8.2f);
-                    path.lineTo(16f, 7.3f);
-                    path.lineTo(16f, 12.1f);
+                    // A clear music-player tile with two small resize arrows.
+                    canvas.drawRoundRect(new RectF(4f, 5f, 20f, 19f), 2.2f, 2.2f, paint);
+                    paint.setStrokeWidth(1.6f);
+                    path.moveTo(10.5f, 8f);
+                    path.lineTo(16f, 7f);
+                    path.lineTo(16f, 12.4f);
                     canvas.drawPath(path, paint);
-                    canvas.drawLine(11.5f, 8.2f, 11.5f, 13.3f, paint);
+                    canvas.drawLine(10.5f, 8f, 10.5f, 13.5f, paint);
                     paint.setStyle(Paint.Style.FILL);
-                    canvas.drawOval(new RectF(8.4f, 12.1f, 12.1f, 14.9f), paint);
-                    canvas.drawOval(new RectF(13.1f, 11.5f, 16.8f, 14.3f), paint);
+                    canvas.drawOval(new RectF(7.8f, 12.5f, 11.6f, 15.4f), paint);
+                    canvas.drawOval(new RectF(13.2f, 11.8f, 17f, 14.7f), paint);
                     paint.setStyle(Paint.Style.STROKE);
                     paint.setStrokeWidth(1.5f);
                     path.reset();
-                    path.moveTo(3f, 8f);
-                    path.lineTo(3f, 3f);
-                    path.lineTo(8f, 3f);
+                    path.moveTo(2.5f, 6.5f);
+                    path.lineTo(2.5f, 2.5f);
+                    path.lineTo(6.5f, 2.5f);
                     canvas.drawPath(path, paint);
                     path.reset();
-                    path.moveTo(16f, 3f);
-                    path.lineTo(21f, 3f);
-                    path.lineTo(21f, 8f);
-                    canvas.drawPath(path, paint);
-                    path.reset();
-                    path.moveTo(3f, 16f);
-                    path.lineTo(3f, 21f);
-                    path.lineTo(8f, 21f);
-                    canvas.drawPath(path, paint);
-                    path.reset();
-                    path.moveTo(16f, 21f);
-                    path.lineTo(21f, 21f);
-                    path.lineTo(21f, 16f);
+                    path.moveTo(17.5f, 21.5f);
+                    path.lineTo(21.5f, 21.5f);
+                    path.lineTo(21.5f, 17.5f);
                     canvas.drawPath(path, paint);
                     break;
                 case "more-vertical":
@@ -1975,12 +1998,12 @@ public class SettingsActivity extends Activity {
                     break;
                 case "hebrew-date":
                     // Choice #1: a calendar with the Hebrew day marker א׳.
-                    canvas.drawRoundRect(new RectF(3f, 4f, 21f, 20f), 2f, 2f, paint);
-                    canvas.drawLine(3.5f, 9f, 20.5f, 9f, paint);
+                    canvas.drawRoundRect(new RectF(2.5f, 4f, 21.5f, 21f), 2.2f, 2.2f, paint);
+                    canvas.drawLine(3f, 9.5f, 21f, 9.5f, paint);
                     canvas.drawLine(8f, 2.5f, 8f, 7f, paint);
                     canvas.drawLine(16f, 2.5f, 16f, 7f, paint);
                     paint.setStyle(Paint.Style.FILL);
-                    paint.setTextSize(7.5f);
+                    paint.setTextSize(8.5f);
                     paint.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
                     paint.setTextAlign(Paint.Align.CENTER);
                     canvas.drawText("א׳", 12f, 17f, paint);
@@ -2107,37 +2130,18 @@ public class SettingsActivity extends Activity {
                     canvas.drawText("Aa", 2f, 17f, paint);
                     break;
                 case "clock-size":
-                    // Choice #1: clock face and outward diagonal resize arrows in a single glyph.
-                    canvas.drawCircle(12f, 12f, 6.5f, paint);
+                    // Clear clock face with four restrained resize brackets.
+                    canvas.drawCircle(12f, 12f, 6.2f, paint);
                     canvas.drawLine(12f, 7.5f, 12f, 12f, paint);
-                    canvas.drawLine(12f, 12f, 15.5f, 14f, paint);
-                    path.moveTo(3f, 9f);
-                    path.lineTo(3f, 3f);
-                    path.lineTo(9f, 3f);
-                    path.moveTo(3f, 3f);
-                    path.lineTo(7f, 7f);
-                    canvas.drawPath(path, paint);
-                    path.reset();
-                    path.moveTo(15f, 3f);
-                    path.lineTo(21f, 3f);
-                    path.lineTo(21f, 9f);
-                    path.moveTo(21f, 3f);
-                    path.lineTo(17f, 7f);
-                    canvas.drawPath(path, paint);
-                    path.reset();
-                    path.moveTo(3f, 15f);
-                    path.lineTo(3f, 21f);
-                    path.lineTo(9f, 21f);
-                    path.moveTo(3f, 21f);
-                    path.lineTo(7f, 17f);
-                    canvas.drawPath(path, paint);
-                    path.reset();
-                    path.moveTo(15f, 21f);
-                    path.lineTo(21f, 21f);
-                    path.lineTo(21f, 15f);
-                    path.moveTo(21f, 21f);
-                    path.lineTo(17f, 17f);
-                    canvas.drawPath(path, paint);
+                    canvas.drawLine(12f, 12f, 15.4f, 14.2f, paint);
+                    canvas.drawLine(2.5f, 6.5f, 2.5f, 2.5f, paint);
+                    canvas.drawLine(2.5f, 2.5f, 6.5f, 2.5f, paint);
+                    canvas.drawLine(17.5f, 2.5f, 21.5f, 2.5f, paint);
+                    canvas.drawLine(21.5f, 2.5f, 21.5f, 6.5f, paint);
+                    canvas.drawLine(2.5f, 17.5f, 2.5f, 21.5f, paint);
+                    canvas.drawLine(2.5f, 21.5f, 6.5f, 21.5f, paint);
+                    canvas.drawLine(17.5f, 21.5f, 21.5f, 21.5f, paint);
+                    canvas.drawLine(21.5f, 17.5f, 21.5f, 21.5f, paint);
                     break;
                 case "clock-position":
                     canvas.drawLine(12f, 3f, 12f, 21f, paint);
@@ -2155,12 +2159,12 @@ public class SettingsActivity extends Activity {
                     break;
                 case "progress-time-digital":
                     // One icon: a digital time readout with the playback progress line integrated below.
-                    canvas.drawRoundRect(new RectF(2.5f, 2.5f, 21.5f, 21.5f), 2.2f, 2.2f, paint);
+                    canvas.drawRoundRect(new RectF(2f, 2.5f, 22f, 21.5f), 2.2f, 2.2f, paint);
                     paint.setStyle(Paint.Style.FILL);
-                    paint.setTextSize(6.5f);
+                    paint.setTextSize(7.4f);
                     paint.setTextAlign(Paint.Align.CENTER);
                     paint.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-                    canvas.drawText("1:23", 12f, 12.1f, paint);
+                    canvas.drawText("1:23", 12f, 12.2f, paint);
                     paint.setTypeface(Typeface.DEFAULT);
                     paint.setTextAlign(Paint.Align.LEFT);
                     paint.setStyle(Paint.Style.STROKE);
