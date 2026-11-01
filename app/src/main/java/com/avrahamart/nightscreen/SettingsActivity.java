@@ -540,10 +540,14 @@ public class SettingsActivity extends Activity {
         closeX.setBackground(roundOutline(CONTROL_SURFACE, dp(17), OUTLINE));
         closeX.setClickable(true);
         closeX.setFocusable(true);
+        closeX.setPadding(0, 0, 0, 0);
+        closeX.setForegroundGravity(Gravity.CENTER);
         if (Build.VERSION.SDK_INT >= 21) closeX.setElevation(dp(4));
         GraphicIcon closeXGlyph = new GraphicIcon(this, "close-x", ACCENT);
-        closeX.addView(closeXGlyph,
-                new FrameLayout.LayoutParams(dp(22), dp(22), Gravity.CENTER));
+        FrameLayout.LayoutParams closeGlyphParams =
+                new FrameLayout.LayoutParams(dp(24), dp(24), Gravity.CENTER);
+        closeGlyphParams.gravity = Gravity.CENTER;
+        closeX.addView(closeXGlyph, closeGlyphParams);
         closeX.setOnClickListener(v -> dialog.dismiss());
         FrameLayout.LayoutParams closeXParams =
                 new FrameLayout.LayoutParams(dp(34), dp(34), Gravity.LEFT | Gravity.TOP);
