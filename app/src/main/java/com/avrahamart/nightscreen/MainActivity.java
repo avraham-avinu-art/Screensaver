@@ -12,6 +12,7 @@ import android.content.Context;
 import android.content.IntentFilter;
 import android.database.ContentObserver;
 import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.Drawable;
 import android.text.Layout;
 import android.text.TextUtils;
 import android.content.ActivityNotFoundException;
@@ -490,7 +491,9 @@ public class MainActivity extends Activity {
         buildSystemMediaMirror(mediaHolder);
 
         batteryPercentText = textView("", 15, Color.rgb(156, 178, 203));
-        batteryPercentText.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        batteryPercentText.setTypeface(Typeface.create("sans-serif-thin", Typeface.NORMAL));
+        batteryPercentText.setTextSize(12);
+        batteryPercentText.setBackground(new BatteryOutlineDrawable());
         batteryPercentText.setGravity(Gravity.CENTER);
         batteryPercentText.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         batteryPercentText.setIncludeFontPadding(false);
@@ -1426,6 +1429,35 @@ public class MainActivity extends Activity {
             paint.setStrokeWidth(0f);
         }
         view.invalidate();
+    }
+
+    private final class BatteryOutlineDrawable extends Drawable {
+        private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final float density = getResources().getDisplayMetrics().density;
+
+        @Override public void draw(Canvas canvas) {
+            android.graphics.Rect bounds = getBounds();
+            float left = bounds.left + 2f * density;
+            float top = bounds.top + 4f * density;
+            float right = bounds.right - 7f * density;
+            float bottom = bounds.bottom - 4f * density;
+            paint.setColor(Color.rgb(156, 178, 203));
+            paint.setStyle(Paint.Style.STROKE);
+            paint.setStrokeWidth(1.15f * density);
+            canvas.drawRoundRect(left, top, right, bottom, 3f * density, 3f * density, paint);
+            paint.setStyle(Paint.Style.FILL);
+            float capLeft = right + 1f * density;
+            float capTop = bounds.top + bounds.height() * 0.37f;
+            float capBottom = bounds.top + bounds.height() * 0.63f;
+            canvas.drawRoundRect(capLeft, capTop, bounds.right - 1f * density,
+                    capBottom, 1f * density, 1f * density, paint);
+        }
+
+        @Override public void setAlpha(int alpha) { paint.setAlpha(alpha); invalidateSelf(); }
+        @Override public void setColorFilter(android.graphics.ColorFilter filter) {
+            paint.setColorFilter(filter); invalidateSelf();
+        }
+        @Override public int getOpacity() { return android.graphics.PixelFormat.TRANSLUCENT; }
     }
 
     private void updateBatteryPercentView() {
