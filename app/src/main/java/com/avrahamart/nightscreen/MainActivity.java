@@ -1637,21 +1637,14 @@ public class MainActivity extends Activity {
             activityDeadlineElapsedRealtime = 0L;
         }
 
-        // While charging with "no shutdown" enabled, keep the display on indefinitely.
-        // FLAG_ALLOW_LOCK_WHILE_SCREEN_ON independently determines whether Android may
-        // activate the lock screen while the screensaver remains visible.
+        // "No shutdown while charging" keeps the display on regardless of the
+        // lock-screen preference. FLAG_ALLOW_LOCK_WHILE_SCREEN_ON separately
+        // controls whether Android may activate the keyguard while the display
+        // remains on and the screensaver stays visible above it.
         if (getBool("noShutdownWhileCharging", false) && isDeviceCharging()) {
             activityDeadlineElapsedRealtime = 0L;
-            if (getBool("showOnLockScreen", Build.VERSION.SDK_INT >= 26)) {
-                // Keep the screensaver available over the keyguard, but let Android
-                // turn the display off normally to avoid unnecessary charging heat/power.
-                getWindow().clearFlags(
-                        android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-            } else {
-                // Without lock-screen display, keep the visible saver on while charging.
-                getWindow().addFlags(
-                        android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-            }
+            getWindow().addFlags(
+                    android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
             return;
         }
 
@@ -2586,6 +2579,8 @@ public class MainActivity extends Activity {
             }
             boolean showProgressSetting = getBool("showProgress", true);
             if (!showProgressSetting) {
+                // With the progress row disabled, no periodic progress work is needed.
+                stopMediaProgressTicker();
                 handler.removeCallbacks(hideProgressRowAfterMetadataChange);
                 progressHidePending = false;
                 setProgressRowVisible(false);
@@ -2698,8 +2693,10 @@ public class MainActivity extends Activity {
             stopTitleMarquee();
             stopArtistMarquee();
             stopMediaProgressTicker();
-        } else {
+        } else if (getBool("showProgress", true)) {
             scheduleMediaProgressTicker();
+        } else {
+            stopMediaProgressTicker();
         }
     }
 
