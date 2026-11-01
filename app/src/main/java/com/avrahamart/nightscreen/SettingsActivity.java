@@ -67,7 +67,6 @@ public class SettingsActivity extends Activity {
     private Switch showPlayerToggle;
     private Switch autoStartOnChargeToggle;
     private Switch autoStartOnDeviceLockToggle;
-    private Switch showOnLockScreenToggle;
     private LinearLayout screenLockAdminCard;
     private TextView screenLockAdminStatus;
     private Button screenLockAdminButton;
@@ -80,6 +79,8 @@ public class SettingsActivity extends Activity {
     protected void onCreate(Bundle state) {
         super.onCreate(state);
         prefs = getSharedPreferences("settings", MODE_PRIVATE);
+        // Convert the previous inverse preference once, preserving an explicit user choice.
+        LockBehaviorPreferences.isPreventionEnabled(this);
 
         Window window = getWindow();
         window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN);
@@ -232,8 +233,8 @@ public class SettingsActivity extends Activity {
         addDiscreteSlider(activityTimes, "זמן פעילות",
                 new String[]{"לפי המכשיר", "דקה אחת", "חמש דקות", "ללא כיבוי"},
                 new String[]{"device", "1", "5", "0"}, "screenSaverDuration");
-        addCheck(activityTimes, "הצגה במסך הנעילה", "showOnLockScreen",
-                Build.VERSION.SDK_INT >= 26);
+        addCheck(activityTimes, "מניעת נעילה בזמן פעילות",
+                "preventLockWhileActive", true);
         addCheck(activityTimes, "הפעלה אוטומטית בנעילה",
                 "autoStartOnDeviceLock", false);
 
@@ -378,20 +379,14 @@ public class SettingsActivity extends Activity {
                 + "ההגדרה קובעת את משך הזמן שהשומר מסך יהיה מוצג על המסך.\n"
                 + "• ניתן להגדיר אם משך זמן התצוגה יהיה לפי זמן המסך שמוגדר במכשיר, או לפי משך זמן שונה כפי שמוגדר באפליקציה.\n"
                 + "• בבחירת האפשרות ללא כיבוי - השומר מסך נשאר מוצג ללא מגבלת זמן, עד ליציאה יזומה או עד לשינוי המצב.\n\n"
-                + "הצגה במסך הנעילה\n"
-                + "ההגדרה קובעת האם הצגת השומר מסך תהיה גם מעל מסך הנעילה, או דווקא ללא נעילת המכשיר.\n"
-                + "• כאשר ההגדרה פעילה - Android רשאי להפעיל את מסך הנעילה גם כשהתצוגה עדיין דולקת. השומר מסך נשאר מוצג מעל מסך הנעילה.\n"
-                + "• כשההגדרה כבויה - כל עוד האפליקציה מחזיקה את התצוגה דולקת, היא אינה מאפשרת למסך הנעילה להופיע מעליה; לכן המכשיר נשאר לא נעול עד לשחרור התצוגה.\n"
-                + "• ההגדרה אינה קובעת מתי התצוגה תכבה. זמן כיבוי התצוגה נקבע בנפרד לפי זמן הפעילות והגדרת ללא כיבוי בטעינה.\n\n"
+                + "מניעת נעילה בזמן פעילות\n"
+                + "• כשההגדרה פעילה - מסך הנעילה לא יופיע מעל השומר מסך כל עוד התצוגה מוחזקת דולקת.\n"
+                + "• כשההגדרה כבויה - Android רשאי להציג את מסך הנעילה גם כשהשומר מסך עדיין מוצג.\n\n"
                 + "הפעלה אוטומטית בנעילה\n"
-                + "• ההגדרה מפעילה את השומר מסך אוטומטית בכל מצב כאשר המכשיר ננעל, גם בנעילה יזומה וגם בנעילה אוטומטית.\n"
+                + "• ההגדרה מפעילה את השומר מסך אוטומטית כאשר המכשיר ננעל, גם בנעילה יזומה וגם בנעילה אוטומטית.\n"
                 + "• כשההגדרה כבויה - נעילת המכשיר לבדה לא מפעילה את השומר מסך.\n"
-                + "• ההגדרה הזאת עובדת רק כאשר היא פעילה ביחד עם ההגדרה הצגה במסך הנעילה, ולכן במצב שההגדרה הצגה במסך הנעילה כבויה, גם ההגדרה הזאת תכובה כדי למנוע מצב סותר.\n"
+                + "• ההגדרה פועלת באופן עצמאי מההגדרה מניעת נעילה בזמן פעילות.\n"
                 + "• לצורך ההפעלה האוטומטית בנעילה, האפליקציה מציגה התראה קבועה בזמן שהאפשרות פעילה. ההתראה שקטה ואינה מופיעה במסך הנעילה.\n\n"
-                + "מה ההבדל בין הצגה במסך הנעילה לבין הפעלה אוטומטית בנעילה?\n"
-                + "אלה שתי הגדרות עם מטרות שונות.\n"
-                + "• כאשר הצגה במסך הנעילה פעילה, אך הפעלה אוטומטית בנעילה כבויה - השומר מסך יכול להופיע במסך הנעילה רק אם הופעל קודם, אך אינו מתחיל לפעול מעצמו בגלל הנעילה.\n"
-                + "• וכאשר שתי האפשרויות פעילות - השומר מסך יכול גם להתחיל אוטומטית בנעילת המכשיר, וגם להישאר מוצג מעליה אם הופעל קודם.\n\n"
                 + "הרשאות שמשפיעות על ההתנהגות האפליקציה\n"
                 + "• הצגה מעל אפליקציות אחרות - נדרשת להפעלה אוטומטית ברקע בחלק מגרסאות Android, לרבות Android 10 ומעלה. בלעדיה, ההפעלה האוטומטית עלולה לא לפעול.\n"
                 + "• הרשאת מנהל מכשיר - הרשאה נפרדת שניתן להפעיל ממסך ההרשאות, ההרשאה אינה נדרשת לצורך הצגת השומר מסך עצמו.\n"
@@ -488,9 +483,8 @@ public class SettingsActivity extends Activity {
 
             boolean sectionHeading =
                     line.equals("זמן פעילות")
-                    || line.equals("הצגה במסך הנעילה")
+                    || line.equals("מניעת נעילה בזמן פעילות")
                     || line.equals("הפעלה אוטומטית בנעילה")
-                    || line.equals("מה ההבדל בין הצגה במסך הנעילה לבין הפעלה אוטומטית בנעילה?")
                     || line.equals("הרשאות שמשפיעות על ההתנהגות האפליקציה");
 
             if (sectionHeading) {
@@ -608,7 +602,6 @@ public class SettingsActivity extends Activity {
         if ("showPlayer".equals(key)) showPlayerToggle = toggle;
         if ("autoStartOnCharge".equals(key)) autoStartOnChargeToggle = toggle;
         if ("autoStartOnDeviceLock".equals(key)) autoStartOnDeviceLockToggle = toggle;
-        if ("showOnLockScreen".equals(key)) showOnLockScreenToggle = toggle;
         toggle.setChecked(getBool(key, defaultValue));
         if (Build.VERSION.SDK_INT >= 21) {
             toggle.setThumbTintList(new ColorStateList(
@@ -654,16 +647,7 @@ public class SettingsActivity extends Activity {
                 }
                 updateOverlayPermissionCardVisibility();
             } else if ("autoStartOnDeviceLock".equals(key)) {
-                if (checked && !getBool("showOnLockScreen", Build.VERSION.SDK_INT >= 26)) {
-                    // Lock-triggered activation must be allowed to draw above the keyguard.
-                    prefs.edit().putBoolean("showOnLockScreen", true).apply();
-                    if (showOnLockScreenToggle != null && !showOnLockScreenToggle.isChecked()) {
-                        showOnLockScreenToggle.setChecked(true);
-                    }
-                    Toast.makeText(this,
-                            "כדי להציג את השומר מסך בעת נעילה, הופעלה גם האפשרות \"הצגה במסך הנעילה\".",
-                            Toast.LENGTH_LONG).show();
-                }
+                // Device-lock activation is independent from the active-session lock policy.
                 if (checked && Build.VERSION.SDK_INT >= 29 && !Settings.canDrawOverlays(this)) {
                     prefs.edit().putBoolean("autoStartOnLockOverlayPermissionPending", true).apply();
                     requestLockStartOverlayPermission();
@@ -676,18 +660,6 @@ public class SettingsActivity extends Activity {
                 LockScreenMonitorService.sync(this);
                 NightScreenApplication.syncChargerReceiver(this);
                 updateOverlayPermissionCardVisibility();
-            } else if ("showOnLockScreen".equals(key) && !checked
-                    && getBool("autoStartOnDeviceLock", false)) {
-                prefs.edit().putBoolean("autoStartOnDeviceLock", false)
-                        .putBoolean("autoStartOnLockOverlayPermissionPending", false).apply();
-                if (autoStartOnDeviceLockToggle != null && autoStartOnDeviceLockToggle.isChecked()) {
-                    autoStartOnDeviceLockToggle.setChecked(false);
-                }
-                LockScreenMonitorService.sync(this);
-                NightScreenApplication.syncChargerReceiver(this);
-                Toast.makeText(this,
-                        "ההפעלה האוטומטית בנעילה כובתה מפני שהצגה במסך הנעילה אינה פעילה.",
-                        Toast.LENGTH_LONG).show();
             } else if ("showPlayer".equals(key)) {
                 if (checked && !hasNotificationAccess()) {
                     prefs.edit().putBoolean("showPlayerPermissionPending", true).apply();
@@ -1006,7 +978,7 @@ public class SettingsActivity extends Activity {
         if ("showGregorian".equals(key)) return "gregorian-date";
         if ("showPlayer".equals(key)) return "media-toggle";
         if ("screenSaverDuration".equals(key)) return "activity-history";
-        if ("showOnLockScreen".equals(key)) return "lockscreen-phone";
+        if ("preventLockWhileActive".equals(key)) return "lockscreen-phone";
         if ("autoStartOnCharge".equals(key)) return "usb";
         if ("autoStartOnDeviceLock".equals(key)) return "lock-play";
         if ("noShutdownWhileCharging".equals(key)) return "power-off";

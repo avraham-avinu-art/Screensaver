@@ -284,7 +284,7 @@ public class MainActivity extends Activity {
                     android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
             applyChargingLaunchFlags(getIntent());
             applyDeviceLockLaunchFlags(getIntent());
-            applyShowOnLockScreenPreference();
+            applyPreventLockWhileActivePreference();
             hideSystemUi();
             buildUi();
             applySettings();
@@ -303,7 +303,7 @@ public class MainActivity extends Activity {
                 || intent.getBooleanExtra(EXTRA_OPENED_BY_DEVICE_LOCK, false))) {
             applyChargingLaunchFlags(intent);
             applyDeviceLockLaunchFlags(intent);
-            applyShowOnLockScreenPreference();
+            applyPreventLockWhileActivePreference();
             hideSystemUi();
             scheduleAutoOff(true);
             showSettingsButtonForThreeSeconds();
@@ -338,15 +338,19 @@ public class MainActivity extends Activity {
     }
 
     /**
-     * Matches Android's "Show on lock screen" behavior: let this activity remain
-     * visible above the keyguard while preserving the device's normal lock and
-     * screen-timeout policy. This does not keep the display awake by itself.
+     * When prevention is enabled, Android must not activate the keyguard over
+     * the active screensaver. An activation explicitly triggered by a device
+     * lock remains allowed to appear above the already-active keyguard.
      */
-    private void applyShowOnLockScreenPreference() {
-        boolean enabled = getBool("showOnLockScreen", Build.VERSION.SDK_INT >= 26);
+    private void applyPreventLockWhileActivePreference() {
+        boolean preventLock = LockBehaviorPreferences.isPreventionEnabled(this);
+        boolean openedByDeviceLock =
+                getIntent().getBooleanExtra(EXTRA_OPENED_BY_DEVICE_LOCK, false);
+        boolean showAboveExistingKeyguard = !preventLock || openedByDeviceLock;
+
         if (Build.VERSION.SDK_INT >= 27) {
-            setShowWhenLocked(enabled);
-        } else if (enabled) {
+            setShowWhenLocked(showAboveExistingKeyguard);
+        } else if (showAboveExistingKeyguard) {
             getWindow().addFlags(
                     android.view.WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED);
         } else {
@@ -354,13 +358,11 @@ public class MainActivity extends Activity {
                     android.view.WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED);
         }
 
-        // Keep the screensaver visible above the keyguard, while still allowing
-        // Android to activate the lock screen when the system timeout is reached.
-        if (enabled) {
-            getWindow().addFlags(
+        if (preventLock) {
+            getWindow().clearFlags(
                     android.view.WindowManager.LayoutParams.FLAG_ALLOW_LOCK_WHILE_SCREEN_ON);
         } else {
-            getWindow().clearFlags(
+            getWindow().addFlags(
                     android.view.WindowManager.LayoutParams.FLAG_ALLOW_LOCK_WHILE_SCREEN_ON);
         }
     }
@@ -378,7 +380,7 @@ public class MainActivity extends Activity {
         mainActivityResumed = true;
         mainActivityPausedByDeviceLock = false;
         NightScreenApplication.syncChargerReceiver(this);
-        applyShowOnLockScreenPreference();
+        applyPreventLockWhileActivePreference();
         try {
             if (settingsDialogOpen) {
                 String activeDuration = getString("screenSaverDuration", "0");
@@ -1771,8 +1773,8 @@ public class MainActivity extends Activity {
         activityDeadlineElapsedRealtime = 0L;
         releaseScreenOnHoldForObservation(getSystemScreenOffTimeoutMs());
 
-        boolean showOnLockScreen = getBool(
-                "showOnLockScreen", Build.VERSION.SDK_INT >= 26);
+        boolean showOnLockScreen = !LockBehaviorPreferences.isPreventionEnabled(this)
+                || getIntent().getBooleanExtra(EXTRA_OPENED_BY_DEVICE_LOCK, false);
         boolean adminActive = isScreenLockAdminActive();
 
         if (showOnLockScreen) {
