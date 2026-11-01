@@ -238,11 +238,15 @@ public class SettingsActivity extends Activity {
         addCheck(charging, "ללא כיבוי בטעינה", "noShutdownWhileCharging", false);
         addCheck(charging, "הצגת אחוז הסוללה", "showBatteryPercent", false);
 
-        LinearLayout font = addCard(content, "גופן");
-        addColorChoices(font, "צבע",
-                new String[]{"לבן", "כסף", "אפור", "אפור בהיר", "כחול עדין"},
-                new String[]{"white", "silver", "gray", "light", "blue"}, "fontColor");
-        addSpinner(font, "סוג",
+        LinearLayout design = addCard(content, "עיצוב");
+        addColorChoices(design, "צבע המסך",
+                new String[]{"שחור", "כחול", "כחול כהה", "חום כהה", "טורקיז"},
+                new String[]{"#000000", "#142438", "#091321", "#332820", "#12313A"},
+                "screenBackgroundColor");
+        addDiscreteSlider(design, "בהירות המסך",
+                new String[]{"לפי המכשיר", "25%", "50%", "75%", "100%"},
+                new String[]{"-1", "25", "50", "75", "100"}, "screenBrightness");
+        addSpinner(design, "סוג הגופן",
                 new String[]{"ברירת מחדל", "DL Adva", "Keter Aram Tsova", "Shofar",
                         "Gveret Levin", "Yehuda CLM", "Stam Ashkenaz", "DL Apollo Black",
                         "DL Normador", "Ozrad CLM Bold", "Haim FB Black", "Coming Soon",
@@ -254,6 +258,9 @@ public class SettingsActivity extends Activity {
                         "custom:DL Normador.TTF", "custom:OzradCLM-Bold.otf",
                         "custom:fmhaimblack.ttf", "custom:ComingSoon.ttf",
                         "custom:ShortStack-Regular.ttf"}, "fontFamily");
+        addColorChoices(design, "צבע הגופן",
+                new String[]{"לבן", "כסף", "אפור", "אפור בהיר", "כחול עדין"},
+                new String[]{"white", "silver", "gray", "light", "blue"}, "fontColor");
 
         clockDateCard = addCard(content, "תצוגת שעון ותאריך");
         addDiscreteSlider(clockDateCard, "גודל",
@@ -926,11 +933,12 @@ public class SettingsActivity extends Activity {
     private void persistOption(String key, String value) {
         try {
             SharedPreferences.Editor editor = prefs.edit();
-            if ("fontColor".equals(key) || "frameColor".equals(key)) {
+            if ("fontColor".equals(key) || "frameColor".equals(key)
+                    || "screenBackgroundColor".equals(key)) {
                 editor.putInt(key, colorValue(value));
             } else if ("fontWeight".equals(key) || "clockDateSize".equals(key)
                     || "playerSize".equals(key) || "frameWidth".equals(key)
-                    || "frameRadius".equals(key)) {
+                    || "frameRadius".equals(key) || "screenBrightness".equals(key)) {
                 editor.putInt(key, Integer.parseInt(value));
             } else {
                 editor.putString(key, value);
@@ -943,7 +951,7 @@ public class SettingsActivity extends Activity {
     private String iconForCard(String title) {
         if ("תצוגה במסך".equals(title)) return "monitor";
         if ("שומר מסך בזמן טעינה".equals(title)) return "android-charge";
-        if ("גופן".equals(title)) return "type";
+        if ("עיצוב".equals(title)) return "palette";
         if ("תצוגת שעון ותאריך".equals(title)) return "clock";
         if ("תצוגת הנגן".equals(title)) return "music";
         if ("מסגרת לנגן".equals(title)) return "frame";
@@ -963,6 +971,8 @@ public class SettingsActivity extends Activity {
         if ("autoStartOnDeviceLock".equals(key)) return "lock-play";
         if ("noShutdownWhileCharging".equals(key)) return "battery-hold";
         if ("showBatteryPercent".equals(key)) return "percent";
+        if ("screenBackgroundColor".equals(key)) return "palette";
+        if ("screenBrightness".equals(key)) return "sun";
         if ("fontColor".equals(key)) return "paint-roller";
         if ("fontWeight".equals(key)) return "uppercase-font";
         if ("fontFamily".equals(key)) return "font-family";
@@ -1198,7 +1208,8 @@ public class SettingsActivity extends Activity {
 
     private int selectedIndex(String key, String[] values) {
         int index = 0;
-        if ("fontColor".equals(key) || "frameColor".equals(key)) {
+        if ("fontColor".equals(key) || "frameColor".equals(key)
+                || "screenBackgroundColor".equals(key)) {
             if (!prefs.contains(key)) return -1;
             int stored = getInt(key, colorValue(values[0]));
             for (int i = 0; i < values.length; i++) {
@@ -1207,7 +1218,7 @@ public class SettingsActivity extends Activity {
             return -1;
         } else if ("fontWeight".equals(key) || "clockDateSize".equals(key)
                 || "playerSize".equals(key) || "frameWidth".equals(key)
-                || "frameRadius".equals(key)) {
+                || "frameRadius".equals(key) || "screenBrightness".equals(key)) {
             int fallback = "clockDateSize".equals(key) ? 84
                     : ("fontWeight".equals(key) ? 0 : parse(values[0], 0));
             int stored = getInt(key, fallback);
@@ -1497,6 +1508,10 @@ public class SettingsActivity extends Activity {
     }
 
     private int colorValue(String value) {
+        if (value != null && value.startsWith("#")) {
+            try { return Color.parseColor(value); }
+            catch (IllegalArgumentException ignored) { return Color.WHITE; }
+        }
         if ("white".equals(value)) return Color.WHITE;
         if ("light".equals(value)) return Color.argb(102, 220, 220, 220);
         if ("gray".equals(value)) return Color.GRAY;
