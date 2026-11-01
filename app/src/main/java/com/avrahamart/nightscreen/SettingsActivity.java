@@ -1043,9 +1043,14 @@ public class SettingsActivity extends Activity {
 
     private FrameLayout makeIconBadge(String iconName, int size) {
         FrameLayout badge = new FrameLayout(this);
-        badge.setBackground(roundOutline(ICON_SURFACE, dp(10), CARD_OUTLINE));
+        boolean progressTimeGlyph = "progress-time-digital".equals(iconName);
+        // This glyph is standalone: no surrounding square badge or frame.
+        badge.setBackground(progressTimeGlyph
+                ? new ColorDrawable(Color.TRANSPARENT)
+                : roundOutline(ICON_SURFACE, dp(10), CARD_OUTLINE));
         View graphic = makeIconGlyph(iconName, Color.rgb(168, 200, 232));
-        int glyphSize = "bold".equals(iconName) ? dp(24)
+        int glyphSize = progressTimeGlyph ? dp(27)
+                : "bold".equals(iconName) ? dp(24)
                 : "power-off".equals(iconName) ? dp(19)
                 : ("history".equals(iconName) || "panel-bottom".equals(iconName)) ? dp(24)
                 : dp(21);
