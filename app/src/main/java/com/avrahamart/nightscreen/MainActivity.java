@@ -177,6 +177,7 @@ public class MainActivity extends Activity {
     private String lastArtist = "";
     private String lastObservedTrackIdentity = null;
     private long lastObservedTrackPositionMs = -1L;
+    private long currentMediaDurationMs = 0L;
     private boolean lastPlaybackWasActive = false;
     private boolean lastPlayerIntroOnlySetting = false;
     private boolean playerIntroWindowVisible = false;
@@ -2470,6 +2471,7 @@ public class MainActivity extends Activity {
 
     private void detachMediaController() {
         stopMediaProgressTicker();
+        currentMediaDurationMs = 0L;
         if (mediaController != null && mediaCallback != null) {
             try {
                 mediaController.unregisterCallback(mediaCallback);
@@ -2548,6 +2550,7 @@ public class MainActivity extends Activity {
             if (savedTrackMetadataChanged) metadataEditor.apply();
 
             long duration = metadata == null ? 0L : metadata.getLong(MediaMetadata.METADATA_KEY_DURATION);
+            currentMediaDurationMs = Math.max(0L, duration);
             long position = Math.max(0L, state.getPosition());
             if (duration > 0) position = Math.min(position, duration);
 
@@ -2582,7 +2585,7 @@ public class MainActivity extends Activity {
             } else if (duration > 0L) {
                 handler.removeCallbacks(hideProgressRowAfterMetadataChange);
                 progressHidePending = false;
-                updateMediaProgressViews(state, metadata);
+                updateMediaProgressViews(state, duration);
             } else if (mediaProgressRow.getVisibility() == View.VISIBLE) {
                 // Track changes can briefly publish metadata without a duration. Keep the
                 // last progress row visible instead of blinking it off during the hand-off.
@@ -2701,7 +2704,7 @@ public class MainActivity extends Activity {
         try {
             PlaybackState state = mediaController.getPlaybackState();
             return state != null && state.getState() == PlaybackState.STATE_PLAYING
-                    && getCurrentMediaDuration() > 0L;
+                    && currentMediaDurationMs > 0L;
         } catch (Throwable ignored) {
             return false;
         }
@@ -2722,21 +2725,19 @@ public class MainActivity extends Activity {
         if (!isMediaProgressPollingEnabled()) return false;
         try {
             PlaybackState state = mediaController.getPlaybackState();
-            MediaMetadata metadata = mediaController.getMetadata();
             if (state == null || state.getState() != PlaybackState.STATE_PLAYING
-                    || metadata == null) return false;
-            updateMediaProgressViews(state, metadata);
+                    || currentMediaDurationMs <= 0L) return false;
+            updateMediaProgressViews(state, currentMediaDurationMs);
             return true;
         } catch (Throwable ignored) {
             return false;
         }
     }
 
-    private void updateMediaProgressViews(PlaybackState state, MediaMetadata metadata) {
-        if (state == null || metadata == null || mediaCurrentText == null
+    private void updateMediaProgressViews(PlaybackState state, long duration) {
+        if (state == null || mediaCurrentText == null
                 || mediaTotalText == null || mediaSeekBar == null) return;
-        long duration = Math.max(0L,
-                metadata.getLong(MediaMetadata.METADATA_KEY_DURATION));
+        duration = Math.max(0L, duration);
         if (duration <= 0L || !getBool("showProgress", true)) {
             setProgressRowVisible(false);
             return;
