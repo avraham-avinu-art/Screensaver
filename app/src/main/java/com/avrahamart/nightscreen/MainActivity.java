@@ -124,6 +124,11 @@ public class MainActivity extends Activity {
                         || Intent.ACTION_TIMEZONE_CHANGED.equals(action)) {
                     lastFormattedHebrewDateKey = null;
                 }
+                if (Intent.ACTION_TIMEZONE_CHANGED.equals(action)) {
+                    java.util.TimeZone deviceTimeZone = java.util.TimeZone.getDefault();
+                    now.setTimeZone(deviceTimeZone);
+                    numericDateFormat.setTimeZone(deviceTimeZone);
+                }
                 updateClock();
                 scheduleNextClockUpdate();
             } else if (Intent.ACTION_SCREEN_OFF.equals(action)) {
@@ -1939,6 +1944,7 @@ public class MainActivity extends Activity {
         filter.addAction(Intent.ACTION_POWER_DISCONNECTED);
         filter.addAction(Intent.ACTION_BATTERY_CHANGED);
         filter.addAction(Intent.ACTION_SCREEN_ON);
+        filter.addAction(Intent.ACTION_SCREEN_OFF);
         filter.addAction(Intent.ACTION_TIME_TICK);
         filter.addAction(Intent.ACTION_TIME_CHANGED);
         filter.addAction(Intent.ACTION_DATE_CHANGED);
