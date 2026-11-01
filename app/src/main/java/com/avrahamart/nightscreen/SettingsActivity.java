@@ -999,7 +999,7 @@ public class SettingsActivity extends Activity {
         if ("showHebrew".equals(key)) return "hebrew-date";
         if ("showGregorian".equals(key)) return "gregorian-date";
         if ("showPlayer".equals(key)) return "media-toggle";
-        if ("screenSaverDuration".equals(key)) return "history";
+        if ("screenSaverDuration".equals(key)) return "activity-history";
         if ("showOnLockScreen".equals(key)) return "lockscreen-phone";
         if ("autoStartOnCharge".equals(key)) return "usb";
         if ("autoStartOnDeviceLock".equals(key)) return "lock-play";
@@ -1025,9 +1025,15 @@ public class SettingsActivity extends Activity {
     }
 
     private View makeIconGlyph(String iconName, int tint) {
-        String resourceName = "icon_" + iconName.replace('-', '_');
-        int resourceId = getResources().getIdentifier(resourceName, "drawable", getPackageName());
-        if (resourceId == 0) resourceId = R.drawable.icon_settings;
+        int resourceId;
+        if ("activity-history".equals(iconName)) {
+            // The APK's original _N resource is the dedicated activity-time/history glyph.
+            resourceId = R.drawable.ic_settings_activity_history;
+        } else {
+            String resourceName = "icon_" + iconName.replace('-', '_');
+            resourceId = getResources().getIdentifier(resourceName, "drawable", getPackageName());
+            if (resourceId == 0) resourceId = R.drawable.icon_settings;
+        }
         android.widget.ImageView image = new android.widget.ImageView(this);
         image.setImageResource(resourceId);
         if (!"hebrew-date".equals(iconName) && !"lock-play".equals(iconName)
@@ -1043,11 +1049,8 @@ public class SettingsActivity extends Activity {
 
     private FrameLayout makeIconBadge(String iconName, int size) {
         FrameLayout badge = new FrameLayout(this);
-        boolean progressTimeGlyph = "progress-time-digital".equals(iconName);
-        // This glyph is standalone: no surrounding square badge or frame.
-        badge.setBackground(progressTimeGlyph
-                ? new ColorDrawable(Color.TRANSPARENT)
-                : roundOutline(ICON_SURFACE, dp(10), CARD_OUTLINE));
+        // Keep the standard square badge behind every settings glyph, including progress/time.
+        badge.setBackground(roundOutline(ICON_SURFACE, dp(10), CARD_OUTLINE));
         View graphic = makeIconGlyph(iconName, Color.rgb(168, 200, 232));
         int glyphSize = progressTimeGlyph ? dp(27)
                 : "bold".equals(iconName) ? dp(24)
