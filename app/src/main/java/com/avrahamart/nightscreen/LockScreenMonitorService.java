@@ -68,6 +68,7 @@ public final class LockScreenMonitorService extends Service {
         IntentFilter filter = new IntentFilter();
         filter.addAction(Intent.ACTION_SCREEN_OFF);
         filter.addAction(Intent.ACTION_USER_PRESENT);
+        filter.addAction(Intent.ACTION_POWER_CONNECTED);
         try {
             if (Build.VERSION.SDK_INT >= 33) {
                 registerReceiver(lockReceiver, filter, RECEIVER_NOT_EXPORTED);

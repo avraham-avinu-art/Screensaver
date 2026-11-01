@@ -674,6 +674,7 @@ public class SettingsActivity extends Activity {
                     prefs.edit().putBoolean("autoStartOnLockOverlayPermissionPending", false).apply();
                 }
                 LockScreenMonitorService.sync(this);
+                NightScreenApplication.syncChargerReceiver(this);
                 updateOverlayPermissionCardVisibility();
             } else if ("showOnLockScreen".equals(key) && !checked
                     && getBool("autoStartOnDeviceLock", false)) {
@@ -683,6 +684,7 @@ public class SettingsActivity extends Activity {
                     autoStartOnDeviceLockToggle.setChecked(false);
                 }
                 LockScreenMonitorService.sync(this);
+                NightScreenApplication.syncChargerReceiver(this);
                 Toast.makeText(this,
                         "ההפעלה האוטומטית בנעילה כובתה מפני שהצגה במסך הנעילה אינה פעילה.",
                         Toast.LENGTH_LONG).show();

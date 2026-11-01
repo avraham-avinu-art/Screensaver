@@ -62,20 +62,19 @@ public final class NightScreenApplication extends Application {
         boolean chargingEnabled = prefs.getBoolean("autoStartOnCharge", false);
         boolean lockMonitorEnabled = prefs.getBoolean("autoStartOnDeviceLock", false);
 
-        // The system-bound notification-listener process remains available while
-        // notification access is granted, without pinning the screensaver UI process.
+        // The system-bound notification-listener process remains alive while
+        // notification access is granted, without pinning the screensaver UI.
         if ((packageName + ":notifications").equals(processName)) {
             return notificationAccess;
         }
 
-        // The separate foreground lock monitor is the persistent listener when
-        // notification access is not granted but lock-triggered activation is on.
+        // LockScreenMonitorService registers the same receiver alongside its
+        // SCREEN_OFF / USER_PRESENT receiver in its own persistent process.
         if ((packageName + ":lockmonitor").equals(processName)) {
-            return !notificationAccess && lockMonitorEnabled && chargingEnabled;
+            return false;
         }
 
-        // The default process listens only while the UI process is alive and no
-        // other persistent process already owns the charger event receiver.
+        // Use the UI process only when no already-persistent process can listen.
         return packageName.equals(processName)
                 && chargingEnabled && !notificationAccess && !lockMonitorEnabled;
     }
