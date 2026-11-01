@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
-    <path android:pathData="M4,20 L10,4 H14 L20,20 M7,13.5 H17" android:fillColor="#00000000" android:strokeColor="#FF000000" android:strokeWidth="1.5" android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M14,19 L17,11 H19 L22,19 M15,16 H21" android:fillColor="#00000000" android:strokeColor="#FF000000" android:strokeWidth="1.3" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M2.25,17 L7.13,4.2 H8.62 L13.51,17 H11.77 L10.55,13.65 H5.2 L3.99,17 Z M5.71,12.26 H10.05 L7.88,6.29 Z" android:fillColor="#FF000000" />
+    <path android:pathData="M20.85,17 Q20.69,16.66 20.62,16 Q20.17,16.48 19.48,16.83 Q18.8,17.18 17.92,17.18 Q16.46,17.18 15.58,16.36 Q14.7,15.54 14.7,14.35 Q14.7,12.83 15.86,12.03 Q17.02,11.23 18.98,11.23 H20.59 V10.48 Q20.59,9.63 20.08,9.13 Q19.58,8.62 18.58,8.62 Q17.66,8.62 17.1,9.08 Q16.53,9.53 16.53,10.13 H14.9 Q14.9,9.11 15.93,8.21 Q16.96,7.31 18.68,7.31 Q20.23,7.31 21.22,8.1 Q22.21,8.9 22.21,10.5 V14.77 Q22.21,16.09 22.55,16.86 V17 Z M18.15,15.75 Q19.03,15.75 19.68,15.31 Q20.33,14.87 20.59,14.34 V12.38 H19.08 Q16.33,12.43 16.33,14.13 Q16.33,14.81 16.79,15.28 Q17.25,15.75 18.15,15.75 Z" android:fillColor="#FF000000" />
 </vector>

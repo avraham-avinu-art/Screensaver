@@ -1030,7 +1030,10 @@ public class SettingsActivity extends Activity {
         if (resourceId == 0) resourceId = R.drawable.icon_settings;
         android.widget.ImageView image = new android.widget.ImageView(this);
         image.setImageResource(resourceId);
-        image.setColorFilter(tint);
+        if (!"hebrew-date".equals(iconName) && !"lock-play".equals(iconName)
+                && !"lockscreen-phone".equals(iconName)) {
+            image.setColorFilter(tint);
+        }
         image.setScaleType(android.widget.ImageView.ScaleType.FIT_CENTER);
         image.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         image.setContentDescription(iconName);
