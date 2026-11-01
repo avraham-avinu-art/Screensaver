@@ -2270,7 +2270,7 @@ public class SettingsActivity extends Activity {
             if ("#142438".equalsIgnoreCase(value)) {
                 paint.setStyle(Paint.Style.STROKE);
                 paint.setStrokeWidth(dp(1));
-                paint.setColor(MUTED);
+                paint.setColor(CARD_OUTLINE);
                 canvas.drawCircle(cx, cy, radius - dp(1), paint);
             }
 
