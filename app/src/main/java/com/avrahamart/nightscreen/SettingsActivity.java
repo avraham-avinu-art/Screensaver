@@ -244,13 +244,9 @@ public class SettingsActivity extends Activity {
         LinearLayout design = addCard(content, "עיצוב");
         addColorChoices(design, "צבע המסך",
                 new String[]{"שחור", "כחול", "כחול כהה", "טורקיז",
-                        "גרפיט", "כחול פלדה", "אינדיגו", "סגול פחם",
-                        "בורדו", "ירוק אורן", "אמרלד כהה", "כחול פטרול",
-                        "זית", "אפור צפחה"},
+                        "אפור פחם", "ירוק יער", "כחול עמוק", "אפור אבן"},
                 new String[]{"#000000", "#142438", "#091321", "#12313A",
-                        "#252B33", "#26384A", "#24263D", "#30283B",
-                        "#3B252E", "#20362E", "#163A34", "#193740",
-                        "#343729", "#303943"},
+                        "#252B33", "#20362E", "#193740", "#303943"},
                 "screenBackgroundColor");
         addDiscreteSlider(design, "בהירות המסך",
                 new String[]{"לפי המכשיר", "25%", "50%", "75%", "100%"},
@@ -1038,6 +1034,7 @@ public class SettingsActivity extends Activity {
             image.setImageResource(vectorResource);
             image.setColorFilter(tint);
             image.setScaleType(android.widget.ImageView.ScaleType.FIT_CENTER);
+            image.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
             image.setContentDescription(iconName);
             return image;
         }
