@@ -36,6 +36,7 @@ import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.CompoundButton;
 import android.widget.LinearLayout;
+import android.widget.PopupMenu;
 import android.widget.ScrollView;
 import android.widget.SeekBar;
 import android.widget.Spinner;
@@ -74,6 +75,14 @@ public class SettingsActivity extends Activity {
     private DevicePolicyManager devicePolicyManager;
     private ComponentName screenLockAdminComponent;
     private LinearLayout currentCard;
+    private TextView screenTitle;
+    private TextView screenSubtitle;
+    private int currentCategory = 0;
+    private static final int CATEGORY_DASHBOARD = 0;
+    private static final int CATEGORY_CLOCK_DATE = 1;
+    private static final int CATEGORY_ACTIVITY = 2;
+    private static final int CATEGORY_APPEARANCE = 3;
+    private static final int CATEGORY_PLAYER = 4;
     private final int dateTextColor = Color.rgb(220, 220, 220);
 
     @Override
@@ -118,21 +127,21 @@ public class SettingsActivity extends Activity {
         titleBlock.setGravity(Gravity.CENTER);
         titleBlock.setPadding(0, 0, 0, 0);
 
-        TextView title = textView("הגדרות", 28, ON_SURFACE);
-        title.setIncludeFontPadding(false);
-        title.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-        title.setGravity(Gravity.CENTER);
-        title.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-        title.setTextDirection(View.TEXT_DIRECTION_RTL);
-        titleBlock.addView(title, new LinearLayout.LayoutParams(-1, -2));
+        screenTitle = textView("הגדרות", 28, ON_SURFACE);
+        screenTitle.setIncludeFontPadding(false);
+        screenTitle.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        screenTitle.setGravity(Gravity.CENTER);
+        screenTitle.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        screenTitle.setTextDirection(View.TEXT_DIRECTION_RTL);
+        titleBlock.addView(screenTitle, new LinearLayout.LayoutParams(-1, -2));
 
-        TextView subtitle = textView("התאמה אישית של השומר מסך", 18, MUTED);
-        subtitle.setIncludeFontPadding(false);
-        subtitle.setGravity(Gravity.CENTER);
-        subtitle.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-        subtitle.setTextDirection(View.TEXT_DIRECTION_RTL);
-        subtitle.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
-        titleBlock.addView(subtitle, new LinearLayout.LayoutParams(-1, -2));
+        screenSubtitle = textView("התאמה אישית של השומר מסך", 18, MUTED);
+        screenSubtitle.setIncludeFontPadding(false);
+        screenSubtitle.setGravity(Gravity.CENTER);
+        screenSubtitle.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        screenSubtitle.setTextDirection(View.TEXT_DIRECTION_RTL);
+        screenSubtitle.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
+        titleBlock.addView(screenSubtitle, new LinearLayout.LayoutParams(-1, -2));
 
         // Keep the title and subtitle centered and unobstructed by utility buttons.
         header.addView(titleBlock, new LinearLayout.LayoutParams(0, -2, 1f));
@@ -159,7 +168,7 @@ public class SettingsActivity extends Activity {
         scroll.addView(scrollContent, new ScrollView.LayoutParams(-1, -2));
         root.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1f));
 
-        buildSettingsCards();
+        buildDashboard();
 
         FrameLayout footer = new FrameLayout(this);
         LinearLayout.LayoutParams footerParams =
@@ -183,18 +192,23 @@ public class SettingsActivity extends Activity {
         footer.addView(done, doneParams);
         done.setOnClickListener(v -> finish());
 
-        FrameLayout permissionsButton = makeCircularIconButton("מעבר למסך הרשאות", "shield-alert");
-        FrameLayout.LayoutParams permissionsParams =
+        FrameLayout menuButton = makeOverflowButton();
+        FrameLayout.LayoutParams menuParams =
                 new FrameLayout.LayoutParams(dp(42), dp(42), Gravity.LEFT | Gravity.CENTER_VERTICAL);
-        footer.addView(permissionsButton, permissionsParams);
-        permissionsButton.setOnClickListener(v ->
-                startActivity(new Intent(this, PermissionsActivity.class)));
+        footer.addView(menuButton, menuParams);
+        menuButton.setOnClickListener(v -> showOverflowMenu(menuButton));
 
         FrameLayout backButton = makeCircularIconButton("חזרה למסך הקודם", "back-arrow");
         FrameLayout.LayoutParams backParams =
                 new FrameLayout.LayoutParams(dp(42), dp(42), Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         footer.addView(backButton, backParams);
-        backButton.setOnClickListener(v -> finish());
+        backButton.setOnClickListener(v -> {
+            if (currentCategory == CATEGORY_DASHBOARD) {
+                finish();
+            } else {
+                buildDashboard();
+            }
+        });
 
         setContentView(root);
     }
@@ -232,11 +246,200 @@ public class SettingsActivity extends Activity {
         }
     }
 
-    private void buildSettingsCards() {
-        LinearLayout display = addCard(content, "תצוגה במסך");
+    private void buildDashboard() {
+        currentCategory = CATEGORY_DASHBOARD;
+        clockDateCard = null;
+        playerFrameCard = null;
+        activityCapabilityNotice = null;
+        if (content == null) return;
+        content.removeAllViews();
+        screenTitle.setText("הגדרות");
+        screenSubtitle.setText("התאמה אישית של השומר מסך");
+
+        LinearLayout firstRow = dashboardRow();
+        addDashboardTile(firstRow, "שעון ותאריך",
+                "תצוגת השעה והתאריך והתאמתם",
+                "clock-size", CATEGORY_CLOCK_DATE);
+        addDashboardTile(firstRow, "הפעלה והתנהגות",
+                "זמן פעילות, נעילה וטעינה",
+                "activity-history", CATEGORY_ACTIVITY);
+        content.addView(firstRow, dashboardRowParams());
+
+        LinearLayout secondRow = dashboardRow();
+        addDashboardTile(secondRow, "מראה ועיצוב",
+                "צבעים, גופנים ובהירות המסך",
+                "palette", CATEGORY_APPEARANCE);
+        addDashboardTile(secondRow, "נגן מדיה",
+                "מידע, מיקום, גודל ומסגרת",
+                "media-toggle", CATEGORY_PLAYER);
+        content.addView(secondRow, dashboardRowParams());
+
+        addDashboardNavigation();
+    }
+
+    private LinearLayout dashboardRow() {
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        return row;
+    }
+
+    private LinearLayout.LayoutParams dashboardRowParams() {
+        LinearLayout.LayoutParams params =
+                new LinearLayout.LayoutParams(-1, -2);
+        params.bottomMargin = dp(10);
+        return params;
+    }
+
+    private void addDashboardTile(LinearLayout row, String title, String description,
+                                  String iconName, int category) {
+        LinearLayout tile = new LinearLayout(this);
+        tile.setOrientation(LinearLayout.VERTICAL);
+        tile.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        tile.setGravity(Gravity.CENTER);
+        tile.setPadding(dp(11), dp(12), dp(11), dp(12));
+        tile.setBackground(roundOutline(CARD_SURFACE, dp(20), CARD_OUTLINE));
+        tile.setClickable(true);
+        tile.setFocusable(true);
+        tile.setContentDescription(title + ". " + description);
+
+        FrameLayout iconBadge = makeIconBadge(iconName, dp(48));
+        LinearLayout.LayoutParams iconParams =
+                new LinearLayout.LayoutParams(dp(48), dp(48));
+        iconParams.bottomMargin = dp(7);
+        tile.addView(iconBadge, iconParams);
+
+        TextView titleView = textView(title, 18, ON_SURFACE);
+        titleView.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD));
+        titleView.setGravity(Gravity.CENTER);
+        titleView.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        titleView.setTextDirection(View.TEXT_DIRECTION_RTL);
+        titleView.setIncludeFontPadding(false);
+        tile.addView(titleView, new LinearLayout.LayoutParams(-1, -2));
+
+        TextView descriptionView = textView(description, 13, MUTED);
+        descriptionView.setGravity(Gravity.CENTER);
+        descriptionView.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        descriptionView.setTextDirection(View.TEXT_DIRECTION_RTL);
+        descriptionView.setLineSpacing(dp(1), 1f);
+        LinearLayout.LayoutParams descriptionParams =
+                new LinearLayout.LayoutParams(-1, -2);
+        descriptionParams.topMargin = dp(4);
+        tile.addView(descriptionView, descriptionParams);
+
+        tile.setOnClickListener(v -> showCategory(category));
+        LinearLayout.LayoutParams tileParams =
+                new LinearLayout.LayoutParams(0, dp(142), 1f);
+        tileParams.leftMargin = dp(5);
+        tileParams.rightMargin = dp(5);
+        row.addView(tile, tileParams);
+    }
+
+    private void addDashboardNavigation() {
+        LinearLayout navigation = new LinearLayout(this);
+        navigation.setOrientation(LinearLayout.VERTICAL);
+        navigation.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        navigation.setBackground(roundOutline(CARD_SURFACE, dp(17), CARD_OUTLINE));
+        addDashboardNavigationRow(navigation, "ניהול הרשאות",
+                "shield-alert", () ->
+                        startActivity(new Intent(this, PermissionsActivity.class)));
+        View divider = new View(this);
+        divider.setBackgroundColor(CARD_OUTLINE);
+        LinearLayout.LayoutParams dividerParams =
+                new LinearLayout.LayoutParams(-1, dp(1));
+        dividerParams.setMargins(dp(12), 0, dp(12), 0);
+        navigation.addView(divider, dividerParams);
+        addDashboardNavigationRow(navigation, "מדריך שימוש",
+                "book-open", () ->
+                        startActivity(new Intent(this, GuideActivity.class)));
+        LinearLayout.LayoutParams navParams =
+                new LinearLayout.LayoutParams(-1, -2);
+        navParams.topMargin = dp(2);
+        navParams.bottomMargin = dp(4);
+        content.addView(navigation, navParams);
+    }
+
+    private void addDashboardNavigationRow(LinearLayout parent, String title,
+                                           String iconName, Runnable action) {
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setPadding(dp(12), dp(2), dp(12), dp(2));
+        row.setMinimumHeight(dp(53));
+        row.setClickable(true);
+        row.setFocusable(true);
+
+        FrameLayout icon = makeIconBadge(iconName, dp(30));
+        row.addView(icon, new LinearLayout.LayoutParams(dp(30), dp(30)));
+
+        TextView label = textView(title, 16, ON_SURFACE);
+        label.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        label.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        label.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
+        LinearLayout.LayoutParams labelParams =
+                new LinearLayout.LayoutParams(0, -1, 1f);
+        labelParams.rightMargin = dp(12);
+        row.addView(label, labelParams);
+
+        View arrow = makeIconGlyph("chevron", MUTED);
+        row.addView(arrow, new LinearLayout.LayoutParams(dp(18), dp(18)));
+        row.setOnClickListener(v -> action.run());
+        parent.addView(row, new LinearLayout.LayoutParams(-1, dp(54)));
+    }
+
+    private void showCategory(int category) {
+        currentCategory = category;
+        content.removeAllViews();
+        clockDateCard = null;
+        playerFrameCard = null;
+        activityCapabilityNotice = null;
+
+        switch (category) {
+            case CATEGORY_CLOCK_DATE:
+                screenTitle.setText("שעון ותאריך");
+                screenSubtitle.setText("הצגה והתאמה של השעה והתאריך");
+                buildClockDateSettings();
+                break;
+            case CATEGORY_ACTIVITY:
+                screenTitle.setText("הפעלה והתנהגות");
+                screenSubtitle.setText("ניהול זמן הפעילות, הנעילה והטעינה");
+                buildActivitySettings();
+                break;
+            case CATEGORY_APPEARANCE:
+                screenTitle.setText("מראה ועיצוב");
+                screenSubtitle.setText("התאמה אישית של צבעים, גופנים ובהירות");
+                buildAppearanceSettings();
+                break;
+            case CATEGORY_PLAYER:
+                screenTitle.setText("נגן מדיה");
+                screenSubtitle.setText("הצגת הנגן והתאמת המראה והמיקום שלו");
+                buildPlayerSettings();
+                break;
+            default:
+                buildDashboard();
+        }
+    }
+
+    private void buildClockDateSettings() {
+        LinearLayout display = addCard(content, "הצגת תאריכים");
         addCheck(display, "תאריך עברי", "showHebrew", true);
         addCheck(display, "תאריך לועזי", "showGregorian", true);
-        addCheck(display, "הצגת הנגן", "showPlayer", false);
+
+        clockDateCard = addCard(content, "התאמת השעון והתאריך");
+        addDiscreteSlider(clockDateCard, "גודל",
+                new String[]{"קטן", "בינוני", "רגיל", "גדול", "גדול מאוד"},
+                new String[]{"60", "72", "84", "96", "108"}, "clockDateSize");
+        addDiscreteSlider(clockDateCard, "עובי הגופן",
+                new String[]{"דק", "רגיל", "בינוני", "מודגש"},
+                new String[]{"-1", "0", "1", "2"}, "fontWeight");
+        addSegmentedChoices(clockDateCard, "מיקום",
+                new String[]{"בראש המסך", "ברבע העליון", "במרכז המסך"},
+                new String[]{"top", "upper", "middle"}, "clockDatePosition");
+    }
+
+    private void buildActivitySettings() {
         LinearLayout activityTimes = addCard(content, "הגדרת זמני הפעילות");
         addSegmentedChoices(activityTimes, "זמן פעילות",
                 new String[]{"לפי המכשיר", "דקה אחת", "חמש דקות", "ללא כיבוי"},
@@ -253,18 +456,22 @@ public class SettingsActivity extends Activity {
         addCheck(charging, "הפעלה אוטומטית בטעינה", "autoStartOnCharge", false);
         addCheck(charging, "ללא כיבוי בטעינה", "noShutdownWhileCharging", false);
         addCheck(charging, "הצגת אחוז הסוללה", "showBatteryPercent", false);
+    }
 
-        LinearLayout design = addCard(content, "עיצוב");
-        addColorChoices(design, "צבע המסך",
+    private void buildAppearanceSettings() {
+        LinearLayout screenAppearance = addCard(content, "צבע ובהירות המסך");
+        addColorChoices(screenAppearance, "צבע המסך",
                 new String[]{"שחור", "כחול", "כחול כהה", "טורקיז",
                         "אפור פחם", "ירוק יער", "כחול עמוק", "אפור אבן"},
                 new String[]{"#000000", "#142438", "#091321", "#12313A",
                         "#252B33", "#20362E", "#193740", "#303943"},
                 "screenBackgroundColor");
-        addDiscreteSlider(design, "בהירות המסך",
+        addDiscreteSlider(screenAppearance, "בהירות המסך",
                 new String[]{"לפי המכשיר", "25%", "50%", "75%", "100%"},
                 new String[]{"-1", "25", "50", "75", "100"}, "screenBrightness");
-        addSpinner(design, "סוג הגופן",
+
+        LinearLayout textAppearance = addCard(content, "גופן וצבע הטקסט");
+        addSpinner(textAppearance, "סוג הגופן",
                 new String[]{"ברירת מחדל", "DL Adva", "Keter Aram Tsova", "Shofar",
                         "Gveret Levin", "Yehuda CLM", "Stam Ashkenaz", "DL Apollo Black",
                         "DL Normador", "Ozrad CLM Bold", "Haim FB Black", "Coming Soon",
@@ -276,22 +483,14 @@ public class SettingsActivity extends Activity {
                         "custom:DL Normador.TTF", "custom:OzradCLM-Bold.otf",
                         "custom:fmhaimblack.ttf", "custom:ComingSoon.ttf",
                         "custom:ShortStack-Regular.ttf"}, "fontFamily");
-        addColorChoices(design, "צבע הגופן",
+        addColorChoices(textAppearance, "צבע הגופן",
                 new String[]{"לבן", "כסף", "אפור", "אפור בהיר", "כחול עדין"},
                 new String[]{"white", "silver", "gray", "light", "blue"}, "fontColor");
+    }
 
-        clockDateCard = addCard(content, "תצוגת שעון ותאריך");
-        addDiscreteSlider(clockDateCard, "גודל",
-                new String[]{"קטן", "בינוני", "רגיל", "גדול", "גדול מאוד"},
-                new String[]{"60", "72", "84", "96", "108"}, "clockDateSize");
-        addDiscreteSlider(clockDateCard, "עובי הגופן",
-                new String[]{"דק", "רגיל", "בינוני", "מודגש"},
-                new String[]{"-1", "0", "1", "2"}, "fontWeight");
-        addSegmentedChoices(clockDateCard, "מיקום",
-                new String[]{"בראש המסך", "ברבע העליון", "במרכז המסך"},
-                new String[]{"top", "upper", "middle"}, "clockDatePosition");
-
-        LinearLayout player = addCard(content, "תצוגת הנגן");
+    private void buildPlayerSettings() {
+        LinearLayout player = addCard(content, "הפעלת נגן המדיה");
+        addCheck(player, "הצגת הנגן", "showPlayer", false);
         addCheck(player, "הצגה רק בתחילת שיר", "showPlayerOnlyAtStart", false);
         addCheck(player, "פרטי אמן", "showDetails", getBool("showDetails", true));
         addCheck(player, "שורת מיקום + זמן", "showProgress", true);
@@ -317,9 +516,34 @@ public class SettingsActivity extends Activity {
         addDiscreteSlider(playerFrameCard, "עיגול פינות",
                 new String[]{"ישר", "עדין", "מעוגל"},
                 new String[]{"0", "10", "20"}, "frameRadius");
+    }
 
-        // Permission cards are presented on the dedicated PermissionsActivity.
+    private FrameLayout makeOverflowButton() {
+        FrameLayout button = new FrameLayout(this);
+        button.setContentDescription("אפשרויות נוספות");
+        button.setClickable(true);
+        button.setFocusable(true);
+        button.setBackground(pillBackground(ACCENT, dp(22)));
+        if (Build.VERSION.SDK_INT >= 21) button.setElevation(dp(2));
+        TextView dots = textView("⋮", 27, Color.rgb(7, 31, 49));
+        dots.setGravity(Gravity.CENTER);
+        dots.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        dots.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        button.addView(dots, new FrameLayout.LayoutParams(-1, -1));
+        return button;
+    }
 
+    private void showOverflowMenu(View anchor) {
+        PopupMenu menu = new PopupMenu(this, anchor);
+        menu.getMenu().add("ניהול הרשאות").setOnMenuItemClickListener(item -> {
+            startActivity(new Intent(this, PermissionsActivity.class));
+            return true;
+        });
+        menu.getMenu().add("מדריך שימוש").setOnMenuItemClickListener(item -> {
+            startActivity(new Intent(this, GuideActivity.class));
+            return true;
+        });
+        menu.show();
     }
 
     private LinearLayout addCard(LinearLayout parent, String title) {
