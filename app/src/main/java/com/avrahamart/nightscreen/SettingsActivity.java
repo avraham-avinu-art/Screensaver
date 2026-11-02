@@ -440,6 +440,15 @@ public class SettingsActivity extends Activity {
         parent.addView(row, new LinearLayout.LayoutParams(-1, dp(54)));
     }
 
+    @Override
+    public void onBackPressed() {
+        if (currentCategory != CATEGORY_DASHBOARD) {
+            buildDashboard();
+        } else {
+            super.onBackPressed();
+        }
+    }
+
     private void showCategory(int category) {
         currentCategory = category;
         if (headerBackButton != null) headerBackButton.setVisibility(View.VISIBLE);
