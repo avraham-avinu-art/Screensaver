@@ -138,8 +138,12 @@ public class SettingsActivity extends Activity {
 
         screenTitle = textView("הגדרות", 27, ON_SURFACE);
         screenTitle.setIncludeFontPadding(false);
-        screenTitle.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-        screenTitle.setLetterSpacing(-0.01f);
+        if (Build.VERSION.SDK_INT >= 28) {
+            screenTitle.setTypeface(Typeface.create("sans-serif", 600, false));
+        } else {
+            screenTitle.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
+        }
+        screenTitle.setLetterSpacing(-0.015f);
         screenTitle.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         screenTitle.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
         screenTitle.setTextDirection(View.TEXT_DIRECTION_RTL);
