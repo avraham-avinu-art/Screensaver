@@ -733,11 +733,21 @@ public class SettingsActivity extends Activity {
         segments.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         segments.setGravity(Gravity.CENTER_VERTICAL);
         final TextView[] options = new TextView[names.length];
+        final View[] selectionChips = new View[names.length];
 
         for (int i = 0; i < names.length; i++) {
             final int index = i;
             FrameLayout segment = new FrameLayout(this);
             segment.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+
+            View selectionChip = new View(this);
+            selectionChip.setBackground(roundOutline(ACCENT, dp(9), ACCENT));
+            selectionChip.setVisibility(i == initial ? View.VISIBLE : View.GONE);
+            FrameLayout.LayoutParams chipParams =
+                    new FrameLayout.LayoutParams(-1, -1);
+            chipParams.setMargins(dp(2), dp(2), dp(2), dp(2));
+            segment.addView(selectionChip, chipParams);
+            selectionChips[i] = selectionChip;
 
             TextView option = textView(names[i], 13,
                     i == initial ? Color.rgb(7, 31, 49) : ON_SURFACE);
@@ -753,14 +763,10 @@ public class SettingsActivity extends Activity {
                 option.setAutoSizeTextTypeUniformWithConfiguration(
                         10, 13, 1, android.util.TypedValue.COMPLEX_UNIT_SP);
             }
-            if (i == initial) {
-                option.setBackground(roundOutline(ACCENT, dp(9), ACCENT));
-            } else {
-                option.setBackgroundColor(Color.TRANSPARENT);
-            }
+            option.setBackgroundColor(Color.TRANSPARENT);
+            option.setSelected(i == initial);
             FrameLayout.LayoutParams optionParams =
                     new FrameLayout.LayoutParams(-1, -1);
-            optionParams.setMargins(dp(2), dp(2), dp(2), dp(2));
             segment.addView(option, optionParams);
             options[i] = option;
 
@@ -782,9 +788,9 @@ public class SettingsActivity extends Activity {
                     boolean selected = j == index;
                     options[j].setTextColor(selected
                             ? Color.rgb(7, 31, 49) : ON_SURFACE);
-                    options[j].setBackground(selected
-                            ? roundOutline(ACCENT, dp(9), ACCENT)
-                            : new ColorDrawable(Color.TRANSPARENT));
+                    options[j].setSelected(selected);
+                    selectionChips[j].setVisibility(
+                            selected ? View.VISIBLE : View.GONE);
                 }
                 if ("screenSaverDuration".equals(key)) updateDeviceCapabilityNotice();
             });
