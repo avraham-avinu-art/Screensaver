@@ -80,7 +80,6 @@ public class SettingsActivity extends Activity {
     private ScrollView settingsScroll;
     private LinearLayout screenHeader;
     private LinearLayout headerTitleBlock;
-    private FrameLayout dashboardTitleIconBadge;
     private View dashboardHeaderDivider;
     private FrameLayout categoryBackButton;
     private View headerBalanceSpacer;
@@ -168,17 +167,6 @@ public class SettingsActivity extends Activity {
         screenHeader.addView(headerBalanceSpacer,
                 new LinearLayout.LayoutParams(dp(40), dp(1)));
         headerBalanceSpacer.setVisibility(View.GONE);
-
-        // The settings symbol is shown only on the main dashboard.
-        dashboardTitleIconBadge = new FrameLayout(this);
-        dashboardTitleIconBadge.setBackground(roundOutline(ICON_SURFACE, dp(15), CARD_OUTLINE));
-        View titleIcon = makeIconGlyph("tune", ACCENT);
-        dashboardTitleIconBadge.addView(titleIcon,
-                new FrameLayout.LayoutParams(dp(28), dp(28), Gravity.CENTER));
-        LinearLayout.LayoutParams titleIconParams =
-                new LinearLayout.LayoutParams(dp(52), dp(52));
-        titleIconParams.leftMargin = dp(14);
-        screenHeader.addView(dashboardTitleIconBadge, titleIconParams);
 
         settingsScroll = new ScrollView(this);
         settingsScroll.setFillViewport(true);
@@ -270,9 +258,8 @@ public class SettingsActivity extends Activity {
         screenTitle.setText("הגדרות");
         screenSubtitle.setText("התאמה אישית של השומר מסך");
 
-        // Dashboard-only title/icon. Category pages use a centered text header.
+        // Dashboard title is text only. Category pages use a centered text header.
         screenHeader.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-        dashboardTitleIconBadge.setVisibility(View.VISIBLE);
         categoryBackButton.setVisibility(View.GONE);
         headerBalanceSpacer.setVisibility(View.GONE);
         dashboardHeaderDivider.setVisibility(View.VISIBLE);
@@ -384,7 +371,6 @@ public class SettingsActivity extends Activity {
     private void showCategory(int category) {
         currentCategory = category;
         screenHeader.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        dashboardTitleIconBadge.setVisibility(View.GONE);
         categoryBackButton.setVisibility(View.VISIBLE);
         headerBalanceSpacer.setVisibility(View.VISIBLE);
         dashboardHeaderDivider.setVisibility(View.GONE);
