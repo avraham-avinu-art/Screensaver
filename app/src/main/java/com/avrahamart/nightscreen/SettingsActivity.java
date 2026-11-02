@@ -368,8 +368,8 @@ public class SettingsActivity extends Activity {
 
         tile.setOnClickListener(v -> showCategory(category));
         LinearLayout.LayoutParams tileParams = dashboardSingleColumn
-                ? new LinearLayout.LayoutParams(-1, dp(126))
-                : new LinearLayout.LayoutParams(0, dp(154), 1f);
+                ? new LinearLayout.LayoutParams(-1, dp(168))
+                : new LinearLayout.LayoutParams(0, dp(168), 1f);
         tileParams.leftMargin = dp(5);
         tileParams.rightMargin = dp(5);
         row.addView(tile, tileParams);
