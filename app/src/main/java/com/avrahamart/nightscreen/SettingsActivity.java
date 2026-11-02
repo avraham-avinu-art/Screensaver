@@ -404,22 +404,22 @@ public class SettingsActivity extends Activity {
         switch (category) {
             case CATEGORY_CLOCK_DATE:
                 screenTitle.setText("שעון ותאריך");
-                screenSubtitle.setText("הצגה והתאמה של השעה והתאריך");
+                screenSubtitle.setText("התאמה אישית של השעה והתאריכים");
                 buildClockDateSettings();
                 break;
             case CATEGORY_ACTIVITY:
                 screenTitle.setText("הפעלה והתנהגות");
-                screenSubtitle.setText("ניהול זמן הפעילות, הנעילה והטעינה");
+                screenSubtitle.setText("הגדרת זמני הפעילות ואפשרויות ההפעלה");
                 buildActivitySettings();
                 break;
             case CATEGORY_APPEARANCE:
                 screenTitle.setText("מראה ועיצוב");
-                screenSubtitle.setText("התאמה אישית של צבעים, גופנים ובהירות");
+                screenSubtitle.setText("התאמת צבעים, גופנים ובהירות המסך");
                 buildAppearanceSettings();
                 break;
             case CATEGORY_PLAYER:
                 screenTitle.setText("נגן מדיה");
-                screenSubtitle.setText("הצגת הנגן והתאמת המראה והמיקום שלו");
+                screenSubtitle.setText("התאמת תצוגת הנגן והמיקום שלו");
                 buildPlayerSettings();
                 break;
             default:
