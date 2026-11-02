@@ -409,6 +409,14 @@ public class SettingsActivity extends Activity {
                 break;
             default:
                 buildDashboard();
+                return;
+        }
+
+        // Every internal category must open at the start, regardless of the last
+        // scroll position used in another category.
+        if (settingsScroll != null) {
+            settingsScroll.scrollTo(0, 0);
+            settingsScroll.post(() -> settingsScroll.scrollTo(0, 0));
         }
     }
 
