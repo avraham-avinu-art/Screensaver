@@ -164,7 +164,7 @@ public class PermissionsActivity extends Activity {
                 "הפעל הרשאת מנהל מכשיר", v -> {
                     if (isAdminActive()) {
                         Toast.makeText(this,
-                                "ייפתח מסך מנהל המכשיר של שומר מסך. במסך זה ניתן לנהל או לבטל את ההרשאה.",
+                                "כדי לבטל את ההרשאה, בחר את שומר מסך במסך ניהול מנהלי המכשיר.",
                                 Toast.LENGTH_LONG).show();
                         openDeviceAdminSettings();
                     } else {
@@ -343,19 +343,24 @@ public class PermissionsActivity extends Activity {
 
     private void openDeviceAdminSettings() {
         try {
-            if (adminComponent == null) {
-                adminComponent = new ComponentName(this, ScreenLockAdminReceiver.class);
+            Intent intent = new Intent("android.settings.DEVICE_ADMIN_SETTINGS");
+            ComponentName target = intent.resolveActivity(getPackageManager());
+            if (target != null) {
+                String className = target.getClassName().toLowerCase(java.util.Locale.ROOT);
+                if (className.contains("deviceadmin")
+                        || className.contains("device_admin")
+                        || className.contains("adminsettings")) {
+                    intent.setComponent(target);
+                    startActivity(intent);
+                    return;
+                }
             }
-            // Public app-specific Device Admin action. Use it both to enable
-            // and to reopen the app's administrator screen when already active.
-            Intent intent = new Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN);
-            intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, adminComponent);
-            intent.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION,
-                    "ההרשאה מאפשרת לשומר מסך לבקש נעילה יזומה בסיום זמן הפעילות.");
-            startActivity(intent);
-        } catch (Throwable ex) {
             Toast.makeText(this,
-                    "לא ניתן לפתוח את מסך מנהל המכשיר של שומר מסך. אפשר לנהל את ההרשאה דרך הגדרות Android > אבטחה > אפליקציות מנהל מכשיר.",
+                    "במכשיר זה Android אינו מספק קיצור דרך ישיר לביטול הרשאת מנהל המכשיר. כדי לבטל אותה, פתח הגדרות > אבטחה > אפליקציות מנהל מכשיר > שומר מסך.",
+                    Toast.LENGTH_LONG).show();
+        } catch (Throwable ignored) {
+            Toast.makeText(this,
+                    "לא ניתן לפתוח ישירות את ניהול מנהלי המכשיר. פתח הגדרות > אבטחה > אפליקציות מנהל מכשיר > שומר מסך.",
                     Toast.LENGTH_LONG).show();
         }
     }
