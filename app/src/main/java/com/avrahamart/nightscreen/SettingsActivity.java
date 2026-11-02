@@ -301,7 +301,6 @@ public class SettingsActivity extends Activity {
                     "media-toggle", CATEGORY_PLAYER);
             content.addView(secondRow, dashboardRowParams());
         }
-        addDashboardNavigation();
     }
 
     private void addDashboardSingleTile(String title, String description,
@@ -369,84 +368,16 @@ public class SettingsActivity extends Activity {
         descriptionParams.topMargin = dp(4);
         tile.addView(descriptionView, descriptionParams);
 
-        TextView arrow = textView("‹", 24, MUTED);
-        arrow.setGravity(Gravity.CENTER);
-        arrow.setIncludeFontPadding(false);
-        LinearLayout.LayoutParams arrowParams = new LinearLayout.LayoutParams(-1, dp(23));
-        arrowParams.topMargin = dp(3);
-        tile.addView(arrow, arrowParams);
-
         tile.setOnClickListener(v -> showCategory(category));
         float fontScale = getResources().getConfiguration().fontScale;
-        int tileHeight = dp(168 + Math.max(0, Math.round((fontScale - 1f) * 50f)));
+        int tileHeight = dp((dashboardSingleColumn ? 126 : 142)
+                + Math.max(0, Math.round((fontScale - 1f) * 24f)));
         LinearLayout.LayoutParams tileParams = dashboardSingleColumn
                 ? new LinearLayout.LayoutParams(-1, tileHeight)
                 : new LinearLayout.LayoutParams(0, tileHeight, 1f);
         tileParams.leftMargin = dp(5);
         tileParams.rightMargin = dp(5);
         row.addView(tile, tileParams);
-    }
-
-    private void addDashboardNavigation() {
-        LinearLayout navigation = new LinearLayout(this);
-        navigation.setOrientation(LinearLayout.VERTICAL);
-        navigation.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        navigation.setBackground(roundOutline(CARD_SURFACE, dp(17), CARD_OUTLINE));
-        addDashboardNavigationRow(navigation, "ניהול הרשאות",
-                "shield-alert", () ->
-                        startActivity(new Intent(this, PermissionsActivity.class)));
-        View divider = new View(this);
-        divider.setBackgroundColor(CARD_OUTLINE);
-        LinearLayout.LayoutParams dividerParams =
-                new LinearLayout.LayoutParams(-1, dp(1));
-        dividerParams.setMargins(dp(12), 0, dp(12), 0);
-        navigation.addView(divider, dividerParams);
-        addDashboardNavigationRow(navigation, "מדריך שימוש",
-                "book-open", () ->
-                        startActivity(new Intent(this, GuideActivity.class)));
-        LinearLayout.LayoutParams navParams =
-                new LinearLayout.LayoutParams(-1, -2);
-        navParams.topMargin = dp(2);
-        navParams.bottomMargin = dp(4);
-        content.addView(navigation, navParams);
-    }
-
-    private void addDashboardNavigationRow(LinearLayout parent, String title,
-                                           String iconName, Runnable action) {
-        LinearLayout row = new LinearLayout(this);
-        row.setOrientation(LinearLayout.HORIZONTAL);
-        row.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        row.setGravity(Gravity.CENTER_VERTICAL);
-        row.setPadding(dp(12), dp(2), dp(12), dp(2));
-        row.setMinimumHeight(dp(53));
-        row.setClickable(true);
-        row.setFocusable(true);
-
-        FrameLayout icon = makeIconBadge(iconName, dp(30));
-        row.addView(icon, new LinearLayout.LayoutParams(dp(30), dp(30)));
-
-        TextView label = textView(title, 16, ON_SURFACE);
-        label.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-        label.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        label.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
-        LinearLayout.LayoutParams labelParams =
-                new LinearLayout.LayoutParams(0, -1, 1f);
-        labelParams.rightMargin = dp(12);
-        row.addView(label, labelParams);
-
-        View arrow = makeIconGlyph("chevron", MUTED);
-        row.addView(arrow, new LinearLayout.LayoutParams(dp(18), dp(18)));
-        row.setOnClickListener(v -> action.run());
-        parent.addView(row, new LinearLayout.LayoutParams(-1, dp(54)));
-    }
-
-    @Override
-    public void onBackPressed() {
-        if (currentCategory != CATEGORY_DASHBOARD) {
-            buildDashboard();
-        } else {
-            super.onBackPressed();
-        }
     }
 
     private void showCategory(int category) {
