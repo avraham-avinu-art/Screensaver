@@ -693,85 +693,13 @@ public class SettingsActivity extends Activity {
         card.addView(row, rowParams);
     }
 
+    // Use one consistent segmented selector for all discrete settings.
+    // Existing values and ranges are intentionally preserved.
     private void addDiscreteSlider(LinearLayout card, String label,
                                    String[] names, String[] values, String key) {
-        if (names == null || values == null || names.length == 0
-                || names.length != values.length) return;
-
-        LinearLayout block = new LinearLayout(this);
-        block.setOrientation(LinearLayout.VERTICAL);
-        block.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        block.setPadding(dp(6), dp(2), dp(6), dp(1));
-
-        final int initial = selectedIndex(key, values);
-        TextView chosenValue = textView(names[initial], 16, ACCENT);
-        chosenValue.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
-        chosenValue.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
-        chosenValue.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
-        chosenValue.setSingleLine(false);
-
-        LinearLayout headingRow = new LinearLayout(this);
-        headingRow.setOrientation(LinearLayout.HORIZONTAL);
-        headingRow.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-        headingRow.setGravity(Gravity.CENTER_VERTICAL);
-        LinearLayout.LayoutParams valueParams =
-                new LinearLayout.LayoutParams(-2, dp(30));
-        // Track starts after 8dp outer margin and 12dp SeekBar inner padding.
-        valueParams.leftMargin = dp(20);
-        valueParams.rightMargin = dp(8);
-        headingRow.addView(chosenValue, valueParams);
-
-        TextView settingLabel = textView(label, 16, ON_SURFACE);
-        settingLabel.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-        settingLabel.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        settingLabel.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
-        settingLabel.setTextDirection(View.TEXT_DIRECTION_RTL);
-        settingLabel.setPadding(0, 0, dp(3), 0);
-        headingRow.addView(settingLabel, new LinearLayout.LayoutParams(0, dp(30), 1f));
-
-        FrameLayout settingIcon = makeIconBadge(iconForSetting(key), dp(30));
-        LinearLayout.LayoutParams iconParams =
-                new LinearLayout.LayoutParams(dp(30), dp(30));
-        iconParams.leftMargin = dp(9);
-        headingRow.addView(settingIcon, iconParams);
-
-        block.addView(headingRow, new LinearLayout.LayoutParams(-1, dp(32)));
-
-        SeekBar slider = new SeekBar(this);
-        slider.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        slider.setMax(Math.max(0, names.length - 1));
-        slider.setProgress(initial);
-        slider.setContentDescription(label);
-        slider.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
-        slider.setPadding(dp(12), 0, dp(12), 0);
-        if (Build.VERSION.SDK_INT >= 21) {
-            slider.setThumbTintList(ColorStateList.valueOf(ACCENT));
-            slider.setProgressTintList(ColorStateList.valueOf(ACCENT));
-            slider.setProgressBackgroundTintList(ColorStateList.valueOf(TRACK));
-        }
-        LinearLayout.LayoutParams sliderParams =
-                new LinearLayout.LayoutParams(-1, dp(32));
-        sliderParams.topMargin = dp(1);
-        sliderParams.leftMargin = dp(8);
-        sliderParams.rightMargin = dp(7);
-        block.addView(slider, sliderParams);
-
-        slider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override public void onProgressChanged(SeekBar seekBar, int progress,
-                                                    boolean fromUser) {
-                int safeProgress = Math.max(0, Math.min(progress, names.length - 1));
-                chosenValue.setText(names[safeProgress]);
-                if (fromUser) persistOption(key, values[safeProgress]);
-            }
-            @Override public void onStartTrackingTouch(SeekBar seekBar) {}
-            @Override public void onStopTrackingTouch(SeekBar seekBar) {}
-        });
-
-        LinearLayout.LayoutParams blockParams =
-                new LinearLayout.LayoutParams(-1, -2);
-        blockParams.bottomMargin = dp(2);
-        card.addView(block, blockParams);
+        addSegmentedChoices(card, label, names, values, key);
     }
+
     private void addSegmentedChoices(LinearLayout card, String label,
                                    String[] names, String[] values, String key) {
         if (names == null || values == null || names.length == 0
@@ -780,7 +708,7 @@ public class SettingsActivity extends Activity {
         LinearLayout block = new LinearLayout(this);
         block.setOrientation(LinearLayout.VERTICAL);
         block.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        block.setPadding(dp(6), dp(2), dp(6), dp(5));
+        block.setPadding(dp(4), dp(2), dp(4), dp(5));
 
         LinearLayout headingRow = new LinearLayout(this);
         headingRow.setOrientation(LinearLayout.HORIZONTAL);
@@ -824,7 +752,9 @@ public class SettingsActivity extends Activity {
             selectionChip.setVisibility(i == initial ? View.VISIBLE : View.GONE);
             FrameLayout.LayoutParams chipParams =
                     new FrameLayout.LayoutParams(-1, -1);
-            chipParams.setMargins(dp(2), dp(2), dp(2), dp(2));
+            // Fill the segment horizontally: the selected tile reaches both
+            // outer sides and meets the separator between adjacent options.
+            chipParams.setMargins(0, dp(1), 0, dp(1));
             segment.addView(selectionChip, chipParams);
             selectionChips[i] = selectionChip;
 
@@ -853,7 +783,7 @@ public class SettingsActivity extends Activity {
                 View divider = new View(this);
                 divider.setBackgroundColor(Color.rgb(104, 132, 160));
                 FrameLayout.LayoutParams dividerParams =
-                        new FrameLayout.LayoutParams(dp(1), dp(19),
+                        new FrameLayout.LayoutParams(dp(1), dp(23),
                                 Gravity.RIGHT | Gravity.CENTER_VERTICAL);
                 segment.addView(divider, dividerParams);
             }
@@ -880,8 +810,9 @@ public class SettingsActivity extends Activity {
         LinearLayout.LayoutParams railParams =
                 new LinearLayout.LayoutParams(-1, dp(46));
         railParams.topMargin = dp(2);
-        railParams.leftMargin = dp(7);
-        railParams.rightMargin = dp(7);
+        // Extend the selector a little on both sides without changing its row height.
+        railParams.leftMargin = dp(4);
+        railParams.rightMargin = dp(4);
         block.addView(rail, railParams);
 
         LinearLayout.LayoutParams blockParams =
