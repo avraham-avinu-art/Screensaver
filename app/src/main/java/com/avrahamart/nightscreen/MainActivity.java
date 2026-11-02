@@ -92,6 +92,7 @@ public class MainActivity extends Activity {
     private boolean screenTimeoutObservationPending = false;
     private long screenHoldReleasedAtElapsedRealtime = 0L;
     private long screenTimeoutAtHoldReleaseMs = -1L;
+    private long lastUserTouchElapsedRealtime = 0L;
     private ContentObserver screenOffTimeoutObserver;
     private boolean screenOffTimeoutObserverRegistered = false;
     private boolean openedByCharger = false;
@@ -1793,6 +1794,7 @@ public class MainActivity extends Activity {
 
     private void exitApplicationAtSelectedTime() {
         if (isFinishing()) return;
+        recordMissingScreenTimeoutAtActivityEnd();
         handler.removeCallbacks(autoOffRunnable);
         handler.removeCallbacks(screenOnReleaseRunnable);
 
@@ -1911,8 +1913,31 @@ public class MainActivity extends Activity {
         if (observedProfile != 0) {
             getSharedPreferences("settings", MODE_PRIVATE).edit()
                     .putInt(screenTimeoutBehaviorPreferenceKey(), observedProfile)
+                    .putBoolean("screenOffTimeoutObservationKnown", true)
+                    .putBoolean("screenOffTimeoutObserved", true)
                     .apply();
         }
+    }
+
+    private void recordMissingScreenTimeoutAtActivityEnd() {
+        if (!screenTimeoutObservationPending || screenTimeoutAtHoldReleaseMs <= 0L) return;
+        long elapsed = Math.max(0L,
+                SystemClock.elapsedRealtime() - screenHoldReleasedAtElapsedRealtime);
+        // Only record a failed timeout observation when the configured timeout
+        // should already have elapsed. A longer configured timeout is not a failure.
+        if (elapsed < screenTimeoutAtHoldReleaseMs * 0.80d) return;
+        // A touch after release resets Android's inactivity timer, so this cycle
+        // cannot be used as evidence that automatic screen-off is unavailable.
+        if (lastUserTouchElapsedRealtime > screenHoldReleasedAtElapsedRealtime) return;
+        if (isScreenInteractive()) {
+            getSharedPreferences("settings", MODE_PRIVATE).edit()
+                    .putBoolean("screenOffTimeoutObservationKnown", true)
+                    .putBoolean("screenOffTimeoutObserved", false)
+                    .apply();
+        }
+        screenTimeoutObservationPending = false;
+        screenHoldReleasedAtElapsedRealtime = 0L;
+        screenTimeoutAtHoldReleaseMs = -1L;
     }
 
     private boolean isScreenLockAdminActive() {
@@ -2093,6 +2118,9 @@ public class MainActivity extends Activity {
         if (bottomSwipeDismissAnimating) return true;
 
         int action = event.getActionMasked();
+        if (action == android.view.MotionEvent.ACTION_DOWN) {
+            lastUserTouchElapsedRealtime = SystemClock.elapsedRealtime();
+        }
         boolean exitBySwipe = false;
         boolean consumeForSwipe = bottomSwipeDragging;
 
