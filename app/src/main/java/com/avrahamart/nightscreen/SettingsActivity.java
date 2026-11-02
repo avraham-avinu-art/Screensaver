@@ -1190,10 +1190,16 @@ public class SettingsActivity extends Activity {
             } catch (Throwable ignored) {
             }
             long requestedMs = "1".equals(duration) ? 60_000L : 300_000L;
-            if (timeoutMs <= 0L) {
-                notices.add("לא ניתן לזהות את זמן כיבוי המסך שהוגדר במכשיר. בסיום זמן הפעילות השומר ייסגר, אך כיבוי התצוגה נשאר באחריות Android.");
+            boolean timeoutObservedKnown =
+                    prefs.getBoolean("screenOffTimeoutObservationKnown", false);
+            boolean timeoutObserved =
+                    prefs.getBoolean("screenOffTimeoutObserved", false);
+            if (timeoutObservedKnown && !timeoutObserved) {
+                notices.add("בבדיקה בפועל לא זוהה כיבוי של התצוגה לאחר שחרור מניעת הכיבוי. בסיום זמן הפעילות השומר ייסגר, אך ייתכן שהמסך עצמו יישאר דולק בהתאם למערכת וליצרן.");
+            } else if (timeoutMs <= 0L) {
+                notices.add("לא ניתן לקרוא את זמן כיבוי המסך שהוגדר במכשיר. בסיום זמן הפעילות השומר ייסגר, אך כיבוי התצוגה נשאר באחריות Android.");
             } else if (timeoutMs >= Integer.MAX_VALUE - 1000L) {
-                notices.add("לא זוהה במכשיר כיבוי מסך אוטומטי. בבחירת דקה אחת או חמש דקות השומר ייסגר בתום הזמן, אך המסך עצמו עשוי להישאר דולק.");
+                notices.add("בהגדרות המכשיר לא מוגדר כיבוי מסך אוטומטי. בבחירת דקה אחת או חמש דקות השומר ייסגר בתום הזמן, אך המסך עצמו עשוי להישאר דולק.");
             } else if (timeoutMs > requestedMs) {
                 notices.add("זמן כיבוי המסך שמוגדר במכשיר ארוך מזמן הפעילות שבחרת. בסיום הזמן השומר ייסגר, אך המסך עשוי להישאר דולק עד ש־Android יכבה אותו.");
             }
