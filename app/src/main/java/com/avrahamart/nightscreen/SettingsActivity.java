@@ -167,7 +167,17 @@ public class SettingsActivity extends Activity {
         content.setOrientation(LinearLayout.VERTICAL);
         content.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         content.setTextDirection(View.TEXT_DIRECTION_RTL);
-        scrollContent.addView(content, new LinearLayout.LayoutParams(-1, -2));
+        int availableContentWidthDp = Math.round(
+                getResources().getDisplayMetrics().widthPixels
+                        / getResources().getDisplayMetrics().density);
+        LinearLayout.LayoutParams contentParams;
+        if (availableContentWidthDp >= 740) {
+            contentParams = new LinearLayout.LayoutParams(dp(720), -2);
+            contentParams.gravity = Gravity.CENTER_HORIZONTAL;
+        } else {
+            contentParams = new LinearLayout.LayoutParams(-1, -2);
+        }
+        scrollContent.addView(content, contentParams);
         scroll.addView(scrollContent, new ScrollView.LayoutParams(-1, -2));
         root.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1f));
 
@@ -367,9 +377,11 @@ public class SettingsActivity extends Activity {
         tile.addView(arrow, arrowParams);
 
         tile.setOnClickListener(v -> showCategory(category));
+        float fontScale = getResources().getConfiguration().fontScale;
+        int tileHeight = dp(168 + Math.max(0, Math.round((fontScale - 1f) * 50f)));
         LinearLayout.LayoutParams tileParams = dashboardSingleColumn
-                ? new LinearLayout.LayoutParams(-1, dp(168))
-                : new LinearLayout.LayoutParams(0, dp(168), 1f);
+                ? new LinearLayout.LayoutParams(-1, tileHeight)
+                : new LinearLayout.LayoutParams(0, tileHeight, 1f);
         tileParams.leftMargin = dp(5);
         tileParams.rightMargin = dp(5);
         row.addView(tile, tileParams);
