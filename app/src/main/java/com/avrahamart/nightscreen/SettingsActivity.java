@@ -78,11 +78,10 @@ public class SettingsActivity extends Activity {
     private TextView screenTitle;
     private TextView screenSubtitle;
     private ScrollView settingsScroll;
-    private LinearLayout screenHeader;
+    private FrameLayout screenHeader;
     private LinearLayout headerTitleBlock;
     private View dashboardHeaderDivider;
     private FrameLayout categoryBackButton;
-    private View headerBalanceSpacer;
     private int currentCategory = 0;
     private static final int CATEGORY_DASHBOARD = 0;
     private static final int CATEGORY_CLOCK_DATE = 1;
@@ -119,17 +118,16 @@ public class SettingsActivity extends Activity {
             });
         }
 
-        screenHeader = new LinearLayout(this);
-        screenHeader.setOrientation(LinearLayout.HORIZONTAL);
-        // LTR order keeps category navigation at the physical left and the dashboard mark at the right.
-        screenHeader.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-        screenHeader.setGravity(Gravity.CENTER_VERTICAL);
+        // FrameLayout lets the title stay centered on the screen while the back
+        // button is positioned independently above the header content.
+        screenHeader = new FrameLayout(this);
+        screenHeader.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         screenHeader.setPadding(dp(2), dp(8), dp(2), dp(14));
 
         categoryBackButton = makeExitArrowButton("חזרה למסך ההגדרות");
-        LinearLayout.LayoutParams categoryBackParams =
-                new LinearLayout.LayoutParams(dp(36), dp(36));
-        categoryBackParams.rightMargin = dp(4);
+        FrameLayout.LayoutParams categoryBackParams =
+                new FrameLayout.LayoutParams(dp(42), dp(42),
+                        Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         screenHeader.addView(categoryBackButton, categoryBackParams);
         categoryBackButton.setVisibility(View.GONE);
         categoryBackButton.setOnClickListener(v -> buildDashboard());
@@ -137,7 +135,7 @@ public class SettingsActivity extends Activity {
         headerTitleBlock = new LinearLayout(this);
         headerTitleBlock.setOrientation(LinearLayout.VERTICAL);
         headerTitleBlock.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        headerTitleBlock.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        headerTitleBlock.setGravity(Gravity.CENTER);
         headerTitleBlock.setPadding(0, 0, 0, 0);
 
         screenTitle = textView("הגדרות", 27, ON_SURFACE);
@@ -160,13 +158,9 @@ public class SettingsActivity extends Activity {
         headerSubtitleParams.topMargin = dp(3);
         headerTitleBlock.addView(screenSubtitle, headerSubtitleParams);
 
-        screenHeader.addView(headerTitleBlock, new LinearLayout.LayoutParams(0, -2, 1f));
-
-        // Balance the back control so the category title remains centered in the full screen header.
-        headerBalanceSpacer = new View(this);
-        screenHeader.addView(headerBalanceSpacer,
-                new LinearLayout.LayoutParams(dp(40), dp(1)));
-        headerBalanceSpacer.setVisibility(View.GONE);
+        FrameLayout.LayoutParams titleBlockParams =
+                new FrameLayout.LayoutParams(-1, -2, Gravity.CENTER);
+        screenHeader.addView(headerTitleBlock, titleBlockParams);
 
         settingsScroll = new ScrollView(this);
         settingsScroll.setFillViewport(true);
@@ -214,7 +208,7 @@ public class SettingsActivity extends Activity {
         button.setBackgroundColor(Color.TRANSPARENT);
         View glyph = makeIconGlyph("back-navigation", ACCENT);
         button.addView(glyph,
-                new FrameLayout.LayoutParams(dp(19), dp(19), Gravity.CENTER));
+                new FrameLayout.LayoutParams(dp(27), dp(27), Gravity.CENTER));
         return button;
     }
 
@@ -261,7 +255,6 @@ public class SettingsActivity extends Activity {
         // Dashboard title is text only. Category pages use a centered text header.
         screenHeader.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         categoryBackButton.setVisibility(View.GONE);
-        headerBalanceSpacer.setVisibility(View.GONE);
         dashboardHeaderDivider.setVisibility(View.VISIBLE);
         headerTitleBlock.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         screenTitle.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
@@ -372,7 +365,6 @@ public class SettingsActivity extends Activity {
         currentCategory = category;
         screenHeader.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         categoryBackButton.setVisibility(View.VISIBLE);
-        headerBalanceSpacer.setVisibility(View.VISIBLE);
         dashboardHeaderDivider.setVisibility(View.GONE);
         headerTitleBlock.setGravity(Gravity.CENTER);
         screenTitle.setGravity(Gravity.CENTER);
