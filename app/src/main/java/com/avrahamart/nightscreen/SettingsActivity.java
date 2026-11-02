@@ -80,9 +80,9 @@ public class SettingsActivity extends Activity {
     private ScrollView settingsScroll;
     private LinearLayout screenHeader;
     private LinearLayout headerTitleBlock;
-    private FrameLayout dashboardTitleIconBadge;
     private View dashboardHeaderDivider;
     private FrameLayout categoryBackButton;
+    private View headerBalanceSpacer;
     private int currentCategory = 0;
     private static final int CATEGORY_DASHBOARD = 0;
     private static final int CATEGORY_CLOCK_DATE = 1;
@@ -162,16 +162,11 @@ public class SettingsActivity extends Activity {
 
         screenHeader.addView(headerTitleBlock, new LinearLayout.LayoutParams(0, -2, 1f));
 
-        // The settings symbol is shown only on the main dashboard.
-        dashboardTitleIconBadge = new FrameLayout(this);
-        dashboardTitleIconBadge.setBackground(roundOutline(ICON_SURFACE, dp(15), CARD_OUTLINE));
-        View titleIcon = makeIconGlyph("tune", ACCENT);
-        dashboardTitleIconBadge.addView(titleIcon,
-                new FrameLayout.LayoutParams(dp(28), dp(28), Gravity.CENTER));
-        LinearLayout.LayoutParams titleIconParams =
-                new LinearLayout.LayoutParams(dp(52), dp(52));
-        titleIconParams.leftMargin = dp(14);
-        screenHeader.addView(dashboardTitleIconBadge, titleIconParams);
+        // Balance the back control so the category title remains centered in the full screen header.
+        headerBalanceSpacer = new View(this);
+        screenHeader.addView(headerBalanceSpacer,
+                new LinearLayout.LayoutParams(dp(40), dp(1)));
+        headerBalanceSpacer.setVisibility(View.GONE);
 
         settingsScroll = new ScrollView(this);
         settingsScroll.setFillViewport(true);
@@ -217,7 +212,7 @@ public class SettingsActivity extends Activity {
         button.setFocusable(true);
         button.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         button.setBackgroundColor(Color.TRANSPARENT);
-        View glyph = makeIconGlyph("exit-right", ACCENT);
+        View glyph = makeIconGlyph("back-navigation", ACCENT);
         button.addView(glyph,
                 new FrameLayout.LayoutParams(dp(19), dp(19), Gravity.CENTER));
         return button;
@@ -263,10 +258,10 @@ public class SettingsActivity extends Activity {
         screenTitle.setText("הגדרות");
         screenSubtitle.setText("התאמה אישית של השומר מסך");
 
-        // Dashboard-only title/icon. Category pages use a centered text header.
+        // Dashboard title is text only. Category pages use a centered text header.
         screenHeader.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-        dashboardTitleIconBadge.setVisibility(View.VISIBLE);
         categoryBackButton.setVisibility(View.GONE);
+        headerBalanceSpacer.setVisibility(View.GONE);
         dashboardHeaderDivider.setVisibility(View.VISIBLE);
         headerTitleBlock.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         screenTitle.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
@@ -369,14 +364,6 @@ public class SettingsActivity extends Activity {
 
         button.addView(copy, new LinearLayout.LayoutParams(0, -2, 1f));
 
-        if (description == null || description.isEmpty()) {
-            View arrow = makeIconGlyph("chevron", MUTED);
-            LinearLayout.LayoutParams arrowParams =
-                    new LinearLayout.LayoutParams(dp(18), dp(18));
-            arrowParams.rightMargin = dp(8);
-            button.addView(arrow, arrowParams);
-        }
-
         button.setOnClickListener(v -> action.run());
         content.addView(button, dashboardButtonParams());
     }
@@ -384,8 +371,8 @@ public class SettingsActivity extends Activity {
     private void showCategory(int category) {
         currentCategory = category;
         screenHeader.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        dashboardTitleIconBadge.setVisibility(View.GONE);
         categoryBackButton.setVisibility(View.VISIBLE);
+        headerBalanceSpacer.setVisibility(View.VISIBLE);
         dashboardHeaderDivider.setVisibility(View.GONE);
         headerTitleBlock.setGravity(Gravity.CENTER);
         screenTitle.setGravity(Gravity.CENTER);
@@ -422,6 +409,14 @@ public class SettingsActivity extends Activity {
                 break;
             default:
                 buildDashboard();
+                return;
+        }
+
+        // Every internal category must open at the start, regardless of the last
+        // scroll position used in another category.
+        if (settingsScroll != null) {
+            settingsScroll.scrollTo(0, 0);
+            settingsScroll.post(() -> settingsScroll.scrollTo(0, 0));
         }
     }
 
@@ -907,7 +902,7 @@ public class SettingsActivity extends Activity {
         LinearLayout block = new LinearLayout(this);
         block.setOrientation(LinearLayout.VERTICAL);
         block.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        block.setPadding(0, 0, 0, dp(2));
+        block.setPadding(0, 0, 0, 0);
 
         LinearLayout headingRow = new LinearLayout(this);
         headingRow.setOrientation(LinearLayout.HORIZONTAL);
@@ -991,21 +986,25 @@ public class SettingsActivity extends Activity {
                 }
                 if ("screenSaverDuration".equals(key)) updateDeviceCapabilityNotice();
             });
-            segments.addView(segment, new LinearLayout.LayoutParams(0, dp(36), 1f));
+            // Give each option a share of the rail proportional to its measured label width.
+            // This keeps short labels compact and gives longer Hebrew labels the room they need.
+            float optionWidthWeight = Math.max((float) dp(36),
+                    option.getPaint().measureText(names[i]) + dp(12));
+            segments.addView(segment,
+                    new LinearLayout.LayoutParams(0, dp(36), optionWidthWeight));
         }
 
         rail.addView(segments, new FrameLayout.LayoutParams(-1, -1));
         LinearLayout.LayoutParams railParams =
                 new LinearLayout.LayoutParams(-1, dp(38));
-        railParams.topMargin = dp(1);
-        // Use the full card content width to prevent option labels from clipping.
-        railParams.leftMargin = -dp(6);
-        railParams.rightMargin = -dp(6);
+        railParams.topMargin = dp(8);
+        railParams.bottomMargin = dp(8);
+        // Stay within the card's padded content bounds so the rail cannot be clipped at either side.
         block.addView(rail, railParams);
 
         LinearLayout.LayoutParams blockParams =
                 new LinearLayout.LayoutParams(-1, -2);
-        blockParams.bottomMargin = dp(1);
+        blockParams.bottomMargin = dp(3);
         card.addView(block, blockParams);
     }
 
