@@ -238,7 +238,7 @@ public class SettingsActivity extends Activity {
         addCheck(display, "תאריך לועזי", "showGregorian", true);
         addCheck(display, "הצגת הנגן", "showPlayer", false);
         LinearLayout activityTimes = addCard(content, "הגדרת זמני הפעילות");
-        addDiscreteSlider(activityTimes, "זמן פעילות",
+        addSegmentedChoices(activityTimes, "זמן פעילות",
                 new String[]{"לפי המכשיר", "דקה אחת", "חמש דקות", "ללא כיבוי"},
                 new String[]{"device", "1", "5", "0"}, "screenSaverDuration");
         addCheck(activityTimes, "מניעת נעילה בזמן פעילות",
@@ -287,7 +287,7 @@ public class SettingsActivity extends Activity {
         addDiscreteSlider(clockDateCard, "עובי הגופן",
                 new String[]{"דק", "רגיל", "בינוני", "מודגש"},
                 new String[]{"-1", "0", "1", "2"}, "fontWeight");
-        addDiscreteSlider(clockDateCard, "מיקום",
+        addSegmentedChoices(clockDateCard, "מיקום",
                 new String[]{"בראש המסך", "ברבע העליון", "במרכז המסך"},
                 new String[]{"top", "upper", "middle"}, "clockDatePosition");
 
@@ -298,7 +298,7 @@ public class SettingsActivity extends Activity {
         addDiscreteSlider(player, "גודל הנגן",
                 new String[]{"קטן", "בינוני", "גדול", "גדול מאוד"},
                 new String[]{"14", "17", "20", "23"}, "playerSize");
-        addDiscreteSlider(player, "מיקום הנגן",
+        addSegmentedChoices(player, "מיקום הנגן",
                 new String[]{"ברבע התחתון", "בתחתית המסך"},
                 new String[]{"lower", "bottom"}, "playerPosition");
 
@@ -694,6 +694,85 @@ public class SettingsActivity extends Activity {
     }
 
     private void addDiscreteSlider(LinearLayout card, String label,
+                                   String[] names, String[] values, String key) {
+        if (names == null || values == null || names.length == 0
+                || names.length != values.length) return;
+
+        LinearLayout block = new LinearLayout(this);
+        block.setOrientation(LinearLayout.VERTICAL);
+        block.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        block.setPadding(dp(6), dp(2), dp(6), dp(1));
+
+        final int initial = selectedIndex(key, values);
+        TextView chosenValue = textView(names[initial], 16, ACCENT);
+        chosenValue.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
+        chosenValue.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
+        chosenValue.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
+        chosenValue.setSingleLine(false);
+
+        LinearLayout headingRow = new LinearLayout(this);
+        headingRow.setOrientation(LinearLayout.HORIZONTAL);
+        headingRow.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+        headingRow.setGravity(Gravity.CENTER_VERTICAL);
+        LinearLayout.LayoutParams valueParams =
+                new LinearLayout.LayoutParams(-2, dp(30));
+        // Track starts after 8dp outer margin and 12dp SeekBar inner padding.
+        valueParams.leftMargin = dp(20);
+        valueParams.rightMargin = dp(8);
+        headingRow.addView(chosenValue, valueParams);
+
+        TextView settingLabel = textView(label, 16, ON_SURFACE);
+        settingLabel.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        settingLabel.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        settingLabel.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
+        settingLabel.setTextDirection(View.TEXT_DIRECTION_RTL);
+        settingLabel.setPadding(0, 0, dp(3), 0);
+        headingRow.addView(settingLabel, new LinearLayout.LayoutParams(0, dp(30), 1f));
+
+        FrameLayout settingIcon = makeIconBadge(iconForSetting(key), dp(30));
+        LinearLayout.LayoutParams iconParams =
+                new LinearLayout.LayoutParams(dp(30), dp(30));
+        iconParams.leftMargin = dp(9);
+        headingRow.addView(settingIcon, iconParams);
+
+        block.addView(headingRow, new LinearLayout.LayoutParams(-1, dp(32)));
+
+        SeekBar slider = new SeekBar(this);
+        slider.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        slider.setMax(Math.max(0, names.length - 1));
+        slider.setProgress(initial);
+        slider.setContentDescription(label);
+        slider.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
+        slider.setPadding(dp(12), 0, dp(12), 0);
+        if (Build.VERSION.SDK_INT >= 21) {
+            slider.setThumbTintList(ColorStateList.valueOf(ACCENT));
+            slider.setProgressTintList(ColorStateList.valueOf(ACCENT));
+            slider.setProgressBackgroundTintList(ColorStateList.valueOf(TRACK));
+        }
+        LinearLayout.LayoutParams sliderParams =
+                new LinearLayout.LayoutParams(-1, dp(32));
+        sliderParams.topMargin = dp(1);
+        sliderParams.leftMargin = dp(8);
+        sliderParams.rightMargin = dp(7);
+        block.addView(slider, sliderParams);
+
+        slider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override public void onProgressChanged(SeekBar seekBar, int progress,
+                                                    boolean fromUser) {
+                int safeProgress = Math.max(0, Math.min(progress, names.length - 1));
+                chosenValue.setText(names[safeProgress]);
+                if (fromUser) persistOption(key, values[safeProgress]);
+            }
+            @Override public void onStartTrackingTouch(SeekBar seekBar) {}
+            @Override public void onStopTrackingTouch(SeekBar seekBar) {}
+        });
+
+        LinearLayout.LayoutParams blockParams =
+                new LinearLayout.LayoutParams(-1, -2);
+        blockParams.bottomMargin = dp(2);
+        card.addView(block, blockParams);
+    }
+    private void addSegmentedChoices(LinearLayout card, String label,
                                    String[] names, String[] values, String key) {
         if (names == null || values == null || names.length == 0
                 || names.length != values.length) return;
