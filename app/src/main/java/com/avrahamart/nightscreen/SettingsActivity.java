@@ -277,6 +277,7 @@ public class SettingsActivity extends Activity {
         content.removeAllViews();
         screenTitle.setText("הגדרות");
         screenSubtitle.setText("התאמה אישית של השומר מסך");
+        screenSubtitle.setVisibility(View.VISIBLE);
 
         if (dashboardSingleColumn) {
             addDashboardSingleTile("שעון ותאריך", "תצוגת השעה והתאריך והתאמתם",
@@ -383,6 +384,9 @@ public class SettingsActivity extends Activity {
     private void showCategory(int category) {
         currentCategory = category;
         if (headerBackButton != null) headerBackButton.setVisibility(View.VISIBLE);
+        // The category screens use the category title alone; the dashboard's
+        // agreed subtitle belongs only to the top-level settings screen.
+        screenSubtitle.setVisibility(View.GONE);
         content.removeAllViews();
         clockDateCard = null;
         playerFrameCard = null;
@@ -391,22 +395,18 @@ public class SettingsActivity extends Activity {
         switch (category) {
             case CATEGORY_CLOCK_DATE:
                 screenTitle.setText("שעון ותאריך");
-                screenSubtitle.setText("הצגה והתאמה של השעה והתאריך");
                 buildClockDateSettings();
                 break;
             case CATEGORY_ACTIVITY:
                 screenTitle.setText("הפעלה והתנהגות");
-                screenSubtitle.setText("ניהול זמן הפעילות, הנעילה והטעינה");
                 buildActivitySettings();
                 break;
             case CATEGORY_APPEARANCE:
                 screenTitle.setText("מראה ועיצוב");
-                screenSubtitle.setText("התאמה אישית של צבעים, גופנים ובהירות");
                 buildAppearanceSettings();
                 break;
             case CATEGORY_PLAYER:
                 screenTitle.setText("נגן מדיה");
-                screenSubtitle.setText("הצגת הנגן והתאמת המראה והמיקום שלו");
                 buildPlayerSettings();
                 break;
             default:
