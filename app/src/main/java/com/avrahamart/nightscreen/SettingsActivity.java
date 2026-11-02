@@ -127,20 +127,21 @@ public class SettingsActivity extends Activity {
         titleBlock.setGravity(Gravity.CENTER);
         titleBlock.setPadding(0, 0, 0, 0);
 
-        screenTitle = textView("הגדרות", 28, ON_SURFACE);
+        screenTitle = textView("הגדרות", 27, ON_SURFACE);
         screenTitle.setIncludeFontPadding(false);
-        screenTitle.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        screenTitle.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
+        screenTitle.setLetterSpacing(-0.015f);
         screenTitle.setGravity(Gravity.CENTER);
         screenTitle.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         screenTitle.setTextDirection(View.TEXT_DIRECTION_RTL);
         titleBlock.addView(screenTitle, new LinearLayout.LayoutParams(-1, -2));
 
-        screenSubtitle = textView("התאמה אישית של השומר מסך", 18, MUTED);
+        screenSubtitle = textView("התאמה אישית של השומר מסך", 14, MUTED);
         screenSubtitle.setIncludeFontPadding(false);
         screenSubtitle.setGravity(Gravity.CENTER);
         screenSubtitle.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         screenSubtitle.setTextDirection(View.TEXT_DIRECTION_RTL);
-        screenSubtitle.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
+        screenSubtitle.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
         titleBlock.addView(screenSubtitle, new LinearLayout.LayoutParams(-1, -2));
 
         // Keep the title and subtitle centered and unobstructed by utility buttons.
