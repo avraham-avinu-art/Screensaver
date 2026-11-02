@@ -304,7 +304,11 @@ public class SettingsActivity extends Activity {
         tile.setFocusable(true);
         tile.setContentDescription(title + ". " + description);
 
-        FrameLayout iconBadge = makeIconBadge(iconName, dp(48));
+        FrameLayout iconBadge = new FrameLayout(this);
+        iconBadge.setBackground(roundOutline(ICON_SURFACE, dp(12), CARD_OUTLINE));
+        View tileGlyph = makeIconGlyph(iconName, ACCENT);
+        iconBadge.addView(tileGlyph,
+                new FrameLayout.LayoutParams(dp(31), dp(31), Gravity.CENTER));
         LinearLayout.LayoutParams iconParams =
                 new LinearLayout.LayoutParams(dp(48), dp(48));
         iconParams.bottomMargin = dp(7);
