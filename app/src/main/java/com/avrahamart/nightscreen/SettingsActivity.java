@@ -77,6 +77,7 @@ public class SettingsActivity extends Activity {
     private LinearLayout currentCard;
     private TextView screenTitle;
     private TextView screenSubtitle;
+    private ScrollView settingsScroll;
     private LinearLayout screenHeader;
     private LinearLayout headerTitleBlock;
     private FrameLayout dashboardTitleIconBadge;
@@ -172,13 +173,13 @@ public class SettingsActivity extends Activity {
         titleIconParams.leftMargin = dp(14);
         screenHeader.addView(dashboardTitleIconBadge, titleIconParams);
 
-        ScrollView scroll = new ScrollView(this);
-        scroll.setFillViewport(false);
-        scroll.setVerticalScrollBarEnabled(false);
-        scroll.setOverScrollMode(View.OVER_SCROLL_IF_CONTENT_SCROLLS);
-        scroll.setClipToPadding(false);
-        scroll.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        scroll.setPadding(0, dp(1), 0, dp(4));
+        settingsScroll = new ScrollView(this);
+        settingsScroll.setFillViewport(true);
+        settingsScroll.setVerticalScrollBarEnabled(false);
+        settingsScroll.setOverScrollMode(View.OVER_SCROLL_IF_CONTENT_SCROLLS);
+        settingsScroll.setClipToPadding(false);
+        settingsScroll.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        settingsScroll.setPadding(0, dp(1), 0, dp(4));
 
         LinearLayout scrollContent = new LinearLayout(this);
         scrollContent.setOrientation(LinearLayout.VERTICAL);
@@ -201,8 +202,8 @@ public class SettingsActivity extends Activity {
         content.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         content.setTextDirection(View.TEXT_DIRECTION_RTL);
         scrollContent.addView(content, new LinearLayout.LayoutParams(-1, -2));
-        scroll.addView(scrollContent, new ScrollView.LayoutParams(-1, -2));
-        root.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1f));
+        settingsScroll.addView(scrollContent, new ScrollView.LayoutParams(-1, -2));
+        root.addView(settingsScroll, new LinearLayout.LayoutParams(-1, 0, 1f));
 
         buildDashboard();
 
@@ -256,6 +257,8 @@ public class SettingsActivity extends Activity {
         playerFrameCard = null;
         activityCapabilityNotice = null;
         if (content == null) return;
+        if (settingsScroll != null) settingsScroll.setFillViewport(true);
+        content.setLayoutParams(new LinearLayout.LayoutParams(-1, 0, 1f));
         content.removeAllViews();
         screenTitle.setText("הגדרות");
         screenSubtitle.setText("התאמה אישית של השומר מסך");
@@ -289,7 +292,7 @@ public class SettingsActivity extends Activity {
 
     private LinearLayout.LayoutParams dashboardButtonParams() {
         LinearLayout.LayoutParams params =
-                new LinearLayout.LayoutParams(-1, dp(76));
+                new LinearLayout.LayoutParams(-1, 0, 1f);
         params.bottomMargin = dp(8);
         return params;
     }
@@ -319,6 +322,7 @@ public class SettingsActivity extends Activity {
         button.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         button.setGravity(Gravity.CENTER_VERTICAL);
         button.setPadding(dp(14), dp(8), dp(14), dp(8));
+        button.setMinimumHeight(dp(76));
         button.setBackground(roundOutline(CARD_SURFACE, dp(17), CARD_OUTLINE));
         button.setClickable(true);
         button.setFocusable(true);
@@ -388,6 +392,8 @@ public class SettingsActivity extends Activity {
         screenTitle.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         screenSubtitle.setGravity(Gravity.CENTER);
         screenSubtitle.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        if (settingsScroll != null) settingsScroll.setFillViewport(false);
+        content.setLayoutParams(new LinearLayout.LayoutParams(-1, -2));
         content.removeAllViews();
         clockDateCard = null;
         playerFrameCard = null;
@@ -993,8 +999,8 @@ public class SettingsActivity extends Activity {
                 new LinearLayout.LayoutParams(-1, dp(38));
         railParams.topMargin = dp(1);
         // Use the full card content width to prevent option labels from clipping.
-        railParams.leftMargin = 0;
-        railParams.rightMargin = 0;
+        railParams.leftMargin = -dp(6);
+        railParams.rightMargin = -dp(6);
         block.addView(rail, railParams);
 
         LinearLayout.LayoutParams blockParams =
