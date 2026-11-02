@@ -141,6 +141,7 @@ public class SettingsActivity extends Activity {
         screenSubtitle.setGravity(Gravity.CENTER);
         screenSubtitle.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         screenSubtitle.setTextDirection(View.TEXT_DIRECTION_RTL);
+        // Shared subtitle styling is used by the dashboard and all settings categories.
         screenSubtitle.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
         titleBlock.addView(screenSubtitle, new LinearLayout.LayoutParams(-1, -2));
 
