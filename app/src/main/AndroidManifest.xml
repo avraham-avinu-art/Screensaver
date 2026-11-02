@@ -22,6 +22,11 @@
             android:exported="false"
             android:screenOrientation="unspecified" />
         <activity
+            android:name=".GuideActivity"
+            android:label="מדריך שימוש"
+            android:exported="false"
+            android:screenOrientation="unspecified" />
+        <activity
             android:name=".MainActivity"
             android:theme="@style/AppTheme.Fullscreen"
             android:exported="true">
