@@ -1658,6 +1658,10 @@ public class MainActivity extends Activity {
         // restart an already running inactivity countdown.
         if (restartCountdown) {
             activityDeadlineElapsedRealtime = 0L;
+            // Screen-off/on samples belong to one activity cycle only. A previous
+            // cycle's power event must never qualify lock-screen continuation now.
+            lastScreenOffElapsedRealtime = 0L;
+            lastScreenOnElapsedRealtime = 0L;
         }
 
         // "No shutdown while charging" keeps the display on regardless of the
@@ -1833,7 +1837,9 @@ public class MainActivity extends Activity {
                 } catch (Throwable ignored) {
                 }
             }
-            if (isScreenInteractive()) resumeScreensaverAfterScreenWake();
+            // Do not restart a fixed one/five-minute timer merely because the
+            // device-admin request left the display interactive. The next real
+            // screen wake is handled by resumeScreensaverAfterScreenWake().
             return;
         }
 
