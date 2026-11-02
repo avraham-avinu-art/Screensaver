@@ -85,6 +85,9 @@ public class MainActivity extends Activity {
     private final Runnable autoOffRunnable = this::exitApplicationAtSelectedTime;
     private final Runnable screenOnReleaseRunnable = this::releaseScreenOnHoldForSystemTimeout;
     private boolean waitingForScreenWakeAfterActivityEnd = false;
+    private boolean lockScreenContinuationArmed = false;
+    private long lastScreenOffElapsedRealtime = 0L;
+    private long lastScreenOnElapsedRealtime = 0L;
     private boolean deviceEventsRegistered = false;
     private boolean screenTimeoutObservationPending = false;
     private long screenHoldReleasedAtElapsedRealtime = 0L;
@@ -132,18 +135,27 @@ public class MainActivity extends Activity {
                 updateClock();
                 scheduleNextClockUpdate();
             } else if (Intent.ACTION_SCREEN_OFF.equals(action)) {
+                lastScreenOffElapsedRealtime = SystemClock.elapsedRealtime();
+                recordLockScreenCapabilityAtScreenOff();
                 learnScreenTimeoutBehaviorFromScreenOff();
+                handleScreenOffForLockScreenContinuation();
             } else if (Intent.ACTION_SCREEN_ON.equals(action)) {
+                lastScreenOnElapsedRealtime = SystemClock.elapsedRealtime();
                 if (waitingForScreenWakeAfterActivityEnd) {
                     resumeScreensaverAfterScreenWake();
-                } else if (activityDeadlineElapsedRealtime > SystemClock.elapsedRealtime()
-                        && getScreenTimeoutBehaviorProfile()
-                        == SCREEN_TIMEOUT_PROFILE_ELAPSED_DURING_HOLD) {
-                    // If this device's timeout kept counting while held, restore the hold
-                    // after the user wakes the display and keep the original deadline.
-                    getWindow().addFlags(
-                            android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-                    scheduleAutoOff(false);
+                } else {
+                    if (lockScreenContinuationArmed) {
+                        applyPreventLockWhileActivePreference();
+                    }
+                    if (activityDeadlineElapsedRealtime > SystemClock.elapsedRealtime()
+                            && getScreenTimeoutBehaviorProfile()
+                            == SCREEN_TIMEOUT_PROFILE_ELAPSED_DURING_HOLD) {
+                        // If this device's timeout kept counting while held, restore the hold
+                        // after the user wakes the display and keep the original deadline.
+                        getWindow().addFlags(
+                                android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+                        scheduleAutoOff(false);
+                    }
                 }
             }
         }
@@ -346,7 +358,11 @@ public class MainActivity extends Activity {
         boolean preventLock = LockBehaviorPreferences.isPreventionEnabled(this);
         boolean openedByDeviceLock =
                 getIntent().getBooleanExtra(EXTRA_OPENED_BY_DEVICE_LOCK, false);
-        boolean showAboveExistingKeyguard = !preventLock || openedByDeviceLock;
+        if (!getBool("continueOnLockScreen", false)) {
+            lockScreenContinuationArmed = false;
+        }
+        boolean showAboveExistingKeyguard =
+                !preventLock || openedByDeviceLock || lockScreenContinuationArmed;
 
         if (Build.VERSION.SDK_INT >= 27) {
             setShowWhenLocked(showAboveExistingKeyguard);
@@ -379,6 +395,11 @@ public class MainActivity extends Activity {
         super.onResume();
         mainActivityResumed = true;
         mainActivityPausedByDeviceLock = false;
+        String disabledFeatures =
+                PermissionDependencySync.disableFeaturesWithoutPermissions(this);
+        if (!disabledFeatures.isEmpty()) {
+            Toast.makeText(this, disabledFeatures, Toast.LENGTH_LONG).show();
+        }
         NightScreenApplication.syncChargerReceiver(this);
         applyPreventLockWhileActivePreference();
         try {
@@ -1770,52 +1791,63 @@ public class MainActivity extends Activity {
         if (isFinishing()) return;
         handler.removeCallbacks(autoOffRunnable);
         handler.removeCallbacks(screenOnReleaseRunnable);
-        activityDeadlineElapsedRealtime = 0L;
-        releaseScreenOnHoldForObservation(getSystemScreenOffTimeoutMs());
 
-        boolean showOnLockScreen = !LockBehaviorPreferences.isPreventionEnabled(this)
-                || getIntent().getBooleanExtra(EXTRA_OPENED_BY_DEVICE_LOCK, false);
+        long selectedDeadline = activityDeadlineElapsedRealtime;
+        String durationValue = getString("screenSaverDuration", "device");
+        long selectedDurationMs = 0L;
+        try {
+            selectedDurationMs = Math.max(0L, Long.parseLong(durationValue)) * 60_000L;
+        } catch (Throwable ignored) {
+        }
+        long systemTimeoutMs = getSystemScreenOffTimeoutMs();
+        boolean systemCanExpireBySelectedEnd = selectedDurationMs > 0L
+                && systemTimeoutMs > 0L && systemTimeoutMs <= selectedDurationMs;
+        boolean screenWasOffAtSelectedEnd = systemCanExpireBySelectedEnd
+                && selectedDeadline > 0L
+                && lastScreenOffElapsedRealtime > 0L
+                && lastScreenOffElapsedRealtime <= selectedDeadline
+                && (lastScreenOnElapsedRealtime == 0L
+                    || lastScreenOnElapsedRealtime > selectedDeadline);
         boolean adminActive = isScreenLockAdminActive();
+        boolean continueOnLockScreen = getBool("continueOnLockScreen", false)
+                && selectedDurationMs > 0L
+                && (screenWasOffAtSelectedEnd || adminActive);
 
-        if (showOnLockScreen) {
-            // Keep this Activity in the task and above the keyguard. Removing it here
-            // would expose the normal lock screen and prevent the saver reappearing on wake.
+        activityDeadlineElapsedRealtime = 0L;
+        releaseScreenOnHoldForObservation(systemTimeoutMs);
+
+        if (continueOnLockScreen) {
+            // The activity continues only when Android had turned the display off
+            // by the selected end, or device-admin can request the lock at that point.
+            // A longer system timeout alone never extends a one/five-minute selection.
             waitingForScreenWakeAfterActivityEnd = true;
+            lockScreenContinuationArmed = true;
+            applyPreventLockWhileActivePreference();
             if (adminActive) {
                 try {
                     if (devicePolicyManager == null) {
                         devicePolicyManager = (DevicePolicyManager) getSystemService(
                                 Context.DEVICE_POLICY_SERVICE);
                     }
-                    if (devicePolicyManager == null) {
-                        throw new IllegalStateException("Device policy unavailable");
-                    }
-                    devicePolicyManager.lockNow();
+                    if (devicePolicyManager != null) devicePolicyManager.lockNow();
                 } catch (Throwable ignored) {
-                    // The saver remains active over the lock screen; Android still owns
-                    // screen-off if immediate device-admin locking is unavailable.
                 }
             }
+            if (isScreenInteractive()) resumeScreensaverAfterScreenWake();
             return;
         }
 
-        // When lock-screen display is disabled, preserve the previous end-of-cycle
-        // behavior: close the saver, and optionally lock immediately with device-admin.
-        if (!adminActive) {
-            finishAffinity();
-            return;
-        }
-        try {
-            if (devicePolicyManager == null) {
-                devicePolicyManager = (DevicePolicyManager) getSystemService(
-                        Context.DEVICE_POLICY_SERVICE);
+        waitingForScreenWakeAfterActivityEnd = false;
+        lockScreenContinuationArmed = false;
+        if (adminActive) {
+            try {
+                if (devicePolicyManager == null) {
+                    devicePolicyManager = (DevicePolicyManager) getSystemService(
+                            Context.DEVICE_POLICY_SERVICE);
+                }
+                if (devicePolicyManager != null) devicePolicyManager.lockNow();
+            } catch (Throwable ignored) {
             }
-            if (devicePolicyManager == null) {
-                throw new IllegalStateException("Device policy unavailable");
-            }
-            devicePolicyManager.lockNow();
-        } catch (Throwable ignored) {
-            // The selected screensaver duration has ended even if immediate locking fails.
         }
         finishAffinity();
     }
@@ -1907,6 +1939,8 @@ public class MainActivity extends Activity {
     private void resumeScreensaverAfterScreenWake() {
         if (!waitingForScreenWakeAfterActivityEnd || !isScreenInteractive()) return;
         waitingForScreenWakeAfterActivityEnd = false;
+        lockScreenContinuationArmed = getBool("continueOnLockScreen", false);
+        applyPreventLockWhileActivePreference();
 
         // If this device/OS did not deliver ACTION_SCREEN_OFF to this Activity,
         // discard the stale sample rather than measuring from the wrong release cycle.
@@ -1916,6 +1950,42 @@ public class MainActivity extends Activity {
 
         scheduleAutoOff(true);
         showSettingsButtonForThreeSeconds();
+    }
+
+    private void handleScreenOffForLockScreenContinuation() {
+        if ((!mainActivityResumed && !mainActivityPausedByDeviceLock)
+                || settingsDialogOpen || isFinishing()) return;
+
+        String duration = getString("screenSaverDuration", "device");
+        boolean systemManagedDuration = "device".equals(duration) || "0".equals(duration);
+        boolean continueOnLockScreen = getBool("continueOnLockScreen", false);
+
+        if (continueOnLockScreen) {
+            lockScreenContinuationArmed = true;
+            applyPreventLockWhileActivePreference();
+            if (systemManagedDuration) {
+                // In device mode Android's own timeout ends the visible cycle.
+                // The next wake starts a new cycle only when continuation is enabled.
+                waitingForScreenWakeAfterActivityEnd = true;
+            }
+        } else if (systemManagedDuration) {
+            handler.post(this::finishAffinity);
+        }
+    }
+
+    private void recordLockScreenCapabilityAtScreenOff() {
+        // Do not infer a missing keyguard while this app is configured to prevent it.
+        if (LockBehaviorPreferences.isPreventionEnabled(this)) return;
+        try {
+            android.app.KeyguardManager keyguard =
+                    (android.app.KeyguardManager) getSystemService(KEYGUARD_SERVICE);
+            if (keyguard == null) return;
+            getSharedPreferences("settings", MODE_PRIVATE).edit()
+                    .putBoolean("screenLockObservationKnown", true)
+                    .putBoolean("screenLockObserved", keyguard.isKeyguardLocked())
+                    .apply();
+        } catch (Throwable ignored) {
+        }
     }
 
     private boolean isDeviceCharging() {

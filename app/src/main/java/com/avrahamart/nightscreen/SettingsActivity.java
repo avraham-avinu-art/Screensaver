@@ -67,6 +67,7 @@ public class SettingsActivity extends Activity {
     private Switch showPlayerToggle;
     private Switch autoStartOnChargeToggle;
     private Switch autoStartOnDeviceLockToggle;
+    private TextView activityCapabilityNotice;
     private LinearLayout screenLockAdminCard;
     private TextView screenLockAdminStatus;
     private Button screenLockAdminButton;
@@ -219,8 +220,15 @@ public class SettingsActivity extends Activity {
             handlePlayerPermissionResult();
             handleChargerPermissionResult();
             handleLockStartPermissionResult();
+            String disabledFeatures =
+                    PermissionDependencySync.disableFeaturesWithoutPermissions(this);
+            if (!disabledFeatures.isEmpty()) {
+                Toast.makeText(this, disabledFeatures, Toast.LENGTH_LONG).show();
+            }
+            refreshPermissionDependentToggles();
             LockScreenMonitorService.sync(this);
             NightScreenApplication.syncChargerReceiver(this);
+            updateDeviceCapabilityNotice();
         }
     }
 
@@ -235,8 +243,11 @@ public class SettingsActivity extends Activity {
                 new String[]{"device", "1", "5", "0"}, "screenSaverDuration");
         addCheck(activityTimes, "מניעת נעילה בזמן פעילות",
                 "preventLockWhileActive", false);
+        addCheck(activityTimes, "המשך הצגה במסך הנעילה",
+                "continueOnLockScreen", false);
         addCheck(activityTimes, "הפעלה אוטומטית בנעילה",
                 "autoStartOnDeviceLock", false);
+        addActivityCapabilityNotice(activityTimes);
 
         LinearLayout charging = addCard(content, "שומר מסך בזמן טעינה");
         addCheck(charging, "הפעלה אוטומטית בטעינה", "autoStartOnCharge", false);
@@ -277,7 +288,7 @@ public class SettingsActivity extends Activity {
                 new String[]{"דק", "רגיל", "בינוני", "מודגש"},
                 new String[]{"-1", "0", "1", "2"}, "fontWeight");
         addDiscreteSlider(clockDateCard, "מיקום",
-                new String[]{"למעלה", "25% מלמעלה", "באמצע"},
+                new String[]{"בראש המסך", "ברבע העליון", "במרכז המסך"},
                 new String[]{"top", "upper", "middle"}, "clockDatePosition");
 
         LinearLayout player = addCard(content, "תצוגת הנגן");
@@ -288,7 +299,7 @@ public class SettingsActivity extends Activity {
                 new String[]{"קטן", "בינוני", "גדול", "גדול מאוד"},
                 new String[]{"14", "17", "20", "23"}, "playerSize");
         addDiscreteSlider(player, "מיקום הנגן",
-                new String[]{"25% מלמטה", "למטה"},
+                new String[]{"ברבע התחתון", "בתחתית המסך"},
                 new String[]{"lower", "bottom"}, "playerPosition");
 
         playerFrameCard = addCard(content, "מסגרת לנגן");
@@ -376,24 +387,27 @@ public class SettingsActivity extends Activity {
     private void showActivityTimeHelpDialog() {
         String help =
                 "זמן פעילות\n"
-                + "ההגדרה קובעת את משך הזמן שהשומר מסך יהיה מוצג על המסך.\n"
-                + "• ניתן להגדיר אם משך זמן התצוגה יהיה לפי זמן המסך שמוגדר במכשיר, או לפי משך זמן שונה כפי שמוגדר באפליקציה.\n"
-                + "• בבחירת האפשרות ללא כיבוי - השומר מסך נשאר מוצג ללא מגבלת זמן, עד ליציאה יזומה או עד לשינוי המצב.\n\n"
+                + "ההגדרה קובעת כמה זמן השומר מסך יוצג, או האם משך התצוגה ינוהל על ידי המכשיר.\n"
+                + "• לפי המכשיר - אין לאפליקציה טיימר סיום עצמאי. השומר נשאר מוצג עד שהמכשיר מכבה את המסך לפי ההגדרות שלו. אם המסך אינו נכבה אוטומטית, השומר ימשיך להופיע ברציפות.\n"
+                + "• דקה אחת / חמש דקות - השומר יורד מהמסך בתום הזמן שנבחר. אם זמן כיבוי המסך של Android ארוך יותר, המסך עצמו עשוי להישאר דולק עד לכיבוי המערכת.\n"
+                + "• ללא כיבוי - האפליקציה מונעת כיבוי מסך אוטומטי ומשאירה את השומר מוצג ברציפות, עד ליציאה יזומה או לשינוי ההגדרה.\n\n"
                 + "מניעת נעילה בזמן פעילות\n"
-                + "ההגדרה קובעת האם הצגת השומר מסך תהיה גם מעל מסך הנעילה, או דווקא ללא נעילת המכשיר.\n"
-                + "• כשההגדרה פעילה - השומר מסך מונע את כיבוי ונעילת המסך עד לסוף הזמן המוגדר, ואינו מופיע מעל מסך הנעילה.\n"
-                + "• כשההגדרה כבויה - השומר מסך אינו מונע את כיבוי ונעילת המסך האוטומטית של המכשיר, וממשיך להיות מוצג במסך גם לאחר שהמכשיר ננעל.\n"
-                + "• ההגדרה משפיעה רק על נעילת המכשיר, ובכל מקרה כיבוי המסך יהיה רק בסיום הזמן המוגדר.\n\n"
+                + "ההגדרה קובעת האם Android רשאי להציג את מסך הנעילה מעל השומר בזמן שהתצוגה פעילה.\n"
+                + "• כשההגדרה פעילה - האפליקציה מונעת את הופעת מסך הנעילה מעל השומר במהלך זמן הפעילות.\n"
+                + "• כשההגדרה כבויה - Android רשאי להציג את מסך הנעילה כרגיל, והשומר יכול להופיע מעליו.\n\n"
+                + "המשך הצגה במסך הנעילה\n"
+                + "• ההגדרה קובעת אם השומר יישאר פעיל ויופיע שוב מעל מסך הנעילה לאחר שהמסך נכבה והופעל מחדש.\n"
+                + "• במצב לפי המכשיר, כיבוי המסך על ידי המערכת מסיים את מחזור התצוגה; כשההגדרה פעילה השומר יופיע שוב בהפעלה הבאה.\n"
+                + "• בבחירת דקה אחת או חמש דקות, ההמשך יתאפשר רק אם המסך אכן כבה עד למועד סיום זמן הפעילות. אם זמן הכיבוי של המכשיר ארוך יותר, השומר ייסגר בתום הזמן ולא ימתין לכיבוי מאוחר.\n"
+                + "• במכשיר שאין בו מסך נעילה, להגדרה זו אין משמעות מעשית.\n\n"
                 + "הפעלה אוטומטית בנעילה\n"
-                + "• ההגדרה מפעילה את השומר מסך אוטומטית כאשר המכשיר ננעל, גם בנעילה יזומה וגם בנעילה אוטומטית.\n"
+                + "• ההגדרה מפעילה את השומר מסך אוטומטית כאשר המכשיר ננעל, גם בנעילה יזומה וגם בנעילה אוטומטית, גם אם השומר לא היה פעיל קודם.\n"
                 + "• כשההגדרה כבויה - נעילת המכשיר לבדה לא מפעילה את השומר מסך.\n"
-
-                + "• לצורך ההפעלה האוטומטית בנעילה, האפליקציה מציגה התראה קבועה בזמן שהאפשרות פעילה. ההתראה שקטה ואינה מופיעה במסך הנעילה.\n\n"
-                + "הרשאות שמשפיעות על ההתנהגות האפליקציה\n"
-                + "• הצגה מעל אפליקציות אחרות - נדרשת להפעלה אוטומטית ברקע בחלק מגרסאות Android, לרבות Android 10 ומעלה. בלעדיה, ההפעלה האוטומטית עלולה לא לפעול.\n"
-                + "• הרשאת מנהל מכשיר - הרשאה נפרדת שניתן להפעיל ממסך ההרשאות, ההרשאה אינה נדרשת לצורך הצגת השומר מסך עצמו.\n"
-                + "היא נועדה רק כדי לאפשר לאפליקציה לכבות את המסך ולנעול את המכשיר בעצמה בכל מצב בסיום זמן הפעילות שמוגדר באפליקציה.\n"
-                + "ללא ההרשאה, האפליקציה אינה נועלת את המכשיר, אלא רק מתאמת את כיבוי המסך ונעילת המסך לזמן המוגדר במכשיר, ולכן נעילה מיידית תתאפשר רק כשזמן הפעילות שמוגדר באפליקציה זהה לזמן המוגדר במכשיר או יותר ממנו, אבל כאשר זמן פעילות המוגדר קצר מהזמן המוגדר במכשיר לא תתבצע נעילה מיידית בסיום הפעילות.";
+                + "• לצורך ההפעלה האוטומטית בנעילה, האפליקציה מציגה התראה קבועה ושקטה שאינה מופיעה במסך הנעילה.\n\n"
+                + "הרשאות שמשפיעות על התנהגות האפליקציה\n"
+                + "• הצגה מעל אפליקציות אחרות - נדרשת להפעלה אוטומטית ברקע בחלק מגרסאות Android. אם ההרשאה נשללת, ההגדרות התלויות בה יכובו אוטומטית.\n"
+                + "• גישה להתראות - נדרשת להצגת נגן המדיה. אם ההרשאה נשללת, הצגת הנגן תכובה אוטומטית.\n"
+                + "• הרשאת מנהל מכשיר - מאפשרת לאפליקציה לבקש נעילה מיידית בסיום זמן פעילות מוגדר. היא אינה נדרשת להצגת השומר עצמו ואינה מבטיחה כיבוי פיזי של התצוגה בכל סוגי המכשירים.";
 
         AlertDialog dialog = new AlertDialog.Builder(this).create();
 
@@ -486,6 +500,7 @@ public class SettingsActivity extends Activity {
             boolean sectionHeading =
                     line.equals("זמן פעילות")
                     || line.equals("מניעת נעילה בזמן פעילות")
+                    || line.equals("המשך הצגה במסך הנעילה")
                     || line.equals("הפעלה אוטומטית בנעילה")
                     || line.equals("הרשאות שמשפיעות על ההתנהגות האפליקציה");
 
@@ -686,25 +701,12 @@ public class SettingsActivity extends Activity {
         LinearLayout block = new LinearLayout(this);
         block.setOrientation(LinearLayout.VERTICAL);
         block.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        block.setPadding(dp(6), dp(2), dp(6), dp(1));
-
-        final int initial = selectedIndex(key, values);
-        TextView chosenValue = textView(names[initial], 16, ACCENT);
-        chosenValue.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
-        chosenValue.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
-        chosenValue.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
-        chosenValue.setSingleLine(false);
+        block.setPadding(dp(6), dp(2), dp(6), dp(5));
 
         LinearLayout headingRow = new LinearLayout(this);
         headingRow.setOrientation(LinearLayout.HORIZONTAL);
         headingRow.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         headingRow.setGravity(Gravity.CENTER_VERTICAL);
-        LinearLayout.LayoutParams valueParams =
-                new LinearLayout.LayoutParams(-2, dp(30));
-        // Track starts after 8dp outer margin and 12dp SeekBar inner padding.
-        valueParams.leftMargin = dp(20);
-        valueParams.rightMargin = dp(8);
-        headingRow.addView(chosenValue, valueParams);
 
         TextView settingLabel = textView(label, 16, ON_SURFACE);
         settingLabel.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
@@ -719,43 +721,145 @@ public class SettingsActivity extends Activity {
                 new LinearLayout.LayoutParams(dp(30), dp(30));
         iconParams.leftMargin = dp(9);
         headingRow.addView(settingIcon, iconParams);
-
         block.addView(headingRow, new LinearLayout.LayoutParams(-1, dp(32)));
 
-        SeekBar slider = new SeekBar(this);
-        slider.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        slider.setMax(Math.max(0, names.length - 1));
-        slider.setProgress(initial);
-        slider.setContentDescription(label);
-        slider.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
-        slider.setPadding(dp(12), 0, dp(12), 0);
-        if (Build.VERSION.SDK_INT >= 21) {
-            slider.setThumbTintList(ColorStateList.valueOf(ACCENT));
-            slider.setProgressTintList(ColorStateList.valueOf(ACCENT));
-            slider.setProgressBackgroundTintList(ColorStateList.valueOf(TRACK));
-        }
-        LinearLayout.LayoutParams sliderParams =
-                new LinearLayout.LayoutParams(-1, dp(32));
-        sliderParams.topMargin = dp(1);
-        sliderParams.leftMargin = dp(8);
-        sliderParams.rightMargin = dp(7);
-        block.addView(slider, sliderParams);
+        int initial = selectedIndex(key, values);
+        FrameLayout rail = new FrameLayout(this);
+        rail.setBackground(roundOutline(CONTROL_SURFACE, dp(12), OUTLINE));
+        if (Build.VERSION.SDK_INT >= 21) rail.setClipToOutline(true);
 
-        slider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override public void onProgressChanged(SeekBar seekBar, int progress,
-                                                    boolean fromUser) {
-                int safeProgress = Math.max(0, Math.min(progress, names.length - 1));
-                chosenValue.setText(names[safeProgress]);
-                if (fromUser) persistOption(key, values[safeProgress]);
+        LinearLayout segments = new LinearLayout(this);
+        segments.setOrientation(LinearLayout.HORIZONTAL);
+        segments.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        segments.setGravity(Gravity.CENTER_VERTICAL);
+        final TextView[] options = new TextView[names.length];
+
+        for (int i = 0; i < names.length; i++) {
+            final int index = i;
+            FrameLayout segment = new FrameLayout(this);
+            segment.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+
+            TextView option = textView(names[i], 13,
+                    i == initial ? Color.rgb(7, 31, 49) : ON_SURFACE);
+            option.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+            option.setGravity(Gravity.CENTER);
+            option.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+            option.setTextDirection(View.TEXT_DIRECTION_RTL);
+            option.setSingleLine(true);
+            option.setIncludeFontPadding(false);
+            option.setPadding(dp(2), 0, dp(2), 0);
+            if (Build.VERSION.SDK_INT >= 26) {
+                // Preserve one row on narrow screens by reducing the font size.
+                option.setAutoSizeTextTypeUniformWithConfiguration(
+                        10, 13, 1, android.util.TypedValue.COMPLEX_UNIT_SP);
             }
-            @Override public void onStartTrackingTouch(SeekBar seekBar) {}
-            @Override public void onStopTrackingTouch(SeekBar seekBar) {}
-        });
+            if (i == initial) {
+                option.setBackground(roundOutline(ACCENT, dp(9), ACCENT));
+            } else {
+                option.setBackgroundColor(Color.TRANSPARENT);
+            }
+            FrameLayout.LayoutParams optionParams =
+                    new FrameLayout.LayoutParams(-1, -1);
+            optionParams.setMargins(dp(2), dp(2), dp(2), dp(2));
+            segment.addView(option, optionParams);
+            options[i] = option;
+
+            if (i > 0) {
+                View divider = new View(this);
+                divider.setBackgroundColor(Color.rgb(104, 132, 160));
+                FrameLayout.LayoutParams dividerParams =
+                        new FrameLayout.LayoutParams(dp(1), dp(19),
+                                Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+                segment.addView(divider, dividerParams);
+            }
+
+            segment.setContentDescription(label + ": " + names[i]);
+            segment.setClickable(true);
+            segment.setFocusable(true);
+            segment.setOnClickListener(v -> {
+                persistOption(key, values[index]);
+                for (int j = 0; j < options.length; j++) {
+                    boolean selected = j == index;
+                    options[j].setTextColor(selected
+                            ? Color.rgb(7, 31, 49) : ON_SURFACE);
+                    options[j].setBackground(selected
+                            ? roundOutline(ACCENT, dp(9), ACCENT)
+                            : new ColorDrawable(Color.TRANSPARENT));
+                }
+                if ("screenSaverDuration".equals(key)) updateDeviceCapabilityNotice();
+            });
+            segments.addView(segment, new LinearLayout.LayoutParams(0, dp(42), 1f));
+        }
+
+        rail.addView(segments, new FrameLayout.LayoutParams(-1, -1));
+        LinearLayout.LayoutParams railParams =
+                new LinearLayout.LayoutParams(-1, dp(46));
+        railParams.topMargin = dp(2);
+        railParams.leftMargin = dp(7);
+        railParams.rightMargin = dp(7);
+        block.addView(rail, railParams);
 
         LinearLayout.LayoutParams blockParams =
                 new LinearLayout.LayoutParams(-1, -2);
-        blockParams.bottomMargin = dp(2);
+        blockParams.bottomMargin = dp(3);
         card.addView(block, blockParams);
+    }
+
+    private void addActivityCapabilityNotice(LinearLayout card) {
+        activityCapabilityNotice = textView("", 13, MUTED);
+        activityCapabilityNotice.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        activityCapabilityNotice.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
+        activityCapabilityNotice.setTextDirection(View.TEXT_DIRECTION_RTL);
+        activityCapabilityNotice.setLineSpacing(dp(2), 1f);
+        activityCapabilityNotice.setPadding(dp(11), dp(8), dp(11), dp(8));
+        activityCapabilityNotice.setBackground(roundOutline(CONTROL_SURFACE, dp(11), OUTLINE));
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, -2);
+        params.topMargin = dp(4);
+        params.bottomMargin = dp(3);
+        card.addView(activityCapabilityNotice, params);
+        updateDeviceCapabilityNotice();
+    }
+
+    private void updateDeviceCapabilityNotice() {
+        if (activityCapabilityNotice == null) return;
+
+        java.util.ArrayList<String> notices = new java.util.ArrayList<>();
+        boolean automotive = getPackageManager().hasSystemFeature(
+                "android.hardware.type.automotive");
+        boolean keyguardObservationKnown =
+                prefs.getBoolean("screenLockObservationKnown", false);
+        boolean keyguardObserved = prefs.getBoolean("screenLockObserved", true);
+
+        if (keyguardObservationKnown && !keyguardObserved) {
+            notices.add("בבדיקה האחרונה לא זוהה מסך נעילה בפועל. לכן ההגדרות הקשורות לנעילה ולהצגת השומר במסך הנעילה עשויות שלא להיות רלוונטיות למכשיר זה.");
+        } else if (automotive) {
+            notices.add("זוהתה במכשיר תמיכה ב־Android Automotive. בחלק ממערכות המולטימדיה אין מסך נעילה רגיל, ולכן הגדרות הקשורות לנעילה עשויות שלא להיות רלוונטיות.");
+        }
+
+        String duration = getString("screenSaverDuration", "device");
+        if ("1".equals(duration) || "5".equals(duration)) {
+            long timeoutMs = -1L;
+            try {
+                timeoutMs = Settings.System.getLong(
+                        getContentResolver(), Settings.System.SCREEN_OFF_TIMEOUT);
+            } catch (Throwable ignored) {
+            }
+            long requestedMs = "1".equals(duration) ? 60_000L : 300_000L;
+            if (timeoutMs <= 0L) {
+                notices.add("לא ניתן לזהות את זמן כיבוי המסך שהוגדר במכשיר. בסיום זמן הפעילות השומר ייסגר, אך כיבוי התצוגה נשאר באחריות Android.");
+            } else if (timeoutMs >= Integer.MAX_VALUE - 1000L) {
+                notices.add("לא זוהה במכשיר כיבוי מסך אוטומטי. בבחירת דקה אחת או חמש דקות השומר ייסגר בתום הזמן, אך המסך עצמו עשוי להישאר דולק.");
+            } else if (timeoutMs > requestedMs) {
+                notices.add("זמן כיבוי המסך שמוגדר במכשיר ארוך מזמן הפעילות שבחרת. בסיום הזמן השומר ייסגר, אך המסך עשוי להישאר דולק עד ש־Android יכבה אותו.");
+            }
+        }
+
+        if (notices.isEmpty()) {
+            activityCapabilityNotice.setVisibility(View.GONE);
+        } else {
+            activityCapabilityNotice.setText(android.text.TextUtils.join("\n\n", notices));
+            activityCapabilityNotice.setVisibility(View.VISIBLE);
+        }
     }
 
     private void addColorChoices(LinearLayout card, String label,
@@ -826,14 +930,20 @@ public class SettingsActivity extends Activity {
                     this, values[i], i == selectedInitially,
                     "screenBackgroundColor".equals(key));
             swatches[i] = swatch;
-            item.addView(swatch, new LinearLayout.LayoutParams(dp(34), dp(34)));
+            item.addView(swatch, new LinearLayout.LayoutParams(dp(38), dp(38)));
 
             TextView caption = textView(names[i], 12,
                     i == selectedInitially ? ACCENT : MUTED);
             caption.setGravity(Gravity.CENTER);
             caption.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
             caption.setSingleLine(true);
-            caption.setEllipsize(android.text.TextUtils.TruncateAt.END);
+            caption.setTypeface(Typeface.create("sans-serif-medium",
+                    i == selectedInitially ? Typeface.BOLD : Typeface.NORMAL));
+            caption.setIncludeFontPadding(false);
+            if (Build.VERSION.SDK_INT >= 26) {
+                caption.setAutoSizeTextTypeUniformWithConfiguration(
+                        9, 12, 1, android.util.TypedValue.COMPLEX_UNIT_SP);
+            }
             captions[i] = caption;
             LinearLayout.LayoutParams captionParams =
                     new LinearLayout.LayoutParams(-1, dp(22));
@@ -845,6 +955,8 @@ public class SettingsActivity extends Activity {
                 for (int j = 0; j < swatches.length; j++) {
                     swatches[j].setSwatchSelected(j == index);
                     captions[j].setTextColor(j == index ? ACCENT : MUTED);
+                    captions[j].setTypeface(Typeface.create("sans-serif-medium",
+                            j == index ? Typeface.BOLD : Typeface.NORMAL));
                 }
             });
             choiceRow.addView(item, new LinearLayout.LayoutParams(0, -2, 1f));
@@ -855,6 +967,18 @@ public class SettingsActivity extends Activity {
                 new LinearLayout.LayoutParams(-1, -2);
         blockParams.bottomMargin = dp(4);
         card.addView(block, blockParams);
+    }
+
+    private void refreshPermissionDependentToggles() {
+        if (showPlayerToggle != null) {
+            showPlayerToggle.setChecked(getBool("showPlayer", false));
+        }
+        if (autoStartOnChargeToggle != null) {
+            autoStartOnChargeToggle.setChecked(getBool("autoStartOnCharge", false));
+        }
+        if (autoStartOnDeviceLockToggle != null) {
+            autoStartOnDeviceLockToggle.setChecked(getBool("autoStartOnDeviceLock", false));
+        }
     }
 
     private void requestPlayerNotificationAccessIfNeeded() {
@@ -983,6 +1107,7 @@ public class SettingsActivity extends Activity {
         if ("preventLockWhileActive".equals(key)) return "power-off";
         if ("autoStartOnCharge".equals(key)) return "usb";
         if ("autoStartOnDeviceLock".equals(key)) return "lock-play";
+        if ("continueOnLockScreen".equals(key)) return "shield";
         if ("noShutdownWhileCharging".equals(key)) return "phone-charging";
         if ("showBatteryPercent".equals(key)) return "battery-medium";
         if ("screenBackgroundColor".equals(key)) return "palette";
@@ -1647,33 +1772,20 @@ public class SettingsActivity extends Activity {
             super.onDraw(canvas);
             float cx = getWidth() / 2f;
             float cy = getHeight() / 2f;
-            float radius = Math.min(getWidth(), getHeight()) / 2f - dp(selected ? 2 : 3);
-
-            if (selected) {
-                paint.setStyle(Paint.Style.STROKE);
-                paint.setStrokeWidth(dp(2));
-                paint.setColor(ACCENT);
-                canvas.drawCircle(cx, cy, radius, paint);
-                radius -= dp(3);
-            }
+            float radius = Math.min(getWidth(), getHeight()) / 2f - dp(3);
 
             int swatchColor = colorValue(value);
             paint.setStyle(Paint.Style.FILL);
             paint.setColor(swatchColor);
             canvas.drawCircle(cx, cy, radius, paint);
 
-            // Only unselected screen-background swatches need the subtle outline.
-            // The selected swatch already has its accent selection ring.
-            if (screenBackgroundPalette && !selected) {
-                paint.setStyle(Paint.Style.STROKE);
-                paint.setStrokeWidth(dp(1));
-                paint.setColor(CARD_OUTLINE);
-                canvas.drawCircle(cx, cy, radius - dp(1), paint);
-            }
+            // A clearly visible outline separates every color sample from the card.
+            paint.setStyle(Paint.Style.STROKE);
+            paint.setStrokeWidth(dp(selected ? 3 : 1));
+            paint.setColor(selected ? ACCENT : Color.rgb(151, 177, 202));
+            canvas.drawCircle(cx, cy, radius, paint);
 
             if (selected) {
-                // Use a contrasting checkmark: dark ink on light font-color
-                // swatches, and white on the dark screen-background swatches.
                 int luminance = Math.round(
                         Color.red(swatchColor) * 0.299f
                         + Color.green(swatchColor) * 0.587f
