@@ -502,7 +502,7 @@ public class SettingsActivity extends Activity {
                     || line.equals("מניעת נעילה בזמן פעילות")
                     || line.equals("המשך הצגה במסך הנעילה")
                     || line.equals("הפעלה אוטומטית בנעילה")
-                    || line.equals("הרשאות שמשפיעות על ההתנהגות האפליקציה");
+                    || line.equals("הרשאות שמשפיעות על התנהגות האפליקציה");
 
             if (sectionHeading) {
                 styledHelp.setSpan(new ForegroundColorSpan(ACCENT), lineStart, lineEnd,
