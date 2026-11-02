@@ -1,6 +1,7 @@
 package com.avrahamart.nightscreen;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.admin.DevicePolicyManager;
 import android.app.NotificationManager;
 import android.content.ActivityNotFoundException;
@@ -163,10 +164,7 @@ public class PermissionsActivity extends Activity {
         adminButton = addPermissionButton(card,
                 "הפעל הרשאת מנהל מכשיר", v -> {
                     if (isAdminActive()) {
-                        Toast.makeText(this,
-                                "כדי לבטל את ההרשאה, בחר את שומר מסך במסך ניהול מנהלי המכשיר.",
-                                Toast.LENGTH_LONG).show();
-                        openDeviceAdminSettings();
+                        confirmDeviceAdminRemoval();
                     } else {
                         Toast.makeText(this,
                                 "כדי לאפשר נעילת המכשיר בסיום זמן הפעילות, אשר במסך הבא את הרשאת מנהל המכשיר.",
@@ -269,7 +267,7 @@ public class PermissionsActivity extends Activity {
                 : "ההרשאה עדיין לא ניתנה; נעילת המכשיר תתנהל לפי הגדרות המכשיר.");
         adminStatus.setTextColor(adminGranted ? ACCENT : MUTED);
         adminButton.setText(adminGranted
-                ? "ניהול הרשאת מנהל מכשיר"
+                ? "בטל הרשאת מנהל מכשיר"
                 : "הפעל הרשאת מנהל מכשיר");
         adminButton.setEnabled(true);
     }
@@ -341,27 +339,102 @@ public class PermissionsActivity extends Activity {
         }
     }
 
-    private void openDeviceAdminSettings() {
+    private void confirmDeviceAdminRemoval() {
+        new AlertDialog.Builder(this)
+                .setTitle("ביטול הרשאת מנהל מכשיר")
+                .setMessage("האם לבטל את הרשאת מנהל המכשיר של שומר מסך? לאחר הביטול האפליקציה לא תוכל לנעול את המכשיר בסיום זמן הפעילות.")
+                .setNegativeButton("חזרה", (dialog, which) -> dialog.dismiss())
+                .setPositiveButton("בטל הרשאה", (dialog, which) ->
+                        removeDeviceAdmin())
+                .show();
+    }
+
+    private void removeDeviceAdmin() {
+        if (!isAdminActive()) {
+            updatePermissionStatuses();
+            return;
+        }
+
         try {
-            Intent intent = new Intent("android.settings.DEVICE_ADMIN_SETTINGS");
-            ComponentName target = intent.resolveActivity(getPackageManager());
-            if (target != null) {
-                String className = target.getClassName().toLowerCase(java.util.Locale.ROOT);
-                if (className.contains("deviceadmin")
-                        || className.contains("device_admin")
-                        || className.contains("adminsettings")) {
-                    intent.setComponent(target);
-                    startActivity(intent);
-                    return;
-                }
+            if (devicePolicyManager == null) {
+                devicePolicyManager = (DevicePolicyManager)
+                        getSystemService(Context.DEVICE_POLICY_SERVICE);
             }
+            if (adminComponent == null) {
+                adminComponent = new ComponentName(this, ScreenLockAdminReceiver.class);
+            }
+            if (devicePolicyManager == null) {
+                throw new IllegalStateException("Device policy service is unavailable");
+            }
+
+            // The app owns this admin component, so Android allows it to request
+            // removal directly. The system completes removal asynchronously.
+            devicePolicyManager.removeActiveAdmin(adminComponent);
+
+            adminButton.setEnabled(false);
+            adminButton.setText("מבטל הרשאה…");
+            adminStatus.setText("בקשת ביטול ההרשאה נשלחה ל־Android.");
+            adminStatus.setTextColor(MUTED);
+            adminButton.postDelayed(() -> verifyDeviceAdminRemoval(0), 250);
+        } catch (SecurityException ex) {
+            updatePermissionStatuses();
             Toast.makeText(this,
-                    "במכשיר זה Android אינו מספק קיצור דרך ישיר לביטול הרשאת מנהל המכשיר. כדי לבטל אותה, פתח הגדרות > אבטחה > אפליקציות מנהל מכשיר > שומר מסך.",
+                    "Android לא אפשר לבטל את ההרשאה מתוך האפליקציה. נפתח את הגדרות האבטחה להמשך ידני.",
                     Toast.LENGTH_LONG).show();
+            openSecuritySettingsFallback();
+        } catch (Throwable ex) {
+            updatePermissionStatuses();
+            Toast.makeText(this,
+                    "לא ניתן להשלים את ביטול ההרשאה כרגע. נפתח את הגדרות האבטחה להמשך ידני.",
+                    Toast.LENGTH_LONG).show();
+            openSecuritySettingsFallback();
+        }
+    }
+
+    private void verifyDeviceAdminRemoval(int attempt) {
+        if (isFinishing() || isDestroyed()) return;
+
+        if (!isAdminActive()) {
+            updatePermissionStatuses();
+            Toast.makeText(this, "הרשאת מנהל המכשיר בוטלה בהצלחה.",
+                    Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        // removeActiveAdmin() is explicitly asynchronous; keep checking the system
+        // state instead of assuming that the permission disappears immediately.
+        if (attempt < 20) {
+            adminButton.postDelayed(
+                    () -> verifyDeviceAdminRemoval(attempt + 1), 250);
+            return;
+        }
+
+        updatePermissionStatuses();
+        Toast.makeText(this,
+                "Android עדיין מדווח שההרשאה פעילה. אפשר להשלים את הביטול דרך הגדרות האבטחה.",
+                Toast.LENGTH_LONG).show();
+        openSecuritySettingsFallback();
+    }
+
+    private void openSecuritySettingsFallback() {
+        try {
+            startActivity(new Intent(Settings.ACTION_SECURITY_SETTINGS));
+        } catch (ActivityNotFoundException ignored) {
+            try {
+                startActivity(new Intent(Settings.ACTION_SETTINGS));
+            } catch (Throwable ignoredAgain) {
+                Toast.makeText(this,
+                        "פתח הגדרות > אבטחה > אפליקציות מנהל מכשיר > שומר מסך כדי לבטל את ההרשאה.",
+                        Toast.LENGTH_LONG).show();
+            }
         } catch (Throwable ignored) {
-            Toast.makeText(this,
-                    "לא ניתן לפתוח ישירות את ניהול מנהלי המכשיר. פתח הגדרות > אבטחה > אפליקציות מנהל מכשיר > שומר מסך.",
-                    Toast.LENGTH_LONG).show();
+            try {
+                startActivity(new Intent(Settings.ACTION_SETTINGS));
+            } catch (Throwable ignoredAgain) {
+                Toast.makeText(this,
+                        "פתח הגדרות > אבטחה > אפליקציות מנהל מכשיר > שומר מסך כדי לבטל את ההרשאה.",
+                        Toast.LENGTH_LONG).show();
+            }
         }
     }
 
