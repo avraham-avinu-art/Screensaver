@@ -115,36 +115,47 @@ public class SettingsActivity extends Activity {
 
         LinearLayout header = new LinearLayout(this);
         header.setOrientation(LinearLayout.HORIZONTAL);
-        // LTR child order pins the overflow button to the physical left and keeps
-        // the title centered with an equal-width spacer on the right.
-        header.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+        header.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         header.setGravity(Gravity.CENTER_VERTICAL);
-        header.setPadding(dp(2), dp(5), dp(2), dp(8));
+        header.setPadding(dp(2), dp(8), dp(2), dp(14));
+
+        // Static title area: the icon and text are decorative, not a clickable control.
+        FrameLayout titleIconBadge = new FrameLayout(this);
+        titleIconBadge.setBackground(roundOutline(ICON_SURFACE, dp(15), CARD_OUTLINE));
+        View titleIcon = makeIconGlyph("tune", ACCENT);
+        titleIconBadge.addView(titleIcon,
+                new FrameLayout.LayoutParams(dp(28), dp(28), Gravity.CENTER));
+        LinearLayout.LayoutParams titleIconParams =
+                new LinearLayout.LayoutParams(dp(52), dp(52));
+        titleIconParams.leftMargin = dp(14);
+        header.addView(titleIconBadge, titleIconParams);
 
         LinearLayout titleBlock = new LinearLayout(this);
         titleBlock.setOrientation(LinearLayout.VERTICAL);
         titleBlock.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        titleBlock.setGravity(Gravity.CENTER);
+        titleBlock.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         titleBlock.setPadding(0, 0, 0, 0);
 
         screenTitle = textView("הגדרות", 27, ON_SURFACE);
         screenTitle.setIncludeFontPadding(false);
-        screenTitle.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
+        screenTitle.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
         screenTitle.setLetterSpacing(-0.015f);
-        screenTitle.setGravity(Gravity.CENTER);
-        screenTitle.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        screenTitle.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        screenTitle.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
         screenTitle.setTextDirection(View.TEXT_DIRECTION_RTL);
         titleBlock.addView(screenTitle, new LinearLayout.LayoutParams(-1, -2));
 
         screenSubtitle = textView("התאמה אישית של השומר מסך", 14, MUTED);
         screenSubtitle.setIncludeFontPadding(false);
-        screenSubtitle.setGravity(Gravity.CENTER);
-        screenSubtitle.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        screenSubtitle.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        screenSubtitle.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
         screenSubtitle.setTextDirection(View.TEXT_DIRECTION_RTL);
         screenSubtitle.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
-        titleBlock.addView(screenSubtitle, new LinearLayout.LayoutParams(-1, -2));
+        LinearLayout.LayoutParams headerSubtitleParams =
+                new LinearLayout.LayoutParams(-1, -2);
+        headerSubtitleParams.topMargin = dp(3);
+        titleBlock.addView(screenSubtitle, headerSubtitleParams);
 
-        // Keep the title and subtitle centered and unobstructed by utility buttons.
         header.addView(titleBlock, new LinearLayout.LayoutParams(0, -2, 1f));
 
         ScrollView scroll = new ScrollView(this);
@@ -160,6 +171,16 @@ public class SettingsActivity extends Activity {
         scrollContent.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         scrollContent.setTextDirection(View.TEXT_DIRECTION_RTL);
         scrollContent.addView(header, new LinearLayout.LayoutParams(-1, -2));
+
+        View headerDivider = new View(this);
+        GradientDrawable headerDividerGradient = new GradientDrawable(
+                GradientDrawable.Orientation.LEFT_RIGHT,
+                new int[]{SURFACE, CARD_OUTLINE, ACCENT, CARD_OUTLINE, SURFACE});
+        headerDivider.setBackground(headerDividerGradient);
+        LinearLayout.LayoutParams headerDividerParams =
+                new LinearLayout.LayoutParams(-1, dp(1));
+        headerDividerParams.bottomMargin = dp(17);
+        scrollContent.addView(headerDivider, headerDividerParams);
 
         content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
@@ -177,22 +198,7 @@ public class SettingsActivity extends Activity {
         footerParams.topMargin = dp(4);
         root.addView(footer, footerParams);
 
-        Button done = new Button(this);
-        done.setText("סיום ושמירה");
-        done.setAllCaps(false);
-        done.setTextSize(17);
-        done.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
-        done.setTextColor(Color.rgb(7, 31, 49));
-        done.setMinWidth(0);
-        done.setMinHeight(0);
-        done.setPadding(dp(24), 0, dp(24), 0);
-        done.setBackground(pillBackground(ACCENT, dp(22)));
-        done.setElevation(dp(2));
-        FrameLayout.LayoutParams doneParams =
-                new FrameLayout.LayoutParams(-2, dp(50), Gravity.CENTER);
-        footer.addView(done, doneParams);
-        done.setOnClickListener(v -> finish());
-
+        // The dashboard no longer has a save row; keep only the overflow and back actions.
         FrameLayout menuButton = makeOverflowButton();
         FrameLayout.LayoutParams menuParams =
                 new FrameLayout.LayoutParams(dp(42), dp(42), Gravity.LEFT | Gravity.CENTER_VERTICAL);
@@ -258,20 +264,20 @@ public class SettingsActivity extends Activity {
         screenSubtitle.setText("התאמה אישית של השומר מסך");
 
         LinearLayout firstRow = dashboardRow();
-        addDashboardTile(firstRow, "שעון ותאריך",
-                "תצוגת השעה והתאריך והתאמתם",
-                "clock-size", CATEGORY_CLOCK_DATE);
         addDashboardTile(firstRow, "הפעלה והתנהגות",
                 "זמן פעילות, נעילה וטעינה",
                 "activity-history", CATEGORY_ACTIVITY);
+        addDashboardTile(firstRow, "מראה ועיצוב",
+                "צבע גופן ובהירות",
+                "palette", CATEGORY_APPEARANCE);
         content.addView(firstRow, dashboardRowParams());
 
         LinearLayout secondRow = dashboardRow();
-        addDashboardTile(secondRow, "מראה ועיצוב",
-                "צבעים, גופנים ובהירות המסך",
-                "palette", CATEGORY_APPEARANCE);
+        addDashboardTile(secondRow, "שעון ותאריך",
+                "התאמת תצוגת השעה והתאריך",
+                "clock-size", CATEGORY_CLOCK_DATE);
         addDashboardTile(secondRow, "נגן מדיה",
-                "מידע, מיקום, גודל ומסגרת",
+                "הצגה והתאמה",
                 "media-toggle", CATEGORY_PLAYER);
         content.addView(secondRow, dashboardRowParams());
 
@@ -404,7 +410,7 @@ public class SettingsActivity extends Activity {
         switch (category) {
             case CATEGORY_CLOCK_DATE:
                 screenTitle.setText("שעון ותאריך");
-                screenSubtitle.setText("התאמה אישית של השעה והתאריכים");
+                screenSubtitle.setText("התאמת השעה והתאריך");
                 buildClockDateSettings();
                 break;
             case CATEGORY_ACTIVITY:
