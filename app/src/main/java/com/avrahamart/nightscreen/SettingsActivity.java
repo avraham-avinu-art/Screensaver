@@ -77,6 +77,11 @@ public class SettingsActivity extends Activity {
     private LinearLayout currentCard;
     private TextView screenTitle;
     private TextView screenSubtitle;
+    private LinearLayout screenHeader;
+    private LinearLayout headerTitleBlock;
+    private FrameLayout dashboardTitleIconBadge;
+    private View dashboardHeaderDivider;
+    private FrameLayout categoryBackButton;
     private int currentCategory = 0;
     private static final int CATEGORY_DASHBOARD = 0;
     private static final int CATEGORY_CLOCK_DATE = 1;
@@ -113,28 +118,26 @@ public class SettingsActivity extends Activity {
             });
         }
 
-        LinearLayout header = new LinearLayout(this);
-        header.setOrientation(LinearLayout.HORIZONTAL);
-        header.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        header.setGravity(Gravity.CENTER_VERTICAL);
-        header.setPadding(dp(2), dp(8), dp(2), dp(14));
+        screenHeader = new LinearLayout(this);
+        screenHeader.setOrientation(LinearLayout.HORIZONTAL);
+        // LTR order keeps category navigation at the physical left and the dashboard mark at the right.
+        screenHeader.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+        screenHeader.setGravity(Gravity.CENTER_VERTICAL);
+        screenHeader.setPadding(dp(2), dp(8), dp(2), dp(14));
 
-        // Static title area: the icon and text are decorative, not a clickable control.
-        FrameLayout titleIconBadge = new FrameLayout(this);
-        titleIconBadge.setBackground(roundOutline(ICON_SURFACE, dp(15), CARD_OUTLINE));
-        View titleIcon = makeIconGlyph("tune", ACCENT);
-        titleIconBadge.addView(titleIcon,
-                new FrameLayout.LayoutParams(dp(28), dp(28), Gravity.CENTER));
-        LinearLayout.LayoutParams titleIconParams =
-                new LinearLayout.LayoutParams(dp(52), dp(52));
-        titleIconParams.leftMargin = dp(14);
-        header.addView(titleIconBadge, titleIconParams);
+        categoryBackButton = makeCircularIconButton("חזרה למסך ההגדרות", "back-arrow");
+        LinearLayout.LayoutParams categoryBackParams =
+                new LinearLayout.LayoutParams(dp(40), dp(40));
+        categoryBackParams.rightMargin = dp(8);
+        screenHeader.addView(categoryBackButton, categoryBackParams);
+        categoryBackButton.setVisibility(View.GONE);
+        categoryBackButton.setOnClickListener(v -> buildDashboard());
 
-        LinearLayout titleBlock = new LinearLayout(this);
-        titleBlock.setOrientation(LinearLayout.VERTICAL);
-        titleBlock.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        titleBlock.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        titleBlock.setPadding(0, 0, 0, 0);
+        headerTitleBlock = new LinearLayout(this);
+        headerTitleBlock.setOrientation(LinearLayout.VERTICAL);
+        headerTitleBlock.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        headerTitleBlock.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        headerTitleBlock.setPadding(0, 0, 0, 0);
 
         screenTitle = textView("הגדרות", 27, ON_SURFACE);
         screenTitle.setIncludeFontPadding(false);
@@ -143,7 +146,7 @@ public class SettingsActivity extends Activity {
         screenTitle.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         screenTitle.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
         screenTitle.setTextDirection(View.TEXT_DIRECTION_RTL);
-        titleBlock.addView(screenTitle, new LinearLayout.LayoutParams(-1, -2));
+        headerTitleBlock.addView(screenTitle, new LinearLayout.LayoutParams(-1, -2));
 
         screenSubtitle = textView("התאמה אישית של השומר מסך", 14, MUTED);
         screenSubtitle.setIncludeFontPadding(false);
@@ -154,9 +157,20 @@ public class SettingsActivity extends Activity {
         LinearLayout.LayoutParams headerSubtitleParams =
                 new LinearLayout.LayoutParams(-1, -2);
         headerSubtitleParams.topMargin = dp(3);
-        titleBlock.addView(screenSubtitle, headerSubtitleParams);
+        headerTitleBlock.addView(screenSubtitle, headerSubtitleParams);
 
-        header.addView(titleBlock, new LinearLayout.LayoutParams(0, -2, 1f));
+        screenHeader.addView(headerTitleBlock, new LinearLayout.LayoutParams(0, -2, 1f));
+
+        // The settings symbol is shown only on the main dashboard.
+        dashboardTitleIconBadge = new FrameLayout(this);
+        dashboardTitleIconBadge.setBackground(roundOutline(ICON_SURFACE, dp(15), CARD_OUTLINE));
+        View titleIcon = makeIconGlyph("tune", ACCENT);
+        dashboardTitleIconBadge.addView(titleIcon,
+                new FrameLayout.LayoutParams(dp(28), dp(28), Gravity.CENTER));
+        LinearLayout.LayoutParams titleIconParams =
+                new LinearLayout.LayoutParams(dp(52), dp(52));
+        titleIconParams.leftMargin = dp(14);
+        screenHeader.addView(dashboardTitleIconBadge, titleIconParams);
 
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(false);
@@ -170,17 +184,17 @@ public class SettingsActivity extends Activity {
         scrollContent.setOrientation(LinearLayout.VERTICAL);
         scrollContent.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         scrollContent.setTextDirection(View.TEXT_DIRECTION_RTL);
-        scrollContent.addView(header, new LinearLayout.LayoutParams(-1, -2));
+        scrollContent.addView(screenHeader, new LinearLayout.LayoutParams(-1, -2));
 
-        View headerDivider = new View(this);
+        dashboardHeaderDivider = new View(this);
         GradientDrawable headerDividerGradient = new GradientDrawable(
                 GradientDrawable.Orientation.LEFT_RIGHT,
                 new int[]{SURFACE, CARD_OUTLINE, ACCENT, CARD_OUTLINE, SURFACE});
-        headerDivider.setBackground(headerDividerGradient);
+        dashboardHeaderDivider.setBackground(headerDividerGradient);
         LinearLayout.LayoutParams headerDividerParams =
                 new LinearLayout.LayoutParams(-1, dp(1));
         headerDividerParams.bottomMargin = dp(17);
-        scrollContent.addView(headerDivider, headerDividerParams);
+        scrollContent.addView(dashboardHeaderDivider, headerDividerParams);
 
         content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
@@ -191,31 +205,6 @@ public class SettingsActivity extends Activity {
         root.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1f));
 
         buildDashboard();
-
-        FrameLayout footer = new FrameLayout(this);
-        LinearLayout.LayoutParams footerParams =
-                new LinearLayout.LayoutParams(-1, dp(50));
-        footerParams.topMargin = dp(4);
-        root.addView(footer, footerParams);
-
-        // The dashboard no longer has a save row; keep only the overflow and back actions.
-        FrameLayout menuButton = makeOverflowButton();
-        FrameLayout.LayoutParams menuParams =
-                new FrameLayout.LayoutParams(dp(42), dp(42), Gravity.LEFT | Gravity.CENTER_VERTICAL);
-        footer.addView(menuButton, menuParams);
-        menuButton.setOnClickListener(v -> showOverflowMenu(menuButton));
-
-        FrameLayout backButton = makeCircularIconButton("חזרה למסך הקודם", "back-arrow");
-        FrameLayout.LayoutParams backParams =
-                new FrameLayout.LayoutParams(dp(42), dp(42), Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        footer.addView(backButton, backParams);
-        backButton.setOnClickListener(v -> {
-            if (currentCategory == CATEGORY_DASHBOARD) {
-                finish();
-            } else {
-                buildDashboard();
-            }
-        });
 
         setContentView(root);
     }
@@ -235,6 +224,15 @@ public class SettingsActivity extends Activity {
     }
 
 @Override
+    public void onBackPressed() {
+        if (currentCategory != CATEGORY_DASHBOARD) {
+            buildDashboard();
+        } else {
+            super.onBackPressed();
+        }
+    }
+
+    @Override
     protected void onResume() {
         super.onResume();
         if (content != null) {
@@ -263,122 +261,108 @@ public class SettingsActivity extends Activity {
         screenTitle.setText("הגדרות");
         screenSubtitle.setText("התאמה אישית של השומר מסך");
 
-        LinearLayout firstRow = dashboardRow();
-        addDashboardTile(firstRow, "הפעלה והתנהגות",
+        // Dashboard-only title/icon. Category pages use a centered text header.
+        dashboardTitleIconBadge.setVisibility(View.VISIBLE);
+        categoryBackButton.setVisibility(View.GONE);
+        dashboardHeaderDivider.setVisibility(View.VISIBLE);
+        headerTitleBlock.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        screenTitle.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        screenTitle.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
+        screenSubtitle.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        screenSubtitle.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
+
+        addDashboardButton("הפעלה והתנהגות",
                 "זמן פעילות, נעילה וטעינה",
-                "activity-history", CATEGORY_ACTIVITY);
-        addDashboardTile(firstRow, "מראה ועיצוב",
+                "power", CATEGORY_ACTIVITY);
+        addDashboardButton("מראה ועיצוב",
                 "צבע גופן ובהירות",
                 "palette", CATEGORY_APPEARANCE);
-        content.addView(firstRow, dashboardRowParams());
-
-        LinearLayout secondRow = dashboardRow();
-        addDashboardTile(secondRow, "שעון ותאריך",
+        addDashboardButton("שעון ותאריך",
                 "התאמת תצוגת השעה והתאריך",
-                "clock-size", CATEGORY_CLOCK_DATE);
-        addDashboardTile(secondRow, "נגן מדיה",
+                "calendar-clock", CATEGORY_CLOCK_DATE);
+        addDashboardButton("נגן מדיה",
                 "הצגה והתאמה",
-                "media-toggle", CATEGORY_PLAYER);
-        content.addView(secondRow, dashboardRowParams());
+                "music-note", CATEGORY_PLAYER);
 
         addDashboardNavigation();
     }
 
-    private LinearLayout dashboardRow() {
-        LinearLayout row = new LinearLayout(this);
-        row.setOrientation(LinearLayout.HORIZONTAL);
-        row.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        row.setGravity(Gravity.CENTER_VERTICAL);
-        return row;
-    }
-
-    private LinearLayout.LayoutParams dashboardRowParams() {
+    private LinearLayout.LayoutParams dashboardButtonParams() {
         LinearLayout.LayoutParams params =
                 new LinearLayout.LayoutParams(-1, -2);
         params.bottomMargin = dp(10);
         return params;
     }
 
-    private void addDashboardTile(LinearLayout row, String title, String description,
-                                  String iconName, int category) {
-        LinearLayout tile = new LinearLayout(this);
-        tile.setOrientation(LinearLayout.VERTICAL);
-        tile.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        tile.setGravity(Gravity.CENTER);
-        tile.setPadding(dp(11), dp(12), dp(11), dp(12));
-        tile.setBackground(roundOutline(CARD_SURFACE, dp(20), CARD_OUTLINE));
-        tile.setClickable(true);
-        tile.setFocusable(true);
-        tile.setContentDescription(title + ". " + description);
+    private void addDashboardButton(String title, String description,
+                                    String iconName, int category) {
+        LinearLayout button = new LinearLayout(this);
+        button.setOrientation(LinearLayout.HORIZONTAL);
+        button.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        button.setGravity(Gravity.CENTER_VERTICAL);
+        button.setPadding(dp(14), dp(10), dp(14), dp(10));
+        button.setMinimumHeight(dp(78));
+        button.setBackground(roundOutline(CARD_SURFACE, dp(17), CARD_OUTLINE));
+        button.setClickable(true);
+        button.setFocusable(true);
+        button.setContentDescription(title + ". " + description);
 
         FrameLayout iconBadge = new FrameLayout(this);
         iconBadge.setBackground(roundOutline(ICON_SURFACE, dp(12), CARD_OUTLINE));
-        View tileGlyph = makeIconGlyph(iconName, ACCENT);
-        iconBadge.addView(tileGlyph,
-                new FrameLayout.LayoutParams(dp(31), dp(31), Gravity.CENTER));
+        View glyph = makeIconGlyph(iconName, ACCENT);
+        iconBadge.addView(glyph,
+                new FrameLayout.LayoutParams(dp(29), dp(29), Gravity.CENTER));
         LinearLayout.LayoutParams iconParams =
                 new LinearLayout.LayoutParams(dp(48), dp(48));
-        iconParams.bottomMargin = dp(7);
-        tile.addView(iconBadge, iconParams);
+        iconParams.leftMargin = dp(13);
+        button.addView(iconBadge, iconParams);
+
+        LinearLayout copy = new LinearLayout(this);
+        copy.setOrientation(LinearLayout.VERTICAL);
+        copy.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        copy.setGravity(Gravity.CENTER_VERTICAL);
 
         TextView titleView = textView(title, 18, ON_SURFACE);
         titleView.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD));
-        titleView.setGravity(Gravity.CENTER);
-        titleView.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-        titleView.setTextDirection(View.TEXT_DIRECTION_RTL);
         titleView.setIncludeFontPadding(false);
-        tile.addView(titleView, new LinearLayout.LayoutParams(-1, -2));
+        titleView.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        titleView.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
+        titleView.setTextDirection(View.TEXT_DIRECTION_RTL);
+        copy.addView(titleView, new LinearLayout.LayoutParams(-1, -2));
 
-        TextView descriptionView = textView(description, 13, MUTED);
-        descriptionView.setGravity(Gravity.CENTER);
-        descriptionView.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        TextView descriptionView = textView(description, 14, MUTED);
+        descriptionView.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
+        descriptionView.setIncludeFontPadding(false);
+        descriptionView.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        descriptionView.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
         descriptionView.setTextDirection(View.TEXT_DIRECTION_RTL);
-        descriptionView.setLineSpacing(dp(1), 1f);
+        descriptionView.setSingleLine(false);
         LinearLayout.LayoutParams descriptionParams =
                 new LinearLayout.LayoutParams(-1, -2);
         descriptionParams.topMargin = dp(4);
-        tile.addView(descriptionView, descriptionParams);
+        copy.addView(descriptionView, descriptionParams);
 
-        tile.setOnClickListener(v -> showCategory(category));
-        LinearLayout.LayoutParams tileParams =
-                new LinearLayout.LayoutParams(0, dp(142), 1f);
-        tileParams.leftMargin = dp(5);
-        tileParams.rightMargin = dp(5);
-        row.addView(tile, tileParams);
+        button.addView(copy, new LinearLayout.LayoutParams(0, -2, 1f));
+        button.setOnClickListener(v -> showCategory(category));
+        content.addView(button, dashboardButtonParams());
     }
 
     private void addDashboardNavigation() {
-        LinearLayout navigation = new LinearLayout(this);
-        navigation.setOrientation(LinearLayout.VERTICAL);
-        navigation.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        navigation.setBackground(roundOutline(CARD_SURFACE, dp(17), CARD_OUTLINE));
-        addDashboardNavigationRow(navigation, "ניהול הרשאות",
-                "shield-alert", () ->
-                        startActivity(new Intent(this, PermissionsActivity.class)));
-        View divider = new View(this);
-        divider.setBackgroundColor(CARD_OUTLINE);
-        LinearLayout.LayoutParams dividerParams =
-                new LinearLayout.LayoutParams(-1, dp(1));
-        dividerParams.setMargins(dp(12), 0, dp(12), 0);
-        navigation.addView(divider, dividerParams);
-        addDashboardNavigationRow(navigation, "מדריך שימוש",
-                "book-open", () ->
-                        startActivity(new Intent(this, GuideActivity.class)));
-        LinearLayout.LayoutParams navParams =
-                new LinearLayout.LayoutParams(-1, -2);
-        navParams.topMargin = dp(2);
-        navParams.bottomMargin = dp(4);
-        content.addView(navigation, navParams);
+        addDashboardNavigationButton("ניהול הרשאות", "shield-alert",
+                () -> startActivity(new Intent(this, PermissionsActivity.class)));
+        addDashboardNavigationButton("מדריך שימוש", "book-open",
+                () -> startActivity(new Intent(this, GuideActivity.class)));
     }
 
-    private void addDashboardNavigationRow(LinearLayout parent, String title,
-                                           String iconName, Runnable action) {
+    private void addDashboardNavigationButton(String title, String iconName,
+                                              Runnable action) {
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         row.setGravity(Gravity.CENTER_VERTICAL);
-        row.setPadding(dp(12), dp(2), dp(12), dp(2));
-        row.setMinimumHeight(dp(53));
+        row.setPadding(dp(13), dp(9), dp(13), dp(9));
+        row.setMinimumHeight(dp(58));
+        row.setBackground(roundOutline(CARD_SURFACE, dp(15), CARD_OUTLINE));
         row.setClickable(true);
         row.setFocusable(true);
 
@@ -389,6 +373,7 @@ public class SettingsActivity extends Activity {
         label.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         label.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         label.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
+        label.setTextDirection(View.TEXT_DIRECTION_RTL);
         LinearLayout.LayoutParams labelParams =
                 new LinearLayout.LayoutParams(0, -1, 1f);
         labelParams.rightMargin = dp(12);
@@ -397,11 +382,24 @@ public class SettingsActivity extends Activity {
         View arrow = makeIconGlyph("chevron", MUTED);
         row.addView(arrow, new LinearLayout.LayoutParams(dp(18), dp(18)));
         row.setOnClickListener(v -> action.run());
-        parent.addView(row, new LinearLayout.LayoutParams(-1, dp(54)));
+
+        LinearLayout.LayoutParams params =
+                new LinearLayout.LayoutParams(-1, -2);
+        params.topMargin = dp(2);
+        params.bottomMargin = dp(9);
+        content.addView(row, params);
     }
 
     private void showCategory(int category) {
         currentCategory = category;
+        dashboardTitleIconBadge.setVisibility(View.GONE);
+        categoryBackButton.setVisibility(View.VISIBLE);
+        dashboardHeaderDivider.setVisibility(View.GONE);
+        headerTitleBlock.setGravity(Gravity.CENTER);
+        screenTitle.setGravity(Gravity.CENTER);
+        screenTitle.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        screenSubtitle.setGravity(Gravity.CENTER);
+        screenSubtitle.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         content.removeAllViews();
         clockDateCard = null;
         playerFrameCard = null;
@@ -527,34 +525,6 @@ public class SettingsActivity extends Activity {
         addDiscreteSlider(playerFrameCard, "עיגול פינות",
                 new String[]{"ישר", "עדין", "מעוגל"},
                 new String[]{"0", "10", "20"}, "frameRadius");
-    }
-
-    private FrameLayout makeOverflowButton() {
-        FrameLayout button = new FrameLayout(this);
-        button.setContentDescription("אפשרויות נוספות");
-        button.setClickable(true);
-        button.setFocusable(true);
-        button.setBackground(pillBackground(ACCENT, dp(22)));
-        if (Build.VERSION.SDK_INT >= 21) button.setElevation(dp(2));
-        TextView dots = textView("⋮", 27, Color.rgb(7, 31, 49));
-        dots.setGravity(Gravity.CENTER);
-        dots.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-        dots.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-        button.addView(dots, new FrameLayout.LayoutParams(-1, -1));
-        return button;
-    }
-
-    private void showOverflowMenu(View anchor) {
-        PopupMenu menu = new PopupMenu(this, anchor);
-        menu.getMenu().add("ניהול הרשאות").setOnMenuItemClickListener(item -> {
-            startActivity(new Intent(this, PermissionsActivity.class));
-            return true;
-        });
-        menu.getMenu().add("מדריך שימוש").setOnMenuItemClickListener(item -> {
-            startActivity(new Intent(this, GuideActivity.class));
-            return true;
-        });
-        menu.show();
     }
 
     private LinearLayout addCard(LinearLayout parent, String title) {
