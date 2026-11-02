@@ -1982,16 +1982,22 @@ public class MainActivity extends Activity {
     private void recordLockScreenCapabilityAtScreenOff() {
         // Do not infer a missing keyguard while this app is configured to prevent it.
         if (LockBehaviorPreferences.isPreventionEnabled(this)) return;
-        try {
-            android.app.KeyguardManager keyguard =
-                    (android.app.KeyguardManager) getSystemService(KEYGUARD_SERVICE);
-            if (keyguard == null) return;
-            getSharedPreferences("settings", MODE_PRIVATE).edit()
-                    .putBoolean("screenLockObservationKnown", true)
-                    .putBoolean("screenLockObserved", keyguard.isKeyguardLocked())
-                    .apply();
-        } catch (Throwable ignored) {
-        }
+
+        // ACTION_SCREEN_OFF may arrive before the keyguard transition finishes.
+        // Sample after the transition, and only if the display is still off.
+        handler.postDelayed(() -> {
+            if (isScreenInteractive()) return;
+            try {
+                android.app.KeyguardManager keyguard =
+                        (android.app.KeyguardManager) getSystemService(KEYGUARD_SERVICE);
+                if (keyguard == null) return;
+                getSharedPreferences("settings", MODE_PRIVATE).edit()
+                        .putBoolean("screenLockObservationKnown", true)
+                        .putBoolean("screenLockObserved", keyguard.isKeyguardLocked())
+                        .apply();
+            } catch (Throwable ignored) {
+            }
+        }, 500L);
     }
 
     private boolean isDeviceCharging() {
