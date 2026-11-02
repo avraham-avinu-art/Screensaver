@@ -747,14 +747,26 @@ public class SettingsActivity extends Activity {
             FrameLayout segment = new FrameLayout(this);
             segment.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
 
+            // Draw the separator on the fixed rail first. The selected tile is
+            // layered above it, so the line remains continuous underneath the
+            // selection instead of visually cutting through the selected tile.
+            if (i > 0) {
+                View divider = new View(this);
+                divider.setBackgroundColor(Color.rgb(104, 132, 160));
+                FrameLayout.LayoutParams dividerParams =
+                        new FrameLayout.LayoutParams(dp(1), dp(23),
+                                Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+                segment.addView(divider, dividerParams);
+            }
+
             View selectionChip = new View(this);
             selectionChip.setBackground(roundOutline(ACCENT, dp(9), ACCENT));
             selectionChip.setVisibility(i == initial ? View.VISIBLE : View.GONE);
             FrameLayout.LayoutParams chipParams =
                     new FrameLayout.LayoutParams(-1, -1);
-            // Fill the segment horizontally: the selected tile reaches both
-            // outer sides and meets the separator between adjacent options.
-            chipParams.setMargins(0, dp(1), 0, dp(1));
+            // Fill the full row height. At the segment edge that owns a divider,
+            // stop exactly at its inner edge so there is no gap before the line.
+            chipParams.setMargins(0, 0, i > 0 ? dp(1) : 0, 0);
             segment.addView(selectionChip, chipParams);
             selectionChips[i] = selectionChip;
 
@@ -768,7 +780,7 @@ public class SettingsActivity extends Activity {
             option.setIncludeFontPadding(false);
             option.setPadding(dp(2), 0, dp(2), 0);
             if (Build.VERSION.SDK_INT >= 26) {
-                // Preserve one row on narrow screens by reducing the font size.
+                // Keep all options on one line on narrow screens; shrink text instead.
                 option.setAutoSizeTextTypeUniformWithConfiguration(
                         10, 13, 1, android.util.TypedValue.COMPLEX_UNIT_SP);
             }
@@ -778,15 +790,6 @@ public class SettingsActivity extends Activity {
                     new FrameLayout.LayoutParams(-1, -1);
             segment.addView(option, optionParams);
             options[i] = option;
-
-            if (i > 0) {
-                View divider = new View(this);
-                divider.setBackgroundColor(Color.rgb(104, 132, 160));
-                FrameLayout.LayoutParams dividerParams =
-                        new FrameLayout.LayoutParams(dp(1), dp(23),
-                                Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-                segment.addView(divider, dividerParams);
-            }
 
             segment.setContentDescription(label + ": " + names[i]);
             segment.setClickable(true);
@@ -810,7 +813,7 @@ public class SettingsActivity extends Activity {
         LinearLayout.LayoutParams railParams =
                 new LinearLayout.LayoutParams(-1, dp(46));
         railParams.topMargin = dp(2);
-        // Extend the selector a little on both sides without changing its row height.
+        // Slightly extend the same selector row to both sides, without changing height.
         railParams.leftMargin = dp(4);
         railParams.rightMargin = dp(4);
         block.addView(rail, railParams);
