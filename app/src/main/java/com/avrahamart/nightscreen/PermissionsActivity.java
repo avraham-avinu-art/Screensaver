@@ -110,6 +110,11 @@ public class PermissionsActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        String disabledFeatures =
+                PermissionDependencySync.disableFeaturesWithoutPermissions(this);
+        if (!disabledFeatures.isEmpty()) {
+            Toast.makeText(this, disabledFeatures, Toast.LENGTH_LONG).show();
+        }
         updatePermissionStatuses();
     }
 
@@ -338,14 +343,25 @@ public class PermissionsActivity extends Activity {
 
     private void openDeviceAdminSettings() {
         try {
-            startActivity(new Intent("android.settings.DEVICE_ADMIN_SETTINGS"));
-        } catch (Throwable first) {
-            try {
-                startActivity(new Intent(Settings.ACTION_SECURITY_SETTINGS));
-            } catch (Throwable ignored) {
-                Toast.makeText(this, "לא ניתן לפתוח את הגדרות אבטחת המכשיר.",
-                        Toast.LENGTH_LONG).show();
+            Intent intent = new Intent("android.settings.DEVICE_ADMIN_SETTINGS");
+            ComponentName target = intent.resolveActivity(getPackageManager());
+            if (target != null) {
+                String className = target.getClassName().toLowerCase(java.util.Locale.ROOT);
+                if (className.contains("deviceadmin")
+                        || className.contains("device_admin")
+                        || className.contains("adminsettings")) {
+                    intent.setComponent(target);
+                    startActivity(intent);
+                    return;
+                }
             }
+            Toast.makeText(this,
+                    "במכשיר זה Android אינו מספק קיצור דרך ישיר לביטול הרשאת מנהל המכשיר. כדי לבטל אותה, פתח הגדרות > אבטחה > אפליקציות מנהל מכשיר > שומר מסך.",
+                    Toast.LENGTH_LONG).show();
+        } catch (Throwable ignored) {
+            Toast.makeText(this,
+                    "לא ניתן לפתוח ישירות את ניהול מנהלי המכשיר. פתח הגדרות > אבטחה > אפליקציות מנהל מכשיר > שומר מסך.",
+                    Toast.LENGTH_LONG).show();
         }
     }
 
