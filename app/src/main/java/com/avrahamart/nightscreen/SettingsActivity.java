@@ -77,6 +77,7 @@ public class SettingsActivity extends Activity {
     private LinearLayout currentCard;
     private TextView screenTitle;
     private TextView screenSubtitle;
+    private ScrollView settingsScroll;
     private LinearLayout screenHeader;
     private LinearLayout headerTitleBlock;
     private FrameLayout dashboardTitleIconBadge;
@@ -125,10 +126,10 @@ public class SettingsActivity extends Activity {
         screenHeader.setGravity(Gravity.CENTER_VERTICAL);
         screenHeader.setPadding(dp(2), dp(8), dp(2), dp(14));
 
-        categoryBackButton = makeCircularIconButton("חזרה למסך ההגדרות", "back-arrow");
+        categoryBackButton = makeExitArrowButton("חזרה למסך ההגדרות");
         LinearLayout.LayoutParams categoryBackParams =
-                new LinearLayout.LayoutParams(dp(40), dp(40));
-        categoryBackParams.rightMargin = dp(8);
+                new LinearLayout.LayoutParams(dp(36), dp(36));
+        categoryBackParams.rightMargin = dp(4);
         screenHeader.addView(categoryBackButton, categoryBackParams);
         categoryBackButton.setVisibility(View.GONE);
         categoryBackButton.setOnClickListener(v -> buildDashboard());
@@ -172,13 +173,13 @@ public class SettingsActivity extends Activity {
         titleIconParams.leftMargin = dp(14);
         screenHeader.addView(dashboardTitleIconBadge, titleIconParams);
 
-        ScrollView scroll = new ScrollView(this);
-        scroll.setFillViewport(false);
-        scroll.setVerticalScrollBarEnabled(false);
-        scroll.setOverScrollMode(View.OVER_SCROLL_IF_CONTENT_SCROLLS);
-        scroll.setClipToPadding(false);
-        scroll.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        scroll.setPadding(0, dp(1), 0, dp(4));
+        settingsScroll = new ScrollView(this);
+        settingsScroll.setFillViewport(true);
+        settingsScroll.setVerticalScrollBarEnabled(false);
+        settingsScroll.setOverScrollMode(View.OVER_SCROLL_IF_CONTENT_SCROLLS);
+        settingsScroll.setClipToPadding(false);
+        settingsScroll.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        settingsScroll.setPadding(0, dp(1), 0, dp(4));
 
         LinearLayout scrollContent = new LinearLayout(this);
         scrollContent.setOrientation(LinearLayout.VERTICAL);
@@ -201,25 +202,24 @@ public class SettingsActivity extends Activity {
         content.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         content.setTextDirection(View.TEXT_DIRECTION_RTL);
         scrollContent.addView(content, new LinearLayout.LayoutParams(-1, -2));
-        scroll.addView(scrollContent, new ScrollView.LayoutParams(-1, -2));
-        root.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1f));
+        settingsScroll.addView(scrollContent, new ScrollView.LayoutParams(-1, -2));
+        root.addView(settingsScroll, new LinearLayout.LayoutParams(-1, 0, 1f));
 
         buildDashboard();
 
         setContentView(root);
     }
 
-    private FrameLayout makeCircularIconButton(String description, String iconType) {
+    private FrameLayout makeExitArrowButton(String description) {
         FrameLayout button = new FrameLayout(this);
         button.setContentDescription(description);
         button.setClickable(true);
         button.setFocusable(true);
         button.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-        button.setBackground(pillBackground(ACCENT, dp(22)));
-        if (Build.VERSION.SDK_INT >= 21) button.setElevation(dp(2));
-        View glyph = makeIconGlyph(iconType, Color.rgb(7, 31, 49));
+        button.setBackgroundColor(Color.TRANSPARENT);
+        View glyph = makeIconGlyph("exit-right", ACCENT);
         button.addView(glyph,
-                new FrameLayout.LayoutParams(dp(24), dp(24), Gravity.CENTER));
+                new FrameLayout.LayoutParams(dp(19), dp(19), Gravity.CENTER));
         return button;
     }
 
@@ -257,11 +257,14 @@ public class SettingsActivity extends Activity {
         playerFrameCard = null;
         activityCapabilityNotice = null;
         if (content == null) return;
+        if (settingsScroll != null) settingsScroll.setFillViewport(true);
+        content.setLayoutParams(new LinearLayout.LayoutParams(-1, 0, 1f));
         content.removeAllViews();
         screenTitle.setText("הגדרות");
         screenSubtitle.setText("התאמה אישית של השומר מסך");
 
         // Dashboard-only title/icon. Category pages use a centered text header.
+        screenHeader.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         dashboardTitleIconBadge.setVisibility(View.VISIBLE);
         categoryBackButton.setVisibility(View.GONE);
         dashboardHeaderDivider.setVisibility(View.VISIBLE);
@@ -289,62 +292,15 @@ public class SettingsActivity extends Activity {
 
     private LinearLayout.LayoutParams dashboardButtonParams() {
         LinearLayout.LayoutParams params =
-                new LinearLayout.LayoutParams(-1, -2);
-        params.bottomMargin = dp(10);
+                new LinearLayout.LayoutParams(-1, 0, 1f);
+        params.bottomMargin = dp(8);
         return params;
     }
 
     private void addDashboardButton(String title, String description,
                                     String iconName, int category) {
-        LinearLayout button = new LinearLayout(this);
-        button.setOrientation(LinearLayout.HORIZONTAL);
-        button.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        button.setGravity(Gravity.CENTER_VERTICAL);
-        button.setPadding(dp(14), dp(10), dp(14), dp(10));
-        button.setMinimumHeight(dp(78));
-        button.setBackground(roundOutline(CARD_SURFACE, dp(17), CARD_OUTLINE));
-        button.setClickable(true);
-        button.setFocusable(true);
-        button.setContentDescription(title + ". " + description);
-
-        FrameLayout iconBadge = new FrameLayout(this);
-        iconBadge.setBackground(roundOutline(ICON_SURFACE, dp(12), CARD_OUTLINE));
-        View glyph = makeIconGlyph(iconName, ACCENT);
-        iconBadge.addView(glyph,
-                new FrameLayout.LayoutParams(dp(29), dp(29), Gravity.CENTER));
-        LinearLayout.LayoutParams iconParams =
-                new LinearLayout.LayoutParams(dp(48), dp(48));
-        iconParams.leftMargin = dp(13);
-        button.addView(iconBadge, iconParams);
-
-        LinearLayout copy = new LinearLayout(this);
-        copy.setOrientation(LinearLayout.VERTICAL);
-        copy.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        copy.setGravity(Gravity.CENTER_VERTICAL);
-
-        TextView titleView = textView(title, 18, ON_SURFACE);
-        titleView.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD));
-        titleView.setIncludeFontPadding(false);
-        titleView.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        titleView.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
-        titleView.setTextDirection(View.TEXT_DIRECTION_RTL);
-        copy.addView(titleView, new LinearLayout.LayoutParams(-1, -2));
-
-        TextView descriptionView = textView(description, 14, MUTED);
-        descriptionView.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
-        descriptionView.setIncludeFontPadding(false);
-        descriptionView.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        descriptionView.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
-        descriptionView.setTextDirection(View.TEXT_DIRECTION_RTL);
-        descriptionView.setSingleLine(false);
-        LinearLayout.LayoutParams descriptionParams =
-                new LinearLayout.LayoutParams(-1, -2);
-        descriptionParams.topMargin = dp(4);
-        copy.addView(descriptionView, descriptionParams);
-
-        button.addView(copy, new LinearLayout.LayoutParams(0, -2, 1f));
-        button.setOnClickListener(v -> showCategory(category));
-        content.addView(button, dashboardButtonParams());
+        addDashboardActionButton(title, description, iconName,
+                () -> showCategory(category));
     }
 
     private void addDashboardNavigation() {
@@ -356,42 +312,78 @@ public class SettingsActivity extends Activity {
 
     private void addDashboardNavigationButton(String title, String iconName,
                                               Runnable action) {
-        LinearLayout row = new LinearLayout(this);
-        row.setOrientation(LinearLayout.HORIZONTAL);
-        row.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        row.setGravity(Gravity.CENTER_VERTICAL);
-        row.setPadding(dp(13), dp(9), dp(13), dp(9));
-        row.setMinimumHeight(dp(58));
-        row.setBackground(roundOutline(CARD_SURFACE, dp(15), CARD_OUTLINE));
-        row.setClickable(true);
-        row.setFocusable(true);
+        addDashboardActionButton(title, null, iconName, action);
+    }
 
-        FrameLayout icon = makeIconBadge(iconName, dp(30));
-        row.addView(icon, new LinearLayout.LayoutParams(dp(30), dp(30)));
+    private void addDashboardActionButton(String title, String description,
+                                          String iconName, Runnable action) {
+        LinearLayout button = new LinearLayout(this);
+        button.setOrientation(LinearLayout.HORIZONTAL);
+        button.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        button.setGravity(Gravity.CENTER_VERTICAL);
+        button.setPadding(dp(14), dp(8), dp(14), dp(8));
+        button.setMinimumHeight(dp(76));
+        button.setBackground(roundOutline(CARD_SURFACE, dp(17), CARD_OUTLINE));
+        button.setClickable(true);
+        button.setFocusable(true);
+        button.setContentDescription(description == null || description.isEmpty()
+                ? title : title + ". " + description);
 
-        TextView label = textView(title, 16, ON_SURFACE);
-        label.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-        label.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        label.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
-        label.setTextDirection(View.TEXT_DIRECTION_RTL);
-        LinearLayout.LayoutParams labelParams =
-                new LinearLayout.LayoutParams(0, -1, 1f);
-        labelParams.rightMargin = dp(12);
-        row.addView(label, labelParams);
+        FrameLayout iconBadge = new FrameLayout(this);
+        iconBadge.setBackground(roundOutline(ICON_SURFACE, dp(12), CARD_OUTLINE));
+        View glyph = makeIconGlyph(iconName, ACCENT);
+        iconBadge.addView(glyph,
+                new FrameLayout.LayoutParams(dp(28), dp(28), Gravity.CENTER));
+        LinearLayout.LayoutParams iconParams =
+                new LinearLayout.LayoutParams(dp(46), dp(46));
+        iconParams.leftMargin = dp(13);
+        button.addView(iconBadge, iconParams);
 
-        View arrow = makeIconGlyph("chevron", MUTED);
-        row.addView(arrow, new LinearLayout.LayoutParams(dp(18), dp(18)));
-        row.setOnClickListener(v -> action.run());
+        LinearLayout copy = new LinearLayout(this);
+        copy.setOrientation(LinearLayout.VERTICAL);
+        copy.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        copy.setGravity(Gravity.CENTER_VERTICAL);
 
-        LinearLayout.LayoutParams params =
-                new LinearLayout.LayoutParams(-1, -2);
-        params.topMargin = dp(2);
-        params.bottomMargin = dp(9);
-        content.addView(row, params);
+        TextView titleView = textView(title, 17, ON_SURFACE);
+        titleView.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD));
+        titleView.setIncludeFontPadding(false);
+        titleView.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        titleView.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
+        titleView.setTextDirection(View.TEXT_DIRECTION_RTL);
+        copy.addView(titleView, new LinearLayout.LayoutParams(-1, -2));
+
+        if (description != null && !description.isEmpty()) {
+            TextView descriptionView = textView(description, 13, MUTED);
+            descriptionView.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
+            descriptionView.setIncludeFontPadding(false);
+            descriptionView.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+            descriptionView.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
+            descriptionView.setTextDirection(View.TEXT_DIRECTION_RTL);
+            descriptionView.setSingleLine(true);
+            descriptionView.setEllipsize(android.text.TextUtils.TruncateAt.END);
+            LinearLayout.LayoutParams descriptionParams =
+                    new LinearLayout.LayoutParams(-1, -2);
+            descriptionParams.topMargin = dp(3);
+            copy.addView(descriptionView, descriptionParams);
+        }
+
+        button.addView(copy, new LinearLayout.LayoutParams(0, -2, 1f));
+
+        if (description == null || description.isEmpty()) {
+            View arrow = makeIconGlyph("chevron", MUTED);
+            LinearLayout.LayoutParams arrowParams =
+                    new LinearLayout.LayoutParams(dp(18), dp(18));
+            arrowParams.rightMargin = dp(8);
+            button.addView(arrow, arrowParams);
+        }
+
+        button.setOnClickListener(v -> action.run());
+        content.addView(button, dashboardButtonParams());
     }
 
     private void showCategory(int category) {
         currentCategory = category;
+        screenHeader.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         dashboardTitleIconBadge.setVisibility(View.GONE);
         categoryBackButton.setVisibility(View.VISIBLE);
         dashboardHeaderDivider.setVisibility(View.GONE);
@@ -400,6 +392,8 @@ public class SettingsActivity extends Activity {
         screenTitle.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         screenSubtitle.setGravity(Gravity.CENTER);
         screenSubtitle.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        if (settingsScroll != null) settingsScroll.setFillViewport(false);
+        content.setLayoutParams(new LinearLayout.LayoutParams(-1, -2));
         content.removeAllViews();
         clockDateCard = null;
         playerFrameCard = null;
@@ -913,7 +907,7 @@ public class SettingsActivity extends Activity {
         LinearLayout block = new LinearLayout(this);
         block.setOrientation(LinearLayout.VERTICAL);
         block.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        block.setPadding(dp(4), dp(2), dp(4), dp(5));
+        block.setPadding(0, 0, 0, dp(2));
 
         LinearLayout headingRow = new LinearLayout(this);
         headingRow.setOrientation(LinearLayout.HORIZONTAL);
@@ -933,11 +927,11 @@ public class SettingsActivity extends Activity {
                 new LinearLayout.LayoutParams(dp(30), dp(30));
         iconParams.leftMargin = dp(9);
         headingRow.addView(settingIcon, iconParams);
-        block.addView(headingRow, new LinearLayout.LayoutParams(-1, dp(32)));
+        block.addView(headingRow, new LinearLayout.LayoutParams(-1, dp(29)));
 
         int initial = selectedIndex(key, values);
         FrameLayout rail = new FrameLayout(this);
-        rail.setBackground(roundOutline(CONTROL_SURFACE, dp(12), OUTLINE));
+        rail.setBackground(roundOutline(CONTROL_SURFACE, dp(10), OUTLINE));
         if (Build.VERSION.SDK_INT >= 21) rail.setClipToOutline(true);
 
         LinearLayout segments = new LinearLayout(this);
@@ -952,26 +946,12 @@ public class SettingsActivity extends Activity {
             FrameLayout segment = new FrameLayout(this);
             segment.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
 
-            // Draw the separator on the fixed rail first. The selected tile is
-            // layered above it, so the line remains continuous underneath the
-            // selection instead of visually cutting through the selected tile.
-            if (i > 0) {
-                View divider = new View(this);
-                divider.setBackgroundColor(Color.rgb(104, 132, 160));
-                FrameLayout.LayoutParams dividerParams =
-                        new FrameLayout.LayoutParams(dp(1), dp(23),
-                                Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-                segment.addView(divider, dividerParams);
-            }
-
             View selectionChip = new View(this);
             selectionChip.setBackground(roundOutline(ACCENT, dp(9), ACCENT));
             selectionChip.setVisibility(i == initial ? View.VISIBLE : View.GONE);
             FrameLayout.LayoutParams chipParams =
                     new FrameLayout.LayoutParams(-1, -1);
-            // Fill the full row height. At the segment edge that owns a divider,
-            // stop exactly at its inner edge so there is no gap before the line.
-            chipParams.setMargins(0, 0, i > 0 ? dp(1) : 0, 0);
+            // The selected chip fills its whole segment without internal separator lines.
             segment.addView(selectionChip, chipParams);
             selectionChips[i] = selectionChip;
 
@@ -1011,21 +991,21 @@ public class SettingsActivity extends Activity {
                 }
                 if ("screenSaverDuration".equals(key)) updateDeviceCapabilityNotice();
             });
-            segments.addView(segment, new LinearLayout.LayoutParams(0, dp(42), 1f));
+            segments.addView(segment, new LinearLayout.LayoutParams(0, dp(36), 1f));
         }
 
         rail.addView(segments, new FrameLayout.LayoutParams(-1, -1));
         LinearLayout.LayoutParams railParams =
-                new LinearLayout.LayoutParams(-1, dp(46));
-        railParams.topMargin = dp(2);
-        // Slightly extend the same selector row to both sides, without changing height.
-        railParams.leftMargin = dp(4);
-        railParams.rightMargin = dp(4);
+                new LinearLayout.LayoutParams(-1, dp(38));
+        railParams.topMargin = dp(1);
+        // Use the full card content width to prevent option labels from clipping.
+        railParams.leftMargin = -dp(6);
+        railParams.rightMargin = -dp(6);
         block.addView(rail, railParams);
 
         LinearLayout.LayoutParams blockParams =
                 new LinearLayout.LayoutParams(-1, -2);
-        blockParams.bottomMargin = dp(3);
+        blockParams.bottomMargin = dp(1);
         card.addView(block, blockParams);
     }
 
