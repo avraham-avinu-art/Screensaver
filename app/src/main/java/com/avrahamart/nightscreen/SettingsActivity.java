@@ -59,6 +59,9 @@ public class SettingsActivity extends Activity {
 
     private SharedPreferences prefs;
     private LinearLayout content;
+    private LinearLayout currentSettingsGroup;
+    private LinearLayout currentSettingsGroupParent;
+    private boolean settingsGroupBreakAfterPrevious;
     private LinearLayout clockDateCard;
     private LinearLayout playerFrameCard;
     private LinearLayout notificationAccessCard;
@@ -228,6 +231,9 @@ public class SettingsActivity extends Activity {
         if (settingsScroll != null) settingsScroll.setFillViewport(true);
         content.setLayoutParams(new LinearLayout.LayoutParams(-1, 0, 1f));
         content.removeAllViews();
+        currentSettingsGroup = null;
+        currentSettingsGroupParent = null;
+        settingsGroupBreakAfterPrevious = false;
         screenTitle.setText("הגדרות");
         screenSubtitle.setText("התאמה אישית של השומר מסך");
 
@@ -364,6 +370,9 @@ public class SettingsActivity extends Activity {
         if (settingsScroll != null) settingsScroll.setFillViewport(true);
         content.setLayoutParams(new LinearLayout.LayoutParams(-1, -2));
         content.removeAllViews();
+        currentSettingsGroup = null;
+        currentSettingsGroupParent = null;
+        settingsGroupBreakAfterPrevious = false;
         clockDateCard = null;
         playerFrameCard = null;
         activityCapabilityNotice = null;
@@ -484,21 +493,53 @@ public class SettingsActivity extends Activity {
     }
 
     private LinearLayout addSettingCard(LinearLayout parent, String label, String key) {
+        boolean beginsNewGroup = currentSettingsGroup == null
+                || currentSettingsGroupParent != parent
+                || settingsGroupBreakAfterPrevious;
+
+        if (beginsNewGroup) {
+            if (currentSettingsGroup != null
+                    && currentSettingsGroupParent == parent) {
+                LinearLayout.LayoutParams previousGroupParams =
+                        (LinearLayout.LayoutParams) currentSettingsGroup.getLayoutParams();
+                // Space is reserved only between distinct groups, not between rows.
+                previousGroupParams.bottomMargin = dp(8);
+                currentSettingsGroup.setLayoutParams(previousGroupParams);
+            }
+
+            currentSettingsGroup = new LinearLayout(this);
+            currentSettingsGroup.setOrientation(LinearLayout.VERTICAL);
+            currentSettingsGroup.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+            currentSettingsGroup.setBackground(
+                    roundOutline(CARD_SURFACE, dp(17), CARD_OUTLINE));
+            LinearLayout.LayoutParams groupParams =
+                    new LinearLayout.LayoutParams(-1, -2);
+            groupParams.bottomMargin = 0;
+            parent.addView(currentSettingsGroup, groupParams);
+            currentSettingsGroupParent = parent;
+            settingsGroupBreakAfterPrevious = false;
+        } else if (currentSettingsGroup.getChildCount() > 0) {
+            View divider = new View(this);
+            divider.setBackgroundColor(Color.rgb(30, 48, 69));
+            LinearLayout.LayoutParams dividerParams =
+                    new LinearLayout.LayoutParams(-1, dp(1));
+            dividerParams.leftMargin = dp(13);
+            dividerParams.rightMargin = dp(13);
+            currentSettingsGroup.addView(divider, dividerParams);
+        }
+
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
         card.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         card.setTextDirection(View.TEXT_DIRECTION_RTL);
         card.setPadding(dp(13), dp(10), dp(13), dp(12));
-        card.setBackground(roundOutline(CARD_SURFACE, dp(18), Color.rgb(30, 48, 69)));
+        // Individual settings are now rows inside one shared outer group frame.
+        card.setBackgroundColor(Color.TRANSPARENT);
 
         LinearLayout.LayoutParams cardParams =
                 new LinearLayout.LayoutParams(-1, -2);
-        cardParams.bottomMargin =
-                ("continueOnLockScreen".equals(key)
-                || "autoStartOnWake".equals(key)
-                || "screenBrightness".equals(key)
-                || "playerPosition".equals(key)) ? dp(8) : 0;
-        parent.addView(card, cardParams);
+        cardParams.bottomMargin = 0;
+        currentSettingsGroup.addView(card, cardParams);
 
         LinearLayout header = new LinearLayout(this);
         header.setOrientation(LinearLayout.HORIZONTAL);
@@ -554,6 +595,13 @@ public class SettingsActivity extends Activity {
         }
 
         card.addView(header, new LinearLayout.LayoutParams(-1, -2));
+
+        // These are the intentional boundaries between the setting groups.
+        settingsGroupBreakAfterPrevious =
+                "continueOnLockScreen".equals(key)
+                || "autoStartOnWake".equals(key)
+                || "screenBrightness".equals(key)
+                || "playerPosition".equals(key);
         return card;
     }
 
@@ -987,6 +1035,7 @@ public class SettingsActivity extends Activity {
         final TextView[] options = new TextView[names.length];
         final FrameLayout[] optionTiles = new FrameLayout[names.length];
         int initial = selectedIndex(key, values);
+        int optionTileHeight = "playerDisplayMode".equals(key) ? 48 : 38;
 
         for (int i = 0; i < names.length; i++) {
             final int index = i;
@@ -1004,7 +1053,8 @@ public class SettingsActivity extends Activity {
             option.setGravity(Gravity.CENTER);
             option.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
             option.setTextDirection(View.TEXT_DIRECTION_RTL);
-            option.setSingleLine(true);
+            option.setSingleLine(!"playerDisplayMode".equals(key));
+            if ("playerDisplayMode".equals(key)) option.setMaxLines(2);
             option.setIncludeFontPadding(false);
             option.setPadding(dp(3), 0, dp(3), 0);
             if (Build.VERSION.SDK_INT >= 26) {
@@ -1050,10 +1100,12 @@ public class SettingsActivity extends Activity {
             if ("screenBrightness".equals(key) && i == 0) {
                 // Keep the full "לפי המכשיר" label visible; distribute the rest evenly.
                 int deviceLabelWidth = (int) Math.ceil(option.getPaint().measureText(names[i]))
-                        + dp(12);
-                tileParams = new LinearLayout.LayoutParams(deviceLabelWidth, dp(38));
+                        + dp(22);
+                tileParams = new LinearLayout.LayoutParams(
+                        deviceLabelWidth, dp(optionTileHeight));
             } else {
-                tileParams = new LinearLayout.LayoutParams(0, dp(38), 1f);
+                tileParams = new LinearLayout.LayoutParams(
+                        0, dp(optionTileHeight), 1f);
             }
             tileParams.leftMargin = dp(3);
             tileParams.rightMargin = dp(3);
@@ -1061,7 +1113,7 @@ public class SettingsActivity extends Activity {
         }
 
         LinearLayout.LayoutParams tilesParams =
-                new LinearLayout.LayoutParams(-1, dp(44));
+                new LinearLayout.LayoutParams(-1, dp(optionTileHeight + 6));
         tilesParams.topMargin = dp(7);
         card.addView(tiles, tilesParams);
         return card;
