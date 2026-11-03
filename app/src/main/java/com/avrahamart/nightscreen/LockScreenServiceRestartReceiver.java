@@ -12,7 +12,8 @@ public final class LockScreenServiceRestartReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         SharedPreferences prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE);
-        if (!prefs.getBoolean("autoStartOnDeviceLock", false)) return;
+        if (!prefs.getBoolean("autoStartOnDeviceLock", false)
+                && !prefs.getBoolean("autoStartOnWake", false)) return;
         if (Build.VERSION.SDK_INT >= 29 && !Settings.canDrawOverlays(context)) return;
 
         Intent service = new Intent(context, LockScreenMonitorService.class)
