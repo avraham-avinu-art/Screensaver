@@ -119,8 +119,7 @@ public class SettingsActivity extends Activity {
             });
         }
 
-        // FrameLayout lets the title stay centered on the screen while the back
-        // button is positioned independently above the header content.
+        // FrameLayout keeps the heading independently positioned within the header.
         screenHeader = new FrameLayout(this);
         screenHeader.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         screenHeader.setPadding(dp(2), dp(8), dp(2), dp(14));
@@ -233,7 +232,7 @@ public class SettingsActivity extends Activity {
         screenSubtitle.setText("התאמה אישית של השומר מסך");
 
         screenHeader.setVisibility(View.VISIBLE);
-        // The dashboard title is the only settings page that uses a title header.
+        // Keep the main settings heading aligned to the right.
         screenHeader.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         dashboardHeaderDivider.setVisibility(View.VISIBLE);
         headerTitleBlock.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
@@ -256,6 +255,16 @@ public class SettingsActivity extends Activity {
                 "music-note", CATEGORY_PLAYER);
 
         addDashboardNavigation();
+        // Do not leave an extra gap below the final item at the bottom of the screen.
+        if (content.getChildCount() > 0) {
+            View lastItem = content.getChildAt(content.getChildCount() - 1);
+            if (lastItem.getLayoutParams() instanceof LinearLayout.LayoutParams) {
+                LinearLayout.LayoutParams lastParams =
+                        (LinearLayout.LayoutParams) lastItem.getLayoutParams();
+                lastParams.bottomMargin = 0;
+                lastItem.setLayoutParams(lastParams);
+            }
+        }
     }
 
     private LinearLayout.LayoutParams dashboardButtonParams() {
@@ -343,7 +352,7 @@ public class SettingsActivity extends Activity {
 
     private void showCategory(int category) {
         currentCategory = category;
-        // Restore the page heading and back navigation on every internal settings page.
+        // Show the page heading on every internal settings page.
         screenHeader.setVisibility(View.VISIBLE);
         screenHeader.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         dashboardHeaderDivider.setVisibility(View.VISIBLE);
@@ -1389,10 +1398,7 @@ public class SettingsActivity extends Activity {
         }
         android.widget.ImageView image = new android.widget.ImageView(this);
         image.setImageResource(resourceId);
-        if (!"hebrew-date".equals(iconName) && !"lock-play".equals(iconName)
-                && !"close-circle".equals(iconName)) {
-            image.setColorFilter(tint);
-        }
+        image.setColorFilter(tint);
         image.setScaleType(android.widget.ImageView.ScaleType.FIT_CENTER);
         image.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         image.setContentDescription(iconName);
