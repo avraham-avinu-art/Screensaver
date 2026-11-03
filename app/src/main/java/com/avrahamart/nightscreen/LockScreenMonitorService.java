@@ -39,7 +39,8 @@ public final class LockScreenMonitorService extends Service {
     public static void sync(Context context) {
         Context appContext = context.getApplicationContext();
         SharedPreferences prefs = appContext.getSharedPreferences("settings", Context.MODE_PRIVATE);
-        boolean enabled = prefs.getBoolean("autoStartOnDeviceLock", false);
+        boolean enabled = prefs.getBoolean("autoStartOnDeviceLock", false)
+                || prefs.getBoolean("autoStartOnWake", false);
         if (enabled && (Build.VERSION.SDK_INT < 29 || Settings.canDrawOverlays(appContext))) {
             Intent intent = new Intent(appContext, LockScreenMonitorService.class)
                     .putExtra(EXTRA_MONITOR_ENABLED, true);
@@ -78,8 +79,14 @@ public final class LockScreenMonitorService extends Service {
 
         lockReceiver = new AutoStartOnPowerReceiver();
         IntentFilter filter = new IntentFilter();
-        filter.addAction(Intent.ACTION_SCREEN_OFF);
-        filter.addAction(Intent.ACTION_USER_PRESENT);
+        SharedPreferences prefs = getSharedPreferences("settings", MODE_PRIVATE);
+        if (prefs.getBoolean("autoStartOnDeviceLock", false)) {
+            filter.addAction(Intent.ACTION_SCREEN_OFF);
+            filter.addAction(Intent.ACTION_USER_PRESENT);
+        }
+        if (prefs.getBoolean("autoStartOnWake", false)) {
+            filter.addAction(Intent.ACTION_SCREEN_ON);
+        }
         // NotificationListenerService owns charger detection whenever its
         // permission is granted; otherwise the lock-monitor process is the
         // persistent fallback when automatic activation on lock is enabled.
@@ -104,7 +111,8 @@ public final class LockScreenMonitorService extends Service {
         SharedPreferences prefs = getSharedPreferences("settings", MODE_PRIVATE);
         boolean enabled = intent != null && intent.hasExtra(EXTRA_MONITOR_ENABLED)
                 ? intent.getBooleanExtra(EXTRA_MONITOR_ENABLED, false)
-                : prefs.getBoolean("autoStartOnDeviceLock", false);
+                : (prefs.getBoolean("autoStartOnDeviceLock", false)
+                    || prefs.getBoolean("autoStartOnWake", false));
         if (!enabled || (Build.VERSION.SDK_INT >= 29 && !Settings.canDrawOverlays(this))) {
             lockMonitoringActive = false;
             stopSelf(startId);
@@ -202,7 +210,8 @@ public final class LockScreenMonitorService extends Service {
 
     private void scheduleRestartIfEnabled() {
         SharedPreferences prefs = getSharedPreferences("settings", MODE_PRIVATE);
-        if (!prefs.getBoolean("autoStartOnDeviceLock", false)) return;
+        if (!prefs.getBoolean("autoStartOnDeviceLock", false)
+                && !prefs.getBoolean("autoStartOnWake", false)) return;
         if (Build.VERSION.SDK_INT >= 29 && !Settings.canDrawOverlays(this)) return;
 
         AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
