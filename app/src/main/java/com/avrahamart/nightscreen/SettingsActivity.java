@@ -487,7 +487,108 @@ public class SettingsActivity extends Activity {
                 new String[]{"0", "10", "20"}, "frameRadius");
     }
 
-    private LinearLayout addCard(LinearLayout parent, String title) {    private LinearLayout addCard(LinearLayout parent, String title) {
+    private LinearLayout addSettingCard(LinearLayout parent, String label, String key) {
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        card.setTextDirection(View.TEXT_DIRECTION_RTL);
+        card.setPadding(dp(13), dp(10), dp(13), dp(12));
+        card.setBackground(roundOutline(CARD_SURFACE, dp(18), CARD_OUTLINE));
+
+        LinearLayout.LayoutParams cardParams =
+                new LinearLayout.LayoutParams(-1, -2);
+        cardParams.bottomMargin = dp(8);
+        parent.addView(card, cardParams);
+
+        LinearLayout header = new LinearLayout(this);
+        header.setOrientation(LinearLayout.HORIZONTAL);
+        header.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+        header.setGravity(Gravity.CENTER_VERTICAL);
+
+        LinearLayout textBlock = new LinearLayout(this);
+        textBlock.setOrientation(LinearLayout.VERTICAL);
+        textBlock.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        textBlock.setGravity(Gravity.CENTER_VERTICAL);
+
+        TextView title = textView(label, 16, ON_SURFACE);
+        title.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD));
+        title.setIncludeFontPadding(false);
+        title.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        title.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
+        textBlock.addView(title, new LinearLayout.LayoutParams(-1, -2));
+
+        String descriptionText = settingDescription(key);
+        if (descriptionText != null && !descriptionText.isEmpty()) {
+            TextView description = textView(descriptionText, 13, MUTED);
+            description.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
+            description.setIncludeFontPadding(false);
+            description.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+            description.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
+            description.setSingleLine(true);
+            description.setEllipsize(android.text.TextUtils.TruncateAt.END);
+            LinearLayout.LayoutParams descriptionParams =
+                    new LinearLayout.LayoutParams(-1, -2);
+            descriptionParams.topMargin = dp(3);
+            textBlock.addView(description, descriptionParams);
+        }
+
+        LinearLayout.LayoutParams textBlockParams =
+                new LinearLayout.LayoutParams(0, -2, 1f);
+        textBlockParams.leftMargin = dp(8);
+        header.addView(textBlock, textBlockParams);
+        header.addView(makeIconBadge(iconForSetting(key), dp(30)),
+                new LinearLayout.LayoutParams(dp(30), dp(30)));
+
+        if ("screenSaverDuration".equals(key)) {
+            FrameLayout infoButton = new FrameLayout(this);
+            infoButton.setContentDescription("הסבר על זמן הפעילות");
+            infoButton.setClickable(true);
+            infoButton.setFocusable(true);
+            infoButton.setBackgroundColor(Color.TRANSPARENT);
+            View infoGlyph = makeIconGlyph("message-circle-question", ACCENT);
+            infoButton.addView(infoGlyph,
+                    new FrameLayout.LayoutParams(dp(25), dp(25), Gravity.CENTER));
+            LinearLayout.LayoutParams infoParams =
+                    new LinearLayout.LayoutParams(dp(32), dp(32));
+            infoParams.leftMargin = dp(5);
+            header.addView(infoButton, 0, infoParams);
+            infoButton.setOnClickListener(v -> showActivityTimeHelpDialog());
+        }
+
+        card.addView(header, new LinearLayout.LayoutParams(-1, -2));
+        return card;
+    }
+
+    private String settingDescription(String key) {
+        if ("dateDisplayMode".equals(key)) return "בחירת התאריך שיופיע לצד השעה.";
+        if ("clockDateSize".equals(key)) return "בחירת גודל השעון והתאריכים.";
+        if ("fontWeight".equals(key)) return "בחירת עובי האותיות והספרות.";
+        if ("clockDatePosition".equals(key)) return "בחירת מיקום השעון והתאריכים במסך.";
+        if ("screenSaverDuration".equals(key)) return "בחירת משך הצגת שומר המסך.";
+        if ("preventLockWhileActive".equals(key)) return "מניעת הופעת מסך הנעילה בזמן הפעילות.";
+        if ("continueOnLockScreen".equals(key)) return "המשך הצגת השומר לאחר כיבוי והדלקת המסך.";
+        if ("autoStartOnDeviceLock".equals(key)) return "הפעלת השומר באופן אוטומטי בעת נעילת המכשיר.";
+        if ("autoStartOnCharge".equals(key)) return "הפעלת השומר אוטומטית בעת חיבור מטען.";
+        if ("noShutdownWhileCharging".equals(key)) return "השארת המסך פעיל כל עוד המכשיר בטעינה.";
+        if ("showBatteryPercent".equals(key)) return "הצגת אחוז הסוללה בזמן טעינה.";
+        if ("screenBackgroundColor".equals(key)) return "בחירת צבע הרקע של שומר המסך.";
+        if ("screenBrightness".equals(key)) return "התאמת בהירות התצוגה של שומר המסך.";
+        if ("fontFamily".equals(key)) return "בחירת סוג הגופן שיוצג במסך.";
+        if ("fontColor".equals(key)) return "בחירת צבע השעה והתאריכים.";
+        if ("showPlayer".equals(key)) return "הצגת נגן המדיה כאשר מתנגנת מדיה במכשיר.";
+        if ("showPlayerOnlyAtStart".equals(key)) return "הצגת הנגן רק בתחילת כל שיר.";
+        if ("showDetails".equals(key)) return "הצגת שם האמן מתחת לפרטי השיר.";
+        if ("showProgress".equals(key)) return "הצגת זמני השיר וסרגל ההתקדמות שליד פקדי הנגן.";
+        if ("playerSize".equals(key)) return "בחירת גודל נגן המדיה.";
+        if ("playerPosition".equals(key)) return "בחירת מיקום נגן המדיה במסך.";
+        if ("frameEnabled".equals(key)) return "הצגת מסגרת סביב נגן המדיה.";
+        if ("frameColor".equals(key)) return "בחירת צבע המסגרת סביב הנגן.";
+        if ("frameWidth".equals(key)) return "בחירת עובי קו המסגרת.";
+        if ("frameRadius".equals(key)) return "בחירת מידת עיגול פינות המסגרת.";
+        return "";
+    }
+
+    private LinearLayout addCard(LinearLayout parent, String title) {
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
         card.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
@@ -755,27 +856,11 @@ public class SettingsActivity extends Activity {
         }
     }
 
-    private void addCheck(LinearLayout card, String label, String key, boolean defaultValue) {
-        LinearLayout row = new LinearLayout(this);
-        row.setOrientation(LinearLayout.HORIZONTAL);
-        row.setGravity(Gravity.CENTER_VERTICAL);
-        // LTR child order places the switch at the left and the Hebrew label at the right.
-        row.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-        row.setTextDirection(View.TEXT_DIRECTION_RTL);
-        row.setPadding(dp(6), dp(2), dp(6), dp(2));
-
-        TextView text = textView(label, 16, ON_SURFACE);
-        text.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-        text.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        text.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
-        text.setTextDirection(View.TEXT_DIRECTION_RTL);
-        row.addView(text, new LinearLayout.LayoutParams(0, dp(38), 1f));
-
-        FrameLayout settingIcon = makeIconBadge(iconForSetting(key), dp(30));
-        LinearLayout.LayoutParams iconParams =
-                new LinearLayout.LayoutParams(dp(30), dp(30));
-        iconParams.leftMargin = dp(9);
-        row.addView(settingIcon, iconParams);
+    private void addCheck(LinearLayout parent, String label, String key, boolean defaultValue) {
+        LinearLayout card = addSettingCard(parent, label, key);
+        LinearLayout row = (LinearLayout) card.getChildAt(0);
+        row.setClickable(true);
+        row.setFocusable(true);
 
         Switch toggle = new Switch(this);
         toggle.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
@@ -829,8 +914,8 @@ public class SettingsActivity extends Activity {
                 }
                 updateOverlayPermissionCardVisibility();
             } else if ("autoStartOnDeviceLock".equals(key)) {
-                // Device-lock activation is independent from the active-session lock policy.
-                if (checked && Build.VERSION.SDK_INT >= 29 && !Settings.canDrawOverlays(this)) {
+                if (checked && Build.VERSION.SDK_INT >= 29
+                        && !Settings.canDrawOverlays(this)) {
                     prefs.edit().putBoolean("autoStartOnLockOverlayPermissionPending", true).apply();
                     requestLockStartOverlayPermission();
                 } else {
@@ -851,11 +936,9 @@ public class SettingsActivity extends Activity {
                 }
             }
         });
-        row.setOnClickListener(v -> toggle.setChecked(!toggle.isChecked()));
-        LinearLayout.LayoutParams rowParams =
-                new LinearLayout.LayoutParams(-1, -2);
-        rowParams.bottomMargin = dp(4);
-        card.addView(row, rowParams);
+        row.setOnClickListener(v -> {
+            if (v != toggle) toggle.setChecked(!toggle.isChecked());
+        });
     }
 
     // Use one consistent segmented selector for all discrete settings.
