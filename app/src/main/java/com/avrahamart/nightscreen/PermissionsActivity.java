@@ -28,6 +28,7 @@ import android.widget.Toast;
 public class PermissionsActivity extends Activity {
     private static final int SURFACE = Color.rgb(9, 19, 33);
     private static final int CARD_SURFACE = Color.rgb(20, 36, 56);
+    private static final int CONTROL_SURFACE = Color.rgb(27, 47, 70);
     private static final int ON_SURFACE = Color.rgb(239, 246, 255);
     private static final int MUTED = Color.rgb(156, 178, 203);
     private static final int CARD_OUTLINE = Color.rgb(42, 67, 95);
@@ -533,6 +534,14 @@ public class PermissionsActivity extends Activity {
         view.setTextDirection(View.TEXT_DIRECTION_RTL);
         view.setGravity(Gravity.CENTER_VERTICAL | Gravity.RIGHT);
         return view;
+    }
+
+    private GradientDrawable roundOutline(int color, int radius, int strokeColor) {
+        GradientDrawable shape = new GradientDrawable();
+        shape.setColor(color);
+        shape.setCornerRadius(radius);
+        shape.setStroke(dp(1), strokeColor);
+        return shape;
     }
 
     private int dp(int value) {
