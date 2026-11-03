@@ -1269,7 +1269,13 @@ public class SettingsActivity extends Activity {
     private void persistOption(String key, String value) {
         try {
             SharedPreferences.Editor editor = prefs.edit();
-            if ("fontColor".equals(key) || "frameColor".equals(key)
+            if ("dateDisplayMode".equals(key)) {
+                editor.putString(key, value);
+                editor.putBoolean("showHebrew",
+                        "both".equals(value) || "hebrew".equals(value));
+                editor.putBoolean("showGregorian",
+                        "both".equals(value) || "gregorian".equals(value));
+            } else if ("fontColor".equals(key) || "frameColor".equals(key)
                     || "screenBackgroundColor".equals(key)) {
                 editor.putInt(key, colorValue(value));
             } else if ("fontWeight".equals(key) || "clockDateSize".equals(key)
@@ -1298,7 +1304,7 @@ public class SettingsActivity extends Activity {
     }
 
     private String iconForSetting(String key) {
-        if ("showHebrew".equals(key)) return "hebrew-date";
+        if ("showHebrew".equals(key) || "dateDisplayMode".equals(key)) return "hebrew-date";
         if ("showGregorian".equals(key)) return "gregorian-date";
         if ("showPlayer".equals(key)) return "media-toggle";
         if ("screenSaverDuration".equals(key)) return "activity-history";
@@ -1557,6 +1563,20 @@ public class SettingsActivity extends Activity {
 
     private int selectedIndex(String key, String[] values) {
         int index = 0;
+        if ("dateDisplayMode".equals(key)) {
+            if (prefs.contains(key)) {
+                String storedMode = getString(key, "both");
+                for (int i = 0; i < values.length; i++) {
+                    if (values[i].equals(storedMode)) return i;
+                }
+            }
+            boolean showHebrew = getBool("showHebrew", true);
+            boolean showGregorian = getBool("showGregorian", true);
+            if (showHebrew && showGregorian) return 0;
+            if (showHebrew) return 1;
+            if (showGregorian) return 2;
+            return 0;
+        }
         if ("fontColor".equals(key) || "frameColor".equals(key)
                 || "screenBackgroundColor".equals(key)) {
             if (!prefs.contains(key)) {
