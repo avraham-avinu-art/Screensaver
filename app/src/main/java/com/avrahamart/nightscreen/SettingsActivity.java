@@ -485,6 +485,12 @@ public class SettingsActivity extends Activity {
         playerFrameCard = addDiscreteSlider(content, "עיגול פינות",
                 new String[]{"ישר", "עדין", "מעוגל"},
                 new String[]{"0", "10", "20"}, "frameRadius");
+        if (playerFrameCard != null) {
+            LinearLayout.LayoutParams frameCardParams =
+                    (LinearLayout.LayoutParams) playerFrameCard.getLayoutParams();
+            frameCardParams.bottomMargin += dp(5);
+            playerFrameCard.setLayoutParams(frameCardParams);
+        }
     }
 
     private LinearLayout addSettingCard(LinearLayout parent, String label, String key) {
