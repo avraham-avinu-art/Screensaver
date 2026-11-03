@@ -1084,41 +1084,18 @@ public class SettingsActivity extends Activity {
         }
     }
 
-    private void addColorChoices(LinearLayout card, String label,
+    private void addColorChoices(LinearLayout parent, String label,
                                  String[] names, String[] values, String key) {
         if (names == null || values == null || names.length == 0
                 || names.length != values.length) return;
 
-        LinearLayout block = new LinearLayout(this);
-        block.setOrientation(LinearLayout.VERTICAL);
-        block.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        block.setPadding(dp(6), dp(2), dp(6), dp(5));
-
-        LinearLayout headingRow = new LinearLayout(this);
-        headingRow.setOrientation(LinearLayout.HORIZONTAL);
-        headingRow.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-        headingRow.setGravity(Gravity.CENTER_VERTICAL);
-
-        TextView title = textView(label, 16, ON_SURFACE);
-        title.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-        title.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        title.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
-        title.setPadding(0, 0, dp(3), 0);
-        headingRow.addView(title, new LinearLayout.LayoutParams(0, dp(32), 1f));
-        FrameLayout icon = makeIconBadge(iconForSetting(key), dp(30));
-        LinearLayout.LayoutParams iconParams =
-                new LinearLayout.LayoutParams(dp(30), dp(30));
-        iconParams.leftMargin = dp(9);
-        headingRow.addView(icon, iconParams);
-        block.addView(headingRow, new LinearLayout.LayoutParams(-1, dp(32)));
-
+        LinearLayout card = addSettingCard(parent, label, key);
         LinearLayout choices = new LinearLayout(this);
         choices.setOrientation(LinearLayout.VERTICAL);
         choices.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         choices.setGravity(Gravity.CENTER);
+
         int initial = selectedIndex(key, values);
-        // Migrate the previously offered brown background to graphite so existing
-        // installations retain a valid selected swatch.
         if ("screenBackgroundColor".equals(key) && prefs.contains(key)
                 && getInt(key, Color.TRANSPARENT) == colorValue("#332820")) {
             initial = 4;
@@ -1138,7 +1115,7 @@ public class SettingsActivity extends Activity {
                 choiceRow.setGravity(Gravity.CENTER_VERTICAL);
                 LinearLayout.LayoutParams choiceRowParams =
                         new LinearLayout.LayoutParams(-1, -2);
-                if (i > 0) choiceRowParams.topMargin = dp(4);
+                if (i > 0) choiceRowParams.topMargin = dp(5);
                 choices.addView(choiceRow, choiceRowParams);
             }
 
@@ -1184,11 +1161,10 @@ public class SettingsActivity extends Activity {
             choiceRow.addView(item, new LinearLayout.LayoutParams(0, -2, 1f));
         }
 
-        block.addView(choices, new LinearLayout.LayoutParams(-1, -2));
-        LinearLayout.LayoutParams blockParams =
+        LinearLayout.LayoutParams choicesParams =
                 new LinearLayout.LayoutParams(-1, -2);
-        blockParams.bottomMargin = dp(4);
-        card.addView(block, blockParams);
+        choicesParams.topMargin = dp(9);
+        card.addView(choices, choicesParams);
     }
 
     private void refreshPermissionDependentToggles() {
@@ -1408,22 +1384,9 @@ public class SettingsActivity extends Activity {
         }
     }
 
-    private void addSpinner(LinearLayout card, String label, String[] names,
+    private void addSpinner(LinearLayout parent, String label, String[] names,
                             String[] values, String key) {
-        LinearLayout row = new LinearLayout(this);
-        row.setOrientation(LinearLayout.HORIZONTAL);
-        row.setGravity(Gravity.CENTER_VERTICAL);
-        row.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-        row.setTextDirection(View.TEXT_DIRECTION_RTL);
-        row.setPadding(dp(6), dp(2), dp(6), dp(4));
-
-        TextView labelView = textView(label, 16, ON_SURFACE);
-        labelView.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-        labelView.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        labelView.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
-        labelView.setTextDirection(View.TEXT_DIRECTION_RTL);
-        labelView.setPadding(0, 0, dp(3), 0);
-
+        LinearLayout card = addSettingCard(parent, label, key);
         int selected = selectedIndex(key, values);
         if ("fontFamily".equals(key)) {
             String storedFamily = getString(key, values[0]);
@@ -1434,12 +1397,12 @@ public class SettingsActivity extends Activity {
                     break;
                 }
             }
-            // Migrate previous Android built-in family values to the first newly supplied font.
             if (!knownFamily) {
                 selected = 0;
                 persistOption(key, values[0]);
             }
         }
+
         final int selectedPosition = selected;
         int spinnerWidth = dropdownWidthForOptions(names);
         Spinner spinner = new Spinner(this);
@@ -1479,9 +1442,8 @@ public class SettingsActivity extends Activity {
         FrameLayout spinnerContainer = new FrameLayout(this);
         spinnerContainer.setBackground(roundOutline(CONTROL_SURFACE, dp(12), OUTLINE));
         spinnerContainer.setTag(spinner);
-        FrameLayout.LayoutParams spinnerInnerParams =
-                new FrameLayout.LayoutParams(-1, -1);
-        spinnerContainer.addView(spinner, spinnerInnerParams);
+        spinnerContainer.addView(spinner,
+                new FrameLayout.LayoutParams(-1, -1));
         View dropdownIcon = makeIconGlyph("chevron", ACCENT);
         FrameLayout.LayoutParams dropdownIconParams =
                 new FrameLayout.LayoutParams(dp(18), dp(18),
@@ -1492,20 +1454,9 @@ public class SettingsActivity extends Activity {
 
         LinearLayout.LayoutParams spinnerParams =
                 new LinearLayout.LayoutParams(spinnerWidth, dp(40));
-        spinnerParams.leftMargin = dp(9);
-        row.addView(spinnerContainer, spinnerParams);
-        row.addView(labelView, new LinearLayout.LayoutParams(0, dp(40), 1f));
-        FrameLayout settingIcon = makeIconBadge(iconForSetting(key), dp(30));
-        LinearLayout.LayoutParams settingIconParams =
-                new LinearLayout.LayoutParams(dp(30), dp(30));
-        settingIconParams.leftMargin = dp(9);
-        row.addView(settingIcon, settingIconParams);
-        LinearLayout.LayoutParams spinnerRowParams =
-                new LinearLayout.LayoutParams(-1, -2);
-        if ("fontFamily".equals(key)) {
-            spinnerRowParams.bottomMargin = dp(6);
-        }
-        card.addView(row, spinnerRowParams);
+        spinnerParams.gravity = Gravity.RIGHT;
+        spinnerParams.topMargin = dp(9);
+        card.addView(spinnerContainer, spinnerParams);
 
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             private boolean initialSelectionPending = true;
