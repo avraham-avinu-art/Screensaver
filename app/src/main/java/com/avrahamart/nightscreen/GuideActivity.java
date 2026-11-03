@@ -51,11 +51,6 @@ public final class GuideActivity extends Activity {
         title.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         header.addView(title, new FrameLayout.LayoutParams(-1, dp(44), Gravity.CENTER));
 
-        FrameLayout back = circularBackButton();
-        FrameLayout.LayoutParams backParams =
-                new FrameLayout.LayoutParams(dp(42), dp(42), Gravity.LEFT | Gravity.CENTER_VERTICAL);
-        header.addView(back, backParams);
-        back.setOnClickListener(v -> finish());
         root.addView(header, new LinearLayout.LayoutParams(-1, dp(48)));
 
         TextView subtitle = textView("הסברים וטיפים לשימוש באפליקציה", 14, MUTED);
@@ -85,8 +80,8 @@ public final class GuideActivity extends Activity {
         addSection(sections, "2. שימוש במסך הראשי",
                 "סמל ההגדרות אינו מוצג כל הזמן. הקש באזור העליון של המסך כדי להציג את סמל ההגדרות למשך כשלוש שניות, " +
                 "ולאחר מכן הקש על סמל גלגל השיניים שמופיע בפינה העליונה.\n\n" +
-                "אפשר לפתוח את ההגדרות גם באמצעות מקש התפריט הפיזי במכשירים שתומכים בו. " +
-                "לאחר סיום העבודה בהגדרות, לחץ על „סיום ושמירה” כדי לחזור לשומר המסך.");
+                "אפשר לפתוח את ההגדרות גם באמצעות מקש התפריט הפיזי במכשירים שתומכים בו. כדי לצאת מהשומר, " +
+                "השתמש בלחצן החזרה של המכשיר; נדרשות שתי לחיצות רצופות.");
 
         addSection(sections, "3. זמן פעילות ונעילת המכשיר",
                 "בקבוצת „הפעלה והתנהגות” נמצאת בחירת זמן הפעילות. לכל אפשרות משמעות שונה:\n\n" +
@@ -111,8 +106,8 @@ public final class GuideActivity extends Activity {
 
         addSection(sections, "5. שעון ותאריך",
                 "בקבוצת „שעון ותאריך” אפשר לבחור אם להציג את התאריך העברי ואת התאריך הלועזי.\n\n" +
-                "• גודל — בחירה בין קטן, בינוני, רגיל, גדול וגדול מאוד.\n" +
-                "• עובי הגופן — בחירה בין דק, רגיל, בינוני ומודגש.\n" +
+                "• גודל — בחירה בין קטן, בינוני, רגיל, גדול וענק.\n" +
+                "• עובי הגופן — בחירה בין דק, רגיל, מודגש ועבה.\n" +
                 "• מיקום — בראש המסך, ברבע העליון או במרכז המסך.\n\n" +
                 "הגודל והמשקל משפיעים על תצוגת השעון והתאריכים. בחלק מהגופנים קיימות התאמות תצוגה מיוחדות כדי לשמור על קריאות ואחידות.");
 
@@ -121,7 +116,7 @@ public final class GuideActivity extends Activity {
                 "• הצגת הנגן — מפעילה או מסתירה את הנגן.\n" +
                 "• הצגה רק בתחילת שיר — מציגה את הנגן למשך חלון הזמן הראשוני של השיר.\n" +
                 "• פרטי אמן — מציגה את שם האמן כאשר הוא נמסר על ידי נגן המדיה.\n" +
-                "• שורת מיקום + זמן — מציגה את מיקום ההשמעה ואת משך הקטע, כאשר הנגן מספק נתונים אלה.\n" +
+                "• התקדמות הניגון ופקדי המדיה — מציגה את זמני השיר ואת סרגל ההתקדמות לצד כפתורי הניגון.\n" +
                 "• גודל הנגן ומיקום הנגן — קובעים את גודל הכרטיס ואת מיקומו ברבע התחתון או בתחתית המסך.\n\n" +
                 "אפשר גם להציג מסגרת, לבחור את צבעה, את עובייה ואת מידת עיגול הפינות. האפשרויות האלה נמצאות תחת „מסגרת לנגן”.");
 
@@ -137,7 +132,7 @@ public final class GuideActivity extends Activity {
                 "הגדרות הטעינה נמצאות בקבוצת „הפעלה והתנהגות”:\n\n" +
                 "• הפעלה אוטומטית בטעינה — מפעילה את השומר כאשר המטען מתחבר.\n" +
                 "• ללא כיבוי בטעינה — כאשר המכשיר בטעינה והשומר פעיל, מונעת כיבוי מסך אוטומטי.\n" +
-                "• הצגת אחוז הסוללה — מציגה את אחוז הסוללה על המסך כאשר נתון הסוללה זמין.\n\n" +
+                "• הצגת אחוז הסוללה — מציגה את אחוז הסוללה בזמן טעינה.\n\n" +
                 "הגדרות אלה נפרדות מבחירת זמן הפעילות הרגילה. ניתוק המטען מפסיק את התנאי של „ללא כיבוי בטעינה”.");
 
         addSection(sections, "9. ניהול הרשאות",
@@ -166,24 +161,6 @@ public final class GuideActivity extends Activity {
 
         scroll.addView(sections, new ScrollView.LayoutParams(-1, -2));
         root.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1f));
-
-        Button close = new Button(this);
-        close.setText("חזרה להגדרות");
-        close.setAllCaps(false);
-        close.setTextSize(16);
-        close.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-        close.setTextColor(Color.rgb(7, 31, 49));
-        close.setMinWidth(0);
-        close.setMinHeight(0);
-        close.setPadding(dp(24), 0, dp(24), 0);
-        close.setBackground(pillBackground(ACCENT, dp(22)));
-        close.setElevation(dp(1));
-        LinearLayout.LayoutParams closeParams =
-                new LinearLayout.LayoutParams(-2, dp(46));
-        closeParams.gravity = Gravity.CENTER_HORIZONTAL;
-        closeParams.topMargin = dp(7);
-        root.addView(close, closeParams);
-        close.setOnClickListener(v -> finish());
 
         setContentView(root);
     }
