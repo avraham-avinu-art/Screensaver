@@ -9,7 +9,6 @@ import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
 import android.view.Window;
-import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
@@ -74,8 +73,8 @@ public final class GuideActivity extends Activity {
 
         addSection(sections, "1. היכרות עם האפליקציה",
                 "שומר מסך מציג שעון גדול, תאריך עברי ותאריך לועזי, ובאפשרותך להוסיף גם נגן מדיה ואחוז סוללה.\n\n" +
-                "מסך ההגדרות מחולק לארבע קבוצות: שעון ותאריך; הפעלה והתנהגות; מראה ועיצוב; נגן מדיה. " +
-                "בנוסף קיימים מסך ניהול הרשאות ומדריך שימוש. כל שינוי נשמר בהגדרות האפליקציה.");
+                "ההגדרות מחולקות לארבעה מסכים עיקריים: שעון ותאריך; הפעלה והתנהגות; מראה ועיצוב; נגן מדיה. " +
+                "בכל מסך כל הגדרה מוצגת בחלונית נפרדת. בנוסף קיימים מסך ניהול הרשאות ומדריך שימוש. כל שינוי נשמר בהגדרות האפליקציה.");
 
         addSection(sections, "2. שימוש במסך הראשי",
                 "סמל ההגדרות אינו מוצג כל הזמן. הקש באזור העליון של המסך כדי להציג את סמל ההגדרות למשך כשלוש שניות, " +
@@ -204,31 +203,11 @@ public final class GuideActivity extends Activity {
         parent.addView(card, params);
     }
 
-    private FrameLayout circularBackButton() {
-        FrameLayout button = new FrameLayout(this);
-        button.setContentDescription("חזרה להגדרות");
-        button.setClickable(true);
-        button.setFocusable(true);
-        button.setBackground(pillBackground(ACCENT, dp(22)));
-        TextView arrow = textView("‹", 34, Color.rgb(7, 31, 49));
-        arrow.setGravity(Gravity.CENTER);
-        arrow.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-        button.addView(arrow, new FrameLayout.LayoutParams(-1, -1));
-        return button;
-    }
-
     private GradientDrawable roundOutline(int color, int radius, int strokeColor) {
         GradientDrawable shape = new GradientDrawable();
         shape.setColor(color);
         shape.setCornerRadius(radius);
         shape.setStroke(dp(1), strokeColor);
-        return shape;
-    }
-
-    private GradientDrawable pillBackground(int color, int radius) {
-        GradientDrawable shape = new GradientDrawable();
-        shape.setColor(color);
-        shape.setCornerRadius(radius);
         return shape;
     }
 
