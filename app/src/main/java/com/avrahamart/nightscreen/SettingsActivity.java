@@ -954,6 +954,7 @@ public class SettingsActivity extends Activity {
                 }
                 if ("autoStartOnWake".equals(key)) {
                     LockScreenMonitorService.sync(this);
+                    NightScreenApplication.syncChargerReceiver(this);
                 }
             } else if ("showPlayer".equals(key)) {
                 if (checked && !hasNotificationAccess()) {
