@@ -943,42 +943,17 @@ public class SettingsActivity extends Activity {
 
     // Use one consistent segmented selector for all discrete settings.
     // Existing values and ranges are intentionally preserved.
-    private void addDiscreteSlider(LinearLayout card, String label,
-                                   String[] names, String[] values, String key) {
-        addSegmentedChoices(card, label, names, values, key);
+    private LinearLayout addDiscreteSlider(LinearLayout parent, String label,
+                                            String[] names, String[] values, String key) {
+        return addSegmentedChoices(parent, label, names, values, key);
     }
 
-    private void addSegmentedChoices(LinearLayout card, String label,
-                                   String[] names, String[] values, String key) {
+    private LinearLayout addSegmentedChoices(LinearLayout parent, String label,
+                                               String[] names, String[] values, String key) {
         if (names == null || values == null || names.length == 0
-                || names.length != values.length) return;
+                || names.length != values.length) return null;
 
-        LinearLayout block = new LinearLayout(this);
-        block.setOrientation(LinearLayout.VERTICAL);
-        block.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        block.setPadding(0, 0, 0, 0);
-
-        LinearLayout headingRow = new LinearLayout(this);
-        headingRow.setOrientation(LinearLayout.HORIZONTAL);
-        headingRow.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-        headingRow.setGravity(Gravity.CENTER_VERTICAL);
-
-        TextView settingLabel = textView(label, 16, ON_SURFACE);
-        settingLabel.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-        settingLabel.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        settingLabel.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
-        settingLabel.setTextDirection(View.TEXT_DIRECTION_RTL);
-        settingLabel.setPadding(0, 0, dp(3), 0);
-        headingRow.addView(settingLabel, new LinearLayout.LayoutParams(0, dp(30), 1f));
-
-        FrameLayout settingIcon = makeIconBadge(iconForSetting(key), dp(30));
-        LinearLayout.LayoutParams iconParams =
-                new LinearLayout.LayoutParams(dp(30), dp(30));
-        iconParams.leftMargin = dp(9);
-        headingRow.addView(settingIcon, iconParams);
-        block.addView(headingRow, new LinearLayout.LayoutParams(-1, dp(29)));
-
-        int initial = selectedIndex(key, values);
+        LinearLayout card = addSettingCard(parent, label, key);
         FrameLayout rail = new FrameLayout(this);
         rail.setBackground(roundOutline(CONTROL_SURFACE, dp(10), OUTLINE));
         if (Build.VERSION.SDK_INT >= 21) rail.setClipToOutline(true);
@@ -989,6 +964,7 @@ public class SettingsActivity extends Activity {
         segments.setGravity(Gravity.CENTER_VERTICAL);
         final TextView[] options = new TextView[names.length];
         final View[] selectionChips = new View[names.length];
+        int initial = selectedIndex(key, values);
 
         for (int i = 0; i < names.length; i++) {
             final int index = i;
@@ -998,10 +974,8 @@ public class SettingsActivity extends Activity {
             View selectionChip = new View(this);
             selectionChip.setBackground(roundOutline(ACCENT, dp(9), ACCENT));
             selectionChip.setVisibility(i == initial ? View.VISIBLE : View.GONE);
-            FrameLayout.LayoutParams chipParams =
-                    new FrameLayout.LayoutParams(-1, -1);
-            // The selected chip fills its whole segment without internal separator lines.
-            segment.addView(selectionChip, chipParams);
+            segment.addView(selectionChip,
+                    new FrameLayout.LayoutParams(-1, -1));
             selectionChips[i] = selectionChip;
 
             TextView option = textView(names[i], 13,
@@ -1014,15 +988,13 @@ public class SettingsActivity extends Activity {
             option.setIncludeFontPadding(false);
             option.setPadding(dp(2), 0, dp(2), 0);
             if (Build.VERSION.SDK_INT >= 26) {
-                // Keep all options on one line on narrow screens; shrink text instead.
                 option.setAutoSizeTextTypeUniformWithConfiguration(
                         10, 13, 1, android.util.TypedValue.COMPLEX_UNIT_SP);
             }
             option.setBackgroundColor(Color.TRANSPARENT);
             option.setSelected(i == initial);
-            FrameLayout.LayoutParams optionParams =
-                    new FrameLayout.LayoutParams(-1, -1);
-            segment.addView(option, optionParams);
+            segment.addView(option,
+                    new FrameLayout.LayoutParams(-1, -1));
             options[i] = option;
 
             segment.setContentDescription(label + ": " + names[i]);
@@ -1040,8 +1012,7 @@ public class SettingsActivity extends Activity {
                 }
                 if ("screenSaverDuration".equals(key)) updateDeviceCapabilityNotice();
             });
-            // Give each option a share of the rail proportional to its measured label width.
-            // This keeps short labels compact and gives longer Hebrew labels the room they need.
+
             float optionWidthWeight = Math.max((float) dp(36),
                     option.getPaint().measureText(names[i]) + dp(12));
             segments.addView(segment,
@@ -1051,15 +1022,9 @@ public class SettingsActivity extends Activity {
         rail.addView(segments, new FrameLayout.LayoutParams(-1, -1));
         LinearLayout.LayoutParams railParams =
                 new LinearLayout.LayoutParams(-1, dp(38));
-        railParams.topMargin = dp(8);
-        railParams.bottomMargin = dp(8);
-        // Stay within the card's padded content bounds so the rail cannot be clipped at either side.
-        block.addView(rail, railParams);
-
-        LinearLayout.LayoutParams blockParams =
-                new LinearLayout.LayoutParams(-1, -2);
-        blockParams.bottomMargin = dp(3);
-        card.addView(block, blockParams);
+        railParams.topMargin = dp(9);
+        card.addView(rail, railParams);
+        return card;
     }
 
     private void addActivityCapabilityNotice(LinearLayout card) {
