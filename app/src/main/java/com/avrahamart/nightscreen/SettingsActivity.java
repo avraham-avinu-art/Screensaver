@@ -68,6 +68,8 @@ public class SettingsActivity extends Activity {
     private Switch showPlayerToggle;
     private Switch autoStartOnChargeToggle;
     private Switch autoStartOnDeviceLockToggle;
+    private Switch autoStartOnBootToggle;
+    private Switch autoStartOnWakeToggle;
     private TextView activityCapabilityNotice;
     private LinearLayout screenLockAdminCard;
     private TextView screenLockAdminStatus;
@@ -432,6 +434,8 @@ public class SettingsActivity extends Activity {
         addCheck(content, "מניעת נעילה בזמן פעילות", "preventLockWhileActive", false);
         addCheck(content, "המשך הצגה במסך הנעילה", "continueOnLockScreen", false);
         addCheck(content, "הפעלה אוטומטית בנעילה", "autoStartOnDeviceLock", false);
+        addCheck(content, "הפעלה אוטומטית בהפעלת המכשיר", "autoStartOnBoot", false);
+        addCheck(content, "הפעלה אוטומטית בהתעוררות ממצב שינה", "autoStartOnWake", false);
         addCheck(content, "הפעלה אוטומטית בטעינה", "autoStartOnCharge", false);
         addCheck(content, "ללא כיבוי בטעינה", "noShutdownWhileCharging", false);
         addCheck(content, "הצגת אחוז הסוללה", "showBatteryPercent", false);
@@ -574,6 +578,8 @@ public class SettingsActivity extends Activity {
         if ("preventLockWhileActive".equals(key)) return "מניעת הופעת מסך הנעילה בזמן הפעילות.";
         if ("continueOnLockScreen".equals(key)) return "המשך הצגת השומר לאחר כיבוי והדלקת המסך.";
         if ("autoStartOnDeviceLock".equals(key)) return "הפעלת השומר באופן אוטומטי בעת נעילת המכשיר.";
+        if ("autoStartOnBoot".equals(key)) return "הפעלת השומר באופן אוטומטי לאחר הפעלת המכשיר.";
+        if ("autoStartOnWake".equals(key)) return "הפעלת השומר כשהמסך מתעורר ממצב שינה.";
         if ("autoStartOnCharge".equals(key)) return "הפעלת השומר אוטומטית בעת חיבור מטען.";
         if ("noShutdownWhileCharging".equals(key)) return "השארת המסך פעיל כל עוד המכשיר בטעינה.";
         if ("showBatteryPercent".equals(key)) return "הצגת אחוז הסוללה בזמן טעינה.";
@@ -875,6 +881,8 @@ public class SettingsActivity extends Activity {
         if ("showPlayer".equals(key)) showPlayerToggle = toggle;
         if ("autoStartOnCharge".equals(key)) autoStartOnChargeToggle = toggle;
         if ("autoStartOnDeviceLock".equals(key)) autoStartOnDeviceLockToggle = toggle;
+        if ("autoStartOnBoot".equals(key)) autoStartOnBootToggle = toggle;
+        if ("autoStartOnWake".equals(key)) autoStartOnWakeToggle = toggle;
         toggle.setChecked(getBool(key, defaultValue));
         if (Build.VERSION.SDK_INT >= 21) {
             toggle.setThumbTintList(new ColorStateList(
@@ -933,6 +941,20 @@ public class SettingsActivity extends Activity {
                 LockScreenMonitorService.sync(this);
                 NightScreenApplication.syncChargerReceiver(this);
                 updateOverlayPermissionCardVisibility();
+            } else if ("autoStartOnBoot".equals(key) || "autoStartOnWake".equals(key)) {
+                if (checked && Build.VERSION.SDK_INT >= 29
+                        && !Settings.canDrawOverlays(this)) {
+                    Toast.makeText(this,
+                            "כדי לאפשר הפעלה אוטומטית לאחר אתחול או התעוררות, יש לאפשר לשומר מסך הצגה מעל אפליקציות אחרות.",
+                            Toast.LENGTH_LONG).show();
+                    if (!openOverlayPermissionSettings()) {
+                        prefs.edit().putBoolean(key, false).apply();
+                        toggle.setChecked(false);
+                    }
+                }
+                if ("autoStartOnWake".equals(key)) {
+                    LockScreenMonitorService.sync(this);
+                }
             } else if ("showPlayer".equals(key)) {
                 if (checked && !hasNotificationAccess()) {
                     prefs.edit().putBoolean("showPlayerPermissionPending", true).apply();
@@ -1183,6 +1205,12 @@ public class SettingsActivity extends Activity {
         if (autoStartOnDeviceLockToggle != null) {
             autoStartOnDeviceLockToggle.setChecked(getBool("autoStartOnDeviceLock", false));
         }
+        if (autoStartOnBootToggle != null) {
+            autoStartOnBootToggle.setChecked(getBool("autoStartOnBoot", false));
+        }
+        if (autoStartOnWakeToggle != null) {
+            autoStartOnWakeToggle.setChecked(getBool("autoStartOnWake", false));
+        }
     }
 
     private void requestPlayerNotificationAccessIfNeeded() {
@@ -1317,6 +1345,8 @@ public class SettingsActivity extends Activity {
         if ("preventLockWhileActive".equals(key)) return "power-off";
         if ("autoStartOnCharge".equals(key)) return "usb";
         if ("autoStartOnDeviceLock".equals(key)) return "lock-play";
+        if ("autoStartOnBoot".equals(key)) return "power";
+        if ("autoStartOnWake".equals(key)) return "sunrise";
         if ("continueOnLockScreen".equals(key)) return "shield";
         if ("noShutdownWhileCharging".equals(key)) return "phone-charging";
         if ("showBatteryPercent".equals(key)) return "battery-medium";
@@ -1686,7 +1716,9 @@ public class SettingsActivity extends Activity {
 
         boolean granted = Settings.canDrawOverlays(this);
         boolean autoStartEnabled = getBool("autoStartOnCharge", false)
-                || getBool("autoStartOnDeviceLock", false);
+                || getBool("autoStartOnDeviceLock", false)
+                || getBool("autoStartOnBoot", false)
+                || getBool("autoStartOnWake", false);
         overlayPermissionStatus.setText(granted
                 ? (autoStartEnabled
                     ? "ההרשאה פעילה — ההפעלה האוטומטית זמינה."
