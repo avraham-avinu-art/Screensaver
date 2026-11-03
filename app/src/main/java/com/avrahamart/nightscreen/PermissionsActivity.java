@@ -362,7 +362,7 @@ public class PermissionsActivity extends Activity {
                 new LinearLayout.LayoutParams(-1, dp(44));
         actionsParams.topMargin = dp(18);
 
-        Button cancel = makeButton("חזרה");
+        Button cancel = makeButton("ביטול");
         cancel.setBackground(roundOutline(CONTROL_SURFACE, dp(20), CARD_OUTLINE));
         cancel.setTextColor(ON_SURFACE);
         LinearLayout.LayoutParams cancelParams =
