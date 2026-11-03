@@ -8,7 +8,7 @@
     <application
         android:name=".NightScreenApplication"
         android:allowBackup="false"
-        android:label="שומר מסך" android:icon="@drawable/ic_launcher"
+        android:label="שומר מסך – בדיקה" android:icon="@drawable/ic_launcher"
         android:theme="@style/AppTheme"
         android:supportsRtl="true">
         <activity
