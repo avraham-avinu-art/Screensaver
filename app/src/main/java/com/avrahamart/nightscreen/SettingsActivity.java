@@ -252,7 +252,8 @@ public class SettingsActivity extends Activity {
         screenTitle.setText("הגדרות");
         screenSubtitle.setText("התאמה אישית של השומר מסך");
 
-        // Dashboard title is text only. Category pages use a centered text header.
+        screenHeader.setVisibility(View.VISIBLE);
+        // The dashboard title is the only settings page that uses a title header.
         screenHeader.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         categoryBackButton.setVisibility(View.GONE);
         dashboardHeaderDivider.setVisibility(View.VISIBLE);
@@ -263,16 +264,16 @@ public class SettingsActivity extends Activity {
         screenSubtitle.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
 
         addDashboardButton("הפעלה והתנהגות",
-                "זמן פעילות, נעילה וטעינה",
+                "הגדרת זמני הפעילות ואפשרויות ההפעלה",
                 "power", CATEGORY_ACTIVITY);
         addDashboardButton("מראה ועיצוב",
-                "צבע גופן ובהירות",
+                "התאמת צבעים, גופנים ובהירות המסך",
                 "palette", CATEGORY_APPEARANCE);
         addDashboardButton("שעון ותאריך",
                 "התאמת תצוגת השעה והתאריך",
                 "calendar-clock", CATEGORY_CLOCK_DATE);
         addDashboardButton("נגן מדיה",
-                "הצגה והתאמה",
+                "הצגת והתאמת נגן המערכת",
                 "music-note", CATEGORY_PLAYER);
 
         addDashboardNavigation();
@@ -363,15 +364,11 @@ public class SettingsActivity extends Activity {
 
     private void showCategory(int category) {
         currentCategory = category;
-        screenHeader.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        categoryBackButton.setVisibility(View.VISIBLE);
+        // Internal settings pages use the full viewport without a page title or back button.
+        screenHeader.setVisibility(View.GONE);
+        categoryBackButton.setVisibility(View.GONE);
         dashboardHeaderDivider.setVisibility(View.GONE);
-        headerTitleBlock.setGravity(Gravity.CENTER);
-        screenTitle.setGravity(Gravity.CENTER);
-        screenTitle.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-        screenSubtitle.setGravity(Gravity.CENTER);
-        screenSubtitle.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-        if (settingsScroll != null) settingsScroll.setFillViewport(false);
+        if (settingsScroll != null) settingsScroll.setFillViewport(true);
         content.setLayoutParams(new LinearLayout.LayoutParams(-1, -2));
         content.removeAllViews();
         clockDateCard = null;
@@ -413,55 +410,44 @@ public class SettingsActivity extends Activity {
     }
 
     private void buildClockDateSettings() {
-        LinearLayout display = addCard(content, "הצגת תאריכים");
-        addCheck(display, "תאריך עברי", "showHebrew", true);
-        addCheck(display, "תאריך לועזי", "showGregorian", true);
-
-        clockDateCard = addCard(content, "התאמת השעון והתאריך");
-        addDiscreteSlider(clockDateCard, "גודל",
-                new String[]{"קטן", "בינוני", "רגיל", "גדול", "גדול מאוד"},
+        addSegmentedChoices(content, "תצוגת תאריך",
+                new String[]{"עברי ולועזי", "רק עברי", "רק לועזי"},
+                new String[]{"both", "hebrew", "gregorian"}, "dateDisplayMode");
+        addDiscreteSlider(content, "גודל",
+                new String[]{"קטן", "בינוני", "רגיל", "גדול", "ענק"},
                 new String[]{"60", "72", "84", "96", "108"}, "clockDateSize");
-        addDiscreteSlider(clockDateCard, "עובי הגופן",
-                new String[]{"דק", "רגיל", "בינוני", "מודגש"},
+        addDiscreteSlider(content, "עובי הגופן",
+                new String[]{"דק", "רגיל", "מודגש", "עבה"},
                 new String[]{"-1", "0", "1", "2"}, "fontWeight");
-        addSegmentedChoices(clockDateCard, "מיקום",
+        addSegmentedChoices(content, "מיקום",
                 new String[]{"בראש המסך", "ברבע העליון", "במרכז המסך"},
                 new String[]{"top", "upper", "middle"}, "clockDatePosition");
     }
 
     private void buildActivitySettings() {
-        LinearLayout activityTimes = addCard(content, "הגדרת זמני הפעילות");
-        addSegmentedChoices(activityTimes, "זמן פעילות",
+        LinearLayout durationCard = addSegmentedChoices(content, "זמן פעילות",
                 new String[]{"לפי המכשיר", "דקה אחת", "חמש דקות", "ללא כיבוי"},
                 new String[]{"device", "1", "5", "0"}, "screenSaverDuration");
-        addCheck(activityTimes, "מניעת נעילה בזמן פעילות",
-                "preventLockWhileActive", false);
-        addCheck(activityTimes, "המשך הצגה במסך הנעילה",
-                "continueOnLockScreen", false);
-        addCheck(activityTimes, "הפעלה אוטומטית בנעילה",
-                "autoStartOnDeviceLock", false);
-        addActivityCapabilityNotice(activityTimes);
-
-        LinearLayout charging = addCard(content, "שומר מסך בזמן טעינה");
-        addCheck(charging, "הפעלה אוטומטית בטעינה", "autoStartOnCharge", false);
-        addCheck(charging, "ללא כיבוי בטעינה", "noShutdownWhileCharging", false);
-        addCheck(charging, "הצגת אחוז הסוללה", "showBatteryPercent", false);
+        addActivityCapabilityNotice(durationCard);
+        addCheck(content, "מניעת נעילה בזמן פעילות", "preventLockWhileActive", false);
+        addCheck(content, "המשך הצגה במסך הנעילה", "continueOnLockScreen", false);
+        addCheck(content, "הפעלה אוטומטית בנעילה", "autoStartOnDeviceLock", false);
+        addCheck(content, "הפעלה אוטומטית בטעינה", "autoStartOnCharge", false);
+        addCheck(content, "ללא כיבוי בטעינה", "noShutdownWhileCharging", false);
+        addCheck(content, "הצגת אחוז הסוללה", "showBatteryPercent", false);
     }
 
     private void buildAppearanceSettings() {
-        LinearLayout screenAppearance = addCard(content, "צבע ובהירות המסך");
-        addColorChoices(screenAppearance, "צבע המסך",
+        addColorChoices(content, "צבע המסך",
                 new String[]{"שחור", "כחול", "כחול כהה", "טורקיז",
                         "אפור פחם", "ירוק יער", "כחול עמוק", "אפור אבן"},
                 new String[]{"#000000", "#142438", "#091321", "#12313A",
                         "#252B33", "#20362E", "#193740", "#303943"},
                 "screenBackgroundColor");
-        addDiscreteSlider(screenAppearance, "בהירות המסך",
+        addDiscreteSlider(content, "בהירות המסך",
                 new String[]{"לפי המכשיר", "25%", "50%", "75%", "100%"},
                 new String[]{"-1", "25", "50", "75", "100"}, "screenBrightness");
-
-        LinearLayout textAppearance = addCard(content, "גופן וצבע הטקסט");
-        addSpinner(textAppearance, "סוג הגופן",
+        addSpinner(content, "סוג הגופן",
                 new String[]{"ברירת מחדל", "DL Adva", "Keter Aram Tsova", "Shofar",
                         "Gveret Levin", "Yehuda CLM", "Stam Ashkenaz", "DL Apollo Black",
                         "DL Normador", "Ozrad CLM Bold", "Haim FB Black", "Coming Soon",
@@ -473,39 +459,139 @@ public class SettingsActivity extends Activity {
                         "custom:DL Normador.TTF", "custom:OzradCLM-Bold.otf",
                         "custom:fmhaimblack.ttf", "custom:ComingSoon.ttf",
                         "custom:ShortStack-Regular.ttf"}, "fontFamily");
-        addColorChoices(textAppearance, "צבע הגופן",
-                new String[]{"לבן", "כסף", "אפור", "אפור בהיר", "כחול עדין"},
-                new String[]{"white", "silver", "gray", "light", "blue"}, "fontColor");
+        addColorChoices(content, "צבע הגופן",
+                new String[]{"לבן", "כחול עדין", "כסף", "אפור", "אפור בהיר"},
+                new String[]{"white", "blue", "silver", "gray", "light"}, "fontColor");
     }
 
     private void buildPlayerSettings() {
-        LinearLayout player = addCard(content, "הפעלת נגן המדיה");
-        addCheck(player, "הצגת הנגן", "showPlayer", false);
-        addCheck(player, "הצגה רק בתחילת שיר", "showPlayerOnlyAtStart", false);
-        addCheck(player, "פרטי אמן", "showDetails", getBool("showDetails", true));
-        addCheck(player, "שורת מיקום + זמן", "showProgress", true);
-        addDiscreteSlider(player, "גודל הנגן",
-                new String[]{"קטן", "בינוני", "גדול", "גדול מאוד"},
+        addCheck(content, "הצגת הנגן", "showPlayer", false);
+        addCheck(content, "הצגה רק בתחילת שיר", "showPlayerOnlyAtStart", false);
+        addCheck(content, "פרטי אמן", "showDetails", getBool("showDetails", true));
+        addCheck(content, "זמני הניגון ופקדי הנגן", "showProgress", true);
+        addDiscreteSlider(content, "גודל הנגן",
+                new String[]{"קטן", "בינוני", "גדול", "ענק"},
                 new String[]{"14", "17", "20", "23"}, "playerSize");
-        addSegmentedChoices(player, "מיקום הנגן",
+        addSegmentedChoices(content, "מיקום הנגן",
                 new String[]{"ברבע התחתון", "בתחתית המסך"},
                 new String[]{"lower", "bottom"}, "playerPosition");
-
-        playerFrameCard = addCard(content, "מסגרת לנגן");
-        LinearLayout.LayoutParams playerFrameCardParams =
-                (LinearLayout.LayoutParams) playerFrameCard.getLayoutParams();
-        playerFrameCardParams.bottomMargin += dp(5);
-        playerFrameCard.setLayoutParams(playerFrameCardParams);
-        addCheck(playerFrameCard, "הצג מסגרת", "frameEnabled", false);
-        addColorChoices(playerFrameCard, "צבע מסגרת",
-                new String[]{"לבן", "כסף", "אפור", "אפור בהיר", "כחול עדין"},
-                new String[]{"white", "silver", "gray", "light", "blue"}, "frameColor");
-        addDiscreteSlider(playerFrameCard, "עובי מסגרת",
+        addCheck(content, "הצג מסגרת", "frameEnabled", false);
+        addColorChoices(content, "צבע מסגרת",
+                new String[]{"לבן", "כחול עדין", "כסף", "אפור", "אפור בהיר"},
+                new String[]{"white", "blue", "silver", "gray", "light"}, "frameColor");
+        addDiscreteSlider(content, "עובי מסגרת",
                 new String[]{"דקה", "בינונית", "עבה"},
                 new String[]{"1", "2", "3"}, "frameWidth");
-        addDiscreteSlider(playerFrameCard, "עיגול פינות",
+        playerFrameCard = addDiscreteSlider(content, "עיגול פינות",
                 new String[]{"ישר", "עדין", "מעוגל"},
                 new String[]{"0", "10", "20"}, "frameRadius");
+        if (playerFrameCard != null) {
+            LinearLayout.LayoutParams frameCardParams =
+                    (LinearLayout.LayoutParams) playerFrameCard.getLayoutParams();
+            frameCardParams.bottomMargin += dp(5);
+            playerFrameCard.setLayoutParams(frameCardParams);
+        }
+    }
+
+    private LinearLayout addSettingCard(LinearLayout parent, String label, String key) {
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        card.setTextDirection(View.TEXT_DIRECTION_RTL);
+        card.setPadding(dp(13), dp(10), dp(13), dp(12));
+        card.setBackground(roundOutline(CARD_SURFACE, dp(18), CARD_OUTLINE));
+
+        LinearLayout.LayoutParams cardParams =
+                new LinearLayout.LayoutParams(-1, -2);
+        cardParams.bottomMargin = dp(8);
+        parent.addView(card, cardParams);
+
+        LinearLayout header = new LinearLayout(this);
+        header.setOrientation(LinearLayout.HORIZONTAL);
+        header.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+        header.setGravity(Gravity.CENTER_VERTICAL);
+
+        LinearLayout textBlock = new LinearLayout(this);
+        textBlock.setOrientation(LinearLayout.VERTICAL);
+        textBlock.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        textBlock.setGravity(Gravity.CENTER_VERTICAL);
+
+        TextView title = textView(label, 16, ON_SURFACE);
+        title.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD));
+        title.setIncludeFontPadding(false);
+        title.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        title.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
+        textBlock.addView(title, new LinearLayout.LayoutParams(-1, -2));
+
+        String descriptionText = settingDescription(key);
+        if (descriptionText != null && !descriptionText.isEmpty()) {
+            TextView description = textView(descriptionText, 13, MUTED);
+            description.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
+            description.setIncludeFontPadding(false);
+            description.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+            description.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
+            description.setSingleLine(true);
+            description.setEllipsize(android.text.TextUtils.TruncateAt.END);
+            LinearLayout.LayoutParams descriptionParams =
+                    new LinearLayout.LayoutParams(-1, -2);
+            descriptionParams.topMargin = dp(3);
+            textBlock.addView(description, descriptionParams);
+        }
+
+        LinearLayout.LayoutParams textBlockParams =
+                new LinearLayout.LayoutParams(0, -2, 1f);
+        textBlockParams.leftMargin = dp(8);
+        header.addView(textBlock, textBlockParams);
+        header.addView(makeIconBadge(iconForSetting(key), dp(30)),
+                new LinearLayout.LayoutParams(dp(30), dp(30)));
+
+        if ("screenSaverDuration".equals(key)) {
+            FrameLayout infoButton = new FrameLayout(this);
+            infoButton.setContentDescription("הסבר על זמן הפעילות");
+            infoButton.setClickable(true);
+            infoButton.setFocusable(true);
+            infoButton.setBackgroundColor(Color.TRANSPARENT);
+            View infoGlyph = makeIconGlyph("message-circle-question", ACCENT);
+            infoButton.addView(infoGlyph,
+                    new FrameLayout.LayoutParams(dp(25), dp(25), Gravity.CENTER));
+            LinearLayout.LayoutParams infoParams =
+                    new LinearLayout.LayoutParams(dp(32), dp(32));
+            infoParams.leftMargin = dp(5);
+            header.addView(infoButton, 0, infoParams);
+            infoButton.setOnClickListener(v -> showActivityTimeHelpDialog());
+        }
+
+        card.addView(header, new LinearLayout.LayoutParams(-1, -2));
+        return card;
+    }
+
+    private String settingDescription(String key) {
+        if ("dateDisplayMode".equals(key)) return "בחירת התאריך שיופיע לצד השעה.";
+        if ("clockDateSize".equals(key)) return "בחירת גודל השעון והתאריכים.";
+        if ("fontWeight".equals(key)) return "בחירת עובי האותיות והספרות.";
+        if ("clockDatePosition".equals(key)) return "בחירת מיקום השעון והתאריכים במסך.";
+        if ("screenSaverDuration".equals(key)) return "בחירת משך הצגת שומר המסך.";
+        if ("preventLockWhileActive".equals(key)) return "מניעת הופעת מסך הנעילה בזמן הפעילות.";
+        if ("continueOnLockScreen".equals(key)) return "המשך הצגת השומר לאחר כיבוי והדלקת המסך.";
+        if ("autoStartOnDeviceLock".equals(key)) return "הפעלת השומר באופן אוטומטי בעת נעילת המכשיר.";
+        if ("autoStartOnCharge".equals(key)) return "הפעלת השומר אוטומטית בעת חיבור מטען.";
+        if ("noShutdownWhileCharging".equals(key)) return "השארת המסך פעיל כל עוד המכשיר בטעינה.";
+        if ("showBatteryPercent".equals(key)) return "הצגת אחוז הסוללה בזמן טעינה.";
+        if ("screenBackgroundColor".equals(key)) return "בחירת צבע הרקע של שומר המסך.";
+        if ("screenBrightness".equals(key)) return "התאמת בהירות התצוגה של שומר המסך.";
+        if ("fontFamily".equals(key)) return "בחירת סוג הגופן שיוצג במסך.";
+        if ("fontColor".equals(key)) return "בחירת צבע השעה והתאריכים.";
+        if ("showPlayer".equals(key)) return "הצגת נגן המדיה כאשר מתנגנת מדיה במכשיר.";
+        if ("showPlayerOnlyAtStart".equals(key)) return "הצגת הנגן רק בתחילת כל שיר.";
+        if ("showDetails".equals(key)) return "הצגת שם האמן מתחת לפרטי השיר.";
+        if ("showProgress".equals(key)) return "הצגת זמני השיר וסרגל ההתקדמות שליד פקדי הנגן.";
+        if ("playerSize".equals(key)) return "בחירת גודל נגן המדיה.";
+        if ("playerPosition".equals(key)) return "בחירת מיקום נגן המדיה במסך.";
+        if ("frameEnabled".equals(key)) return "הצגת מסגרת סביב נגן המדיה.";
+        if ("frameColor".equals(key)) return "בחירת צבע המסגרת סביב הנגן.";
+        if ("frameWidth".equals(key)) return "בחירת עובי קו המסגרת.";
+        if ("frameRadius".equals(key)) return "בחירת מידת עיגול פינות המסגרת.";
+        return "";
     }
 
     private LinearLayout addCard(LinearLayout parent, String title) {
@@ -776,27 +862,11 @@ public class SettingsActivity extends Activity {
         }
     }
 
-    private void addCheck(LinearLayout card, String label, String key, boolean defaultValue) {
-        LinearLayout row = new LinearLayout(this);
-        row.setOrientation(LinearLayout.HORIZONTAL);
-        row.setGravity(Gravity.CENTER_VERTICAL);
-        // LTR child order places the switch at the left and the Hebrew label at the right.
-        row.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-        row.setTextDirection(View.TEXT_DIRECTION_RTL);
-        row.setPadding(dp(6), dp(2), dp(6), dp(2));
-
-        TextView text = textView(label, 16, ON_SURFACE);
-        text.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-        text.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        text.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
-        text.setTextDirection(View.TEXT_DIRECTION_RTL);
-        row.addView(text, new LinearLayout.LayoutParams(0, dp(38), 1f));
-
-        FrameLayout settingIcon = makeIconBadge(iconForSetting(key), dp(30));
-        LinearLayout.LayoutParams iconParams =
-                new LinearLayout.LayoutParams(dp(30), dp(30));
-        iconParams.leftMargin = dp(9);
-        row.addView(settingIcon, iconParams);
+    private void addCheck(LinearLayout parent, String label, String key, boolean defaultValue) {
+        LinearLayout card = addSettingCard(parent, label, key);
+        LinearLayout row = (LinearLayout) card.getChildAt(0);
+        row.setClickable(true);
+        row.setFocusable(true);
 
         Switch toggle = new Switch(this);
         toggle.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
@@ -850,8 +920,8 @@ public class SettingsActivity extends Activity {
                 }
                 updateOverlayPermissionCardVisibility();
             } else if ("autoStartOnDeviceLock".equals(key)) {
-                // Device-lock activation is independent from the active-session lock policy.
-                if (checked && Build.VERSION.SDK_INT >= 29 && !Settings.canDrawOverlays(this)) {
+                if (checked && Build.VERSION.SDK_INT >= 29
+                        && !Settings.canDrawOverlays(this)) {
                     prefs.edit().putBoolean("autoStartOnLockOverlayPermissionPending", true).apply();
                     requestLockStartOverlayPermission();
                 } else {
@@ -872,51 +942,24 @@ public class SettingsActivity extends Activity {
                 }
             }
         });
-        row.setOnClickListener(v -> toggle.setChecked(!toggle.isChecked()));
-        LinearLayout.LayoutParams rowParams =
-                new LinearLayout.LayoutParams(-1, -2);
-        rowParams.bottomMargin = dp(4);
-        card.addView(row, rowParams);
+        row.setOnClickListener(v -> {
+            if (v != toggle) toggle.setChecked(!toggle.isChecked());
+        });
     }
 
     // Use one consistent segmented selector for all discrete settings.
     // Existing values and ranges are intentionally preserved.
-    private void addDiscreteSlider(LinearLayout card, String label,
-                                   String[] names, String[] values, String key) {
-        addSegmentedChoices(card, label, names, values, key);
+    private LinearLayout addDiscreteSlider(LinearLayout parent, String label,
+                                            String[] names, String[] values, String key) {
+        return addSegmentedChoices(parent, label, names, values, key);
     }
 
-    private void addSegmentedChoices(LinearLayout card, String label,
-                                   String[] names, String[] values, String key) {
+    private LinearLayout addSegmentedChoices(LinearLayout parent, String label,
+                                               String[] names, String[] values, String key) {
         if (names == null || values == null || names.length == 0
-                || names.length != values.length) return;
+                || names.length != values.length) return null;
 
-        LinearLayout block = new LinearLayout(this);
-        block.setOrientation(LinearLayout.VERTICAL);
-        block.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        block.setPadding(0, 0, 0, 0);
-
-        LinearLayout headingRow = new LinearLayout(this);
-        headingRow.setOrientation(LinearLayout.HORIZONTAL);
-        headingRow.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-        headingRow.setGravity(Gravity.CENTER_VERTICAL);
-
-        TextView settingLabel = textView(label, 16, ON_SURFACE);
-        settingLabel.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-        settingLabel.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        settingLabel.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
-        settingLabel.setTextDirection(View.TEXT_DIRECTION_RTL);
-        settingLabel.setPadding(0, 0, dp(3), 0);
-        headingRow.addView(settingLabel, new LinearLayout.LayoutParams(0, dp(30), 1f));
-
-        FrameLayout settingIcon = makeIconBadge(iconForSetting(key), dp(30));
-        LinearLayout.LayoutParams iconParams =
-                new LinearLayout.LayoutParams(dp(30), dp(30));
-        iconParams.leftMargin = dp(9);
-        headingRow.addView(settingIcon, iconParams);
-        block.addView(headingRow, new LinearLayout.LayoutParams(-1, dp(29)));
-
-        int initial = selectedIndex(key, values);
+        LinearLayout card = addSettingCard(parent, label, key);
         FrameLayout rail = new FrameLayout(this);
         rail.setBackground(roundOutline(CONTROL_SURFACE, dp(10), OUTLINE));
         if (Build.VERSION.SDK_INT >= 21) rail.setClipToOutline(true);
@@ -927,6 +970,7 @@ public class SettingsActivity extends Activity {
         segments.setGravity(Gravity.CENTER_VERTICAL);
         final TextView[] options = new TextView[names.length];
         final View[] selectionChips = new View[names.length];
+        int initial = selectedIndex(key, values);
 
         for (int i = 0; i < names.length; i++) {
             final int index = i;
@@ -936,10 +980,8 @@ public class SettingsActivity extends Activity {
             View selectionChip = new View(this);
             selectionChip.setBackground(roundOutline(ACCENT, dp(9), ACCENT));
             selectionChip.setVisibility(i == initial ? View.VISIBLE : View.GONE);
-            FrameLayout.LayoutParams chipParams =
-                    new FrameLayout.LayoutParams(-1, -1);
-            // The selected chip fills its whole segment without internal separator lines.
-            segment.addView(selectionChip, chipParams);
+            segment.addView(selectionChip,
+                    new FrameLayout.LayoutParams(-1, -1));
             selectionChips[i] = selectionChip;
 
             TextView option = textView(names[i], 13,
@@ -952,15 +994,13 @@ public class SettingsActivity extends Activity {
             option.setIncludeFontPadding(false);
             option.setPadding(dp(2), 0, dp(2), 0);
             if (Build.VERSION.SDK_INT >= 26) {
-                // Keep all options on one line on narrow screens; shrink text instead.
                 option.setAutoSizeTextTypeUniformWithConfiguration(
                         10, 13, 1, android.util.TypedValue.COMPLEX_UNIT_SP);
             }
             option.setBackgroundColor(Color.TRANSPARENT);
             option.setSelected(i == initial);
-            FrameLayout.LayoutParams optionParams =
-                    new FrameLayout.LayoutParams(-1, -1);
-            segment.addView(option, optionParams);
+            segment.addView(option,
+                    new FrameLayout.LayoutParams(-1, -1));
             options[i] = option;
 
             segment.setContentDescription(label + ": " + names[i]);
@@ -978,8 +1018,7 @@ public class SettingsActivity extends Activity {
                 }
                 if ("screenSaverDuration".equals(key)) updateDeviceCapabilityNotice();
             });
-            // Give each option a share of the rail proportional to its measured label width.
-            // This keeps short labels compact and gives longer Hebrew labels the room they need.
+
             float optionWidthWeight = Math.max((float) dp(36),
                     option.getPaint().measureText(names[i]) + dp(12));
             segments.addView(segment,
@@ -989,15 +1028,9 @@ public class SettingsActivity extends Activity {
         rail.addView(segments, new FrameLayout.LayoutParams(-1, -1));
         LinearLayout.LayoutParams railParams =
                 new LinearLayout.LayoutParams(-1, dp(38));
-        railParams.topMargin = dp(8);
-        railParams.bottomMargin = dp(8);
-        // Stay within the card's padded content bounds so the rail cannot be clipped at either side.
-        block.addView(rail, railParams);
-
-        LinearLayout.LayoutParams blockParams =
-                new LinearLayout.LayoutParams(-1, -2);
-        blockParams.bottomMargin = dp(3);
-        card.addView(block, blockParams);
+        railParams.topMargin = dp(9);
+        card.addView(rail, railParams);
+        return card;
     }
 
     private void addActivityCapabilityNotice(LinearLayout card) {
@@ -1057,41 +1090,18 @@ public class SettingsActivity extends Activity {
         }
     }
 
-    private void addColorChoices(LinearLayout card, String label,
+    private void addColorChoices(LinearLayout parent, String label,
                                  String[] names, String[] values, String key) {
         if (names == null || values == null || names.length == 0
                 || names.length != values.length) return;
 
-        LinearLayout block = new LinearLayout(this);
-        block.setOrientation(LinearLayout.VERTICAL);
-        block.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        block.setPadding(dp(6), dp(2), dp(6), dp(5));
-
-        LinearLayout headingRow = new LinearLayout(this);
-        headingRow.setOrientation(LinearLayout.HORIZONTAL);
-        headingRow.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-        headingRow.setGravity(Gravity.CENTER_VERTICAL);
-
-        TextView title = textView(label, 16, ON_SURFACE);
-        title.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-        title.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        title.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
-        title.setPadding(0, 0, dp(3), 0);
-        headingRow.addView(title, new LinearLayout.LayoutParams(0, dp(32), 1f));
-        FrameLayout icon = makeIconBadge(iconForSetting(key), dp(30));
-        LinearLayout.LayoutParams iconParams =
-                new LinearLayout.LayoutParams(dp(30), dp(30));
-        iconParams.leftMargin = dp(9);
-        headingRow.addView(icon, iconParams);
-        block.addView(headingRow, new LinearLayout.LayoutParams(-1, dp(32)));
-
+        LinearLayout card = addSettingCard(parent, label, key);
         LinearLayout choices = new LinearLayout(this);
         choices.setOrientation(LinearLayout.VERTICAL);
         choices.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         choices.setGravity(Gravity.CENTER);
+
         int initial = selectedIndex(key, values);
-        // Migrate the previously offered brown background to graphite so existing
-        // installations retain a valid selected swatch.
         if ("screenBackgroundColor".equals(key) && prefs.contains(key)
                 && getInt(key, Color.TRANSPARENT) == colorValue("#332820")) {
             initial = 4;
@@ -1111,7 +1121,7 @@ public class SettingsActivity extends Activity {
                 choiceRow.setGravity(Gravity.CENTER_VERTICAL);
                 LinearLayout.LayoutParams choiceRowParams =
                         new LinearLayout.LayoutParams(-1, -2);
-                if (i > 0) choiceRowParams.topMargin = dp(4);
+                if (i > 0) choiceRowParams.topMargin = dp(5);
                 choices.addView(choiceRow, choiceRowParams);
             }
 
@@ -1157,11 +1167,10 @@ public class SettingsActivity extends Activity {
             choiceRow.addView(item, new LinearLayout.LayoutParams(0, -2, 1f));
         }
 
-        block.addView(choices, new LinearLayout.LayoutParams(-1, -2));
-        LinearLayout.LayoutParams blockParams =
+        LinearLayout.LayoutParams choicesParams =
                 new LinearLayout.LayoutParams(-1, -2);
-        blockParams.bottomMargin = dp(4);
-        card.addView(block, blockParams);
+        choicesParams.topMargin = dp(9);
+        card.addView(choices, choicesParams);
     }
 
     private void refreshPermissionDependentToggles() {
@@ -1266,7 +1275,13 @@ public class SettingsActivity extends Activity {
     private void persistOption(String key, String value) {
         try {
             SharedPreferences.Editor editor = prefs.edit();
-            if ("fontColor".equals(key) || "frameColor".equals(key)
+            if ("dateDisplayMode".equals(key)) {
+                editor.putString(key, value);
+                editor.putBoolean("showHebrew",
+                        "both".equals(value) || "hebrew".equals(value));
+                editor.putBoolean("showGregorian",
+                        "both".equals(value) || "gregorian".equals(value));
+            } else if ("fontColor".equals(key) || "frameColor".equals(key)
                     || "screenBackgroundColor".equals(key)) {
                 editor.putInt(key, colorValue(value));
             } else if ("fontWeight".equals(key) || "clockDateSize".equals(key)
@@ -1295,7 +1310,7 @@ public class SettingsActivity extends Activity {
     }
 
     private String iconForSetting(String key) {
-        if ("showHebrew".equals(key)) return "hebrew-date";
+        if ("showHebrew".equals(key) || "dateDisplayMode".equals(key)) return "hebrew-date";
         if ("showGregorian".equals(key)) return "gregorian-date";
         if ("showPlayer".equals(key)) return "media-toggle";
         if ("screenSaverDuration".equals(key)) return "activity-history";
@@ -1381,22 +1396,9 @@ public class SettingsActivity extends Activity {
         }
     }
 
-    private void addSpinner(LinearLayout card, String label, String[] names,
+    private void addSpinner(LinearLayout parent, String label, String[] names,
                             String[] values, String key) {
-        LinearLayout row = new LinearLayout(this);
-        row.setOrientation(LinearLayout.HORIZONTAL);
-        row.setGravity(Gravity.CENTER_VERTICAL);
-        row.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-        row.setTextDirection(View.TEXT_DIRECTION_RTL);
-        row.setPadding(dp(6), dp(2), dp(6), dp(4));
-
-        TextView labelView = textView(label, 16, ON_SURFACE);
-        labelView.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-        labelView.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        labelView.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
-        labelView.setTextDirection(View.TEXT_DIRECTION_RTL);
-        labelView.setPadding(0, 0, dp(3), 0);
-
+        LinearLayout card = addSettingCard(parent, label, key);
         int selected = selectedIndex(key, values);
         if ("fontFamily".equals(key)) {
             String storedFamily = getString(key, values[0]);
@@ -1407,12 +1409,12 @@ public class SettingsActivity extends Activity {
                     break;
                 }
             }
-            // Migrate previous Android built-in family values to the first newly supplied font.
             if (!knownFamily) {
                 selected = 0;
                 persistOption(key, values[0]);
             }
         }
+
         final int selectedPosition = selected;
         int spinnerWidth = dropdownWidthForOptions(names);
         Spinner spinner = new Spinner(this);
@@ -1452,9 +1454,8 @@ public class SettingsActivity extends Activity {
         FrameLayout spinnerContainer = new FrameLayout(this);
         spinnerContainer.setBackground(roundOutline(CONTROL_SURFACE, dp(12), OUTLINE));
         spinnerContainer.setTag(spinner);
-        FrameLayout.LayoutParams spinnerInnerParams =
-                new FrameLayout.LayoutParams(-1, -1);
-        spinnerContainer.addView(spinner, spinnerInnerParams);
+        spinnerContainer.addView(spinner,
+                new FrameLayout.LayoutParams(-1, -1));
         View dropdownIcon = makeIconGlyph("chevron", ACCENT);
         FrameLayout.LayoutParams dropdownIconParams =
                 new FrameLayout.LayoutParams(dp(18), dp(18),
@@ -1465,20 +1466,9 @@ public class SettingsActivity extends Activity {
 
         LinearLayout.LayoutParams spinnerParams =
                 new LinearLayout.LayoutParams(spinnerWidth, dp(40));
-        spinnerParams.leftMargin = dp(9);
-        row.addView(spinnerContainer, spinnerParams);
-        row.addView(labelView, new LinearLayout.LayoutParams(0, dp(40), 1f));
-        FrameLayout settingIcon = makeIconBadge(iconForSetting(key), dp(30));
-        LinearLayout.LayoutParams settingIconParams =
-                new LinearLayout.LayoutParams(dp(30), dp(30));
-        settingIconParams.leftMargin = dp(9);
-        row.addView(settingIcon, settingIconParams);
-        LinearLayout.LayoutParams spinnerRowParams =
-                new LinearLayout.LayoutParams(-1, -2);
-        if ("fontFamily".equals(key)) {
-            spinnerRowParams.bottomMargin = dp(6);
-        }
-        card.addView(row, spinnerRowParams);
+        spinnerParams.gravity = Gravity.RIGHT;
+        spinnerParams.topMargin = dp(9);
+        card.addView(spinnerContainer, spinnerParams);
 
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             private boolean initialSelectionPending = true;
@@ -1579,6 +1569,20 @@ public class SettingsActivity extends Activity {
 
     private int selectedIndex(String key, String[] values) {
         int index = 0;
+        if ("dateDisplayMode".equals(key)) {
+            if (prefs.contains(key)) {
+                String storedMode = getString(key, "both");
+                for (int i = 0; i < values.length; i++) {
+                    if (values[i].equals(storedMode)) return i;
+                }
+            }
+            boolean showHebrew = getBool("showHebrew", true);
+            boolean showGregorian = getBool("showGregorian", true);
+            if (showHebrew && showGregorian) return 0;
+            if (showHebrew) return 1;
+            if (showGregorian) return 2;
+            return 0;
+        }
         if ("fontColor".equals(key) || "frameColor".equals(key)
                 || "screenBackgroundColor".equals(key)) {
             if (!prefs.contains(key)) {

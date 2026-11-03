@@ -9,7 +9,6 @@ import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
 import android.view.Window;
-import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
@@ -51,11 +50,6 @@ public final class GuideActivity extends Activity {
         title.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         header.addView(title, new FrameLayout.LayoutParams(-1, dp(44), Gravity.CENTER));
 
-        FrameLayout back = circularBackButton();
-        FrameLayout.LayoutParams backParams =
-                new FrameLayout.LayoutParams(dp(42), dp(42), Gravity.LEFT | Gravity.CENTER_VERTICAL);
-        header.addView(back, backParams);
-        back.setOnClickListener(v -> finish());
         root.addView(header, new LinearLayout.LayoutParams(-1, dp(48)));
 
         TextView subtitle = textView("הסברים וטיפים לשימוש באפליקציה", 14, MUTED);
@@ -79,17 +73,17 @@ public final class GuideActivity extends Activity {
 
         addSection(sections, "1. היכרות עם האפליקציה",
                 "שומר מסך מציג שעון גדול, תאריך עברי ותאריך לועזי, ובאפשרותך להוסיף גם נגן מדיה ואחוז סוללה.\n\n" +
-                "מסך ההגדרות מחולק לארבע קבוצות: שעון ותאריך; הפעלה והתנהגות; מראה ועיצוב; נגן מדיה. " +
-                "בנוסף קיימים מסך ניהול הרשאות ומדריך שימוש. כל שינוי נשמר בהגדרות האפליקציה.");
+                "ההגדרות מחולקות לארבעה מסכים עיקריים: שעון ותאריך; הפעלה והתנהגות; מראה ועיצוב; נגן מדיה. " +
+                "בכל מסך כל הגדרה מוצגת בחלונית נפרדת. בנוסף קיימים מסך ניהול הרשאות ומדריך שימוש. כל שינוי נשמר בהגדרות האפליקציה.");
 
         addSection(sections, "2. שימוש במסך הראשי",
                 "סמל ההגדרות אינו מוצג כל הזמן. הקש באזור העליון של המסך כדי להציג את סמל ההגדרות למשך כשלוש שניות, " +
                 "ולאחר מכן הקש על סמל גלגל השיניים שמופיע בפינה העליונה.\n\n" +
-                "אפשר לפתוח את ההגדרות גם באמצעות מקש התפריט הפיזי במכשירים שתומכים בו. " +
-                "לאחר סיום העבודה בהגדרות, לחץ על „סיום ושמירה” כדי לחזור לשומר המסך.");
+                "אפשר לפתוח את ההגדרות גם באמצעות מקש התפריט הפיזי במכשירים שתומכים בו. כדי לצאת מהשומר, " +
+                "השתמש בלחצן החזרה של המכשיר; נדרשות שתי לחיצות רצופות.");
 
         addSection(sections, "3. זמן פעילות ונעילת המכשיר",
-                "בקבוצת „הפעלה והתנהגות” נמצאת בחירת זמן הפעילות. לכל אפשרות משמעות שונה:\n\n" +
+                "במסך „הפעלה והתנהגות” נמצאת בחירת זמן הפעילות. לכל אפשרות משמעות שונה:\n\n" +
                 "• לפי המכשיר — Android מנהל את זמן כיבוי המסך. השומר נשאר מוצג כל עוד המערכת משאירה את המסך פעיל. " +
                 "אם המכשיר אינו מכבה את המסך אוטומטית, השומר ימשיך להיות מוצג.\n\n" +
                 "• דקה אחת / חמש דקות — השומר מסיים את הפעילות בתום הזמן שנבחר. אם זמן כיבוי המסך של המכשיר ארוך יותר, " +
@@ -110,23 +104,23 @@ public final class GuideActivity extends Activity {
                 "והשנייה עוסקת בהמשך הצגתו לאחר מחזור כיבוי והפעלה של המסך.");
 
         addSection(sections, "5. שעון ותאריך",
-                "בקבוצת „שעון ותאריך” אפשר לבחור אם להציג את התאריך העברי ואת התאריך הלועזי.\n\n" +
-                "• גודל — בחירה בין קטן, בינוני, רגיל, גדול וגדול מאוד.\n" +
-                "• עובי הגופן — בחירה בין דק, רגיל, בינוני ומודגש.\n" +
+                "במסך „שעון ותאריך” אפשר לבחור בין שלושה מצבים: עברי ולועזי, רק עברי או רק לועזי.\n\n" +
+                "• גודל — בחירה בין קטן, בינוני, רגיל, גדול וענק.\n" +
+                "• עובי הגופן — בחירה בין דק, רגיל, מודגש ועבה.\n" +
                 "• מיקום — בראש המסך, ברבע העליון או במרכז המסך.\n\n" +
                 "הגודל והמשקל משפיעים על תצוגת השעון והתאריכים. בחלק מהגופנים קיימות התאמות תצוגה מיוחדות כדי לשמור על קריאות ואחידות.");
 
         addSection(sections, "6. נגן מדיה",
-                "קבוצת „נגן מדיה” מאפשרת להציג את נגן המדיה של Android כאשר קיימת הפעלת מדיה זמינה.\n\n" +
+                "במסך „נגן מדיה” אפשר להציג את נגן המדיה של Android כאשר קיימת הפעלת מדיה זמינה.\n\n" +
                 "• הצגת הנגן — מפעילה או מסתירה את הנגן.\n" +
                 "• הצגה רק בתחילת שיר — מציגה את הנגן למשך חלון הזמן הראשוני של השיר.\n" +
                 "• פרטי אמן — מציגה את שם האמן כאשר הוא נמסר על ידי נגן המדיה.\n" +
-                "• שורת מיקום + זמן — מציגה את מיקום ההשמעה ואת משך הקטע, כאשר הנגן מספק נתונים אלה.\n" +
+                "• זמני הניגון ופקדי הנגן — מציגה את זמני השיר ואת סרגל ההתקדמות לצד כפתורי הניגון.\n" +
                 "• גודל הנגן ומיקום הנגן — קובעים את גודל הכרטיס ואת מיקומו ברבע התחתון או בתחתית המסך.\n\n" +
                 "אפשר גם להציג מסגרת, לבחור את צבעה, את עובייה ואת מידת עיגול הפינות. האפשרויות האלה נמצאות תחת „מסגרת לנגן”.");
 
         addSection(sections, "7. מראה ועיצוב",
-                "בקבוצת „מראה ועיצוב” אפשר להתאים את הרקע, הבהירות והגופן:\n\n" +
+                "במסך „מראה ועיצוב” אפשר להתאים את הרקע, הבהירות והגופן:\n\n" +
                 "• צבע המסך — בחירה בין שחור, כחול, כחול כהה, טורקיז, אפור פחם, ירוק יער, כחול עמוק ואפור אבן.\n" +
                 "• בהירות המסך — לפי המכשיר או אחת מדרגות הבהירות הזמינות.\n" +
                 "• סוג הגופן — בחירה מבין הגופנים המותקנים באפליקציה.\n" +
@@ -134,10 +128,10 @@ public final class GuideActivity extends Activity {
                 "הדוגמית המסומנת בטורקיז היא הצבע הפעיל.");
 
         addSection(sections, "8. שומר מסך בזמן טעינה",
-                "הגדרות הטעינה נמצאות בקבוצת „הפעלה והתנהגות”:\n\n" +
+                "הגדרות הטעינה נמצאות במסך „הפעלה והתנהגות”:\n\n" +
                 "• הפעלה אוטומטית בטעינה — מפעילה את השומר כאשר המטען מתחבר.\n" +
                 "• ללא כיבוי בטעינה — כאשר המכשיר בטעינה והשומר פעיל, מונעת כיבוי מסך אוטומטי.\n" +
-                "• הצגת אחוז הסוללה — מציגה את אחוז הסוללה על המסך כאשר נתון הסוללה זמין.\n\n" +
+                "• הצגת אחוז הסוללה — מציגה את אחוז הסוללה בזמן טעינה.\n\n" +
                 "הגדרות אלה נפרדות מבחירת זמן הפעילות הרגילה. ניתוק המטען מפסיק את התנאי של „ללא כיבוי בטעינה”.");
 
         addSection(sections, "9. ניהול הרשאות",
@@ -162,28 +156,10 @@ public final class GuideActivity extends Activity {
                 "אם הנגן אינו מופיע, בדוק שהאפשרות „הצגת הנגן” פעילה ושניתנה גישה להתראות.\n\n" +
                 "אם השומר אינו מופעל אוטומטית בנעילה או בטעינה, בדוק שהמתג המתאים פעיל ושכל הרשאה נדרשת ניתנה.\n\n" +
                 "אם המסך נשאר דולק אחרי סיום דקה או חמש דקות, בדוק את זמן כיבוי המסך בהגדרות Android. סגירת השומר וכיבוי התצוגה הן פעולות נפרדות. " +
-                "הודעת היכולת שמופיעה בקבוצת „הפעלה והתנהגות” מסבירה כאשר זמן הכיבוי במכשיר ארוך יותר מהזמן שנבחר.");
+                "ההודעה שמופיעה בכרטיס „זמן פעילות” במסך „הפעלה והתנהגות” מסבירה כאשר זמן הכיבוי במכשיר ארוך יותר מהזמן שנבחר.");
 
         scroll.addView(sections, new ScrollView.LayoutParams(-1, -2));
         root.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1f));
-
-        Button close = new Button(this);
-        close.setText("חזרה להגדרות");
-        close.setAllCaps(false);
-        close.setTextSize(16);
-        close.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-        close.setTextColor(Color.rgb(7, 31, 49));
-        close.setMinWidth(0);
-        close.setMinHeight(0);
-        close.setPadding(dp(24), 0, dp(24), 0);
-        close.setBackground(pillBackground(ACCENT, dp(22)));
-        close.setElevation(dp(1));
-        LinearLayout.LayoutParams closeParams =
-                new LinearLayout.LayoutParams(-2, dp(46));
-        closeParams.gravity = Gravity.CENTER_HORIZONTAL;
-        closeParams.topMargin = dp(7);
-        root.addView(close, closeParams);
-        close.setOnClickListener(v -> finish());
 
         setContentView(root);
     }
@@ -227,31 +203,11 @@ public final class GuideActivity extends Activity {
         parent.addView(card, params);
     }
 
-    private FrameLayout circularBackButton() {
-        FrameLayout button = new FrameLayout(this);
-        button.setContentDescription("חזרה להגדרות");
-        button.setClickable(true);
-        button.setFocusable(true);
-        button.setBackground(pillBackground(ACCENT, dp(22)));
-        TextView arrow = textView("‹", 34, Color.rgb(7, 31, 49));
-        arrow.setGravity(Gravity.CENTER);
-        arrow.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-        button.addView(arrow, new FrameLayout.LayoutParams(-1, -1));
-        return button;
-    }
-
     private GradientDrawable roundOutline(int color, int radius, int strokeColor) {
         GradientDrawable shape = new GradientDrawable();
         shape.setColor(color);
         shape.setCornerRadius(radius);
         shape.setStroke(dp(1), strokeColor);
-        return shape;
-    }
-
-    private GradientDrawable pillBackground(int color, int radius) {
-        GradientDrawable shape = new GradientDrawable();
-        shape.setColor(color);
-        shape.setCornerRadius(radius);
         return shape;
     }
 

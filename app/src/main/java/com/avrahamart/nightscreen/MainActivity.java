@@ -106,6 +106,7 @@ public class MainActivity extends Activity {
     private ComponentName screenLockAdminComponent;
     private String lastScheduledDurationValue = null;
     private long settingsOpenedElapsedRealtime = 0L;
+    private long lastBackPressElapsedRealtime = 0L;
     private final BroadcastReceiver deviceStateReceiver = new BroadcastReceiver() {
         @Override public void onReceive(Context context, Intent intent) {
             if (intent == null || intent.getAction() == null) return;
@@ -305,6 +306,23 @@ public class MainActivity extends Activity {
         } catch (Throwable t) {
             showFatalError(t);
         }
+    }
+
+    @Override
+    public void onBackPressed() {
+        long now = SystemClock.elapsedRealtime();
+        if (lastBackPressElapsedRealtime > 0L
+                && now - lastBackPressElapsedRealtime <= 2_000L) {
+            lastBackPressElapsedRealtime = 0L;
+            super.onBackPressed();
+            return;
+        }
+
+        lastBackPressElapsedRealtime = now;
+        Toast notice = Toast.makeText(
+                this, "לחץ שוב על חזרה כדי לצאת", Toast.LENGTH_SHORT);
+        notice.setGravity(Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL, 0, dp(64));
+        notice.show();
     }
 
     @Override
@@ -2772,6 +2790,13 @@ public class MainActivity extends Activity {
         boolean introWindowOpen = playerIntroWindowVisible
                 && SystemClock.elapsedRealtime() < playerIntroWindowDeadlineElapsedRealtime;
         if (introOnly && !introWindowOpen) enabled = false;
+
+        // Apply the final frame and its inner padding before showing the player.
+        // This prevents the unframed player from flashing while media callbacks settle.
+        boolean hasActiveSong = mediaController != null
+                && hasUsableMediaSession(mediaController);
+        applyMediaFrame(enabled && hasActiveSong);
+        mediaMirror.requestLayout();
         mediaMirror.setVisibility(enabled ? View.VISIBLE : View.GONE);
         if (!enabled) {
             stopTitleMarquee();
