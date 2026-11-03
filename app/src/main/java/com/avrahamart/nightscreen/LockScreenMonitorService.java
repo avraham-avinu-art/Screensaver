@@ -144,7 +144,7 @@ public final class LockScreenMonitorService extends Service {
                 (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         if (manager == null) return;
         NotificationChannel channel = new NotificationChannel(
-                CHANNEL_ID, "הפעלה אוטומטית בנעילת המכשיר", NotificationManager.IMPORTANCE_LOW);
+                CHANNEL_ID, "הפעלה אוטומטית של שומר מסך", NotificationManager.IMPORTANCE_LOW);
         channel.setDescription("התראה מתמשכת לשירות ההפעלה האוטומטית בנעילת המכשיר");
         channel.setShowBadge(false);
         channel.setLockscreenVisibility(Notification.VISIBILITY_SECRET);
@@ -171,8 +171,8 @@ public final class LockScreenMonitorService extends Service {
         // KeyMapper-style notification semantics: ongoing and silent, with an action
         // that opens the app; it is not tied to the settings Activity lifecycle.
         builder.setSmallIcon(R.drawable.ic_notification_transparent)
-                .setContentTitle("הפעלה אוטומטית בנעילת המכשיר")
-                .setContentText("שירות ההפעלה האוטומטית פעיל.")
+                .setContentTitle("הפעלה אוטומטית של שומר מסך")
+                .setContentText("השירות פועל ברקע לפי הגדרות ההפעלה האוטומטית.")
                 .setContentIntent(contentIntent)
                 .setOngoing(true)
                 .setOnlyAlertOnce(true)
