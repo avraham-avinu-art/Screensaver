@@ -472,7 +472,7 @@ public class SettingsActivity extends Activity {
         addCheck(content, "הצגת הנגן", "showPlayer", false);
         addCheck(content, "הצגה רק בתחילת שיר", "showPlayerOnlyAtStart", false);
         addCheck(content, "פרטי אמן", "showDetails", getBool("showDetails", true));
-        addCheck(content, "זמני הניגון ופקדי הנגן", "showProgress", true);
+        addCheck(content, "זמני השיר ופקדי הנגן", "showProgress", true);
         addDiscreteSlider(content, "גודל הנגן",
                 new String[]{"קטן", "בינוני", "גדול", "ענק"},
                 new String[]{"14", "17", "20", "23"}, "playerSize");
@@ -991,76 +991,71 @@ public class SettingsActivity extends Activity {
                 || names.length != values.length) return null;
 
         LinearLayout card = addSettingCard(parent, label, key);
-        FrameLayout rail = new FrameLayout(this);
-        rail.setBackground(roundOutline(CONTROL_SURFACE, dp(10), OUTLINE));
-        if (Build.VERSION.SDK_INT >= 21) rail.setClipToOutline(true);
+        LinearLayout tiles = new LinearLayout(this);
+        tiles.setOrientation(LinearLayout.HORIZONTAL);
+        tiles.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        tiles.setGravity(Gravity.CENTER_VERTICAL);
 
-        LinearLayout segments = new LinearLayout(this);
-        segments.setOrientation(LinearLayout.HORIZONTAL);
-        segments.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        segments.setGravity(Gravity.CENTER_VERTICAL);
         final TextView[] options = new TextView[names.length];
-        final View[] selectionChips = new View[names.length];
+        final FrameLayout[] optionTiles = new FrameLayout[names.length];
         int initial = selectedIndex(key, values);
 
         for (int i = 0; i < names.length; i++) {
             final int index = i;
-            FrameLayout segment = new FrameLayout(this);
-            segment.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-
-            View selectionChip = new View(this);
-            selectionChip.setBackground(roundOutline(ACCENT, dp(9), ACCENT));
-            selectionChip.setVisibility(i == initial ? View.VISIBLE : View.GONE);
-            segment.addView(selectionChip,
-                    new FrameLayout.LayoutParams(-1, -1));
-            selectionChips[i] = selectionChip;
+            boolean selected = i == initial;
+            FrameLayout tile = new FrameLayout(this);
+            tile.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+            tile.setBackground(roundOutline(
+                    selected ? ACCENT : CONTROL_SURFACE,
+                    dp(5), selected ? ACCENT : OUTLINE));
+            optionTiles[i] = tile;
 
             TextView option = textView(names[i], 13,
-                    i == initial ? Color.rgb(7, 31, 49) : ON_SURFACE);
+                    selected ? Color.rgb(7, 31, 49) : ON_SURFACE);
             option.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
             option.setGravity(Gravity.CENTER);
             option.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
             option.setTextDirection(View.TEXT_DIRECTION_RTL);
             option.setSingleLine(true);
             option.setIncludeFontPadding(false);
-            option.setPadding(dp(2), 0, dp(2), 0);
+            option.setPadding(dp(3), 0, dp(3), 0);
             if (Build.VERSION.SDK_INT >= 26) {
                 option.setAutoSizeTextTypeUniformWithConfiguration(
                         10, 13, 1, android.util.TypedValue.COMPLEX_UNIT_SP);
             }
-            option.setBackgroundColor(Color.TRANSPARENT);
-            option.setSelected(i == initial);
-            segment.addView(option,
-                    new FrameLayout.LayoutParams(-1, -1));
+            tile.addView(option, new FrameLayout.LayoutParams(-1, -1));
             options[i] = option;
 
-            segment.setContentDescription(label + ": " + names[i]);
-            segment.setClickable(true);
-            segment.setFocusable(true);
-            segment.setOnClickListener(v -> {
+            tile.setContentDescription(label + ": " + names[i]);
+            tile.setClickable(true);
+            tile.setFocusable(true);
+            tile.setOnClickListener(v -> {
                 persistOption(key, values[index]);
                 for (int j = 0; j < options.length; j++) {
-                    boolean selected = j == index;
-                    options[j].setTextColor(selected
+                    boolean isSelected = j == index;
+                    options[j].setTextColor(isSelected
                             ? Color.rgb(7, 31, 49) : ON_SURFACE);
-                    options[j].setSelected(selected);
-                    selectionChips[j].setVisibility(
-                            selected ? View.VISIBLE : View.GONE);
+                    optionTiles[j].setBackground(roundOutline(
+                            isSelected ? ACCENT : CONTROL_SURFACE,
+                            dp(5), isSelected ? ACCENT : OUTLINE));
+                    options[j].setSelected(isSelected);
                 }
                 if ("screenSaverDuration".equals(key)) updateDeviceCapabilityNotice();
             });
 
             float optionWidthWeight = Math.max((float) dp(36),
-                    option.getPaint().measureText(names[i]) + dp(12));
-            segments.addView(segment,
-                    new LinearLayout.LayoutParams(0, dp(36), optionWidthWeight));
+                    option.getPaint().measureText(names[i]) + dp(16));
+            LinearLayout.LayoutParams tileParams =
+                    new LinearLayout.LayoutParams(0, dp(38), optionWidthWeight);
+            tileParams.leftMargin = dp(3);
+            tileParams.rightMargin = dp(3);
+            tiles.addView(tile, tileParams);
         }
 
-        rail.addView(segments, new FrameLayout.LayoutParams(-1, -1));
-        LinearLayout.LayoutParams railParams =
-                new LinearLayout.LayoutParams(-1, dp(38));
-        railParams.topMargin = dp(9);
-        card.addView(rail, railParams);
+        LinearLayout.LayoutParams tilesParams =
+                new LinearLayout.LayoutParams(-1, dp(44));
+        tilesParams.topMargin = dp(7);
+        card.addView(tiles, tilesParams);
         return card;
     }
 
