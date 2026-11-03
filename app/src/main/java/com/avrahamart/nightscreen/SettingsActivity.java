@@ -366,10 +366,16 @@ public class SettingsActivity extends Activity {
 
     private void showCategory(int category) {
         currentCategory = category;
-        // Internal settings pages use the full viewport without a page title or back button.
-        screenHeader.setVisibility(View.GONE);
-        categoryBackButton.setVisibility(View.GONE);
-        dashboardHeaderDivider.setVisibility(View.GONE);
+        // Restore the page heading and back navigation on every internal settings page.
+        screenHeader.setVisibility(View.VISIBLE);
+        screenHeader.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+        categoryBackButton.setVisibility(View.VISIBLE);
+        dashboardHeaderDivider.setVisibility(View.VISIBLE);
+        headerTitleBlock.setGravity(Gravity.CENTER);
+        screenTitle.setGravity(Gravity.CENTER);
+        screenTitle.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        screenSubtitle.setGravity(Gravity.CENTER);
+        screenSubtitle.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         if (settingsScroll != null) settingsScroll.setFillViewport(true);
         content.setLayoutParams(new LinearLayout.LayoutParams(-1, -2));
         content.removeAllViews();
@@ -503,7 +509,7 @@ public class SettingsActivity extends Activity {
         card.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         card.setTextDirection(View.TEXT_DIRECTION_RTL);
         card.setPadding(dp(13), dp(10), dp(13), dp(12));
-        card.setBackground(roundOutline(CARD_SURFACE, dp(18), CARD_OUTLINE));
+        card.setBackground(roundOutline(CARD_SURFACE, dp(18), Color.rgb(30, 48, 69)));
 
         LinearLayout.LayoutParams cardParams =
                 new LinearLayout.LayoutParams(-1, -2);
@@ -544,7 +550,7 @@ public class SettingsActivity extends Activity {
 
         LinearLayout.LayoutParams textBlockParams =
                 new LinearLayout.LayoutParams(0, -2, 1f);
-        textBlockParams.leftMargin = dp(8);
+        textBlockParams.leftMargin = dp(16);
         header.addView(textBlock, textBlockParams);
         header.addView(makeIconBadge(iconForSetting(key), dp(30)),
                 new LinearLayout.LayoutParams(dp(30), dp(30)));
@@ -610,7 +616,7 @@ public class SettingsActivity extends Activity {
         GradientDrawable bg = new GradientDrawable();
         bg.setColor(CARD_SURFACE);
         bg.setCornerRadius(dp(20));
-        bg.setStroke(dp(1), CARD_OUTLINE);
+        bg.setStroke(dp(1), Color.rgb(30, 48, 69));
         card.setBackground(bg);
         if (Build.VERSION.SDK_INT >= 21) card.setElevation(0f);
 
@@ -654,7 +660,7 @@ public class SettingsActivity extends Activity {
         card.addView(headingRow, new LinearLayout.LayoutParams(-1, dp(42)));
 
         View separator = new View(this);
-        separator.setBackgroundColor(CARD_OUTLINE);
+        separator.setBackgroundColor(Color.rgb(30, 48, 69));
         LinearLayout.LayoutParams separatorParams =
                 new LinearLayout.LayoutParams(-1, dp(1));
         separatorParams.setMargins(dp(2), dp(5), dp(2), dp(10));
@@ -907,8 +913,8 @@ public class SettingsActivity extends Activity {
                     new int[]{Color.rgb(39, 123, 153), Color.rgb(49, 67, 88)}));
         }
         LinearLayout.LayoutParams switchParams =
-                new LinearLayout.LayoutParams(dp(56), dp(38));
-        switchParams.leftMargin = dp(7);
+                new LinearLayout.LayoutParams(dp(50), dp(38));
+        switchParams.leftMargin = 0;
         row.addView(toggle, 0, switchParams);
 
         toggle.setOnCheckedChangeListener((button, checked) -> {
@@ -1007,7 +1013,7 @@ public class SettingsActivity extends Activity {
             tile.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
             tile.setBackground(roundOutline(
                     selected ? ACCENT : CONTROL_SURFACE,
-                    dp(5), selected ? ACCENT : OUTLINE));
+                    dp(8), selected ? ACCENT : Color.rgb(48, 68, 91)));
             optionTiles[i] = tile;
 
             TextView option = textView(names[i], 13,
@@ -1037,7 +1043,7 @@ public class SettingsActivity extends Activity {
                             ? Color.rgb(7, 31, 49) : ON_SURFACE);
                     optionTiles[j].setBackground(roundOutline(
                             isSelected ? ACCENT : CONTROL_SURFACE,
-                            dp(5), isSelected ? ACCENT : OUTLINE));
+                            dp(8), isSelected ? ACCENT : Color.rgb(48, 68, 91)));
                     options[j].setSelected(isSelected);
                 }
                 if ("screenSaverDuration".equals(key)) updateDeviceCapabilityNotice();
