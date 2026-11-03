@@ -468,7 +468,7 @@ public class SettingsActivity extends Activity {
         addCheck(content, "הצגת הנגן", "showPlayer", false);
         addCheck(content, "הצגה רק בתחילת שיר", "showPlayerOnlyAtStart", false);
         addCheck(content, "פרטי אמן", "showDetails", getBool("showDetails", true));
-        addCheck(content, "התקדמות וזמני הניגון", "showProgress", true);
+        addCheck(content, "זמני הניגון ופקדי הנגן", "showProgress", true);
         addDiscreteSlider(content, "גודל הנגן",
                 new String[]{"קטן", "בינוני", "גדול", "ענק"},
                 new String[]{"14", "17", "20", "23"}, "playerSize");
