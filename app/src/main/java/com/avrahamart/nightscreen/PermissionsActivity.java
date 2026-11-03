@@ -92,19 +92,6 @@ public class PermissionsActivity extends Activity {
         scroll.addView(cards, new ScrollView.LayoutParams(-1, -2));
         root.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1f));
 
-        // Match the settings screen footer row exactly: 50dp row with 4dp top spacing.
-        FrameLayout footer = new FrameLayout(this);
-        LinearLayout.LayoutParams footerParams =
-                new LinearLayout.LayoutParams(-1, dp(50));
-        footerParams.topMargin = dp(4);
-        root.addView(footer, footerParams);
-
-        Button done = makeButton("חזרה להגדרות");
-        FrameLayout.LayoutParams doneParams =
-                new FrameLayout.LayoutParams(-2, dp(50), Gravity.CENTER);
-        footer.addView(done, doneParams);
-        done.setOnClickListener(v -> finish());
-
         setContentView(root);
     }
 
@@ -340,13 +327,79 @@ public class PermissionsActivity extends Activity {
     }
 
     private void confirmDeviceAdminRemoval() {
-        new AlertDialog.Builder(this)
-                .setTitle("ביטול הרשאת מנהל מכשיר")
-                .setMessage("האם לבטל את הרשאת מנהל המכשיר של שומר מסך? לאחר הביטול האפליקציה לא תוכל לנעול את המכשיר בסיום זמן הפעילות.")
-                .setNegativeButton("חזרה", (dialog, which) -> dialog.dismiss())
-                .setPositiveButton("בטל הרשאה", (dialog, which) ->
-                        removeDeviceAdmin())
-                .show();
+        AlertDialog dialog = new AlertDialog.Builder(this).create();
+
+        LinearLayout panel = new LinearLayout(this);
+        panel.setOrientation(LinearLayout.VERTICAL);
+        panel.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        panel.setTextDirection(View.TEXT_DIRECTION_RTL);
+        panel.setPadding(dp(20), dp(18), dp(20), dp(16));
+        panel.setBackground(roundOutline(CARD_SURFACE, dp(22), CARD_OUTLINE));
+
+        TextView title = textView("ביטול הרשאת מנהל מכשיר", 19, ON_SURFACE);
+        title.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD));
+        title.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        title.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
+        title.setIncludeFontPadding(false);
+        panel.addView(title, new LinearLayout.LayoutParams(-1, -2));
+
+        TextView message = textView(
+                "האם לבטל את הרשאת מנהל המכשיר של שומר מסך?",
+                15, MUTED);
+        message.setGravity(Gravity.RIGHT | Gravity.TOP);
+        message.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
+        message.setLineSpacing(dp(2), 1f);
+        LinearLayout.LayoutParams messageParams =
+                new LinearLayout.LayoutParams(-1, -2);
+        messageParams.topMargin = dp(12);
+        panel.addView(message, messageParams);
+
+        LinearLayout actions = new LinearLayout(this);
+        actions.setOrientation(LinearLayout.HORIZONTAL);
+        actions.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+        actions.setGravity(Gravity.CENTER_VERTICAL);
+        LinearLayout.LayoutParams actionsParams =
+                new LinearLayout.LayoutParams(-1, dp(44));
+        actionsParams.topMargin = dp(18);
+
+        Button cancel = makeButton("חזרה");
+        cancel.setBackground(roundOutline(CONTROL_SURFACE, dp(20), CARD_OUTLINE));
+        cancel.setTextColor(ON_SURFACE);
+        LinearLayout.LayoutParams cancelParams =
+                new LinearLayout.LayoutParams(0, -1, 1f);
+        cancelParams.rightMargin = dp(6);
+        actions.addView(cancel, cancelParams);
+        cancel.setOnClickListener(v -> dialog.dismiss());
+
+        Button confirm = makeButton("בטל הרשאה");
+        LinearLayout.LayoutParams confirmParams =
+                new LinearLayout.LayoutParams(0, -1, 1f);
+        confirmParams.leftMargin = dp(6);
+        actions.addView(confirm, confirmParams);
+        confirm.setOnClickListener(v -> {
+            dialog.dismiss();
+            removeDeviceAdmin();
+        });
+
+        panel.addView(actions, actionsParams);
+        dialog.setView(panel);
+        dialog.setCancelable(true);
+        dialog.setCanceledOnTouchOutside(true);
+        dialog.show();
+
+        Window window = dialog.getWindow();
+        if (window != null) {
+            window.setBackgroundDrawable(
+                    new android.graphics.drawable.ColorDrawable(Color.TRANSPARENT));
+            window.addFlags(android.view.WindowManager.LayoutParams.FLAG_DIM_BEHIND);
+            android.util.DisplayMetrics metrics = getResources().getDisplayMetrics();
+            android.view.WindowManager.LayoutParams params = window.getAttributes();
+            params.width = Math.min(dp(420), metrics.widthPixels - dp(36));
+            params.height = android.view.WindowManager.LayoutParams.WRAP_CONTENT;
+            params.gravity = Gravity.CENTER;
+            params.dimAmount = 0.62f;
+            window.setAttributes(params);
+        }
     }
 
     private void removeDeviceAdmin() {
