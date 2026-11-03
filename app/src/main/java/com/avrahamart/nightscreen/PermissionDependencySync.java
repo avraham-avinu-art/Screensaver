@@ -51,7 +51,7 @@ public final class PermissionDependencySync {
         editor.apply();
 
         if (disableLockStart || disableWakeStart) LockScreenMonitorService.sync(context);
-        if (disableLockStart || disableChargeStart) {
+        if (disableLockStart || disableChargeStart || disableWakeStart) {
             NightScreenApplication.syncChargerReceiver(context);
         }
 
