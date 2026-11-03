@@ -83,7 +83,6 @@ public class SettingsActivity extends Activity {
     private FrameLayout screenHeader;
     private LinearLayout headerTitleBlock;
     private View dashboardHeaderDivider;
-    private FrameLayout categoryBackButton;
     private int currentCategory = 0;
     private static final int CATEGORY_DASHBOARD = 0;
     private static final int CATEGORY_CLOCK_DATE = 1;
@@ -110,12 +109,12 @@ public class SettingsActivity extends Activity {
         root.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         root.setTextDirection(View.TEXT_DIRECTION_RTL);
         root.setBackgroundColor(SURFACE);
-        root.setPadding(dp(14), dp(2), dp(14), dp(8));
+        root.setPadding(dp(14), dp(2), dp(14), 0);
         if (Build.VERSION.SDK_INT >= 21) {
             root.setOnApplyWindowInsetsListener((view, insets) -> {
                 int topInset = insets.getSystemWindowInsetTop();
                 int bottomInset = insets.getSystemWindowInsetBottom();
-                view.setPadding(dp(14), dp(2) + topInset, dp(14), dp(8) + bottomInset);
+                view.setPadding(dp(14), dp(2) + topInset, dp(14), bottomInset);
                 return insets;
             });
         }
@@ -125,14 +124,6 @@ public class SettingsActivity extends Activity {
         screenHeader = new FrameLayout(this);
         screenHeader.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         screenHeader.setPadding(dp(2), dp(8), dp(2), dp(14));
-
-        categoryBackButton = makeExitArrowButton("חזרה למסך ההגדרות");
-        FrameLayout.LayoutParams categoryBackParams =
-                new FrameLayout.LayoutParams(dp(42), dp(42),
-                        Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        screenHeader.addView(categoryBackButton, categoryBackParams);
-        categoryBackButton.setVisibility(View.GONE);
-        categoryBackButton.setOnClickListener(v -> buildDashboard());
 
         headerTitleBlock = new LinearLayout(this);
         headerTitleBlock.setOrientation(LinearLayout.VERTICAL);
@@ -170,7 +161,7 @@ public class SettingsActivity extends Activity {
         settingsScroll.setOverScrollMode(View.OVER_SCROLL_IF_CONTENT_SCROLLS);
         settingsScroll.setClipToPadding(false);
         settingsScroll.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        settingsScroll.setPadding(0, dp(1), 0, dp(4));
+        settingsScroll.setPadding(0, dp(1), 0, 0);
 
         LinearLayout scrollContent = new LinearLayout(this);
         scrollContent.setOrientation(LinearLayout.VERTICAL);
@@ -199,19 +190,6 @@ public class SettingsActivity extends Activity {
         buildDashboard();
 
         setContentView(root);
-    }
-
-    private FrameLayout makeExitArrowButton(String description) {
-        FrameLayout button = new FrameLayout(this);
-        button.setContentDescription(description);
-        button.setClickable(true);
-        button.setFocusable(true);
-        button.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-        button.setBackgroundColor(Color.TRANSPARENT);
-        View glyph = makeIconGlyph("back-navigation", ACCENT);
-        button.addView(glyph,
-                new FrameLayout.LayoutParams(dp(27), dp(27), Gravity.CENTER));
-        return button;
     }
 
 @Override
@@ -257,7 +235,6 @@ public class SettingsActivity extends Activity {
         screenHeader.setVisibility(View.VISIBLE);
         // The dashboard title is the only settings page that uses a title header.
         screenHeader.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-        categoryBackButton.setVisibility(View.GONE);
         dashboardHeaderDivider.setVisibility(View.VISIBLE);
         headerTitleBlock.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         screenTitle.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
@@ -369,7 +346,6 @@ public class SettingsActivity extends Activity {
         // Restore the page heading and back navigation on every internal settings page.
         screenHeader.setVisibility(View.VISIBLE);
         screenHeader.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-        categoryBackButton.setVisibility(View.VISIBLE);
         dashboardHeaderDivider.setVisibility(View.VISIBLE);
         headerTitleBlock.setGravity(Gravity.CENTER);
         screenTitle.setGravity(Gravity.CENTER);
@@ -386,7 +362,7 @@ public class SettingsActivity extends Activity {
         switch (category) {
             case CATEGORY_CLOCK_DATE:
                 screenTitle.setText("שעון ותאריך");
-                screenSubtitle.setText("התאמת השעה והתאריך");
+                screenSubtitle.setText("התאמת תצוגת השעה והתאריך");
                 buildClockDateSettings();
                 break;
             case CATEGORY_ACTIVITY:
@@ -401,7 +377,7 @@ public class SettingsActivity extends Activity {
                 break;
             case CATEGORY_PLAYER:
                 screenTitle.setText("נגן מדיה");
-                screenSubtitle.setText("התאמת תצוגת הנגן והמיקום שלו");
+                screenSubtitle.setText("הצגת והתאמת נגן המערכת");
                 buildPlayerSettings();
                 break;
             default:
@@ -475,8 +451,9 @@ public class SettingsActivity extends Activity {
     }
 
     private void buildPlayerSettings() {
-        addCheck(content, "הצגת הנגן", "showPlayer", false);
-        addCheck(content, "הצגה רק בתחילת שיר", "showPlayerOnlyAtStart", false);
+        addSegmentedChoices(content, "הצגת הנגן",
+                new String[]{"כבוי", "פועל", "פועל בתחילת שיר"},
+                new String[]{"off", "on", "start"}, "playerDisplayMode");
         addCheck(content, "פרטי אמן", "showDetails", getBool("showDetails", true));
         addCheck(content, "זמני השיר ופקדי הנגן", "showProgress", true);
         addDiscreteSlider(content, "גודל הנגן",
@@ -498,8 +475,6 @@ public class SettingsActivity extends Activity {
         if (playerFrameCard != null) {
             LinearLayout.LayoutParams frameCardParams =
                     (LinearLayout.LayoutParams) playerFrameCard.getLayoutParams();
-            frameCardParams.bottomMargin += dp(5);
-            playerFrameCard.setLayoutParams(frameCardParams);
         }
     }
 
@@ -513,7 +488,11 @@ public class SettingsActivity extends Activity {
 
         LinearLayout.LayoutParams cardParams =
                 new LinearLayout.LayoutParams(-1, -2);
-        cardParams.bottomMargin = dp(8);
+        cardParams.bottomMargin =
+                ("continueOnLockScreen".equals(key)
+                || "autoStartOnWake".equals(key)
+                || "screenBrightness".equals(key)
+                || "playerPosition".equals(key)) ? dp(8) : 0;
         parent.addView(card, cardParams);
 
         LinearLayout header = new LinearLayout(this);
@@ -526,7 +505,7 @@ public class SettingsActivity extends Activity {
         textBlock.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         textBlock.setGravity(Gravity.CENTER_VERTICAL);
 
-        TextView title = textView(label, 16, ON_SURFACE);
+        TextView title = textView(label, 17, ON_SURFACE);
         title.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD));
         title.setIncludeFontPadding(false);
         title.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
@@ -540,8 +519,6 @@ public class SettingsActivity extends Activity {
             description.setIncludeFontPadding(false);
             description.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
             description.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
-            description.setSingleLine(true);
-            description.setEllipsize(android.text.TextUtils.TruncateAt.END);
             LinearLayout.LayoutParams descriptionParams =
                     new LinearLayout.LayoutParams(-1, -2);
             descriptionParams.topMargin = dp(3);
@@ -550,7 +527,7 @@ public class SettingsActivity extends Activity {
 
         LinearLayout.LayoutParams textBlockParams =
                 new LinearLayout.LayoutParams(0, -2, 1f);
-        textBlockParams.leftMargin = dp(16);
+        textBlockParams.rightMargin = dp(16);
         header.addView(textBlock, textBlockParams);
         header.addView(makeIconBadge(iconForSetting(key), dp(30)),
                 new LinearLayout.LayoutParams(dp(30), dp(30)));
@@ -576,33 +553,33 @@ public class SettingsActivity extends Activity {
     }
 
     private String settingDescription(String key) {
-        if ("dateDisplayMode".equals(key)) return "בחירת התאריך שיופיע לצד השעה.";
-        if ("clockDateSize".equals(key)) return "בחירת גודל השעון והתאריכים.";
-        if ("fontWeight".equals(key)) return "בחירת עובי האותיות והספרות.";
-        if ("clockDatePosition".equals(key)) return "בחירת מיקום השעון והתאריכים במסך.";
-        if ("screenSaverDuration".equals(key)) return "בחירת משך הצגת שומר המסך.";
-        if ("preventLockWhileActive".equals(key)) return "מניעת הופעת מסך הנעילה בזמן הפעילות.";
-        if ("continueOnLockScreen".equals(key)) return "המשך הצגת השומר לאחר כיבוי והדלקת המסך.";
-        if ("autoStartOnDeviceLock".equals(key)) return "הפעלת השומר באופן אוטומטי בעת נעילת המכשיר.";
-        if ("autoStartOnBoot".equals(key)) return "הפעלת השומר באופן אוטומטי לאחר הפעלת המכשיר.";
-        if ("autoStartOnWake".equals(key)) return "הפעלת השומר כשהמסך מתעורר ממצב שינה.";
-        if ("autoStartOnCharge".equals(key)) return "הפעלת השומר אוטומטית בעת חיבור מטען.";
-        if ("noShutdownWhileCharging".equals(key)) return "השארת המסך פעיל כל עוד המכשיר בטעינה.";
-        if ("showBatteryPercent".equals(key)) return "הצגת אחוז הסוללה בזמן טעינה.";
-        if ("screenBackgroundColor".equals(key)) return "בחירת צבע הרקע של שומר המסך.";
-        if ("screenBrightness".equals(key)) return "התאמת בהירות התצוגה של שומר המסך.";
-        if ("fontFamily".equals(key)) return "בחירת סוג הגופן שיוצג במסך.";
-        if ("fontColor".equals(key)) return "בחירת צבע השעה והתאריכים.";
-        if ("showPlayer".equals(key)) return "הצגת נגן המדיה כאשר מתנגנת מדיה במכשיר.";
-        if ("showPlayerOnlyAtStart".equals(key)) return "הצגת הנגן רק בתחילת כל שיר.";
-        if ("showDetails".equals(key)) return "הצגת שם האמן מתחת לפרטי השיר.";
-        if ("showProgress".equals(key)) return "הצגת זמני השיר וסרגל ההתקדמות שליד פקדי הנגן.";
-        if ("playerSize".equals(key)) return "בחירת גודל נגן המדיה.";
-        if ("playerPosition".equals(key)) return "בחירת מיקום נגן המדיה במסך.";
-        if ("frameEnabled".equals(key)) return "הצגת מסגרת סביב נגן המדיה.";
-        if ("frameColor".equals(key)) return "בחירת צבע המסגרת סביב הנגן.";
-        if ("frameWidth".equals(key)) return "בחירת עובי קו המסגרת.";
-        if ("frameRadius".equals(key)) return "בחירת מידת עיגול פינות המסגרת.";
+        if ("dateDisplayMode".equals(key)) return "בחירת התאריך שיופיע לצד השעה";
+        if ("clockDateSize".equals(key)) return "בחירת גודל השעון והתאריכים";
+        if ("fontWeight".equals(key)) return "בחירת עובי האותיות והספרות";
+        if ("clockDatePosition".equals(key)) return "בחירת מיקום השעון והתאריכים במסך";
+        if ("screenSaverDuration".equals(key)) return "בחירת משך הצגת שומר המסך";
+        if ("preventLockWhileActive".equals(key)) return "מניעת הופעת מסך הנעילה בזמן הפעילות";
+        if ("continueOnLockScreen".equals(key)) return "המשך הצגת השומר לאחר כיבוי והדלקת המסך";
+        if ("autoStartOnDeviceLock".equals(key)) return "הפעלת השומר באופן אוטומטי בעת נעילת המכשיר";
+        if ("autoStartOnBoot".equals(key)) return "הפעלת השומר באופן אוטומטי לאחר הפעלת המכשיר";
+        if ("autoStartOnWake".equals(key)) return "הפעלת השומר כשהמסך מתעורר ממצב שינה";
+        if ("autoStartOnCharge".equals(key)) return "הפעלת השומר אוטומטית בעת חיבור מטען";
+        if ("noShutdownWhileCharging".equals(key)) return "השארת המסך פעיל כל עוד המכשיר בטעינה";
+        if ("showBatteryPercent".equals(key)) return "הצגת אחוז הסוללה בזמן טעינה";
+        if ("screenBackgroundColor".equals(key)) return "בחירת צבע הרקע של שומר המסך";
+        if ("screenBrightness".equals(key)) return "התאמת בהירות התצוגה של שומר המסך";
+        if ("fontFamily".equals(key)) return "בחירת סוג הגופן שיוצג במסך";
+        if ("fontColor".equals(key)) return "בחירת צבע השעה והתאריכים";
+        if ("playerDisplayMode".equals(key)) return "בחירת אופן הצגת נגן המדיה";
+        if ("showPlayerOnlyAtStart".equals(key)) return "הצגת הנגן רק בתחילת כל שיר";
+        if ("showDetails".equals(key)) return "הצגת שם האמן מתחת לפרטי השיר";
+        if ("showProgress".equals(key)) return "הצגת זמני השיר וסרגל ההתקדמות שליד פקדי הנגן";
+        if ("playerSize".equals(key)) return "בחירת גודל נגן המדיה";
+        if ("playerPosition".equals(key)) return "בחירת מיקום נגן המדיה במסך";
+        if ("frameEnabled".equals(key)) return "הצגת מסגרת סביב נגן המדיה";
+        if ("frameColor".equals(key)) return "בחירת צבע המסגרת סביב הנגן";
+        if ("frameWidth".equals(key)) return "בחירת עובי קו המסגרת";
+        if ("frameRadius".equals(key)) return "בחירת מידת עיגול פינות המסגרת";
         return "";
     }
 
@@ -621,7 +598,7 @@ public class SettingsActivity extends Activity {
         if (Build.VERSION.SDK_INT >= 21) card.setElevation(0f);
 
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, -2);
-        params.setMargins(0, 0, 0, dp(9));
+        params.setMargins(0, 0, 0, 0);
         parent.addView(card, params);
 
         LinearLayout headingRow = new LinearLayout(this);
@@ -1037,6 +1014,17 @@ public class SettingsActivity extends Activity {
             tile.setFocusable(true);
             tile.setOnClickListener(v -> {
                 persistOption(key, values[index]);
+                if ("playerDisplayMode".equals(key)) {
+                    boolean enabled = !"off".equals(values[index]);
+                    boolean onlyAtStart = "start".equals(values[index]);
+                    boolean permissionMissing = enabled && !hasNotificationAccess();
+                    prefs.edit()
+                            .putBoolean("showPlayer", enabled)
+                            .putBoolean("showPlayerOnlyAtStart", onlyAtStart)
+                            .putBoolean("showPlayerPermissionPending", permissionMissing)
+                            .apply();
+                    if (permissionMissing) requestPlayerNotificationAccessIfNeeded();
+                }
                 for (int j = 0; j < options.length; j++) {
                     boolean isSelected = j == index;
                     options[j].setTextColor(isSelected
@@ -1049,10 +1037,15 @@ public class SettingsActivity extends Activity {
                 if ("screenSaverDuration".equals(key)) updateDeviceCapabilityNotice();
             });
 
-            float optionWidthWeight = Math.max((float) dp(36),
-                    option.getPaint().measureText(names[i]) + dp(16));
-            LinearLayout.LayoutParams tileParams =
-                    new LinearLayout.LayoutParams(0, dp(38), optionWidthWeight);
+            LinearLayout.LayoutParams tileParams;
+            if ("screenBrightness".equals(key) && i == 0) {
+                // Keep the full "לפי המכשיר" label visible; distribute the rest evenly.
+                int deviceLabelWidth = (int) Math.ceil(option.getPaint().measureText(names[i]))
+                        + dp(12);
+                tileParams = new LinearLayout.LayoutParams(deviceLabelWidth, dp(38));
+            } else {
+                tileParams = new LinearLayout.LayoutParams(0, dp(38), 1f);
+            }
             tileParams.leftMargin = dp(3);
             tileParams.rightMargin = dp(3);
             tiles.addView(tile, tileParams);
@@ -1232,6 +1225,7 @@ public class SettingsActivity extends Activity {
             prefs.edit()
                     .putBoolean("showPlayerPermissionPending", false)
                     .putBoolean("showPlayer", false)
+                    .putString("playerDisplayMode", "off")
                     .apply();
             if (showPlayerToggle != null) showPlayerToggle.setChecked(false);
         }
@@ -1243,7 +1237,8 @@ public class SettingsActivity extends Activity {
         prefs.edit().putBoolean("showPlayerPermissionPending", false).apply();
         if (hasNotificationAccess()) return;
 
-        prefs.edit().putBoolean("showPlayer", false).apply();
+        prefs.edit().putBoolean("showPlayer", false)
+                .putString("playerDisplayMode", "off").apply();
         if (showPlayerToggle != null && showPlayerToggle.isChecked()) {
             showPlayerToggle.setChecked(false);
         }
@@ -1350,7 +1345,7 @@ public class SettingsActivity extends Activity {
     private String iconForSetting(String key) {
         if ("showHebrew".equals(key) || "dateDisplayMode".equals(key)) return "hebrew-date";
         if ("showGregorian".equals(key)) return "gregorian-date";
-        if ("showPlayer".equals(key)) return "media-toggle";
+        if ("showPlayer".equals(key) || "playerDisplayMode".equals(key)) return "media-toggle";
         if ("screenSaverDuration".equals(key)) return "activity-history";
         if ("preventLockWhileActive".equals(key)) return "power-off";
         if ("autoStartOnCharge".equals(key)) return "usb";
@@ -1405,7 +1400,7 @@ public class SettingsActivity extends Activity {
         FrameLayout badge = new FrameLayout(this);
         // Keep the standard square badge behind every settings glyph, including progress/time.
         badge.setBackground(roundOutline(ICON_SURFACE, dp(10), CARD_OUTLINE));
-        View graphic = makeIconGlyph(iconName, Color.rgb(168, 200, 232));
+        View graphic = makeIconGlyph(iconName, ACCENT);
         int glyphSize = "progress-time-digital".equals(iconName) ? dp(27)
                 : "bold".equals(iconName) ? dp(24)
                 : "phone-charging".equals(iconName) ? dp(24)
@@ -1456,7 +1451,8 @@ public class SettingsActivity extends Activity {
         }
 
         final int selectedPosition = selected;
-        int spinnerWidth = dropdownWidthForOptions(names);
+        int dropdownWidth = dropdownWidthForOptions(names);
+        int visibleWidth = Math.min(dropdownWidth, dp(150));
         Spinner spinner = new Spinner(this);
         spinner.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         spinner.setContentDescription(label);
@@ -1485,7 +1481,7 @@ public class SettingsActivity extends Activity {
         spinner.setAdapter(adapter);
         spinner.setPadding(dp(7), 0, dp(7), 0);
         spinner.setBackgroundColor(Color.TRANSPARENT);
-        spinner.setDropDownWidth(spinnerWidth);
+        spinner.setDropDownWidth(dropdownWidth);
         if (Build.VERSION.SDK_INT >= 16) {
             spinner.setPopupBackgroundDrawable(roundOutline(CARD_SURFACE, dp(12), OUTLINE));
         }
@@ -1502,13 +1498,15 @@ public class SettingsActivity extends Activity {
                         Gravity.LEFT | Gravity.CENTER_VERTICAL);
         dropdownIconParams.leftMargin = dp(8);
         spinnerContainer.addView(dropdownIcon, dropdownIconParams);
-        spinnerContainer.setOnClickListener(v -> spinner.performClick());
 
+        // Place the font selector on the same horizontal row as its title and icon.
+        LinearLayout header = (LinearLayout) card.getChildAt(0);
         LinearLayout.LayoutParams spinnerParams =
-                new LinearLayout.LayoutParams(spinnerWidth, dp(40));
-        spinnerParams.gravity = Gravity.RIGHT;
-        spinnerParams.topMargin = dp(9);
-        card.addView(spinnerContainer, spinnerParams);
+                new LinearLayout.LayoutParams(visibleWidth, dp(40));
+        spinnerParams.gravity = Gravity.CENTER_VERTICAL;
+        spinnerParams.rightMargin = dp(8);
+        header.addView(spinnerContainer, Math.max(0, header.getChildCount() - 1),
+                spinnerParams);
 
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             private boolean initialSelectionPending = true;
@@ -1542,6 +1540,7 @@ public class SettingsActivity extends Activity {
         view.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
         view.setTextDirection(View.TEXT_DIRECTION_RTL);
         view.setSingleLine(true);
+        view.setEllipsize(android.text.TextUtils.TruncateAt.END);
         view.setMinHeight(0);
         view.setMinimumHeight(0);
         view.setPadding(dp(2), 0, dp(2), 0);
@@ -1609,6 +1608,12 @@ public class SettingsActivity extends Activity {
 
     private int selectedIndex(String key, String[] values) {
         int index = 0;
+        if ("playerDisplayMode".equals(key)) {
+            if (!getBool("showPlayer", false)) return 0;
+            String storedMode = getString(key, "");
+            if ("start".equals(storedMode)) return 2;
+            return 1;
+        }
         if ("dateDisplayMode".equals(key)) {
             if (prefs.contains(key)) {
                 String storedMode = getString(key, "both");
