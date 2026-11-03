@@ -128,7 +128,7 @@ public class PermissionsActivity extends Activity {
 
     private void addOverlayPermissionCard(LinearLayout parent) {
         LinearLayout card = makeCard(parent, "הרשאת תצוגה על אפליקציות",
-                "ההרשאה נדרשת להפעלה אוטומטית של שומר המסך בטעינה או בנעילת המכשיר.");
+                "ההרשאה נדרשת להפעלה אוטומטית בטעינה, בנעילה, בהפעלת המכשיר ובהתעוררות ממצב שינה.");
         overlayStatus = addStatus(card);
         overlayButton = addPermissionButton(card,
                 "הפעל הרשאת הצגה מעל אפליקציות", v -> {
@@ -138,7 +138,7 @@ public class PermissionsActivity extends Activity {
                                 Toast.LENGTH_LONG).show();
                     } else {
                         Toast.makeText(this,
-                                "כדי לאפשר הפעלה אוטומטית בטעינה, בחר במסך הבא את \"שומר מסך\" ואפשר \"הצגה מעל אפליקציות אחרות\".",
+                                "כדי לאפשר הפעלה אוטומטית, בחר במסך הבא את \"שומר מסך\" ואפשר \"הצגה מעל אפליקציות אחרות\".",
                                 Toast.LENGTH_LONG).show();
                     }
                     openOverlayPermissionSettings();
