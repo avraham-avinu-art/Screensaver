@@ -252,7 +252,8 @@ public class SettingsActivity extends Activity {
         screenTitle.setText("הגדרות");
         screenSubtitle.setText("התאמה אישית של השומר מסך");
 
-        // Dashboard title is text only. Category pages use a centered text header.
+        screenHeader.setVisibility(View.VISIBLE);
+        // The dashboard title is the only settings page that uses a title header.
         screenHeader.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         categoryBackButton.setVisibility(View.GONE);
         dashboardHeaderDivider.setVisibility(View.VISIBLE);
@@ -263,16 +264,16 @@ public class SettingsActivity extends Activity {
         screenSubtitle.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
 
         addDashboardButton("הפעלה והתנהגות",
-                "זמן פעילות, נעילה וטעינה",
+                "הגדרת זמני הפעילות ואפשרויות ההפעלה",
                 "power", CATEGORY_ACTIVITY);
         addDashboardButton("מראה ועיצוב",
-                "צבע גופן ובהירות",
+                "התאמת צבעים, גופנים ובהירות המסך",
                 "palette", CATEGORY_APPEARANCE);
         addDashboardButton("שעון ותאריך",
                 "התאמת תצוגת השעה והתאריך",
                 "calendar-clock", CATEGORY_CLOCK_DATE);
         addDashboardButton("נגן מדיה",
-                "הצגה והתאמה",
+                "הצגת והתאמת נגן המערכת",
                 "music-note", CATEGORY_PLAYER);
 
         addDashboardNavigation();
@@ -363,15 +364,11 @@ public class SettingsActivity extends Activity {
 
     private void showCategory(int category) {
         currentCategory = category;
-        screenHeader.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        categoryBackButton.setVisibility(View.VISIBLE);
+        // Internal settings pages use the full viewport without a page title or back button.
+        screenHeader.setVisibility(View.GONE);
+        categoryBackButton.setVisibility(View.GONE);
         dashboardHeaderDivider.setVisibility(View.GONE);
-        headerTitleBlock.setGravity(Gravity.CENTER);
-        screenTitle.setGravity(Gravity.CENTER);
-        screenTitle.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-        screenSubtitle.setGravity(Gravity.CENTER);
-        screenSubtitle.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-        if (settingsScroll != null) settingsScroll.setFillViewport(false);
+        if (settingsScroll != null) settingsScroll.setFillViewport(true);
         content.setLayoutParams(new LinearLayout.LayoutParams(-1, -2));
         content.removeAllViews();
         clockDateCard = null;
@@ -413,55 +410,44 @@ public class SettingsActivity extends Activity {
     }
 
     private void buildClockDateSettings() {
-        LinearLayout display = addCard(content, "הצגת תאריכים");
-        addCheck(display, "תאריך עברי", "showHebrew", true);
-        addCheck(display, "תאריך לועזי", "showGregorian", true);
-
-        clockDateCard = addCard(content, "התאמת השעון והתאריך");
-        addDiscreteSlider(clockDateCard, "גודל",
-                new String[]{"קטן", "בינוני", "רגיל", "גדול", "גדול מאוד"},
+        addSegmentedChoices(content, "תצוגת תאריך",
+                new String[]{"עברי ולועזי", "רק עברי", "רק לועזי"},
+                new String[]{"both", "hebrew", "gregorian"}, "dateDisplayMode");
+        addDiscreteSlider(content, "גודל",
+                new String[]{"קטן", "בינוני", "רגיל", "גדול", "ענק"},
                 new String[]{"60", "72", "84", "96", "108"}, "clockDateSize");
-        addDiscreteSlider(clockDateCard, "עובי הגופן",
-                new String[]{"דק", "רגיל", "בינוני", "מודגש"},
+        addDiscreteSlider(content, "עובי הגופן",
+                new String[]{"דק", "רגיל", "מודגש", "עבה"},
                 new String[]{"-1", "0", "1", "2"}, "fontWeight");
-        addSegmentedChoices(clockDateCard, "מיקום",
+        addSegmentedChoices(content, "מיקום",
                 new String[]{"בראש המסך", "ברבע העליון", "במרכז המסך"},
                 new String[]{"top", "upper", "middle"}, "clockDatePosition");
     }
 
     private void buildActivitySettings() {
-        LinearLayout activityTimes = addCard(content, "הגדרת זמני הפעילות");
-        addSegmentedChoices(activityTimes, "זמן פעילות",
+        LinearLayout durationCard = addSegmentedChoices(content, "זמן פעילות",
                 new String[]{"לפי המכשיר", "דקה אחת", "חמש דקות", "ללא כיבוי"},
                 new String[]{"device", "1", "5", "0"}, "screenSaverDuration");
-        addCheck(activityTimes, "מניעת נעילה בזמן פעילות",
-                "preventLockWhileActive", false);
-        addCheck(activityTimes, "המשך הצגה במסך הנעילה",
-                "continueOnLockScreen", false);
-        addCheck(activityTimes, "הפעלה אוטומטית בנעילה",
-                "autoStartOnDeviceLock", false);
-        addActivityCapabilityNotice(activityTimes);
-
-        LinearLayout charging = addCard(content, "שומר מסך בזמן טעינה");
-        addCheck(charging, "הפעלה אוטומטית בטעינה", "autoStartOnCharge", false);
-        addCheck(charging, "ללא כיבוי בטעינה", "noShutdownWhileCharging", false);
-        addCheck(charging, "הצגת אחוז הסוללה", "showBatteryPercent", false);
+        addActivityCapabilityNotice(durationCard);
+        addCheck(content, "מניעת נעילה בזמן פעילות", "preventLockWhileActive", false);
+        addCheck(content, "המשך הצגה במסך הנעילה", "continueOnLockScreen", false);
+        addCheck(content, "הפעלה אוטומטית בנעילה", "autoStartOnDeviceLock", false);
+        addCheck(content, "הפעלה אוטומטית בטעינה", "autoStartOnCharge", false);
+        addCheck(content, "ללא כיבוי בטעינה", "noShutdownWhileCharging", false);
+        addCheck(content, "הצגת אחוז הסוללה", "showBatteryPercent", false);
     }
 
     private void buildAppearanceSettings() {
-        LinearLayout screenAppearance = addCard(content, "צבע ובהירות המסך");
-        addColorChoices(screenAppearance, "צבע המסך",
+        addColorChoices(content, "צבע המסך",
                 new String[]{"שחור", "כחול", "כחול כהה", "טורקיז",
                         "אפור פחם", "ירוק יער", "כחול עמוק", "אפור אבן"},
                 new String[]{"#000000", "#142438", "#091321", "#12313A",
                         "#252B33", "#20362E", "#193740", "#303943"},
                 "screenBackgroundColor");
-        addDiscreteSlider(screenAppearance, "בהירות המסך",
+        addDiscreteSlider(content, "בהירות המסך",
                 new String[]{"לפי המכשיר", "25%", "50%", "75%", "100%"},
                 new String[]{"-1", "25", "50", "75", "100"}, "screenBrightness");
-
-        LinearLayout textAppearance = addCard(content, "גופן וצבע הטקסט");
-        addSpinner(textAppearance, "סוג הגופן",
+        addSpinner(content, "סוג הגופן",
                 new String[]{"ברירת מחדל", "DL Adva", "Keter Aram Tsova", "Shofar",
                         "Gveret Levin", "Yehuda CLM", "Stam Ashkenaz", "DL Apollo Black",
                         "DL Normador", "Ozrad CLM Bold", "Haim FB Black", "Coming Soon",
@@ -473,42 +459,35 @@ public class SettingsActivity extends Activity {
                         "custom:DL Normador.TTF", "custom:OzradCLM-Bold.otf",
                         "custom:fmhaimblack.ttf", "custom:ComingSoon.ttf",
                         "custom:ShortStack-Regular.ttf"}, "fontFamily");
-        addColorChoices(textAppearance, "צבע הגופן",
-                new String[]{"לבן", "כסף", "אפור", "אפור בהיר", "כחול עדין"},
-                new String[]{"white", "silver", "gray", "light", "blue"}, "fontColor");
+        addColorChoices(content, "צבע הגופן",
+                new String[]{"לבן", "כחול עדין", "כסף", "אפור", "אפור בהיר"},
+                new String[]{"white", "blue", "silver", "gray", "light"}, "fontColor");
     }
 
     private void buildPlayerSettings() {
-        LinearLayout player = addCard(content, "הפעלת נגן המדיה");
-        addCheck(player, "הצגת הנגן", "showPlayer", false);
-        addCheck(player, "הצגה רק בתחילת שיר", "showPlayerOnlyAtStart", false);
-        addCheck(player, "פרטי אמן", "showDetails", getBool("showDetails", true));
-        addCheck(player, "שורת מיקום + זמן", "showProgress", true);
-        addDiscreteSlider(player, "גודל הנגן",
-                new String[]{"קטן", "בינוני", "גדול", "גדול מאוד"},
+        addCheck(content, "הצגת הנגן", "showPlayer", false);
+        addCheck(content, "הצגה רק בתחילת שיר", "showPlayerOnlyAtStart", false);
+        addCheck(content, "פרטי אמן", "showDetails", getBool("showDetails", true));
+        addCheck(content, "התקדמות וזמני הניגון", "showProgress", true);
+        addDiscreteSlider(content, "גודל הנגן",
+                new String[]{"קטן", "בינוני", "גדול", "ענק"},
                 new String[]{"14", "17", "20", "23"}, "playerSize");
-        addSegmentedChoices(player, "מיקום הנגן",
+        addSegmentedChoices(content, "מיקום הנגן",
                 new String[]{"ברבע התחתון", "בתחתית המסך"},
                 new String[]{"lower", "bottom"}, "playerPosition");
-
-        playerFrameCard = addCard(content, "מסגרת לנגן");
-        LinearLayout.LayoutParams playerFrameCardParams =
-                (LinearLayout.LayoutParams) playerFrameCard.getLayoutParams();
-        playerFrameCardParams.bottomMargin += dp(5);
-        playerFrameCard.setLayoutParams(playerFrameCardParams);
-        addCheck(playerFrameCard, "הצג מסגרת", "frameEnabled", false);
-        addColorChoices(playerFrameCard, "צבע מסגרת",
-                new String[]{"לבן", "כסף", "אפור", "אפור בהיר", "כחול עדין"},
-                new String[]{"white", "silver", "gray", "light", "blue"}, "frameColor");
-        addDiscreteSlider(playerFrameCard, "עובי מסגרת",
+        addCheck(content, "הצג מסגרת", "frameEnabled", false);
+        addColorChoices(content, "צבע מסגרת",
+                new String[]{"לבן", "כחול עדין", "כסף", "אפור", "אפור בהיר"},
+                new String[]{"white", "blue", "silver", "gray", "light"}, "frameColor");
+        addDiscreteSlider(content, "עובי מסגרת",
                 new String[]{"דקה", "בינונית", "עבה"},
                 new String[]{"1", "2", "3"}, "frameWidth");
-        addDiscreteSlider(playerFrameCard, "עיגול פינות",
+        playerFrameCard = addDiscreteSlider(content, "עיגול פינות",
                 new String[]{"ישר", "עדין", "מעוגל"},
                 new String[]{"0", "10", "20"}, "frameRadius");
     }
 
-    private LinearLayout addCard(LinearLayout parent, String title) {
+    private LinearLayout addCard(LinearLayout parent, String title) {    private LinearLayout addCard(LinearLayout parent, String title) {
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
         card.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
