@@ -1346,7 +1346,7 @@ public class SettingsActivity extends Activity {
         if ("autoStartOnCharge".equals(key)) return "usb";
         if ("autoStartOnDeviceLock".equals(key)) return "lock-play";
         if ("autoStartOnBoot".equals(key)) return "power";
-        if ("autoStartOnWake".equals(key)) return "sunrise";
+        if ("autoStartOnWake".equals(key)) return "screen-wake";
         if ("continueOnLockScreen".equals(key)) return "shield";
         if ("noShutdownWhileCharging".equals(key)) return "phone-charging";
         if ("showBatteryPercent".equals(key)) return "battery-medium";
