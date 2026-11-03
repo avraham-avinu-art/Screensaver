@@ -472,10 +472,6 @@ public class SettingsActivity extends Activity {
         playerFrameCard = addDiscreteSlider(content, "עיגול פינות",
                 new String[]{"ישר", "עדין", "מעוגל"},
                 new String[]{"0", "10", "20"}, "frameRadius");
-        if (playerFrameCard != null) {
-            LinearLayout.LayoutParams frameCardParams =
-                    (LinearLayout.LayoutParams) playerFrameCard.getLayoutParams();
-        }
     }
 
     private LinearLayout addSettingCard(LinearLayout parent, String label, String key) {
@@ -1025,8 +1021,12 @@ public class SettingsActivity extends Activity {
                             .apply();
                     if (permissionMissing) requestPlayerNotificationAccessIfNeeded();
                 }
+                int selectedAfterAction = index;
+                if ("playerDisplayMode".equals(key) && !getBool("showPlayer", false)) {
+                    selectedAfterAction = 0;
+                }
                 for (int j = 0; j < options.length; j++) {
-                    boolean isSelected = j == index;
+                    boolean isSelected = j == selectedAfterAction;
                     options[j].setTextColor(isSelected
                             ? Color.rgb(7, 31, 49) : ON_SURFACE);
                     optionTiles[j].setBackground(roundOutline(
@@ -1225,6 +1225,7 @@ public class SettingsActivity extends Activity {
             prefs.edit()
                     .putBoolean("showPlayerPermissionPending", false)
                     .putBoolean("showPlayer", false)
+                    .putBoolean("showPlayerOnlyAtStart", false)
                     .putString("playerDisplayMode", "off")
                     .apply();
             if (showPlayerToggle != null) showPlayerToggle.setChecked(false);
@@ -1238,6 +1239,7 @@ public class SettingsActivity extends Activity {
         if (hasNotificationAccess()) return;
 
         prefs.edit().putBoolean("showPlayer", false)
+                .putBoolean("showPlayerOnlyAtStart", false)
                 .putString("playerDisplayMode", "off").apply();
         if (showPlayerToggle != null && showPlayerToggle.isChecked()) {
             showPlayerToggle.setChecked(false);
@@ -1245,6 +1247,7 @@ public class SettingsActivity extends Activity {
         Toast.makeText(this,
                 "הצגת הנגן נשארה כבויה מפני שלא ניתנה הרשאת גישה להתראות.",
                 Toast.LENGTH_LONG).show();
+        if (currentCategory == CATEGORY_PLAYER) showCategory(CATEGORY_PLAYER);
     }
 
     private void requestChargerOverlayPermission() {
@@ -1612,7 +1615,8 @@ public class SettingsActivity extends Activity {
             if (!getBool("showPlayer", false)) return 0;
             String storedMode = getString(key, "");
             if ("start".equals(storedMode)) return 2;
-            return 1;
+            if ("on".equals(storedMode)) return 1;
+            return getBool("showPlayerOnlyAtStart", false) ? 2 : 1;
         }
         if ("dateDisplayMode".equals(key)) {
             if (prefs.contains(key)) {
