@@ -532,10 +532,7 @@ public class SettingsActivity extends Activity {
 
         LinearLayout.LayoutParams textBlockParams =
                 new LinearLayout.LayoutParams(0, -2, 1f);
-        textBlockParams.rightMargin = dp(16);
         header.addView(textBlock, textBlockParams);
-        header.addView(makeIconBadge(iconForSetting(key), dp(30)),
-                new LinearLayout.LayoutParams(dp(30), dp(30)));
 
         if ("screenSaverDuration".equals(key)) {
             FrameLayout infoButton = new FrameLayout(this);
