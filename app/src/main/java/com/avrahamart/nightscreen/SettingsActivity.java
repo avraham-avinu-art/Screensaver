@@ -248,7 +248,7 @@ public class SettingsActivity extends Activity {
         screenHeader.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         screenHeader.setPadding(dp(2), dp(7), dp(2), dp(2));
         screenSubtitle.setVisibility(View.GONE);
-        screenTitle.setTextSize(30);
+        screenTitle.setTextSize(27);
         dashboardHeaderDivider.setVisibility(View.GONE);
         headerTitleBlock.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         screenTitle.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
@@ -282,10 +282,10 @@ public class SettingsActivity extends Activity {
         }
     }
 
-    private LinearLayout.LayoutParams dashboardButtonParams(boolean primary) {
+    private LinearLayout.LayoutParams dashboardButtonParams() {
         LinearLayout.LayoutParams params =
-                new LinearLayout.LayoutParams(-1, 0, primary ? 1.08f : 1f);
-        params.bottomMargin = dp(primary ? 10 : 8);
+                new LinearLayout.LayoutParams(-1, 0, 1f);
+        params.bottomMargin = dp(8);
         return params;
     }
 
@@ -313,12 +313,9 @@ public class SettingsActivity extends Activity {
         button.setOrientation(LinearLayout.HORIZONTAL);
         button.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         button.setGravity(Gravity.CENTER_VERTICAL);
-        boolean primary = description != null && !description.isEmpty();
-        button.setPadding(dp(primary ? 16 : 14), dp(primary ? 10 : 8),
-                dp(primary ? 16 : 14), dp(primary ? 10 : 8));
-        button.setMinimumHeight(dp(primary ? 88 : 76));
-        button.setBackground(roundOutline(CARD_SURFACE,
-                dp(primary ? 19 : 17), CARD_OUTLINE));
+        button.setPadding(dp(16), dp(12), dp(16), dp(12));
+        button.setMinimumHeight(dp(92));
+        button.setBackground(roundOutline(CARD_SURFACE, dp(19), CARD_OUTLINE));
         button.setClickable(true);
         button.setFocusable(true);
         button.setContentDescription(description == null || description.isEmpty()
@@ -327,13 +324,11 @@ public class SettingsActivity extends Activity {
         FrameLayout iconBadge = new FrameLayout(this);
         iconBadge.setBackground(roundOutline(ICON_SURFACE, dp(12), CARD_OUTLINE));
         View glyph = makeIconGlyph(iconName, ACCENT);
-        int iconBoxSize = dp(primary ? 50 : 46);
-        int iconGlyphSize = dp(primary ? 30 : 28);
         iconBadge.addView(glyph,
-                new FrameLayout.LayoutParams(iconGlyphSize, iconGlyphSize, Gravity.CENTER));
+                new FrameLayout.LayoutParams(dp(30), dp(30), Gravity.CENTER));
         LinearLayout.LayoutParams iconParams =
-                new LinearLayout.LayoutParams(iconBoxSize, iconBoxSize);
-        iconParams.leftMargin = dp(primary ? 15 : 13);
+                new LinearLayout.LayoutParams(dp(50), dp(50));
+        iconParams.leftMargin = dp(15);
         button.addView(iconBadge, iconParams);
 
         LinearLayout copy = new LinearLayout(this);
@@ -341,7 +336,7 @@ public class SettingsActivity extends Activity {
         copy.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         copy.setGravity(Gravity.CENTER_VERTICAL);
 
-        TextView titleView = textView(title, primary ? 18 : 17, ON_SURFACE);
+        TextView titleView = textView(title, 18, ON_SURFACE);
         titleView.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD));
         titleView.setIncludeFontPadding(false);
         titleView.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
@@ -350,7 +345,7 @@ public class SettingsActivity extends Activity {
         copy.addView(titleView, new LinearLayout.LayoutParams(-1, -2));
 
         if (description != null && !description.isEmpty()) {
-            TextView descriptionView = textView(description, primary ? 14 : 13, MUTED);
+            TextView descriptionView = textView(description, 14, MUTED);
             descriptionView.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
             descriptionView.setIncludeFontPadding(false);
             descriptionView.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
@@ -367,7 +362,7 @@ public class SettingsActivity extends Activity {
         button.addView(copy, new LinearLayout.LayoutParams(0, -2, 1f));
 
         button.setOnClickListener(v -> action.run());
-        content.addView(button, dashboardButtonParams(primary));
+        content.addView(button, dashboardButtonParams());
     }
 
     private void showCategory(int category) {
@@ -637,22 +632,6 @@ public class SettingsActivity extends Activity {
         header.addView(textBlock, textBlockParams);
         header.addView(makeIconBadge(iconForSetting(key), dp(30)),
                 new LinearLayout.LayoutParams(dp(30), dp(30)));
-
-        if ("screenSaverDuration".equals(key)) {
-            FrameLayout infoButton = new FrameLayout(this);
-            infoButton.setContentDescription("הסבר על זמן הפעילות");
-            infoButton.setClickable(true);
-            infoButton.setFocusable(true);
-            infoButton.setBackgroundColor(Color.TRANSPARENT);
-            View infoGlyph = makeIconGlyph("message-circle-question", ACCENT);
-            infoButton.addView(infoGlyph,
-                    new FrameLayout.LayoutParams(dp(25), dp(25), Gravity.CENTER));
-            LinearLayout.LayoutParams infoParams =
-                    new LinearLayout.LayoutParams(dp(32), dp(32));
-            infoParams.leftMargin = dp(5);
-            header.addView(infoButton, 0, infoParams);
-            infoButton.setOnClickListener(v -> showActivityTimeHelpDialog());
-        }
 
         card.addView(header, new LinearLayout.LayoutParams(-1, -2));
 
