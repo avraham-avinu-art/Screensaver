@@ -285,12 +285,19 @@ public class SettingsActivity extends Activity {
                 lastItem.setLayoutParams(lastParams);
             }
         }
+
+        // The dashboard and every inner category share this ScrollView.
+        // Reset its position when returning from a scrolled category.
+        if (settingsScroll != null) {
+            settingsScroll.scrollTo(0, 0);
+            settingsScroll.post(() -> settingsScroll.scrollTo(0, 0));
+        }
     }
 
     private LinearLayout.LayoutParams dashboardButtonParams() {
         LinearLayout.LayoutParams params =
                 new LinearLayout.LayoutParams(-1, 0, 1f);
-        params.bottomMargin = dp(6);
+        params.bottomMargin = dp(7);
         return params;
     }
 
@@ -1144,8 +1151,10 @@ public class SettingsActivity extends Activity {
             if (needsFullLabelWidth) {
                 // Reserve only the width needed for the long label; the remaining
                 // options split the remaining row width equally.
+                int extraWidth = "playerDisplayMode".equals(key) && i == 2
+                        ? 7 : 5;
                 int labelWidth = (int) Math.ceil(option.getPaint().measureText(names[i]))
-                        + dp(4);
+                        + dp(extraWidth);
                 tileParams = new LinearLayout.LayoutParams(
                         labelWidth, dp(optionTileHeight));
             } else {
