@@ -1103,7 +1103,7 @@ public class SettingsActivity extends Activity {
             option.setTextDirection(View.TEXT_DIRECTION_RTL);
             option.setSingleLine(true);
             option.setIncludeFontPadding(false);
-            option.setPadding(dp(2), 0, dp(2), 0);
+            option.setPadding(dp(1), 0, dp(1), 0);
             if (Build.VERSION.SDK_INT >= 26) {
                 option.setAutoSizeTextTypeUniformWithConfiguration(
                         10, 14, 1, android.util.TypedValue.COMPLEX_UNIT_SP);
