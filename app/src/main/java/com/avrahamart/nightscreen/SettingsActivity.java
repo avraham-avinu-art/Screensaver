@@ -113,12 +113,12 @@ public class SettingsActivity extends Activity {
         root.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         root.setTextDirection(View.TEXT_DIRECTION_RTL);
         root.setBackgroundColor(SURFACE);
-        root.setPadding(dp(14), dp(2), dp(14), 0);
+        root.setPadding(dp(10), dp(2), dp(10), 0);
         if (Build.VERSION.SDK_INT >= 21) {
             root.setOnApplyWindowInsetsListener((view, insets) -> {
                 int topInset = insets.getSystemWindowInsetTop();
                 int bottomInset = insets.getSystemWindowInsetBottom();
-                view.setPadding(dp(14), dp(2) + topInset, dp(14), bottomInset);
+                view.setPadding(dp(10), dp(2) + topInset, dp(10), bottomInset);
                 return insets;
             });
         }
@@ -143,7 +143,7 @@ public class SettingsActivity extends Activity {
         screenTitle.setTextDirection(View.TEXT_DIRECTION_RTL);
         headerTitleBlock.addView(screenTitle, new LinearLayout.LayoutParams(-1, -2));
 
-        screenSubtitle = textView("התאמה אישית של השומר מסך", 14, MUTED);
+        screenSubtitle = textView("התאמה אישית של השומר מסך", 15, MUTED);
         screenSubtitle.setIncludeFontPadding(false);
         screenSubtitle.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         screenSubtitle.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
@@ -151,7 +151,7 @@ public class SettingsActivity extends Activity {
         screenSubtitle.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
         LinearLayout.LayoutParams headerSubtitleParams =
                 new LinearLayout.LayoutParams(-1, -2);
-        headerSubtitleParams.topMargin = dp(3);
+        headerSubtitleParams.topMargin = dp(2);
         headerTitleBlock.addView(screenSubtitle, headerSubtitleParams);
 
         FrameLayout.LayoutParams titleBlockParams =
@@ -246,7 +246,7 @@ public class SettingsActivity extends Activity {
         screenHeader.setVisibility(View.VISIBLE);
         // The dashboard uses only the right-aligned "הגדרות" title.
         screenHeader.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-        screenHeader.setPadding(dp(2), dp(7), dp(2), dp(2));
+        screenHeader.setPadding(dp(2), dp(7), dp(2), dp(4));
         screenSubtitle.setVisibility(View.GONE);
         screenTitle.setTextSize(27);
         dashboardHeaderDivider.setVisibility(View.GONE);
@@ -276,7 +276,7 @@ public class SettingsActivity extends Activity {
             if (lastItem.getLayoutParams() instanceof LinearLayout.LayoutParams) {
                 LinearLayout.LayoutParams lastParams =
                         (LinearLayout.LayoutParams) lastItem.getLayoutParams();
-                lastParams.bottomMargin = 0;
+                lastParams.bottomMargin = dp(12);
                 lastItem.setLayoutParams(lastParams);
             }
         }
@@ -285,7 +285,7 @@ public class SettingsActivity extends Activity {
     private LinearLayout.LayoutParams dashboardButtonParams() {
         LinearLayout.LayoutParams params =
                 new LinearLayout.LayoutParams(-1, 0, 1f);
-        params.bottomMargin = dp(8);
+        params.bottomMargin = dp(6);
         return params;
     }
 
@@ -313,8 +313,8 @@ public class SettingsActivity extends Activity {
         button.setOrientation(LinearLayout.HORIZONTAL);
         button.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         button.setGravity(Gravity.CENTER_VERTICAL);
-        button.setPadding(dp(16), dp(12), dp(16), dp(12));
-        button.setMinimumHeight(dp(92));
+        button.setPadding(dp(14), dp(12), dp(14), dp(12));
+        button.setMinimumHeight(dp(100));
         button.setBackground(roundOutline(CARD_SURFACE, dp(19), CARD_OUTLINE));
         button.setClickable(true);
         button.setFocusable(true);
@@ -325,10 +325,10 @@ public class SettingsActivity extends Activity {
         iconBadge.setBackground(roundOutline(ICON_SURFACE, dp(12), CARD_OUTLINE));
         View glyph = makeIconGlyph(iconName, ACCENT);
         iconBadge.addView(glyph,
-                new FrameLayout.LayoutParams(dp(30), dp(30), Gravity.CENTER));
+                new FrameLayout.LayoutParams(dp(35), dp(35), Gravity.CENTER));
         LinearLayout.LayoutParams iconParams =
                 new LinearLayout.LayoutParams(dp(50), dp(50));
-        iconParams.leftMargin = dp(15);
+        iconParams.leftMargin = dp(14);
         button.addView(iconBadge, iconParams);
 
         LinearLayout copy = new LinearLayout(this);
@@ -336,7 +336,7 @@ public class SettingsActivity extends Activity {
         copy.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         copy.setGravity(Gravity.CENTER_VERTICAL);
 
-        TextView titleView = textView(title, 18, ON_SURFACE);
+        TextView titleView = textView(title, 20, ON_SURFACE);
         titleView.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD));
         titleView.setIncludeFontPadding(false);
         titleView.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
@@ -345,7 +345,7 @@ public class SettingsActivity extends Activity {
         copy.addView(titleView, new LinearLayout.LayoutParams(-1, -2));
 
         if (description != null && !description.isEmpty()) {
-            TextView descriptionView = textView(description, 14, MUTED);
+            TextView descriptionView = textView(description, 15, MUTED);
             descriptionView.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
             descriptionView.setIncludeFontPadding(false);
             descriptionView.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
@@ -375,15 +375,15 @@ public class SettingsActivity extends Activity {
         // Show the page heading on every internal settings page.
         screenHeader.setVisibility(View.VISIBLE);
         screenHeader.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-        screenHeader.setPadding(dp(2), dp(8), dp(2), dp(14));
+        screenHeader.setPadding(dp(2), dp(8), dp(2), dp(0));
         screenSubtitle.setVisibility(View.VISIBLE);
-        screenTitle.setTextSize(27);
-        dashboardHeaderDivider.setVisibility(View.VISIBLE);
-        headerTitleBlock.setGravity(Gravity.CENTER);
-        screenTitle.setGravity(Gravity.CENTER);
-        screenTitle.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-        screenSubtitle.setGravity(Gravity.CENTER);
-        screenSubtitle.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        screenTitle.setTextSize(23);
+        dashboardHeaderDivider.setVisibility(View.GONE);
+        headerTitleBlock.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        screenTitle.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        screenTitle.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
+        screenSubtitle.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        screenSubtitle.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
         if (settingsScroll != null) settingsScroll.setFillViewport(true);
         content.setLayoutParams(new LinearLayout.LayoutParams(-1, -2));
         content.removeAllViews();
@@ -471,7 +471,7 @@ public class SettingsActivity extends Activity {
 
         View glyph = makeIconGlyph("message-circle-question", ACCENT);
         button.addView(glyph,
-                new FrameLayout.LayoutParams(dp(28), dp(28), Gravity.CENTER));
+                new FrameLayout.LayoutParams(dp(30), dp(30), Gravity.CENTER));
 
         FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
                 dp(38), dp(38), Gravity.LEFT | Gravity.CENTER_VERTICAL);
@@ -558,7 +558,7 @@ public class SettingsActivity extends Activity {
                 LinearLayout.LayoutParams previousGroupParams =
                         (LinearLayout.LayoutParams) currentSettingsGroup.getLayoutParams();
                 // Space is reserved only between distinct groups, not between rows.
-                previousGroupParams.bottomMargin = dp(8);
+                previousGroupParams.bottomMargin = dp(11);
                 currentSettingsGroup.setLayoutParams(previousGroupParams);
             }
 
@@ -587,7 +587,7 @@ public class SettingsActivity extends Activity {
         card.setOrientation(LinearLayout.VERTICAL);
         card.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         card.setTextDirection(View.TEXT_DIRECTION_RTL);
-        card.setPadding(dp(13), dp(10), dp(13), dp(12));
+        card.setPadding(dp(9), dp(12), dp(9), dp(14));
         // Individual settings are now rows inside one shared outer group frame.
         card.setBackgroundColor(Color.TRANSPARENT);
 
@@ -628,10 +628,12 @@ public class SettingsActivity extends Activity {
 
         LinearLayout.LayoutParams textBlockParams =
                 new LinearLayout.LayoutParams(0, -2, 1f);
-        textBlockParams.rightMargin = dp(16);
+        textBlockParams.rightMargin = dp(12);
         header.addView(textBlock, textBlockParams);
-        header.addView(makeIconBadge(iconForSetting(key), dp(30)),
-                new LinearLayout.LayoutParams(dp(30), dp(30)));
+        LinearLayout.LayoutParams settingIconParams =
+                new LinearLayout.LayoutParams(dp(30), dp(30));
+        settingIconParams.rightMargin = dp(3);
+        header.addView(makeIconBadge(iconForSetting(key), dp(30)), settingIconParams);
 
         card.addView(header, new LinearLayout.LayoutParams(-1, -2));
 
@@ -786,14 +788,14 @@ public class SettingsActivity extends Activity {
         helpIconShell.setBackgroundColor(Color.TRANSPARENT);
         View helpIcon = makeIconGlyph("message-circle-question", ACCENT);
         helpIconShell.addView(helpIcon,
-                new FrameLayout.LayoutParams(dp(34), dp(34), Gravity.CENTER));
+                new FrameLayout.LayoutParams(dp(32), dp(32), Gravity.CENTER));
         heading.addView(helpIconShell, new LinearLayout.LayoutParams(dp(46), dp(46)));
 
         LinearLayout titleBlock = new LinearLayout(this);
         titleBlock.setOrientation(LinearLayout.VERTICAL);
         titleBlock.setGravity(Gravity.CENTER_VERTICAL);
         // Extra spacing between the icon and title block.
-        titleBlock.setPadding(dp(18), 0, 0, 0);
+        titleBlock.setPadding(0, 0, 0, 0);
 
         TextView title = textView("הגדרת זמני הפעילות", 20, ON_SURFACE);
         title.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
@@ -802,7 +804,7 @@ public class SettingsActivity extends Activity {
         title.setIncludeFontPadding(false);
         titleBlock.addView(title, new LinearLayout.LayoutParams(-1, -2));
 
-        TextView subtitle = textView("הסבר קצר להבנת האפשרויות", 13, MUTED);
+        TextView subtitle = textView("הסבר קצר להבנת האפשרויות", 14, MUTED);
         subtitle.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         subtitle.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
         subtitle.setIncludeFontPadding(false);
@@ -811,7 +813,7 @@ public class SettingsActivity extends Activity {
         LinearLayout.LayoutParams titleBlockParams =
                 new LinearLayout.LayoutParams(0, -2, 1f);
         // Add spacing at the physical side next to the icon (the heading is RTL).
-        titleBlockParams.rightMargin = dp(12);
+        titleBlockParams.rightMargin = dp(1);
         heading.addView(titleBlock, titleBlockParams);
         scrollContent.addView(heading, new LinearLayout.LayoutParams(-1, -2));
 
@@ -827,7 +829,7 @@ public class SettingsActivity extends Activity {
         message.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
         message.setTextDirection(View.TEXT_DIRECTION_RTL);
         message.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
-        message.setLineSpacing(dp(4), 1.0f);
+        message.setLineSpacing(dp(3), 1.0f);
         message.setPadding(dp(2), dp(2), dp(2), dp(4));
 
         SpannableStringBuilder styledHelp = new SpannableStringBuilder();
@@ -1057,7 +1059,7 @@ public class SettingsActivity extends Activity {
         final TextView[] options = new TextView[names.length];
         final FrameLayout[] optionTiles = new FrameLayout[names.length];
         int initial = selectedIndex(key, values);
-        int optionTileHeight = 38;
+        int optionTileHeight = 37;
 
         for (int i = 0; i < names.length; i++) {
             final int index = i;
@@ -1069,7 +1071,7 @@ public class SettingsActivity extends Activity {
                     dp(8), selected ? ACCENT : Color.rgb(48, 68, 91)));
             optionTiles[i] = tile;
 
-            TextView option = textView(names[i], 13,
+            TextView option = textView(names[i], 14,
                     selected ? Color.rgb(7, 31, 49) : ON_SURFACE);
             option.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
             option.setGravity(Gravity.CENTER);
@@ -1077,10 +1079,10 @@ public class SettingsActivity extends Activity {
             option.setTextDirection(View.TEXT_DIRECTION_RTL);
             option.setSingleLine(true);
             option.setIncludeFontPadding(false);
-            option.setPadding(dp(3), 0, dp(3), 0);
+            option.setPadding(dp(2), 0, dp(2), 0);
             if (Build.VERSION.SDK_INT >= 26) {
                 option.setAutoSizeTextTypeUniformWithConfiguration(
-                        10, 13, 1, android.util.TypedValue.COMPLEX_UNIT_SP);
+                        10, 14, 1, android.util.TypedValue.COMPLEX_UNIT_SP);
             }
             tile.addView(option, new FrameLayout.LayoutParams(-1, -1));
             options[i] = option;
@@ -1126,16 +1128,20 @@ public class SettingsActivity extends Activity {
                 // Reserve only the width needed for the long label; the remaining
                 // options split the remaining row width equally.
                 int labelWidth = (int) Math.ceil(option.getPaint().measureText(names[i]))
-                        + dp(20);
+                        + dp(17);
                 tileParams = new LinearLayout.LayoutParams(
                         labelWidth, dp(optionTileHeight));
             } else {
                 tileParams = new LinearLayout.LayoutParams(
                         0, dp(optionTileHeight), 1f);
             }
-            tileParams.leftMargin = dp(3);
-            tileParams.rightMargin = dp(3);
+            tileParams.leftMargin = dp(2);
+            tileParams.rightMargin = dp(2);
             tiles.addView(tile, tileParams);
+            if (i < names.length - 1) {
+                View segmentGap = new View(this);
+                tiles.addView(segmentGap, new LinearLayout.LayoutParams(dp(1), 1));
+            }
         }
 
         LinearLayout.LayoutParams tilesParams =
@@ -1499,7 +1505,7 @@ public class SettingsActivity extends Activity {
                 : ("history".equals(iconName) || "panel-bottom".equals(iconName)) ? dp(24)
                 : "position-arrows".equals(iconName) ? dp(27)
                 : "gregorian-date".equals(iconName) ? dp(25)
-                : dp(21);
+                : dp(22);
         FrameLayout.LayoutParams graphicParams =
                 new FrameLayout.LayoutParams(glyphSize, glyphSize, Gravity.CENTER);
         badge.addView(graphic, graphicParams);
