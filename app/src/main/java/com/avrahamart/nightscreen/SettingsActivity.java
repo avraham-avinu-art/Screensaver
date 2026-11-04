@@ -418,7 +418,13 @@ public class SettingsActivity extends Activity {
         if (currentSettingsGroup != null
                 && currentSettingsGroupParent == content
                 && currentSettingsGroup.getParent() == content) {
-            currentSettingsGroup.setPadding(0, 0, 0, dp(13));
+            // Keep the frame's internal padding unchanged; put the clearance
+            // outside the last frame, matching the horizontal screen inset.
+            currentSettingsGroup.setPadding(0, 0, 0, 0);
+            LinearLayout.LayoutParams params =
+                    (LinearLayout.LayoutParams) currentSettingsGroup.getLayoutParams();
+            params.bottomMargin = dp(14);
+            currentSettingsGroup.setLayoutParams(params);
         }
     }
 
