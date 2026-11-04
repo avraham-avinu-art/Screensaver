@@ -34,31 +34,46 @@ public final class GuideActivity extends Activity {
         root.setOrientation(LinearLayout.VERTICAL);
         root.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         root.setBackgroundColor(SURFACE);
-        root.setPadding(dp(14), dp(6), dp(14), dp(8));
+        root.setPadding(dp(10), dp(2), dp(10), 0);
         if (Build.VERSION.SDK_INT >= 21) {
             root.setOnApplyWindowInsetsListener((view, insets) -> {
-                view.setPadding(dp(14), dp(6) + insets.getSystemWindowInsetTop(),
-                        dp(14), dp(8) + insets.getSystemWindowInsetBottom());
+                view.setPadding(dp(10), dp(2) + insets.getSystemWindowInsetTop(),
+                        dp(10), insets.getSystemWindowInsetBottom());
                 return insets;
             });
         }
 
         FrameLayout header = new FrameLayout(this);
-        TextView title = textView("מדריך שימוש", 25, ON_SURFACE);
-        title.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-        title.setGravity(Gravity.CENTER);
-        title.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-        header.addView(title, new FrameLayout.LayoutParams(-1, dp(44), Gravity.CENTER));
+        header.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        header.setPadding(dp(2), dp(8), dp(2), dp(8));
 
-        root.addView(header, new LinearLayout.LayoutParams(-1, dp(48)));
+        LinearLayout titleBlock = new LinearLayout(this);
+        titleBlock.setOrientation(LinearLayout.VERTICAL);
+        titleBlock.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        titleBlock.setGravity(Gravity.CENTER_VERTICAL);
 
-        TextView subtitle = textView("הסברים וטיפים לשימוש באפליקציה", 15, MUTED);
-        subtitle.setGravity(Gravity.CENTER);
-        subtitle.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        TextView title = textView("מדריך שימוש", 23, ON_SURFACE);
+        title.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
+        title.setIncludeFontPadding(false);
+        title.setLetterSpacing(-0.015f);
+        title.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        title.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
+        title.setTextDirection(View.TEXT_DIRECTION_RTL);
+        titleBlock.addView(title, new LinearLayout.LayoutParams(-1, -2));
+
+        TextView subtitle = textView("הסברים וטיפים לשימוש באפליקציה", 16, MUTED);
+        subtitle.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
+        subtitle.setIncludeFontPadding(false);
+        subtitle.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        subtitle.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
+        subtitle.setTextDirection(View.TEXT_DIRECTION_RTL);
         LinearLayout.LayoutParams subtitleParams =
                 new LinearLayout.LayoutParams(-1, -2);
-        subtitleParams.bottomMargin = dp(9);
-        root.addView(subtitle, subtitleParams);
+        subtitleParams.topMargin = 0;
+        titleBlock.addView(subtitle, subtitleParams);
+
+        header.addView(titleBlock, new FrameLayout.LayoutParams(-1, -2, Gravity.CENTER));
+        root.addView(header, new LinearLayout.LayoutParams(-1, -2));
 
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(false);
