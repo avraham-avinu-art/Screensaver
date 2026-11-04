@@ -145,7 +145,7 @@ public class SettingsActivity extends Activity {
         screenTitle.setTextDirection(View.TEXT_DIRECTION_RTL);
         headerTitleBlock.addView(screenTitle, new LinearLayout.LayoutParams(-1, -2));
 
-        screenSubtitle = textView("התאמה אישית של השומר מסך", 15, MUTED);
+        screenSubtitle = textView("התאמה אישית של השומר מסך", 16, MUTED);
         screenSubtitle.setIncludeFontPadding(false);
         screenSubtitle.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         screenSubtitle.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
@@ -570,6 +570,8 @@ public class SettingsActivity extends Activity {
             currentSettingsGroup = new LinearLayout(this);
             currentSettingsGroup.setOrientation(LinearLayout.VERTICAL);
             currentSettingsGroup.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+            currentSettingsGroup.setClipChildren(false);
+            currentSettingsGroup.setClipToPadding(false);
             currentSettingsGroup.setBackground(
                     roundOutline(CARD_SURFACE, dp(17), CARD_OUTLINE));
             LinearLayout.LayoutParams groupParams =
@@ -593,6 +595,8 @@ public class SettingsActivity extends Activity {
         card.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         card.setTextDirection(View.TEXT_DIRECTION_RTL);
         card.setPadding(dp(7), dp(12), dp(7), dp(14));
+        card.setClipChildren(false);
+        card.setClipToPadding(false);
         // Individual settings are now rows inside one shared outer group frame.
         card.setBackgroundColor(Color.TRANSPARENT);
 
@@ -605,6 +609,8 @@ public class SettingsActivity extends Activity {
         header.setOrientation(LinearLayout.HORIZONTAL);
         header.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         header.setGravity(Gravity.CENTER_VERTICAL);
+        header.setClipChildren(false);
+        header.setClipToPadding(false);
 
         LinearLayout textBlock = new LinearLayout(this);
         textBlock.setOrientation(LinearLayout.VERTICAL);
@@ -948,6 +954,7 @@ public class SettingsActivity extends Activity {
 
         Switch toggle = new Switch(this);
         toggle.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        toggle.setMinimumWidth(dp(56));
         toggle.setShowText(false);
         toggle.setContentDescription(label);
         if ("showPlayer".equals(key)) showPlayerToggle = toggle;
@@ -971,9 +978,9 @@ public class SettingsActivity extends Activity {
                     new int[]{Color.rgb(39, 123, 153), Color.rgb(49, 67, 88)}));
         }
         LinearLayout.LayoutParams switchParams =
-                new LinearLayout.LayoutParams(dp(50), dp(38));
-        // Move the switch toward the outer left edge, away from the text block.
-        switchParams.leftMargin = -dp(6);
+                new LinearLayout.LayoutParams(dp(56), dp(38));
+        // Keep the complete switch inside the row bounds to prevent edge clipping.
+        switchParams.leftMargin = 0;
         row.addView(toggle, 0, switchParams);
 
         toggle.setOnCheckedChangeListener((button, checked) -> {
@@ -1138,7 +1145,7 @@ public class SettingsActivity extends Activity {
                 // Reserve only the width needed for the long label; the remaining
                 // options split the remaining row width equally.
                 int labelWidth = (int) Math.ceil(option.getPaint().measureText(names[i]))
-                        + dp(10);
+                        + dp(4);
                 tileParams = new LinearLayout.LayoutParams(
                         labelWidth, dp(optionTileHeight));
             } else {
