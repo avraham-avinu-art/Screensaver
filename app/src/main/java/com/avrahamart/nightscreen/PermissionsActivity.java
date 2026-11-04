@@ -76,7 +76,7 @@ public class PermissionsActivity extends Activity {
         titleBlock.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         titleBlock.setGravity(Gravity.CENTER_VERTICAL);
 
-        TextView title = textView("הרשאות", 23, ON_SURFACE);
+        TextView title = textView("ניהול הרשאות", 23, ON_SURFACE);
         title.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
         title.setIncludeFontPadding(false);
         title.setLetterSpacing(-0.015f);
@@ -85,7 +85,7 @@ public class PermissionsActivity extends Activity {
         title.setTextDirection(View.TEXT_DIRECTION_RTL);
         titleBlock.addView(title, new LinearLayout.LayoutParams(-1, -2));
 
-        TextView subtitle = textView("ניהול ההרשאות הנדרשות לפעולת האפליקציה", 16, MUTED);
+        TextView subtitle = textView("הרשאות הנדרשות לפעילות האפליקציה", 16, MUTED);
         subtitle.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
         subtitle.setIncludeFontPadding(false);
         subtitle.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
