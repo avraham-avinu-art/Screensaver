@@ -1152,7 +1152,7 @@ public class SettingsActivity extends Activity {
                 // Reserve only the width needed for the long label; the remaining
                 // options split the remaining row width equally.
                 int extraWidth = "playerDisplayMode".equals(key) && i == 2
-                        ? 7 : 5;
+                        ? 10 : 6;
                 int labelWidth = (int) Math.ceil(option.getPaint().measureText(names[i]))
                         + dp(extraWidth);
                 tileParams = new LinearLayout.LayoutParams(
