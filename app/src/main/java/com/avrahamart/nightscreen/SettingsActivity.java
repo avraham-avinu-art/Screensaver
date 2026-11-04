@@ -455,7 +455,6 @@ public class SettingsActivity extends Activity {
     }
 
     private void buildActivitySettings() {
-        addActivityHelpButton();
         LinearLayout durationCard = addSegmentedChoices(content, "זמן פעילות",
                 new String[]{"לפי המכשיר", "דקה אחת", "חמש דקות", "ללא כיבוי"},
                 new String[]{"device", "1", "5", "0"}, "screenSaverDuration");
@@ -468,28 +467,6 @@ public class SettingsActivity extends Activity {
         addCheck(content, "הפעלה אוטומטית בטעינה", "autoStartOnCharge", false);
         addCheck(content, "ללא כיבוי בטעינה", "noShutdownWhileCharging", false);
         addCheck(content, "הצגת אחוז הסוללה", "showBatteryPercent", false);
-    }
-
-    private void addActivityHelpButton() {
-        // Keep the activity help control above the settings cards, not inside
-        // the "זמן פעילות" setting tile.
-        FrameLayout infoRow = new FrameLayout(this);
-        LinearLayout.LayoutParams rowParams =
-                new LinearLayout.LayoutParams(-1, dp(38));
-        rowParams.bottomMargin = dp(3);
-        content.addView(infoRow, rowParams);
-
-        FrameLayout infoButton = new FrameLayout(this);
-        infoButton.setContentDescription("הסבר על הגדרות זמני הפעילות");
-        infoButton.setClickable(true);
-        infoButton.setFocusable(true);
-        infoButton.setBackgroundColor(Color.TRANSPARENT);
-        View infoGlyph = makeIconGlyph("message-circle-question", ACCENT);
-        infoButton.addView(infoGlyph,
-                new FrameLayout.LayoutParams(dp(28), dp(28), Gravity.CENTER));
-        infoRow.addView(infoButton,
-                new FrameLayout.LayoutParams(dp(38), dp(38), Gravity.LEFT | Gravity.CENTER_VERTICAL));
-        infoButton.setOnClickListener(v -> showActivityTimeHelpDialog());
     }
 
     private void buildAppearanceSettings() {
@@ -628,6 +605,22 @@ public class SettingsActivity extends Activity {
         header.addView(textBlock, textBlockParams);
         header.addView(makeIconBadge(iconForSetting(key), dp(30)),
                 new LinearLayout.LayoutParams(dp(30), dp(30)));
+
+        if ("screenSaverDuration".equals(key)) {
+            FrameLayout infoButton = new FrameLayout(this);
+            infoButton.setContentDescription("הסבר על זמן הפעילות");
+            infoButton.setClickable(true);
+            infoButton.setFocusable(true);
+            infoButton.setBackgroundColor(Color.TRANSPARENT);
+            View infoGlyph = makeIconGlyph("message-circle-question", ACCENT);
+            infoButton.addView(infoGlyph,
+                    new FrameLayout.LayoutParams(dp(25), dp(25), Gravity.CENTER));
+            LinearLayout.LayoutParams infoParams =
+                    new LinearLayout.LayoutParams(dp(32), dp(32));
+            infoParams.leftMargin = dp(5);
+            header.addView(infoButton, 0, infoParams);
+            infoButton.setOnClickListener(v -> showActivityTimeHelpDialog());
+        }
 
         card.addView(header, new LinearLayout.LayoutParams(-1, -2));
 
