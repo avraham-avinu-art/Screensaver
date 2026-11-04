@@ -151,7 +151,7 @@ public class SettingsActivity extends Activity {
         screenSubtitle.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
         LinearLayout.LayoutParams headerSubtitleParams =
                 new LinearLayout.LayoutParams(-1, -2);
-        headerSubtitleParams.topMargin = dp(1);
+        headerSubtitleParams.topMargin = 0;
         headerTitleBlock.addView(screenSubtitle, headerSubtitleParams);
 
         FrameLayout.LayoutParams titleBlockParams =
@@ -328,7 +328,7 @@ public class SettingsActivity extends Activity {
                 new FrameLayout.LayoutParams(dp(35), dp(35), Gravity.CENTER));
         LinearLayout.LayoutParams iconParams =
                 new LinearLayout.LayoutParams(dp(48), dp(48));
-        iconParams.leftMargin = dp(14);
+        iconParams.leftMargin = dp(11);
         button.addView(iconBadge, iconParams);
 
         LinearLayout copy = new LinearLayout(this);
@@ -375,7 +375,7 @@ public class SettingsActivity extends Activity {
         // Show the page heading on every internal settings page.
         screenHeader.setVisibility(View.VISIBLE);
         screenHeader.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-        screenHeader.setPadding(dp(2), dp(8), dp(2), dp(2));
+        screenHeader.setPadding(dp(2), dp(8), dp(2), dp(5));
         screenSubtitle.setVisibility(View.VISIBLE);
         screenTitle.setTextSize(23);
         dashboardHeaderDivider.setVisibility(View.GONE);
@@ -628,7 +628,7 @@ public class SettingsActivity extends Activity {
 
         LinearLayout.LayoutParams textBlockParams =
                 new LinearLayout.LayoutParams(0, -2, 1f);
-        textBlockParams.rightMargin = dp(10);
+        textBlockParams.rightMargin = dp(7);
         header.addView(textBlock, textBlockParams);
         LinearLayout.LayoutParams settingIconParams =
                 new LinearLayout.LayoutParams(dp(30), dp(30));
@@ -1128,7 +1128,7 @@ public class SettingsActivity extends Activity {
                 // Reserve only the width needed for the long label; the remaining
                 // options split the remaining row width equally.
                 int labelWidth = (int) Math.ceil(option.getPaint().measureText(names[i]))
-                        + dp(14);
+                        + dp(10);
                 tileParams = new LinearLayout.LayoutParams(
                         labelWidth, dp(optionTileHeight));
             } else {
