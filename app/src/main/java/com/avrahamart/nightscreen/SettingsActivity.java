@@ -403,11 +403,22 @@ public class SettingsActivity extends Activity {
                 return;
         }
 
+        // Leave a bottom inset inside the final shared frame, matching its side inset.
+        finishSettingsGroup();
+
         // Every internal category must open at the start, regardless of the last
         // scroll position used in another category.
         if (settingsScroll != null) {
             settingsScroll.scrollTo(0, 0);
             settingsScroll.post(() -> settingsScroll.scrollTo(0, 0));
+        }
+    }
+
+    private void finishSettingsGroup() {
+        if (currentSettingsGroup != null
+                && currentSettingsGroupParent == content
+                && currentSettingsGroup.getParent() == content) {
+            currentSettingsGroup.setPadding(0, 0, 0, dp(13));
         }
     }
 
@@ -520,7 +531,7 @@ public class SettingsActivity extends Activity {
             settingsGroupBreakAfterPrevious = false;
         } else if (currentSettingsGroup.getChildCount() > 0) {
             View divider = new View(this);
-            divider.setBackgroundColor(Color.rgb(30, 48, 69));
+            divider.setBackgroundColor(Color.rgb(54, 78, 102));
             LinearLayout.LayoutParams dividerParams =
                     new LinearLayout.LayoutParams(-1, dp(1));
             dividerParams.leftMargin = dp(13);
@@ -1035,7 +1046,7 @@ public class SettingsActivity extends Activity {
         final TextView[] options = new TextView[names.length];
         final FrameLayout[] optionTiles = new FrameLayout[names.length];
         int initial = selectedIndex(key, values);
-        int optionTileHeight = "playerDisplayMode".equals(key) ? 48 : 38;
+        int optionTileHeight = 38;
 
         for (int i = 0; i < names.length; i++) {
             final int index = i;
@@ -1053,8 +1064,7 @@ public class SettingsActivity extends Activity {
             option.setGravity(Gravity.CENTER);
             option.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
             option.setTextDirection(View.TEXT_DIRECTION_RTL);
-            option.setSingleLine(!"playerDisplayMode".equals(key));
-            if ("playerDisplayMode".equals(key)) option.setMaxLines(2);
+            option.setSingleLine(true);
             option.setIncludeFontPadding(false);
             option.setPadding(dp(3), 0, dp(3), 0);
             if (Build.VERSION.SDK_INT >= 26) {
@@ -1097,12 +1107,17 @@ public class SettingsActivity extends Activity {
             });
 
             LinearLayout.LayoutParams tileParams;
-            if ("screenBrightness".equals(key) && i == 0) {
-                // Keep the full "לפי המכשיר" label visible; distribute the rest evenly.
-                int deviceLabelWidth = (int) Math.ceil(option.getPaint().measureText(names[i]))
-                        + dp(22);
+            boolean needsFullLabelWidth =
+                    (("screenBrightness".equals(key)
+                            || "screenSaverDuration".equals(key)) && i == 0)
+                    || ("playerDisplayMode".equals(key) && i == 2);
+            if (needsFullLabelWidth) {
+                // Reserve only the width needed for the long label; the remaining
+                // options split the remaining row width equally.
+                int labelWidth = (int) Math.ceil(option.getPaint().measureText(names[i]))
+                        + dp(20);
                 tileParams = new LinearLayout.LayoutParams(
-                        deviceLabelWidth, dp(optionTileHeight));
+                        labelWidth, dp(optionTileHeight));
             } else {
                 tileParams = new LinearLayout.LayoutParams(
                         0, dp(optionTileHeight), 1f);
