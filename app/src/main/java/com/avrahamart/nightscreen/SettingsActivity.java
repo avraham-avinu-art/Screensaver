@@ -708,24 +708,6 @@ public class SettingsActivity extends Activity {
                 new LinearLayout.LayoutParams(0, dp(42), 1f);
         headingRow.addView(heading, headingTextParams);
 
-        // Only the activity-time card gets a compact information control at its
-        // heading height; no other settings card changes.
-        if ("הגדרת זמני הפעילות".equals(title)) {
-            FrameLayout infoButton = new FrameLayout(this);
-            infoButton.setContentDescription("הסבר על הגדרות זמני הפעילות");
-            infoButton.setClickable(true);
-            infoButton.setFocusable(true);
-            infoButton.setBackgroundColor(Color.TRANSPARENT);
-            View infoGlyph = makeIconGlyph("message-circle-question", ACCENT);
-            infoButton.addView(infoGlyph,
-                    new FrameLayout.LayoutParams(dp(30), dp(30), Gravity.CENTER));
-            LinearLayout.LayoutParams infoParams =
-                    new LinearLayout.LayoutParams(dp(38), dp(38));
-            infoParams.leftMargin = dp(3);
-            headingRow.addView(infoButton, 0, infoParams);
-            infoButton.setOnClickListener(v -> showActivityTimeHelpDialog());
-        }
-
         card.addView(headingRow, new LinearLayout.LayoutParams(-1, dp(42)));
 
         View separator = new View(this);
