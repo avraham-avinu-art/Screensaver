@@ -151,7 +151,7 @@ public class SettingsActivity extends Activity {
         screenSubtitle.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
         LinearLayout.LayoutParams headerSubtitleParams =
                 new LinearLayout.LayoutParams(-1, -2);
-        headerSubtitleParams.topMargin = dp(2);
+        headerSubtitleParams.topMargin = dp(1);
         headerTitleBlock.addView(screenSubtitle, headerSubtitleParams);
 
         FrameLayout.LayoutParams titleBlockParams =
@@ -314,7 +314,7 @@ public class SettingsActivity extends Activity {
         button.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         button.setGravity(Gravity.CENTER_VERTICAL);
         button.setPadding(dp(14), dp(12), dp(14), dp(12));
-        button.setMinimumHeight(dp(100));
+        button.setMinimumHeight(dp(99));
         button.setBackground(roundOutline(CARD_SURFACE, dp(19), CARD_OUTLINE));
         button.setClickable(true);
         button.setFocusable(true);
@@ -327,7 +327,7 @@ public class SettingsActivity extends Activity {
         iconBadge.addView(glyph,
                 new FrameLayout.LayoutParams(dp(35), dp(35), Gravity.CENTER));
         LinearLayout.LayoutParams iconParams =
-                new LinearLayout.LayoutParams(dp(50), dp(50));
+                new LinearLayout.LayoutParams(dp(48), dp(48));
         iconParams.leftMargin = dp(14);
         button.addView(iconBadge, iconParams);
 
@@ -336,7 +336,7 @@ public class SettingsActivity extends Activity {
         copy.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         copy.setGravity(Gravity.CENTER_VERTICAL);
 
-        TextView titleView = textView(title, 20, ON_SURFACE);
+        TextView titleView = textView(title, 19, ON_SURFACE);
         titleView.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD));
         titleView.setIncludeFontPadding(false);
         titleView.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
@@ -375,7 +375,7 @@ public class SettingsActivity extends Activity {
         // Show the page heading on every internal settings page.
         screenHeader.setVisibility(View.VISIBLE);
         screenHeader.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-        screenHeader.setPadding(dp(2), dp(8), dp(2), dp(0));
+        screenHeader.setPadding(dp(2), dp(8), dp(2), dp(2));
         screenSubtitle.setVisibility(View.VISIBLE);
         screenTitle.setTextSize(23);
         dashboardHeaderDivider.setVisibility(View.GONE);
@@ -441,7 +441,7 @@ public class SettingsActivity extends Activity {
             currentSettingsGroup.setPadding(0, 0, 0, 0);
             LinearLayout.LayoutParams params =
                     (LinearLayout.LayoutParams) currentSettingsGroup.getLayoutParams();
-            params.bottomMargin = dp(14);
+            params.bottomMargin = dp(10);
             currentSettingsGroup.setLayoutParams(params);
         }
     }
@@ -587,7 +587,7 @@ public class SettingsActivity extends Activity {
         card.setOrientation(LinearLayout.VERTICAL);
         card.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         card.setTextDirection(View.TEXT_DIRECTION_RTL);
-        card.setPadding(dp(9), dp(12), dp(9), dp(14));
+        card.setPadding(dp(7), dp(12), dp(7), dp(14));
         // Individual settings are now rows inside one shared outer group frame.
         card.setBackgroundColor(Color.TRANSPARENT);
 
@@ -628,11 +628,11 @@ public class SettingsActivity extends Activity {
 
         LinearLayout.LayoutParams textBlockParams =
                 new LinearLayout.LayoutParams(0, -2, 1f);
-        textBlockParams.rightMargin = dp(12);
+        textBlockParams.rightMargin = dp(10);
         header.addView(textBlock, textBlockParams);
         LinearLayout.LayoutParams settingIconParams =
                 new LinearLayout.LayoutParams(dp(30), dp(30));
-        settingIconParams.rightMargin = dp(3);
+        settingIconParams.rightMargin = dp(5);
         header.addView(makeIconBadge(iconForSetting(key), dp(30)), settingIconParams);
 
         card.addView(header, new LinearLayout.LayoutParams(-1, -2));
@@ -1128,7 +1128,7 @@ public class SettingsActivity extends Activity {
                 // Reserve only the width needed for the long label; the remaining
                 // options split the remaining row width equally.
                 int labelWidth = (int) Math.ceil(option.getPaint().measureText(names[i]))
-                        + dp(17);
+                        + dp(14);
                 tileParams = new LinearLayout.LayoutParams(
                         labelWidth, dp(optionTileHeight));
             } else {
