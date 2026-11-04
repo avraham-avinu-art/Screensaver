@@ -74,6 +74,7 @@ public class SettingsActivity extends Activity {
     private Switch autoStartOnBootToggle;
     private Switch autoStartOnWakeToggle;
     private TextView activityCapabilityNotice;
+    private View activityHelpHeaderButton;
     private LinearLayout screenLockAdminCard;
     private TextView screenLockAdminStatus;
     private Button screenLockAdminButton;
@@ -227,6 +228,11 @@ public class SettingsActivity extends Activity {
         clockDateCard = null;
         playerFrameCard = null;
         activityCapabilityNotice = null;
+        if (activityHelpHeaderButton != null
+                && activityHelpHeaderButton.getParent() == screenHeader) {
+            screenHeader.removeView(activityHelpHeaderButton);
+        }
+        activityHelpHeaderButton = null;
         if (content == null) return;
         if (settingsScroll != null) settingsScroll.setFillViewport(true);
         content.setLayoutParams(new LinearLayout.LayoutParams(-1, 0, 1f));
@@ -366,6 +372,11 @@ public class SettingsActivity extends Activity {
 
     private void showCategory(int category) {
         currentCategory = category;
+        if (activityHelpHeaderButton != null
+                && activityHelpHeaderButton.getParent() == screenHeader) {
+            screenHeader.removeView(activityHelpHeaderButton);
+        }
+        activityHelpHeaderButton = null;
         // Show the page heading on every internal settings page.
         screenHeader.setVisibility(View.VISIBLE);
         screenHeader.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
@@ -397,6 +408,7 @@ public class SettingsActivity extends Activity {
             case CATEGORY_ACTIVITY:
                 screenTitle.setText("הפעלה והתנהגות");
                 screenSubtitle.setText("הגדרת זמני הפעילות ואפשרויות ההפעלה");
+                addActivityHelpHeaderButton();
                 buildActivitySettings();
                 break;
             case CATEGORY_APPEARANCE:
@@ -452,6 +464,26 @@ public class SettingsActivity extends Activity {
         addSegmentedChoices(content, "מיקום",
                 new String[]{"בראש המסך", "ברבע העליון", "במרכז המסך"},
                 new String[]{"top", "upper", "middle"}, "clockDatePosition");
+    }
+
+    private void addActivityHelpHeaderButton() {
+        // The information button belongs to the page title bar, at its upper-left.
+        FrameLayout button = new FrameLayout(this);
+        button.setContentDescription("הסבר על הגדרות זמני הפעילות");
+        button.setClickable(true);
+        button.setFocusable(true);
+        button.setBackgroundColor(Color.TRANSPARENT);
+
+        View glyph = makeIconGlyph("message-circle-question", ACCENT);
+        button.addView(glyph,
+                new FrameLayout.LayoutParams(dp(28), dp(28), Gravity.CENTER));
+
+        FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
+                dp(38), dp(38), Gravity.LEFT | Gravity.CENTER_VERTICAL);
+        params.leftMargin = dp(2);
+        screenHeader.addView(button, params);
+        button.setOnClickListener(v -> showActivityTimeHelpDialog());
+        activityHelpHeaderButton = button;
     }
 
     private void buildActivitySettings() {
