@@ -611,7 +611,7 @@ public class SettingsActivity extends Activity {
         textBlock.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         textBlock.setGravity(Gravity.CENTER_VERTICAL);
 
-        TextView title = textView(label, 18, ON_SURFACE);
+        TextView title = textView(label, 16, ON_SURFACE);
         title.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD));
         title.setIncludeFontPadding(false);
         title.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
