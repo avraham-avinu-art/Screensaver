@@ -113,6 +113,8 @@ public class SettingsActivity extends Activity {
         root.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         root.setTextDirection(View.TEXT_DIRECTION_RTL);
         root.setBackgroundColor(SURFACE);
+        root.setClipChildren(false);
+        root.setClipToPadding(false);
         root.setPadding(dp(10), dp(2), dp(10), 0);
         if (Build.VERSION.SDK_INT >= 21) {
             root.setOnApplyWindowInsetsListener((view, insets) -> {
@@ -163,6 +165,7 @@ public class SettingsActivity extends Activity {
         settingsScroll.setVerticalScrollBarEnabled(false);
         settingsScroll.setOverScrollMode(View.OVER_SCROLL_IF_CONTENT_SCROLLS);
         settingsScroll.setClipToPadding(false);
+        settingsScroll.setClipChildren(false);
         settingsScroll.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         settingsScroll.setPadding(0, dp(1), 0, 0);
 
@@ -186,6 +189,8 @@ public class SettingsActivity extends Activity {
         content.setOrientation(LinearLayout.VERTICAL);
         content.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         content.setTextDirection(View.TEXT_DIRECTION_RTL);
+        content.setClipChildren(false);
+        content.setClipToPadding(false);
         scrollContent.addView(content, new LinearLayout.LayoutParams(-1, -2));
         settingsScroll.addView(scrollContent, new ScrollView.LayoutParams(-1, -2));
         root.addView(settingsScroll, new LinearLayout.LayoutParams(-1, 0, 1f));
@@ -328,7 +333,7 @@ public class SettingsActivity extends Activity {
                 new FrameLayout.LayoutParams(dp(35), dp(35), Gravity.CENTER));
         LinearLayout.LayoutParams iconParams =
                 new LinearLayout.LayoutParams(dp(48), dp(48));
-        iconParams.leftMargin = dp(11);
+        iconParams.leftMargin = dp(8);
         button.addView(iconBadge, iconParams);
 
         LinearLayout copy = new LinearLayout(this);
@@ -375,7 +380,7 @@ public class SettingsActivity extends Activity {
         // Show the page heading on every internal settings page.
         screenHeader.setVisibility(View.VISIBLE);
         screenHeader.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-        screenHeader.setPadding(dp(2), dp(8), dp(2), dp(5));
+        screenHeader.setPadding(dp(2), dp(8), dp(2), dp(8));
         screenSubtitle.setVisibility(View.VISIBLE);
         screenTitle.setTextSize(23);
         dashboardHeaderDivider.setVisibility(View.GONE);
@@ -606,7 +611,7 @@ public class SettingsActivity extends Activity {
         textBlock.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         textBlock.setGravity(Gravity.CENTER_VERTICAL);
 
-        TextView title = textView(label, 17, ON_SURFACE);
+        TextView title = textView(label, 16, ON_SURFACE);
         title.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD));
         title.setIncludeFontPadding(false);
         title.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
@@ -1055,6 +1060,9 @@ public class SettingsActivity extends Activity {
         tiles.setOrientation(LinearLayout.HORIZONTAL);
         tiles.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         tiles.setGravity(Gravity.CENTER_VERTICAL);
+        tiles.setClipChildren(false);
+        tiles.setClipToPadding(false);
+        tiles.setPadding(dp(1), 0, dp(1), 0);
 
         final TextView[] options = new TextView[names.length];
         final FrameLayout[] optionTiles = new FrameLayout[names.length];
@@ -1066,6 +1074,8 @@ public class SettingsActivity extends Activity {
             boolean selected = i == initial;
             FrameLayout tile = new FrameLayout(this);
             tile.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+            tile.setClipChildren(false);
+            tile.setClipToPadding(false);
             tile.setBackground(roundOutline(
                     selected ? ACCENT : CONTROL_SURFACE,
                     dp(8), selected ? ACCENT : Color.rgb(48, 68, 91)));
