@@ -52,7 +52,7 @@ public final class GuideActivity extends Activity {
 
         root.addView(header, new LinearLayout.LayoutParams(-1, dp(48)));
 
-        TextView subtitle = textView("הסברים וטיפים לשימוש באפליקציה", 14, MUTED);
+        TextView subtitle = textView("הסברים וטיפים לשימוש באפליקציה", 15, MUTED);
         subtitle.setGravity(Gravity.CENTER);
         subtitle.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         LinearLayout.LayoutParams subtitleParams =
@@ -188,7 +188,7 @@ public final class GuideActivity extends Activity {
         dividerParams.bottomMargin = dp(9);
         card.addView(divider, dividerParams);
 
-        TextView message = textView(body, 14, ON_SURFACE);
+        TextView message = textView(body, 15, ON_SURFACE);
         message.setGravity(Gravity.RIGHT | Gravity.TOP);
         message.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
         message.setTextDirection(View.TEXT_DIRECTION_RTL);
@@ -199,7 +199,7 @@ public final class GuideActivity extends Activity {
 
         LinearLayout.LayoutParams params =
                 new LinearLayout.LayoutParams(-1, -2);
-        params.bottomMargin = dp(9);
+        params.bottomMargin = dp(7);
         parent.addView(card, params);
     }
 
