@@ -238,9 +238,12 @@ public class SettingsActivity extends Activity {
         screenSubtitle.setText("התאמה אישית של השומר מסך");
 
         screenHeader.setVisibility(View.VISIBLE);
-        // Keep the main settings heading aligned to the right.
+        // The dashboard uses only the right-aligned "הגדרות" title.
         screenHeader.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-        dashboardHeaderDivider.setVisibility(View.VISIBLE);
+        screenHeader.setPadding(dp(2), dp(7), dp(2), dp(2));
+        screenSubtitle.setVisibility(View.GONE);
+        screenTitle.setTextSize(30);
+        dashboardHeaderDivider.setVisibility(View.GONE);
         headerTitleBlock.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         screenTitle.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         screenTitle.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
@@ -248,7 +251,7 @@ public class SettingsActivity extends Activity {
         screenSubtitle.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
 
         addDashboardButton("הפעלה והתנהגות",
-                "הגדרת זמני הפעילות ואפשרויות ההפעלה",
+                "הגדרת הזמנים ואפשרויות ההפעלה",
                 "power", CATEGORY_ACTIVITY);
         addDashboardButton("מראה ועיצוב",
                 "התאמת צבעים, גופנים ובהירות המסך",
@@ -273,10 +276,10 @@ public class SettingsActivity extends Activity {
         }
     }
 
-    private LinearLayout.LayoutParams dashboardButtonParams() {
+    private LinearLayout.LayoutParams dashboardButtonParams(boolean primary) {
         LinearLayout.LayoutParams params =
-                new LinearLayout.LayoutParams(-1, 0, 1f);
-        params.bottomMargin = dp(8);
+                new LinearLayout.LayoutParams(-1, 0, primary ? 1.08f : 1f);
+        params.bottomMargin = dp(primary ? 10 : 8);
         return params;
     }
 
@@ -304,9 +307,12 @@ public class SettingsActivity extends Activity {
         button.setOrientation(LinearLayout.HORIZONTAL);
         button.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         button.setGravity(Gravity.CENTER_VERTICAL);
-        button.setPadding(dp(14), dp(8), dp(14), dp(8));
-        button.setMinimumHeight(dp(76));
-        button.setBackground(roundOutline(CARD_SURFACE, dp(17), CARD_OUTLINE));
+        boolean primary = description != null && !description.isEmpty();
+        button.setPadding(dp(primary ? 16 : 14), dp(primary ? 10 : 8),
+                dp(primary ? 16 : 14), dp(primary ? 10 : 8));
+        button.setMinimumHeight(dp(primary ? 88 : 76));
+        button.setBackground(roundOutline(CARD_SURFACE,
+                dp(primary ? 19 : 17), CARD_OUTLINE));
         button.setClickable(true);
         button.setFocusable(true);
         button.setContentDescription(description == null || description.isEmpty()
@@ -315,11 +321,13 @@ public class SettingsActivity extends Activity {
         FrameLayout iconBadge = new FrameLayout(this);
         iconBadge.setBackground(roundOutline(ICON_SURFACE, dp(12), CARD_OUTLINE));
         View glyph = makeIconGlyph(iconName, ACCENT);
+        int iconBoxSize = dp(primary ? 50 : 46);
+        int iconGlyphSize = dp(primary ? 30 : 28);
         iconBadge.addView(glyph,
-                new FrameLayout.LayoutParams(dp(28), dp(28), Gravity.CENTER));
+                new FrameLayout.LayoutParams(iconGlyphSize, iconGlyphSize, Gravity.CENTER));
         LinearLayout.LayoutParams iconParams =
-                new LinearLayout.LayoutParams(dp(46), dp(46));
-        iconParams.leftMargin = dp(13);
+                new LinearLayout.LayoutParams(iconBoxSize, iconBoxSize);
+        iconParams.leftMargin = dp(primary ? 15 : 13);
         button.addView(iconBadge, iconParams);
 
         LinearLayout copy = new LinearLayout(this);
@@ -327,7 +335,7 @@ public class SettingsActivity extends Activity {
         copy.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         copy.setGravity(Gravity.CENTER_VERTICAL);
 
-        TextView titleView = textView(title, 17, ON_SURFACE);
+        TextView titleView = textView(title, primary ? 18 : 17, ON_SURFACE);
         titleView.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD));
         titleView.setIncludeFontPadding(false);
         titleView.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
@@ -336,7 +344,7 @@ public class SettingsActivity extends Activity {
         copy.addView(titleView, new LinearLayout.LayoutParams(-1, -2));
 
         if (description != null && !description.isEmpty()) {
-            TextView descriptionView = textView(description, 13, MUTED);
+            TextView descriptionView = textView(description, primary ? 14 : 13, MUTED);
             descriptionView.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
             descriptionView.setIncludeFontPadding(false);
             descriptionView.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
@@ -353,7 +361,7 @@ public class SettingsActivity extends Activity {
         button.addView(copy, new LinearLayout.LayoutParams(0, -2, 1f));
 
         button.setOnClickListener(v -> action.run());
-        content.addView(button, dashboardButtonParams());
+        content.addView(button, dashboardButtonParams(primary));
     }
 
     private void showCategory(int category) {
@@ -361,6 +369,9 @@ public class SettingsActivity extends Activity {
         // Show the page heading on every internal settings page.
         screenHeader.setVisibility(View.VISIBLE);
         screenHeader.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+        screenHeader.setPadding(dp(2), dp(8), dp(2), dp(14));
+        screenSubtitle.setVisibility(View.VISIBLE);
+        screenTitle.setTextSize(27);
         dashboardHeaderDivider.setVisibility(View.VISIBLE);
         headerTitleBlock.setGravity(Gravity.CENTER);
         screenTitle.setGravity(Gravity.CENTER);
@@ -444,18 +455,41 @@ public class SettingsActivity extends Activity {
     }
 
     private void buildActivitySettings() {
+        addActivityHelpButton();
         LinearLayout durationCard = addSegmentedChoices(content, "זמן פעילות",
                 new String[]{"לפי המכשיר", "דקה אחת", "חמש דקות", "ללא כיבוי"},
                 new String[]{"device", "1", "5", "0"}, "screenSaverDuration");
         addActivityCapabilityNotice(durationCard);
         addCheck(content, "מניעת נעילה בזמן פעילות", "preventLockWhileActive", false);
-        addCheck(content, "המשך הצגה במסך הנעילה", "continueOnLockScreen", false);
+        addCheck(content, "המשך הצגה במסך נעילה", "continueOnLockScreen", false);
         addCheck(content, "הפעלה אוטומטית בנעילה", "autoStartOnDeviceLock", false);
-        addCheck(content, "הפעלה אוטומטית בהפעלת המכשיר", "autoStartOnBoot", false);
-        addCheck(content, "הפעלה אוטומטית בהתעוררות ממצב שינה", "autoStartOnWake", false);
+        addCheck(content, "הפעלה אוטומטית בהדלקה", "autoStartOnBoot", false);
+        addCheck(content, "הפעלה אוטומטית בהתעוררות", "autoStartOnWake", false);
         addCheck(content, "הפעלה אוטומטית בטעינה", "autoStartOnCharge", false);
         addCheck(content, "ללא כיבוי בטעינה", "noShutdownWhileCharging", false);
         addCheck(content, "הצגת אחוז הסוללה", "showBatteryPercent", false);
+    }
+
+    private void addActivityHelpButton() {
+        // Keep the activity help control above the settings cards, not inside
+        // the "זמן פעילות" setting tile.
+        FrameLayout infoRow = new FrameLayout(this);
+        LinearLayout.LayoutParams rowParams =
+                new LinearLayout.LayoutParams(-1, dp(38));
+        rowParams.bottomMargin = dp(3);
+        content.addView(infoRow, rowParams);
+
+        FrameLayout infoButton = new FrameLayout(this);
+        infoButton.setContentDescription("הסבר על הגדרות זמני הפעילות");
+        infoButton.setClickable(true);
+        infoButton.setFocusable(true);
+        infoButton.setBackgroundColor(Color.TRANSPARENT);
+        View infoGlyph = makeIconGlyph("message-circle-question", ACCENT);
+        infoButton.addView(infoGlyph,
+                new FrameLayout.LayoutParams(dp(28), dp(28), Gravity.CENTER));
+        infoRow.addView(infoButton,
+                new FrameLayout.LayoutParams(dp(38), dp(38), Gravity.LEFT | Gravity.CENTER_VERTICAL));
+        infoButton.setOnClickListener(v -> showActivityTimeHelpDialog());
     }
 
     private void buildAppearanceSettings() {
@@ -595,22 +629,6 @@ public class SettingsActivity extends Activity {
         header.addView(makeIconBadge(iconForSetting(key), dp(30)),
                 new LinearLayout.LayoutParams(dp(30), dp(30)));
 
-        if ("screenSaverDuration".equals(key)) {
-            FrameLayout infoButton = new FrameLayout(this);
-            infoButton.setContentDescription("הסבר על זמן הפעילות");
-            infoButton.setClickable(true);
-            infoButton.setFocusable(true);
-            infoButton.setBackgroundColor(Color.TRANSPARENT);
-            View infoGlyph = makeIconGlyph("message-circle-question", ACCENT);
-            infoButton.addView(infoGlyph,
-                    new FrameLayout.LayoutParams(dp(25), dp(25), Gravity.CENTER));
-            LinearLayout.LayoutParams infoParams =
-                    new LinearLayout.LayoutParams(dp(32), dp(32));
-            infoParams.leftMargin = dp(5);
-            header.addView(infoButton, 0, infoParams);
-            infoButton.setOnClickListener(v -> showActivityTimeHelpDialog());
-        }
-
         card.addView(header, new LinearLayout.LayoutParams(-1, -2));
 
         // These are the intentional boundaries between the setting groups.
@@ -726,7 +744,7 @@ public class SettingsActivity extends Activity {
                 + "ההגדרה קובעת האם Android רשאי להציג את מסך הנעילה מעל השומר בזמן שהתצוגה פעילה.\n"
                 + "• כשההגדרה פעילה - האפליקציה מונעת את הופעת מסך הנעילה מעל השומר במהלך זמן הפעילות.\n"
                 + "• כשההגדרה כבויה - Android רשאי להציג את מסך הנעילה כרגיל, והשומר יכול להופיע מעליו.\n\n"
-                + "המשך הצגה במסך הנעילה\n"
+                + "המשך הצגה במסך נעילה\n"
                 + "• ההגדרה קובעת אם השומר יישאר פעיל ויופיע שוב מעל מסך הנעילה לאחר שהמסך נכבה והופעל מחדש.\n"
                 + "• במצב לפי המכשיר, כיבוי המסך על ידי המערכת מסיים את מחזור התצוגה; כשההגדרה פעילה השומר יופיע שוב בהפעלה הבאה.\n"
                 + "• בבחירת דקה אחת או חמש דקות, ההמשך יתאפשר רק אם המסך אכן כבה עד למועד סיום זמן הפעילות. אם זמן הכיבוי של המכשיר ארוך יותר, השומר ייסגר בתום הזמן ולא ימתין לכיבוי מאוחר.\n"
@@ -735,10 +753,10 @@ public class SettingsActivity extends Activity {
                 + "• ההגדרה מפעילה את השומר מסך אוטומטית כאשר המכשיר ננעל, גם בנעילה יזומה וגם בנעילה אוטומטית, גם אם השומר לא היה פעיל קודם.\n"
                 + "• כשההגדרה כבויה - נעילת המכשיר לבדה לא מפעילה את השומר מסך.\n"
                 + "• לצורך ההפעלה האוטומטית בנעילה, האפליקציה מציגה התראה קבועה ושקטה שאינה מופיעה במסך הנעילה.\n\n"
-                + "הפעלה אוטומטית בהפעלת המכשיר\n"
+                + "הפעלה אוטומטית בהדלקה\n"
                 + "• כשההגדרה פעילה, השומר נפתח אוטומטית לאחר אתחול מלא של המכשיר, לאחר ש-Android מאפשר להפעיל את האפליקציה.\n"
                 + "• כשההגדרה כבויה, אתחול המכשיר אינו מפעיל את השומר.\n\n"
-                + "הפעלה אוטומטית בהתעוררות ממצב שינה\n"
+                + "הפעלה אוטומטית בהתעוררות\n"
                 + "• כשההגדרה פעילה, השומר נפתח כשהמסך נדלק מחדש לאחר שהיה כבוי.\n"
                 + "• כשההגדרה כבויה, הדלקת המסך אינה מפעילה את השומר.\n\n"
                 + "הרשאות שמשפיעות על התנהגות האפליקציה\n"
@@ -961,7 +979,8 @@ public class SettingsActivity extends Activity {
         }
         LinearLayout.LayoutParams switchParams =
                 new LinearLayout.LayoutParams(dp(50), dp(38));
-        switchParams.leftMargin = 0;
+        // Move the switch toward the outer left edge, away from the text block.
+        switchParams.leftMargin = -dp(6);
         row.addView(toggle, 0, switchParams);
 
         toggle.setOnCheckedChangeListener((button, checked) -> {
@@ -1471,7 +1490,11 @@ public class SettingsActivity extends Activity {
         }
         android.widget.ImageView image = new android.widget.ImageView(this);
         image.setImageResource(resourceId);
-        image.setColorFilter(tint);
+        // These two symbols contain separate foreground/background colors.
+        // A whole-image tint would erase the play mark and the close X.
+        if (!"lock-play".equals(iconName) && !"close-circle".equals(iconName)) {
+            image.setColorFilter(tint);
+        }
         image.setScaleType(android.widget.ImageView.ScaleType.FIT_CENTER);
         image.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         image.setContentDescription(iconName);
