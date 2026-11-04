@@ -25,5 +25,5 @@
     <path
         android:fillColor="#FFFFFFFF"
         android:pathData="M8,1H6V3H5C3.8954,3 3,3.8954 3,5V19C3,20.1046 3.8954,21 5,21H19C20.1046,21 21,20.1046 21,19V5C21,3.8954 20.1046,3 19,3H18V1H16V3H8V1ZM19,8H5V19H19V8Z"
-        android:fillType="1"/>
+        android:fillType="evenOdd"/>
 </vector>
