@@ -684,7 +684,7 @@ public class SettingsActivity extends Activity {
         if ("fontColor".equals(key)) return "בחירת צבע השעה והתאריכים";
         if ("playerDisplayMode".equals(key)) return "בחירת אופן הצגת נגן המדיה";
         if ("showPlayerOnlyAtStart".equals(key)) return "הצגת הנגן רק בתחילת כל שיר";
-        if ("showDetails".equals(key)) return "הצגת שם האמן מתחת לפרטי השיר";
+        if ("showDetails".equals(key)) return "הצגת שם האמן מעל פרטי השיר";
         if ("showProgress".equals(key)) return "הצגת זמני השיר וסרגל ההתקדמות שליד פקדי הנגן";
         if ("playerSize".equals(key)) return "בחירת גודל נגן המדיה";
         if ("playerPosition".equals(key)) return "בחירת מיקום נגן המדיה במסך";
