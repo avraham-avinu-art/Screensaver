@@ -44,6 +44,13 @@ import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.kosherjava.zmanim.hebrewcalendar.HebrewDateFormatter;
+import com.kosherjava.zmanim.hebrewcalendar.JewishDate;
+
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Locale;
+
 public class SettingsActivity extends Activity {
     private static final int REQUEST_ENABLE_SCREEN_LOCK_ADMIN = 8142;
     private static final int SURFACE = Color.rgb(9, 19, 33);
@@ -334,7 +341,7 @@ screenTitle.setText("הגדרות");
                 ? title : title + ". " + description);
 
         FrameLayout iconBadge = new FrameLayout(this);
-        iconBadge.setBackground(roundOutline(ICON_SURFACE, dp(12), ACCENT));
+        iconBadge.setBackground(roundOutline(ICON_SURFACE, dp(24), ACCENT));
         View glyph = makeIconGlyph(iconName, ACCENT);
         iconBadge.addView(glyph,
                 new FrameLayout.LayoutParams(dp(35), dp(35), Gravity.CENTER));
@@ -437,18 +444,20 @@ screenTitle.setText("הגדרות");
 
     private void buildClockDateSettings() {
         addCheck(content, "תאריך עברי", "showHebrew", true);
+        String[] hebrewDateFormats = {
+                "plain", "yearArticle", "monthBet", "monthBetYearArticle"
+        };
         addSpinner(content, "תבנית התאריך העברי",
-                new String[]{"א' אלול תשפ\"ז", "א' אלול התשפ\"ז",
-                        "א' באלול תשפ\"ז", "א' באלול התשפ\"ז"},
-                new String[]{"plain", "yearArticle", "monthBet", "monthBetYearArticle"},
-                "hebrewDateFormat");
+                currentHebrewDateSamples(),
+                hebrewDateFormats, "hebrewDateFormat");
         addCheck(content, "תאריך לועזי", "showGregorian", true);
+        String[] gregorianDateFormats = {
+                "dd.MM.yyyy", "dd.MM.yy", "dd/MM/yy",
+                "dd/MM/yyyy", "yyyy/MM/dd", "d 'ב'MMMM yyyy"
+        };
         addSpinner(content, "תבנית התאריך הלועזי",
-                new String[]{"04.10.2026", "04/10/2026", "04/10/26",
-                        "2026/10/04", "4 באוקטובר 2026"},
-                new String[]{"dd.MM.yyyy", "dd/MM/yyyy", "dd/MM/yy",
-                        "yyyy/MM/dd", "d 'ב'MMMM yyyy"},
-                "gregorianDateFormat");
+                currentGregorianDateSamples(gregorianDateFormats),
+                gregorianDateFormats, "gregorianDateFormat");
         addDiscreteSlider(content, "גודל",
                 new String[]{"קטן", "בינוני", "רגיל", "גדול", "ענק"},
                 new String[]{"60", "72", "84", "96", "108"}, "clockDateSize");
@@ -458,6 +467,66 @@ screenTitle.setText("הגדרות");
         addSegmentedChoices(content, "מיקום",
                 new String[]{"בראש המסך", "ברבע העליון", "במרכז המסך"},
                 new String[]{"top", "upper", "middle"}, "clockDatePosition");
+    }
+
+
+
+    private String[] currentGregorianDateSamples(String[] patterns) {
+        Calendar today = Calendar.getInstance();
+        String[] samples = new String[patterns.length];
+        for (int i = 0; i < patterns.length; i++) {
+            Locale locale = "d 'ב'MMMM yyyy".equals(patterns[i])
+                    ? new Locale("he", "IL") : Locale.US;
+            SimpleDateFormat formatter = new SimpleDateFormat(patterns[i], locale);
+            formatter.setTimeZone(today.getTimeZone());
+            samples[i] = formatter.format(today.getTime());
+        }
+        return samples;
+    }
+
+    private String[] currentHebrewDateSamples() {
+        try {
+            Calendar today = Calendar.getInstance();
+            JewishDate jewishDate = new JewishDate(today);
+            HebrewDateFormatter formatter = new HebrewDateFormatter();
+            formatter.setHebrewFormat(true);
+            formatter.setUseGershGershayim(true);
+            formatter.setUseLongHebrewYears(false);
+            String rawDate = formatter.format(jewishDate);
+            return new String[]{
+                    formatHebrewDateSample(rawDate, "plain"),
+                    formatHebrewDateSample(rawDate, "yearArticle"),
+                    formatHebrewDateSample(rawDate, "monthBet"),
+                    formatHebrewDateSample(rawDate, "monthBetYearArticle")
+            };
+        } catch (Throwable ignored) {
+            return new String[]{"", "", "", ""};
+        }
+    }
+
+    private String formatHebrewDateSample(String rawDate, String format) {
+        String normalized = rawDate
+                .replace("מרחשוון", "חשוון")
+                .replace("מרחשון", "חשוון")
+                .replace("חשון", "חשוון")
+                .replace("\\u05F3", "'")
+                .replace("\\u05F4", "\"")
+                .replace("’", "'")
+                .replace("”", "\"")
+                .replace("“", "\"");
+        int firstSpace = normalized.indexOf(' ');
+        int lastSpace = normalized.lastIndexOf(' ');
+        if (firstSpace <= 0 || lastSpace <= firstSpace) return normalized;
+        String day = normalized.substring(0, firstSpace);
+        String month = normalized.substring(firstSpace + 1, lastSpace);
+        String year = normalized.substring(lastSpace + 1);
+        if ("monthBet".equals(format) || "monthBetYearArticle".equals(format)) {
+            month = "ב" + month;
+        }
+        if ("yearArticle".equals(format) || "monthBetYearArticle".equals(format)) {
+            year = "ה" + year;
+        }
+        return day + " " + month + " " + year;
     }
 
     private void addActivityHelpHeaderButton() {
@@ -588,12 +657,13 @@ screenTitle.setText("הגדרות");
         row.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         row.setGravity(Gravity.CENTER_VERTICAL);
 
-        TextView heading = textView(label, 21, ON_SURFACE);
+        TextView heading = textView(label, 25, ON_SURFACE);
         heading.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
         heading.setIncludeFontPadding(false);
         heading.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         heading.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
         heading.setTextDirection(View.TEXT_DIRECTION_RTL);
+        heading.setPadding(0, 0, dp(7), 0);
         row.addView(heading, new LinearLayout.LayoutParams(0, dp(36), 1f));
 
         if (showActivityInfo) {
@@ -1712,7 +1782,7 @@ screenTitle.setText("הגדרות");
         spinner.setAdapter(adapter);
         spinner.setPadding(dp(7), 0, dp(7), 0);
         spinner.setBackgroundColor(Color.TRANSPARENT);
-        spinner.setDropDownWidth(dropdownWidth);
+        spinner.setDropDownWidth(Math.max(dropdownWidth, visibleWidth));
         if (Build.VERSION.SDK_INT >= 16) {
             spinner.setPopupBackgroundDrawable(roundOutline(CARD_SURFACE, dp(12), OUTLINE));
         }
@@ -1758,9 +1828,11 @@ screenTitle.setText("הגדרות");
                 lastHandledPosition = position;
                 LinearLayout.LayoutParams widthParams =
                         (LinearLayout.LayoutParams) spinnerContainer.getLayoutParams();
-                widthParams.width = spinnerVisibleWidthForOption(names[position])
+                int nextVisibleWidth = spinnerVisibleWidthForOption(names[position])
                         + fontFamilyWidthExtra;
+                widthParams.width = nextVisibleWidth;
                 spinnerContainer.setLayoutParams(widthParams);
+                spinner.setDropDownWidth(Math.max(dropdownWidth, nextVisibleWidth));
                 persistOption(key, values[position]);
             }
 
