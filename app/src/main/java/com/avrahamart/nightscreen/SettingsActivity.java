@@ -1679,8 +1679,9 @@ public class SettingsActivity extends Activity {
                 new LinearLayout.LayoutParams(visibleWidth, dp(40));
         spinnerParams.gravity = Gravity.CENTER_VERTICAL;
         spinnerParams.rightMargin = dp(8);
-        header.addView(spinnerContainer, Math.max(0, header.getChildCount() - 1),
-                spinnerParams);
+        // Match the other setting rows: selector on the left, title in the middle,
+        // and the setting icon at the right edge.
+        header.addView(spinnerContainer, 0, spinnerParams);
 
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             private boolean initialSelectionPending = true;
