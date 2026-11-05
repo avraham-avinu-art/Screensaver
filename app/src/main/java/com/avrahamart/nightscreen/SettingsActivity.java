@@ -325,7 +325,7 @@ screenTitle.setText("הגדרות");
         button.setOrientation(LinearLayout.HORIZONTAL);
         button.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         button.setGravity(Gravity.CENTER_VERTICAL);
-        button.setPadding(dp(14), dp(12), dp(18), dp(12));
+        button.setPadding(dp(14), dp(12), dp(23), dp(12));
         button.setMinimumHeight(dp(99));
         button.setBackground(roundOutline(CARD_SURFACE, dp(19), CARD_OUTLINE));
         button.setClickable(true);
@@ -334,7 +334,7 @@ screenTitle.setText("הגדרות");
                 ? title : title + ". " + description);
 
         FrameLayout iconBadge = new FrameLayout(this);
-        iconBadge.setBackground(roundOutline(ICON_SURFACE, dp(12), OUTLINE));
+        iconBadge.setBackground(roundOutline(ICON_SURFACE, dp(12), ACCENT));
         View glyph = makeIconGlyph(iconName, ACCENT);
         iconBadge.addView(glyph,
                 new FrameLayout.LayoutParams(dp(35), dp(35), Gravity.CENTER));
@@ -588,7 +588,7 @@ screenTitle.setText("הגדרות");
         row.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         row.setGravity(Gravity.CENTER_VERTICAL);
 
-        TextView heading = textView(label, 18, ON_SURFACE);
+        TextView heading = textView(label, 21, ON_SURFACE);
         heading.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
         heading.setIncludeFontPadding(false);
         heading.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
@@ -611,8 +611,8 @@ screenTitle.setText("הגדרות");
 
         LinearLayout.LayoutParams headingParams =
                 new LinearLayout.LayoutParams(-1, dp(36));
-        headingParams.topMargin = parent.getChildCount() == 0 ? dp(2) : dp(11);
-        headingParams.bottomMargin = dp(6);
+        headingParams.topMargin = parent.getChildCount() == 0 ? dp(6) : dp(11);
+        headingParams.bottomMargin = 0;
         parent.addView(row, headingParams);
     }
 
