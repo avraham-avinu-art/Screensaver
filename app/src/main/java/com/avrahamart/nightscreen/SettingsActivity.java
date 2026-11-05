@@ -344,9 +344,9 @@ screenTitle.setText("הגדרות");
         FrameLayout iconBadge = new FrameLayout(this);
         iconBadge.setBackground(roundOutline(ICON_SURFACE, dp(24), ACCENT));
         View glyph = makeIconGlyph(iconName, ACCENT);
-        int iconOffsetDp = "calendar-clock".equals(iconName) ? 3
-                : "music-note".equals(iconName) ? -3
-                : "palette".equals(iconName) ? 1 : 0;
+        int iconOffsetDp = "calendar-clock".equals(iconName) ? 1
+                : "music-note".equals(iconName) ? -4
+                : "palette".equals(iconName) ? 0 : 0;
         if (iconOffsetDp != 0) glyph.setTranslationX(dp(iconOffsetDp));
         iconBadge.addView(glyph,
                 new FrameLayout.LayoutParams(dp(35), dp(35), Gravity.CENTER));
