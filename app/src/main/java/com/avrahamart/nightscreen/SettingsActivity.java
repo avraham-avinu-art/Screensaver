@@ -663,7 +663,7 @@ screenTitle.setText("הגדרות");
         row.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         row.setGravity(Gravity.CENTER_VERTICAL);
 
-        TextView heading = textView(label, 16, Color.rgb(79, 195, 247));
+        TextView heading = textView(label, 17, Color.rgb(79, 195, 247));
         heading.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
         heading.setIncludeFontPadding(false);
         heading.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
@@ -690,7 +690,7 @@ screenTitle.setText("הגדרות");
         headingParams.topMargin = dp(12);
         headingParams.bottomMargin = dp(5);
         headingParams.leftMargin = dp(14);
-        headingParams.rightMargin = dp(14);
+        headingParams.rightMargin = dp(5);
         group.addView(row, headingParams);
     }
 
