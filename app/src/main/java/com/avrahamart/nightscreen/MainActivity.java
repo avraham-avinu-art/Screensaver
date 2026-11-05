@@ -127,6 +127,7 @@ public class MainActivity extends Activity {
                         || Intent.ACTION_DATE_CHANGED.equals(action)
                         || Intent.ACTION_TIMEZONE_CHANGED.equals(action)) {
                     lastFormattedHebrewDateKey = null;
+    private String lastFormattedHebrewDateFormat;
                 }
                 if (Intent.ACTION_TIMEZONE_CHANGED.equals(action)) {
                     java.util.TimeZone deviceTimeZone = java.util.TimeZone.getDefault();
@@ -319,7 +320,7 @@ public class MainActivity extends Activity {
         }
 
         lastBackPressElapsedRealtime = now;
-        Toast notice = Toast.makeText(
+        Toast notice = AppToast.makeText(
                 this, "לחץ שוב על חזרה כדי לצאת", Toast.LENGTH_SHORT);
         notice.setGravity(Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL, 0, dp(64));
         notice.show();
@@ -416,7 +417,7 @@ public class MainActivity extends Activity {
         String disabledFeatures =
                 PermissionDependencySync.disableFeaturesWithoutPermissions(this);
         if (!disabledFeatures.isEmpty()) {
-            Toast.makeText(this, disabledFeatures, Toast.LENGTH_LONG).show();
+            AppToast.makeText(this, disabledFeatures, Toast.LENGTH_LONG).show();
         }
         NightScreenApplication.syncChargerReceiver(this);
         applyPreventLockWhileActivePreference();
@@ -2270,7 +2271,7 @@ public class MainActivity extends Activity {
             settingsDialogOpen = false;
             settingsOpenedElapsedRealtime = 0L;
             scheduleAutoOff(false);
-            android.widget.Toast.makeText(
+            AppAppToast.makeText(
                     this, "לא ניתן לפתוח את מסך ההגדרות.", android.widget.Toast.LENGTH_LONG).show();
         }
     }
@@ -2304,7 +2305,7 @@ public class MainActivity extends Activity {
         }
 
         String formattedGregorianDate = hebrewWeekday() + " "
-                + numericDateFormat.format(now.getTime());
+                + formattedGregorianDateValue();
         if (!formattedGregorianDate.contentEquals(gregorianText.getText())) {
             gregorianText.setText(formattedGregorianDate);
         }
@@ -2312,22 +2313,17 @@ public class MainActivity extends Activity {
         String hebrewDateKey = now.get(Calendar.ERA) + "-"
                 + now.get(Calendar.YEAR) + "-"
                 + now.get(Calendar.DAY_OF_YEAR);
-        if (!hebrewDateKey.equals(lastFormattedHebrewDateKey)) {
+        String selectedHebrewDateFormat = getString("hebrewDateFormat", "plain");
+        if (!hebrewDateKey.equals(lastFormattedHebrewDateKey)
+                || !selectedHebrewDateFormat.equals(lastFormattedHebrewDateFormat)) {
             try {
                 JewishDate jewishDate = new JewishDate(now);
                 HebrewDateFormatter formatter = new HebrewDateFormatter();
                 formatter.setHebrewFormat(true);
                 formatter.setUseGershGershayim(true);
                 formatter.setUseLongHebrewYears(false);
-                String formattedHebrewDate = formatter.format(jewishDate)
-                        .replace("מרחשוון", "חשוון")
-                        .replace("מרחשון", "חשוון")
-                        .replace("חשון", "חשוון")
-                        .replace("\u05F3", "'")
-                        .replace("\u05F4", "\"")
-                        .replace("’", "'")
-                        .replace("”", "\"")
-                        .replace("“", "\"");
+                String formattedHebrewDate = formatHebrewDate(
+                        formatter.format(jewishDate), selectedHebrewDateFormat);
                 if (!formattedHebrewDate.contentEquals(hebrewText.getText())) {
                     hebrewText.setText(formattedHebrewDate);
                 }
@@ -2335,7 +2331,46 @@ public class MainActivity extends Activity {
                 hebrewText.setText("");
             }
             lastFormattedHebrewDateKey = hebrewDateKey;
+            lastFormattedHebrewDateFormat = selectedHebrewDateFormat;
         }
+    }
+
+    private String formattedGregorianDateValue() {
+        String pattern = getString("gregorianDateFormat", "dd.MM.yyyy");
+        if ("dd.MM.yyyy".equals(pattern)) {
+            numericDateFormat.setTimeZone(now.getTimeZone());
+            return numericDateFormat.format(now.getTime());
+        }
+        Locale formatLocale = "d 'ב'MMMM yyyy".equals(pattern)
+                ? new Locale("he", "IL") : Locale.US;
+        SimpleDateFormat formatter = new SimpleDateFormat(pattern, formatLocale);
+        formatter.setTimeZone(now.getTimeZone());
+        return formatter.format(now.getTime());
+    }
+
+    private String formatHebrewDate(String rawDate, String format) {
+        String normalized = rawDate
+                .replace("מרחשוון", "חשוון")
+                .replace("מרחשון", "חשוון")
+                .replace("חשון", "חשוון")
+                .replace("\u05F3", "'")
+                .replace("\u05F4", "\"")
+                .replace("’", "'")
+                .replace("”", "\"")
+                .replace("“", "\"");
+        int firstSpace = normalized.indexOf(' ');
+        int lastSpace = normalized.lastIndexOf(' ');
+        if (firstSpace <= 0 || lastSpace <= firstSpace) return normalized;
+        String day = normalized.substring(0, firstSpace);
+        String month = normalized.substring(firstSpace + 1, lastSpace);
+        String year = normalized.substring(lastSpace + 1);
+        if ("monthBet".equals(format) || "monthBetYearArticle".equals(format)) {
+            month = "ב" + month;
+        }
+        if ("yearArticle".equals(format) || "monthBetYearArticle".equals(format)) {
+            year = "ה" + year;
+        }
+        return day + " " + month + " " + year;
     }
 
     private String numericTime() {

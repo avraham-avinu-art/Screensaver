@@ -74,22 +74,22 @@ public class PermissionsActivity extends Activity {
         LinearLayout titleBlock = new LinearLayout(this);
         titleBlock.setOrientation(LinearLayout.VERTICAL);
         titleBlock.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        titleBlock.setGravity(Gravity.CENTER_VERTICAL);
+        titleBlock.setGravity(Gravity.CENTER);
 
         TextView title = textView("ניהול הרשאות", 23, ON_SURFACE);
         title.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
         title.setIncludeFontPadding(false);
         title.setLetterSpacing(-0.015f);
-        title.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        title.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
+        title.setGravity(Gravity.CENTER);
+        title.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         title.setTextDirection(View.TEXT_DIRECTION_RTL);
         titleBlock.addView(title, new LinearLayout.LayoutParams(-1, -2));
 
         TextView subtitle = textView("הרשאות הנדרשות לפעילות האפליקציה", 16, MUTED);
         subtitle.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
         subtitle.setIncludeFontPadding(false);
-        subtitle.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        subtitle.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
+        subtitle.setGravity(Gravity.CENTER);
+        subtitle.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         subtitle.setTextDirection(View.TEXT_DIRECTION_RTL);
         LinearLayout.LayoutParams subtitleParams =
                 new LinearLayout.LayoutParams(-1, -2);
@@ -126,7 +126,7 @@ public class PermissionsActivity extends Activity {
         String disabledFeatures =
                 PermissionDependencySync.disableFeaturesWithoutPermissions(this);
         if (!disabledFeatures.isEmpty()) {
-            Toast.makeText(this, disabledFeatures, Toast.LENGTH_LONG).show();
+            AppToast.makeText(this, disabledFeatures, Toast.LENGTH_LONG).show();
         }
         updatePermissionStatuses();
     }
@@ -138,11 +138,11 @@ public class PermissionsActivity extends Activity {
         notificationButton = addPermissionButton(card,
                 "הפעל הרשאת גישה להתראות", v -> {
                     if (hasNotificationAccess()) {
-                        Toast.makeText(this,
+                        AppToast.makeText(this,
                                 "כדי לשנות או לבטל את ההרשאה, שנה במסך הבא את גישת ההתראות של שומר מסך.",
                                 Toast.LENGTH_LONG).show();
                     } else {
-                        Toast.makeText(this,
+                        AppToast.makeText(this,
                                 "כדי להציג את הנגן, צריך לאפשר לשומר מסך גישה להתראות במסך הבא. בחר את \"שומר מסך\" והפעל את ההרשאה.",
                                 Toast.LENGTH_LONG).show();
                     }
@@ -157,11 +157,11 @@ public class PermissionsActivity extends Activity {
         overlayButton = addPermissionButton(card,
                 "הפעל הרשאת הצגה מעל אפליקציות", v -> {
                     if (Settings.canDrawOverlays(this)) {
-                        Toast.makeText(this,
+                        AppToast.makeText(this,
                                 "כדי לשנות או לבטל את ההרשאה, שנה במסך הבא את הגדרת ההצגה מעל אפליקציות אחרות עבור שומר מסך.",
                                 Toast.LENGTH_LONG).show();
                     } else {
-                        Toast.makeText(this,
+                        AppToast.makeText(this,
                                 "כדי לאפשר הפעלה אוטומטית, בחר במסך הבא את \"שומר מסך\" ואפשר \"הצגה מעל אפליקציות אחרות\".",
                                 Toast.LENGTH_LONG).show();
                     }
@@ -178,7 +178,7 @@ public class PermissionsActivity extends Activity {
                     if (isAdminActive()) {
                         confirmDeviceAdminRemoval();
                     } else {
-                        Toast.makeText(this,
+                        AppToast.makeText(this,
                                 "כדי לאפשר נעילת המכשיר בסיום זמן הפעילות, אשר במסך הבא את הרשאת מנהל המכשיר.",
                                 Toast.LENGTH_LONG).show();
                         requestDeviceAdmin();
@@ -310,10 +310,10 @@ public class PermissionsActivity extends Activity {
             startActivity(new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS));
             return true;
         } catch (ActivityNotFoundException ignored) {
-            Toast.makeText(this, "לא ניתן לפתוח את הגדרות ההתראות במכשיר.",
+            AppToast.makeText(this, "לא ניתן לפתוח את הגדרות ההתראות במכשיר.",
                     Toast.LENGTH_LONG).show();
         } catch (Throwable ignored) {
-            Toast.makeText(this, "לא ניתן לפתוח את הגדרות ההתראות במכשיר.",
+            AppToast.makeText(this, "לא ניתן לפתוח את הגדרות ההתראות במכשיר.",
                     Toast.LENGTH_LONG).show();
         }
         return false;
@@ -328,7 +328,7 @@ public class PermissionsActivity extends Activity {
             startActivity(intent);
             return true;
         } catch (Throwable ex) {
-            Toast.makeText(this,
+            AppToast.makeText(this,
                     "לא ניתן לפתוח את הגדרת ההרשאה. פתח בהגדרות Android את \"הצגה מעל אפליקציות אחרות\".",
                     Toast.LENGTH_LONG).show();
             return false;
@@ -346,7 +346,7 @@ public class PermissionsActivity extends Activity {
                     "ההרשאה מאפשרת לנעול את המכשיר בסיום זמן הפעילות שנבחר.");
             startActivity(intent);
         } catch (Throwable ex) {
-            Toast.makeText(this, "לא ניתן לפתוח את בקשת הרשאת מנהל המכשיר.",
+            AppToast.makeText(this, "לא ניתן לפתוח את בקשת הרשאת מנהל המכשיר.",
                     Toast.LENGTH_LONG).show();
         }
     }
@@ -456,13 +456,13 @@ public class PermissionsActivity extends Activity {
             adminButton.postDelayed(() -> verifyDeviceAdminRemoval(0), 250);
         } catch (SecurityException ex) {
             updatePermissionStatuses();
-            Toast.makeText(this,
+            AppToast.makeText(this,
                     "Android לא אפשר לבטל את ההרשאה מתוך האפליקציה. נפתח את הגדרות האבטחה להמשך ידני.",
                     Toast.LENGTH_LONG).show();
             openSecuritySettingsFallback();
         } catch (Throwable ex) {
             updatePermissionStatuses();
-            Toast.makeText(this,
+            AppToast.makeText(this,
                     "לא ניתן להשלים את ביטול ההרשאה כרגע. נפתח את הגדרות האבטחה להמשך ידני.",
                     Toast.LENGTH_LONG).show();
             openSecuritySettingsFallback();
@@ -474,7 +474,7 @@ public class PermissionsActivity extends Activity {
 
         if (!isAdminActive()) {
             updatePermissionStatuses();
-            Toast.makeText(this, "הרשאת מנהל המכשיר בוטלה בהצלחה.",
+            AppToast.makeText(this, "הרשאת מנהל המכשיר בוטלה בהצלחה.",
                     Toast.LENGTH_LONG).show();
             return;
         }
@@ -488,7 +488,7 @@ public class PermissionsActivity extends Activity {
         }
 
         updatePermissionStatuses();
-        Toast.makeText(this,
+        AppToast.makeText(this,
                 "Android עדיין מדווח שההרשאה פעילה. אפשר להשלים את הביטול דרך הגדרות האבטחה.",
                 Toast.LENGTH_LONG).show();
         openSecuritySettingsFallback();
@@ -501,7 +501,7 @@ public class PermissionsActivity extends Activity {
             try {
                 startActivity(new Intent(Settings.ACTION_SETTINGS));
             } catch (Throwable ignoredAgain) {
-                Toast.makeText(this,
+                AppToast.makeText(this,
                         "פתח הגדרות > אבטחה > אפליקציות מנהל מכשיר > שומר מסך כדי לבטל את ההרשאה.",
                         Toast.LENGTH_LONG).show();
             }
@@ -509,7 +509,7 @@ public class PermissionsActivity extends Activity {
             try {
                 startActivity(new Intent(Settings.ACTION_SETTINGS));
             } catch (Throwable ignoredAgain) {
-                Toast.makeText(this,
+                AppToast.makeText(this,
                         "פתח הגדרות > אבטחה > אפליקציות מנהל מכשיר > שומר מסך כדי לבטל את ההרשאה.",
                         Toast.LENGTH_LONG).show();
             }
