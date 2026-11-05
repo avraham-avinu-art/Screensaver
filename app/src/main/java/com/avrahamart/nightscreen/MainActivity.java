@@ -2271,7 +2271,7 @@ public class MainActivity extends Activity {
             settingsDialogOpen = false;
             settingsOpenedElapsedRealtime = 0L;
             scheduleAutoOff(false);
-            AppAppToast.makeText(
+            AppToast.makeText(
                     this, "לא ניתן לפתוח את מסך ההגדרות.", android.widget.Toast.LENGTH_LONG).show();
         }
     }
