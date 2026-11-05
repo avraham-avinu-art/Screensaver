@@ -1662,11 +1662,11 @@ public class SettingsActivity extends Activity {
         spinner.setSelection(selectedPosition, false);
 
         FrameLayout spinnerContainer = new FrameLayout(this);
-        spinnerContainer.setBackground(roundOutline(CONTROL_SURFACE, dp(12), OUTLINE));
+        spinnerContainer.setBackground(roundOutline(ACCENT, dp(12), ACCENT));
         spinnerContainer.setTag(spinner);
         spinnerContainer.addView(spinner,
                 new FrameLayout.LayoutParams(-1, -1));
-        View dropdownIcon = makeIconGlyph("chevron", ACCENT);
+        View dropdownIcon = makeIconGlyph("chevron", Color.rgb(7, 31, 49));
         FrameLayout.LayoutParams dropdownIconParams =
                 new FrameLayout.LayoutParams(dp(18), dp(18),
                         Gravity.LEFT | Gravity.CENTER_VERTICAL);
@@ -1678,6 +1678,9 @@ public class SettingsActivity extends Activity {
         LinearLayout.LayoutParams spinnerParams =
                 new LinearLayout.LayoutParams(visibleWidth, dp(40));
         spinnerParams.gravity = Gravity.RIGHT;
+        // Align the selector's right edge with the right-aligned title/description
+        // block above it, accounting for the adjacent 30dp setting icon and margins.
+        spinnerParams.rightMargin = dp(42);
         spinnerParams.topMargin = dp(7);
         card.addView(spinnerContainer, spinnerParams);
 
@@ -1708,7 +1711,7 @@ public class SettingsActivity extends Activity {
     }
 
     private void styleSpinnerText(TextView view, boolean selected, boolean selectedOption) {
-        view.setTextColor(ON_SURFACE);
+        view.setTextColor(Color.rgb(7, 31, 49));
         view.setTextSize(15);
         view.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
         view.setIncludeFontPadding(false);
@@ -1747,8 +1750,9 @@ public class SettingsActivity extends Activity {
         paint.setTextSize(15f * getResources().getDisplayMetrics().scaledDensity);
         float textWidth = name == null ? 0f : paint.measureText(name);
         // Include the Spinner's horizontal padding and the custom dropdown chevron.
-        int desiredWidth = (int) Math.ceil(textWidth) + dp(52);
-        int availableWidth = getResources().getDisplayMetrics().widthPixels - dp(34);
+        int desiredWidth = (int) Math.ceil(textWidth) + dp(62);
+        // Reserve the selector indent so even the longest font name stays inside the card.
+        int availableWidth = getResources().getDisplayMetrics().widthPixels - dp(76);
         int maximumWidth = Math.max(dp(88), availableWidth);
         return Math.min(maximumWidth, Math.max(dp(124), desiredWidth));
     }
