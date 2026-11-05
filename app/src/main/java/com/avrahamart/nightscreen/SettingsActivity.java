@@ -692,6 +692,15 @@ screenTitle.setText("הגדרות");
         headingParams.leftMargin = dp(14);
         headingParams.rightMargin = dp(5);
         group.addView(row, headingParams);
+
+        // A thin cyan rule directly under the group title, matching the title color.
+        View headingDivider = new View(this);
+        headingDivider.setBackgroundColor(Color.rgb(79, 195, 247));
+        LinearLayout.LayoutParams headingDividerParams =
+                new LinearLayout.LayoutParams(-1, dp(1));
+        headingDividerParams.leftMargin = dp(13);
+        headingDividerParams.rightMargin = dp(13);
+        group.addView(headingDivider, headingDividerParams);
     }
 
     private LinearLayout addSettingCard(LinearLayout parent, String label, String key) {
