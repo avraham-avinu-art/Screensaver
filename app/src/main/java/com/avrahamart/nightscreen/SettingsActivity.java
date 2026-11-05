@@ -247,6 +247,7 @@ private LinearLayout clockDateCard;
         activityHelpHeaderButton = null;
         if (content == null) return;
         if (settingsScroll != null) settingsScroll.setFillViewport(true);
+        content.setPadding(0, 0, 0, 0);
         content.setLayoutParams(new LinearLayout.LayoutParams(-1, 0, 1f));
         content.removeAllViews();
         currentSettingsGroup = null;
@@ -343,6 +344,10 @@ screenTitle.setText("הגדרות");
         FrameLayout iconBadge = new FrameLayout(this);
         iconBadge.setBackground(roundOutline(ICON_SURFACE, dp(24), ACCENT));
         View glyph = makeIconGlyph(iconName, ACCENT);
+        int iconOffsetDp = "calendar-clock".equals(iconName) ? 3
+                : "music-note".equals(iconName) ? -3
+                : "palette".equals(iconName) ? 1 : 0;
+        if (iconOffsetDp != 0) glyph.setTranslationX(dp(iconOffsetDp));
         iconBadge.addView(glyph,
                 new FrameLayout.LayoutParams(dp(35), dp(35), Gravity.CENTER));
         LinearLayout.LayoutParams iconParams =
@@ -394,6 +399,7 @@ screenTitle.setText("הגדרות");
         screenHeader.setVisibility(View.GONE);
         screenSubtitle.setVisibility(View.GONE);
         if (settingsScroll != null) settingsScroll.setFillViewport(true);
+        content.setPadding(0, dp(10), 0, 0);
         content.setLayoutParams(new LinearLayout.LayoutParams(-1, -2));
         content.removeAllViews();
         currentSettingsGroup = null;
@@ -658,7 +664,7 @@ screenTitle.setText("הגדרות");
         row.setGravity(Gravity.CENTER_VERTICAL);
 
         TextView heading = textView(label, 25, ON_SURFACE);
-        heading.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
+        heading.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
         heading.setIncludeFontPadding(false);
         heading.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         heading.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
