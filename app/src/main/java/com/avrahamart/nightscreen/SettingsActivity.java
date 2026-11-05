@@ -656,21 +656,21 @@ screenTitle.setText("הגדרות");
         }
     }
 
-    private void addSettingsGroupHeading(LinearLayout parent, String label,
+    private void addSettingsGroupHeading(LinearLayout group, String label,
                                          boolean showActivityInfo) {
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         row.setGravity(Gravity.CENTER_VERTICAL);
 
-        TextView heading = textView(label, 18, Color.rgb(79, 195, 247));
-        heading.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
+        TextView heading = textView(label, 16, Color.rgb(79, 195, 247));
+        heading.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
         heading.setIncludeFontPadding(false);
         heading.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         heading.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
         heading.setTextDirection(View.TEXT_DIRECTION_RTL);
         heading.setPadding(0, 0, dp(7), 0);
-        row.addView(heading, new LinearLayout.LayoutParams(0, dp(36), 1f));
+        row.addView(heading, new LinearLayout.LayoutParams(0, dp(26), 1f));
 
         if (showActivityInfo) {
             FrameLayout infoButton = new FrameLayout(this);
@@ -682,14 +682,16 @@ screenTitle.setText("הגדרות");
             infoButton.addView(glyph,
                     new FrameLayout.LayoutParams(dp(28), dp(28), Gravity.CENTER));
             infoButton.setOnClickListener(v -> showActivityTimeHelpDialog());
-            row.addView(infoButton, new LinearLayout.LayoutParams(dp(36), dp(36)));
+            row.addView(infoButton, new LinearLayout.LayoutParams(dp(36), dp(30)));
         }
 
         LinearLayout.LayoutParams headingParams =
-                new LinearLayout.LayoutParams(-1, dp(36));
-        headingParams.topMargin = parent.getChildCount() == 0 ? dp(6) : dp(11);
-        headingParams.bottomMargin = 0;
-        parent.addView(row, headingParams);
+                new LinearLayout.LayoutParams(-1, dp(26));
+        headingParams.topMargin = dp(12);
+        headingParams.bottomMargin = dp(5);
+        headingParams.leftMargin = dp(14);
+        headingParams.rightMargin = dp(14);
+        group.addView(row, headingParams);
     }
 
     private LinearLayout addSettingCard(LinearLayout parent, String label, String key) {
@@ -707,10 +709,6 @@ screenTitle.setText("הגדרות");
                 currentSettingsGroup.setLayoutParams(previousGroupParams);
             }
 
-            addSettingsGroupHeading(parent, groupTitle,
-                    currentCategory == CATEGORY_ACTIVITY
-                            && "הגדרת זמני הפעילות".equals(groupTitle));
-
             currentSettingsGroup = new LinearLayout(this);
             currentSettingsGroup.setOrientation(LinearLayout.VERTICAL);
             currentSettingsGroup.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
@@ -724,7 +722,10 @@ screenTitle.setText("הגדרות");
             parent.addView(currentSettingsGroup, groupParams);
             currentSettingsGroupParent = parent;
             currentSettingsGroupTitle = groupTitle;
-        } else if (currentSettingsGroup.getChildCount() > 0) {
+            addSettingsGroupHeading(currentSettingsGroup, groupTitle,
+                    currentCategory == CATEGORY_ACTIVITY
+                            && "הגדרת זמני הפעילות".equals(groupTitle));
+        } else if (currentSettingsGroup.getChildCount() > 1) {
             View divider = new View(this);
             divider.setBackgroundColor(Color.rgb(54, 78, 102));
             LinearLayout.LayoutParams dividerParams =
