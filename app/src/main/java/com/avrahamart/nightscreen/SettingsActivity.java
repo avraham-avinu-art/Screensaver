@@ -1696,13 +1696,10 @@ public class SettingsActivity extends Activity {
                 }
                 if (position == lastHandledPosition) return;
                 lastHandledPosition = position;
-                ViewGroup.LayoutParams currentParams = spinnerContainer.getLayoutParams();
-                if (currentParams instanceof LinearLayout.LayoutParams) {
-                    LinearLayout.LayoutParams widthParams =
-                            (LinearLayout.LayoutParams) currentParams;
-                    widthParams.width = spinnerVisibleWidthForOption(names[position]);
-                    spinnerContainer.setLayoutParams(widthParams);
-                }
+                LinearLayout.LayoutParams widthParams =
+                        (LinearLayout.LayoutParams) spinnerContainer.getLayoutParams();
+                widthParams.width = spinnerVisibleWidthForOption(names[position]);
+                spinnerContainer.setLayoutParams(widthParams);
                 persistOption(key, values[position]);
             }
 
