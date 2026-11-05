@@ -1626,7 +1626,7 @@ public class SettingsActivity extends Activity {
 
         final int selectedPosition = selected;
         int dropdownWidth = dropdownWidthForOptions(names);
-        int visibleWidth = Math.min(dropdownWidth, dp(150));
+        int visibleWidth = spinnerVisibleWidthForOption(names[selected]);
         Spinner spinner = new Spinner(this);
         spinner.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         spinner.setContentDescription(label);
@@ -1673,15 +1673,13 @@ public class SettingsActivity extends Activity {
         dropdownIconParams.leftMargin = dp(8);
         spinnerContainer.addView(dropdownIcon, dropdownIconParams);
 
-        // Place the font selector on the same horizontal row as its title and icon.
-        LinearLayout header = (LinearLayout) card.getChildAt(0);
+        // Keep the title and icon in their normal header row. Put the selector
+        // underneath, like the segmented controls used by the other settings.
         LinearLayout.LayoutParams spinnerParams =
                 new LinearLayout.LayoutParams(visibleWidth, dp(40));
-        spinnerParams.gravity = Gravity.CENTER_VERTICAL;
-        spinnerParams.rightMargin = dp(8);
-        // Match the other setting rows: selector on the left, title in the middle,
-        // and the setting icon at the right edge.
-        header.addView(spinnerContainer, 0, spinnerParams);
+        spinnerParams.gravity = Gravity.RIGHT;
+        spinnerParams.topMargin = dp(7);
+        card.addView(spinnerContainer, spinnerParams);
 
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             private boolean initialSelectionPending = true;
@@ -1698,6 +1696,13 @@ public class SettingsActivity extends Activity {
                 }
                 if (position == lastHandledPosition) return;
                 lastHandledPosition = position;
+                ViewGroup.LayoutParams currentParams = spinnerContainer.getLayoutParams();
+                if (currentParams instanceof LinearLayout.LayoutParams) {
+                    LinearLayout.LayoutParams widthParams =
+                            (LinearLayout.LayoutParams) currentParams;
+                    widthParams.width = spinnerVisibleWidthForOption(names[position]);
+                    spinnerContainer.setLayoutParams(widthParams);
+                }
                 persistOption(key, values[position]);
             }
 
@@ -1737,6 +1742,18 @@ public class SettingsActivity extends Activity {
         view.setPadding(dp(6), dp(3), dp(6), dp(3));
         view.setBackground(pillBackground(selectedOption ? ACCENT : CARD_SURFACE, dp(8)));
         view.setHeight(dp(39));
+    }
+
+    private int spinnerVisibleWidthForOption(String name) {
+        Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        paint.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
+        paint.setTextSize(15f * getResources().getDisplayMetrics().scaledDensity);
+        float textWidth = name == null ? 0f : paint.measureText(name);
+        // Include the Spinner's horizontal padding and the custom dropdown chevron.
+        int desiredWidth = (int) Math.ceil(textWidth) + dp(52);
+        int availableWidth = getResources().getDisplayMetrics().widthPixels - dp(34);
+        int maximumWidth = Math.max(dp(88), availableWidth);
+        return Math.min(maximumWidth, Math.max(dp(124), desiredWidth));
     }
 
     private int dropdownWidthForOptions(String[] names) {
