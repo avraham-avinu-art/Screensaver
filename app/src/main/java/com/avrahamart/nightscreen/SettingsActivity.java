@@ -444,8 +444,8 @@ screenTitle.setText("הגדרות");
                 "hebrewDateFormat");
         addCheck(content, "תאריך לועזי", "showGregorian", true);
         addSpinner(content, "תבנית התאריך הלועזי",
-                new String[]{"04.10.2026", "01/10/2026", "01/10/26",
-                        "2026/10/01", "1 בינואר 2026"},
+                new String[]{"04.10.2026", "04/10/2026", "04/10/26",
+                        "2026/10/04", "4 באוקטובר 2026"},
                 new String[]{"dd.MM.yyyy", "dd/MM/yyyy", "dd/MM/yy",
                         "yyyy/MM/dd", "d 'ב'MMMM yyyy"},
                 "gregorianDateFormat");
