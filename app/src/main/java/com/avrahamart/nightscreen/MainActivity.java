@@ -127,7 +127,6 @@ public class MainActivity extends Activity {
                         || Intent.ACTION_DATE_CHANGED.equals(action)
                         || Intent.ACTION_TIMEZONE_CHANGED.equals(action)) {
                     lastFormattedHebrewDateKey = null;
-    private String lastFormattedHebrewDateFormat;
                 }
                 if (Intent.ACTION_TIMEZONE_CHANGED.equals(action)) {
                     java.util.TimeZone deviceTimeZone = java.util.TimeZone.getDefault();
@@ -266,6 +265,7 @@ public class MainActivity extends Activity {
         }
     };
     private String lastFormattedHebrewDateKey = null;
+    private String lastFormattedHebrewDateFormat;
 
     private void startClockUpdates() {
         handler.removeCallbacks(clockUpdateRunnable);
