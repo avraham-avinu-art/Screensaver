@@ -509,8 +509,8 @@ screenTitle.setText("הגדרות");
                 .replace("מרחשוון", "חשוון")
                 .replace("מרחשון", "חשוון")
                 .replace("חשון", "חשוון")
-                .replace("\\u05F3", "'")
-                .replace("\\u05F4", "\"")
+                .replace("׳", "'")
+                .replace("״", "\"")
                 .replace("’", "'")
                 .replace("”", "\"")
                 .replace("“", "\"");
