@@ -539,7 +539,7 @@ public class SettingsActivity extends Activity {
         addSegmentedChoices(content, "הצגת הנגן",
                 new String[]{"כבוי", "פועל", "פועל בתחילת שיר"},
                 new String[]{"off", "on", "start"}, "playerDisplayMode");
-        addCheck(content, "פרטי אמן", "showDetails", getBool("showDetails", true));
+        addCheck(content, "פרטי האמן", "showDetails", getBool("showDetails", true));
         addCheck(content, "זמני השיר ופקדי הנגן", "showProgress", true);
         addDiscreteSlider(content, "גודל הנגן",
                 new String[]{"קטן", "בינוני", "גדול", "ענק"},
