@@ -263,7 +263,7 @@ public class SettingsActivity extends Activity {
 
         addDashboardButton("הפעלה והתנהגות",
                 "הגדרת הזמנים ואפשרויות ההפעלה",
-                "power", CATEGORY_ACTIVITY);
+                "power-category", CATEGORY_ACTIVITY);
         addDashboardButton("מראה ועיצוב",
                 "התאמת צבעים, גופנים ובהירות המסך",
                 "palette", CATEGORY_APPEARANCE);
@@ -1080,6 +1080,12 @@ public class SettingsActivity extends Activity {
 
         final TextView[] options = new TextView[names.length];
         final FrameLayout[] optionTiles = new FrameLayout[names.length];
+        final LinearLayout.LayoutParams[] optionLayoutParams =
+                new LinearLayout.LayoutParams[names.length];
+        // Only these long labels may receive extra width, and only on layouts
+        // where an equally divided selector would actually cut their text.
+        final int[] responsiveTextWidths = new int[names.length];
+        final int[] responsiveExpandedWidths = new int[names.length];
         int initial = selectedIndex(key, values);
         int optionTileHeight = 37;
 
@@ -1143,32 +1149,77 @@ public class SettingsActivity extends Activity {
                 if ("screenSaverDuration".equals(key)) updateDeviceCapabilityNotice();
             });
 
-            LinearLayout.LayoutParams tileParams;
-            boolean needsFullLabelWidth =
+            boolean mayExpandOnNarrowScreens =
                     (("screenBrightness".equals(key)
                             || "screenSaverDuration".equals(key)) && i == 0)
                     || ("playerDisplayMode".equals(key) && i == 2);
-            if (needsFullLabelWidth) {
-                // Reserve only the width needed for the long label; the remaining
-                // options split the remaining row width equally.
+            if (mayExpandOnNarrowScreens) {
+                int textWidth = (int) Math.ceil(option.getPaint().measureText(names[i]));
+                responsiveTextWidths[i] = textWidth + dp(2);
                 int extraWidth = "playerDisplayMode".equals(key) && i == 2
                         ? 16 : 8;
-                int labelWidth = (int) Math.ceil(option.getPaint().measureText(names[i]))
-                        + dp(extraWidth);
-                tileParams = new LinearLayout.LayoutParams(
-                        labelWidth, dp(optionTileHeight));
-            } else {
-                tileParams = new LinearLayout.LayoutParams(
-                        0, dp(optionTileHeight), 1f);
+                responsiveExpandedWidths[i] = textWidth + dp(extraWidth);
             }
+
+            // Start with identical weighted widths. A measured narrow layout
+            // may selectively widen only the long-label tiles above.
+            LinearLayout.LayoutParams tileParams = new LinearLayout.LayoutParams(
+                    0, dp(optionTileHeight), 1f);
             tileParams.leftMargin = dp(2);
             tileParams.rightMargin = dp(2);
+            optionLayoutParams[i] = tileParams;
             tiles.addView(tile, tileParams);
             if (i < names.length - 1) {
                 View segmentGap = new View(this);
                 tiles.addView(segmentGap, new LinearLayout.LayoutParams(dp(1), 1));
             }
         }
+
+        final int[] lastMeasuredWidth = {-1};
+        tiles.addOnLayoutChangeListener((view, left, top, right, bottom,
+                                         oldLeft, oldTop, oldRight, oldBottom) -> {
+            int measuredWidth = right - left;
+            if (measuredWidth <= 0 || measuredWidth == lastMeasuredWidth[0]) return;
+            lastMeasuredWidth[0] = measuredWidth;
+
+            int availableForTiles = measuredWidth
+                    - tiles.getPaddingLeft() - tiles.getPaddingRight()
+                    - dp(1) * Math.max(0, names.length - 1);
+            int responsiveCount = 0;
+            int expandedWidthTotal = 0;
+            int widestLongLabel = 0;
+            for (int i = 0; i < names.length; i++) {
+                LinearLayout.LayoutParams params = optionLayoutParams[i];
+                availableForTiles -= params.leftMargin + params.rightMargin;
+                if (responsiveTextWidths[i] > 0) {
+                    responsiveCount++;
+                    expandedWidthTotal += responsiveExpandedWidths[i];
+                    widestLongLabel = Math.max(widestLongLabel, responsiveTextWidths[i]);
+                }
+            }
+
+            int equalTileWidth = availableForTiles / names.length;
+            boolean allTextFitsEqually = equalTileWidth >= widestLongLabel;
+            int remainingCount = names.length - responsiveCount;
+            int remainingWidth = availableForTiles - expandedWidthTotal;
+            boolean enoughRoomForOtherTiles = remainingWidth >= 0
+                    && (remainingCount == 0
+                    || remainingWidth / remainingCount >= dp(24));
+            boolean useResponsiveWidths = responsiveCount > 0
+                    && !allTextFitsEqually && enoughRoomForOtherTiles;
+
+            for (int i = 0; i < names.length; i++) {
+                LinearLayout.LayoutParams params = optionLayoutParams[i];
+                if (useResponsiveWidths && responsiveExpandedWidths[i] > 0) {
+                    params.width = responsiveExpandedWidths[i];
+                    params.weight = 0f;
+                } else {
+                    params.width = 0;
+                    params.weight = 1f;
+                }
+                optionTiles[i].setLayoutParams(params);
+            }
+        });
 
         LinearLayout.LayoutParams tilesParams =
                 new LinearLayout.LayoutParams(-1, dp(optionTileHeight + 6));
