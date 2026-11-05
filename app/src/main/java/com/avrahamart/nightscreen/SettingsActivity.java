@@ -670,17 +670,7 @@ screenTitle.setText("הגדרות");
         heading.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
         heading.setTextDirection(View.TEXT_DIRECTION_RTL);
         heading.setPadding(0, 0, dp(7), 0);
-        row.addView(heading, new LinearLayout.LayoutParams(-2, dp(36)));
-
-        // A thin horizontal rule extends from the outside of the heading,
-        // preserving the existing background, card frame, and section spacing.
-        View headingRule = new View(this);
-        headingRule.setBackgroundColor(OUTLINE);
-        LinearLayout.LayoutParams headingRuleParams =
-                new LinearLayout.LayoutParams(0, dp(1), 1f);
-        headingRuleParams.leftMargin = dp(8);
-        headingRuleParams.rightMargin = dp(4);
-        row.addView(headingRule, headingRuleParams);
+        row.addView(heading, new LinearLayout.LayoutParams(0, dp(36), 1f));
 
         if (showActivityInfo) {
             FrameLayout infoButton = new FrameLayout(this);
