@@ -591,8 +591,37 @@ screenTitle.setText("הגדרות");
             }
             livePreviewHebrew.setText(currentHebrewDateSamples()[0]);
             livePreviewPlayer.setVisibility(currentCategory == CATEGORY_PLAYER
-                    && getString("playerDisplayMode", "off") != "off"
+                    && !"off".equals(getString("playerDisplayMode", "off"))
                     ? View.VISIBLE : View.GONE);
+            String clockStyle = getString("clockStyle", "digital");
+            if ("analog".equals(clockStyle)) {
+                livePreviewClock.setText("◷");
+            } else if ("split".equals(clockStyle)) {
+                String[] timeParts = livePreviewClock.getText().toString().split(":");
+                if (timeParts.length == 2) {
+                    livePreviewClock.setText(timeParts[0] + "   " + timeParts[1]);
+                }
+            }
+            View sampleView = livePreviewSurface.getChildAt(0);
+            if (sampleView != null) {
+                sampleView.setTranslationX(livePreviewSurface.getWidth()
+                        * Math.max(-0.20f, Math.min(0.20f,
+                        getInt("clockHorizontalOffset", 0) / 100f)));
+                FrameLayout.LayoutParams sampleParams =
+                        (FrameLayout.LayoutParams) sampleView.getLayoutParams();
+                String position = getString("clockDatePosition", "upper");
+                sampleParams.gravity = "top".equals(position)
+                        ? Gravity.TOP | Gravity.CENTER_HORIZONTAL
+                        : "middle".equals(position) ? Gravity.CENTER
+                        : Gravity.TOP | Gravity.CENTER_HORIZONTAL;
+                if ("top".equals(position)) sampleParams.topMargin = dp(3);
+                else if ("custom".equals(position)) {
+                    sampleParams.topMargin = Math.max(0, Math.min(dp(75),
+                            Math.round(dp(132) * getInt("clockCustomVerticalPosition", 25) / 100f)));
+                } else if ("upper".equals(position)) sampleParams.topMargin = dp(20);
+                else sampleParams.topMargin = 0;
+                sampleView.setLayoutParams(sampleParams);
+            }
         } catch (Throwable ignored) {
         }
     }
