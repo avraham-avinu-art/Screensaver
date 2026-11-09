@@ -1776,6 +1776,7 @@ screenTitle.setText("הגדרות");
                     || "clockCustomVerticalPosition".equals(key)
                     || "playerCustomVerticalPosition".equals(key)
                     || "batteryProtectionThreshold".equals(key)
+                    || "playerControlsTimeout".equals(key)
                     || "nightModeStartHour".equals(key) || "nightModeEndHour".equals(key)
                     || "playerSize".equals(key) || "frameWidth".equals(key)
                     || "frameRadius".equals(key) || "screenBrightness".equals(key)) {
@@ -2127,6 +2128,7 @@ screenTitle.setText("הגדרות");
                 || "clockCustomVerticalPosition".equals(key)
                 || "playerCustomVerticalPosition".equals(key)
                 || "batteryProtectionThreshold".equals(key)
+                || "playerControlsTimeout".equals(key)
                 || "nightModeStartHour".equals(key) || "nightModeEndHour".equals(key)
                 || "playerSize".equals(key) || "frameWidth".equals(key)
                 || "frameRadius".equals(key) || "screenBrightness".equals(key)) {
