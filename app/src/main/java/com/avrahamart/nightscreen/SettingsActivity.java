@@ -2162,7 +2162,7 @@ screenTitle.setText("הגדרות");
         if ("fontFamily".equals(key)) return "font-family";
         if ("clockDateSize".equals(key)) return "clock-size";
         if ("clockDisplayMode".equals(key)) return "clock";
-        if ("clockDialStyle".equals(key)) return "watch";
+        if ("clockDialStyle".equals(key)) return "clock-dial";
         if ("clockDatePosition".equals(key)) return "position-arrows";
         if ("showPlayerOnlyAtStart".equals(key)) return "circle-play";
         if ("showDetails".equals(key)) return "artist";
