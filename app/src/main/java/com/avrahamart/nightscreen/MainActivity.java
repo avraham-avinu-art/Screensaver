@@ -166,6 +166,7 @@ public class MainActivity extends Activity {
             new SimpleDateFormat("dd.MM.yyyy", Locale.US);
 
     private TextView timeText;
+    private ClockStyleView clockStyleView;
     private TextView gregorianText;
     private TextView hebrewText;
     private final int dateTextColor = Color.rgb(220, 220, 220);
@@ -559,12 +560,16 @@ public class MainActivity extends Activity {
         clockBlock.setOrientation(LinearLayout.VERTICAL);
         clockBlock.setGravity(Gravity.CENTER_HORIZONTAL);
 
+        clockStyleView = new ClockStyleView(this);
+        clockStyleView.setVisibility(View.GONE);
+        int initialClockSize = getInt("clockDateSize", 96);
+        int initialClockHeight = Math.max(dp(62), dp(initialClockSize));
+        clockBlock.addView(clockStyleView, new LinearLayout.LayoutParams(-1, initialClockHeight));
+
         timeText = clockDateTextView("--:--", getInt("clockDateSize", 96), Color.rgb(247, 247, 247));
         timeText.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
         timeText.setGravity(Gravity.CENTER);
         timeText.setIncludeFontPadding(false);
-        int initialClockSize = getInt("clockDateSize", 96);
-        int initialClockHeight = Math.max(dp(62), dp(initialClockSize));
         clockBlock.addView(timeText, new LinearLayout.LayoutParams(-1, initialClockHeight));
 
         gregorianText = clockDateTextView("", 22, dateTextColor);
@@ -644,6 +649,9 @@ public class MainActivity extends Activity {
                 }
             }
             cp.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
+            clockBlock.setTranslationX(stage.getWidth()
+                    * Math.max(-0.20f, Math.min(0.20f,
+                    getInt("clockHorizontalOffset", 0) / 100f)));
             if ("upper".equals(clockPos)) {
                 // Place the center of the clock line at exactly one quarter of the
                 // screen height, independent of the clock/date block's total height.
@@ -662,6 +670,9 @@ public class MainActivity extends Activity {
             clockBlock.setLayoutParams(cp);
 
             FrameLayout.LayoutParams mp = (FrameLayout.LayoutParams) mediaHolder.getLayoutParams();
+            mediaHolder.setTranslationX(stage.getWidth()
+                    * Math.max(-0.20f, Math.min(0.20f,
+                    getInt("playerHorizontalOffset", 0) / 100f)));
             if ("bottom".equals(playerPos)) {
                 // Let FrameLayout anchor the entire holder to the real bottom.
                 // This avoids the first-layout race where measured height is still stale
@@ -924,6 +935,9 @@ public class MainActivity extends Activity {
         e.putInt("hebrewDateScale", getInt("hebrewDateScale", -1));
         e.putInt("clockCustomVerticalPosition", getInt("clockCustomVerticalPosition", 25));
         e.putInt("playerCustomVerticalPosition", getInt("playerCustomVerticalPosition", 65));
+        e.putInt("clockHorizontalOffset", getInt("clockHorizontalOffset", 0));
+        e.putInt("playerHorizontalOffset", getInt("playerHorizontalOffset", 0));
+        e.putString("clockStyle", getString("clockStyle", "digital"));
         e.putInt("nightModeStartHour", getInt("nightModeStartHour", 22));
         e.putInt("nightModeEndHour", getInt("nightModeEndHour", 7));
         e.putInt("batteryProtectionThreshold", getInt("batteryProtectionThreshold", 20));
@@ -1242,6 +1256,18 @@ public class MainActivity extends Activity {
         timeText.setFontFeatureSettings(fontFeatures);
 
         int effectiveClockSize = effectiveClockDateSize(fontFamily, clockDateSize);
+        String clockStyle = getString("clockStyle", "digital");
+        if (clockStyleView != null) {
+            clockStyleView.setClockStyle(clockStyle);
+            clockStyleView.setClockTypeface(tf);
+            clockStyleView.setClockColor(displayTextColor);
+            clockStyleView.setClockSize(effectiveClockSize);
+            clockStyleView.setVisibility("digital".equals(clockStyle) ? View.GONE : View.VISIBLE);
+            clockStyleView.invalidate();
+        }
+        if (timeText != null) {
+            timeText.setVisibility("digital".equals(clockStyle) ? View.VISIBLE : View.GONE);
+        }
         float dateSize = dateTextSizeForClockPreset(effectiveClockSize);
         int gregorianScale = getInt("gregorianDateScale", -1);
         int hebrewScale = getInt("hebrewDateScale", -1);
@@ -1271,6 +1297,13 @@ public class MainActivity extends Activity {
         // Centering and clipping can occur when this row is shorter than the font metrics.
         int clockH = Math.max(dp(62), measuredLineHeight(
                 timeText, "0123456789:00", 2, effectiveClockSize));
+        if (!"digital".equals(clockStyle)) {
+            clockH = Math.max(clockH, dp(Math.round(effectiveClockSize * 0.92f)));
+        }
+        if (clockStyleView != null && clockStyleView.getLayoutParams() != null) {
+            clockStyleView.getLayoutParams().height = clockH;
+            clockStyleView.requestLayout();
+        }
         int gregorianH = Math.max(dateRowHeightForClockPreset(effectiveClockSize),
                 measuredLineHeight(gregorianText, "יום ה׳ · 22.10.2026", 0, 24));
         int hebrewH = Math.max(dateRowHeightForClockPreset(effectiveClockSize),
@@ -2510,6 +2543,11 @@ public class MainActivity extends Activity {
     private void updateClock() {
         if (timeText == null || gregorianText == null || hebrewText == null) return;
         now.setTimeInMillis(System.currentTimeMillis());
+        if (clockStyleView != null && clockStyleView.getVisibility() == View.VISIBLE) {
+            clockStyleView.setCurrentTime(now.get(Calendar.HOUR_OF_DAY),
+                    now.get(Calendar.MINUTE), now.get(Calendar.SECOND));
+            clockStyleView.invalidate();
+        }
 
         String formattedTime = numericTime();
         if (!formattedTime.contentEquals(timeText.getText())) {
@@ -3557,6 +3595,105 @@ public class MainActivity extends Activity {
         view.setTextDirection(View.TEXT_DIRECTION_RTL);
         view.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         return view;
+    }
+
+    private final class ClockStyleView extends View {
+        private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private String clockStyle = "analog";
+        private Typeface clockTypeface = Typeface.create("sans-serif", Typeface.NORMAL);
+        private int clockColor = Color.WHITE;
+        private float clockSize = 84f;
+        private int hour;
+        private int minute;
+        private int second;
+
+        ClockStyleView(Context context) {
+            super(context);
+            setLayerType(View.LAYER_TYPE_SOFTWARE, null);
+        }
+
+        void setClockStyle(String value) {
+            clockStyle = value == null ? "analog" : value;
+        }
+        void setClockTypeface(Typeface value) {
+            if (value != null) clockTypeface = value;
+        }
+        void setClockColor(int value) { clockColor = value; }
+        void setClockSize(float value) { clockSize = value; }
+        void setCurrentTime(int h, int m, int s) {
+            hour = h; minute = m; second = s;
+        }
+
+        @Override protected void onDraw(Canvas canvas) {
+            super.onDraw(canvas);
+            if ("analog".equals(clockStyle)) drawAnalog(canvas);
+            else if ("split".equals(clockStyle)) drawSplit(canvas);
+        }
+
+        private void drawAnalog(Canvas canvas) {
+            float cx = getWidth() / 2f;
+            float cy = getHeight() / 2f;
+            float radius = Math.min(getWidth() * 0.43f, getHeight() * 0.43f);
+            if (radius <= 0f) return;
+            paint.setColor(blendWithBlack(clockColor, 0.72f));
+            paint.setStyle(Paint.Style.STROKE);
+            paint.setStrokeWidth(dp(1.4f));
+            canvas.drawCircle(cx, cy, radius, paint);
+            for (int tick = 0; tick < 60; tick++) {
+                double angle = Math.toRadians(tick * 6d - 90d);
+                boolean major = tick % 5 == 0;
+                float outer = radius - dp(2);
+                float inner = outer - dp(major ? 9 : 4);
+                paint.setColor(major ? clockColor : blendWithBlack(clockColor, 0.38f));
+                paint.setStrokeWidth(dp(major ? 1.6f : 0.8f));
+                canvas.drawLine(cx + (float) Math.cos(angle) * inner,
+                        cy + (float) Math.sin(angle) * inner,
+                        cx + (float) Math.cos(angle) * outer,
+                        cy + (float) Math.sin(angle) * outer, paint);
+            }
+            paint.setStyle(Paint.Style.STROKE);
+            paint.setStrokeCap(Paint.Cap.ROUND);
+            paint.setColor(clockColor);
+            paint.setStrokeWidth(dp(3.2f));
+            drawHand(canvas, cx, cy, radius * 0.52f,
+                    (hour % 12 + minute / 60f) * 30f - 90f);
+            paint.setStrokeWidth(dp(2.0f));
+            drawHand(canvas, cx, cy, radius * 0.76f,
+                    (minute + second / 60f) * 6f - 90f);
+            paint.setStrokeWidth(dp(0.9f));
+            paint.setColor(blendWithBlack(clockColor, 0.24f));
+            drawHand(canvas, cx, cy, radius * 0.82f,
+                    second * 6f - 90f);
+            paint.setStyle(Paint.Style.FILL);
+            paint.setColor(clockColor);
+            canvas.drawCircle(cx, cy, dp(3), paint);
+        }
+
+        private void drawHand(Canvas canvas, float cx, float cy, float length, float degrees) {
+            double angle = Math.toRadians(degrees);
+            canvas.drawLine(cx, cy,
+                    cx + (float) Math.cos(angle) * length,
+                    cy + (float) Math.sin(angle) * length, paint);
+        }
+
+        private void drawSplit(Canvas canvas) {
+            String hourText = String.valueOf(hour % 12 == 0 ? 12 : hour % 12);
+            String minuteText = String.format(Locale.US, "%02d", minute);
+            paint.setTypeface(clockTypeface);
+            paint.setColor(clockColor);
+            paint.setStyle(Paint.Style.FILL);
+            paint.setTextAlign(Paint.Align.CENTER);
+            paint.setTextSize(dp(clockSize * 0.72f));
+            Paint.FontMetrics fm = paint.getFontMetrics();
+            float baseline = getHeight() / 2f - (fm.ascent + fm.descent) / 2f;
+            float center = getWidth() / 2f;
+            float gap = dp(clockSize * 0.12f);
+            canvas.drawText(hourText, center - gap, baseline, paint);
+            paint.setTextSize(dp(clockSize * 0.60f));
+            canvas.drawText(":", center, baseline, paint);
+            paint.setTextSize(dp(clockSize * 0.72f));
+            canvas.drawText(minuteText, center + gap * 1.8f, baseline, paint);
+        }
     }
 
     private final class ClockDateTextView extends TextView {
