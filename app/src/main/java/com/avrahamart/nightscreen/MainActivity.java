@@ -686,7 +686,14 @@ public class MainActivity extends Activity {
             FrameLayout.LayoutParams cp = (FrameLayout.LayoutParams) clockBlock.getLayoutParams();
             int blockHeight = Math.max(0, clockBlock.getMeasuredHeight());
             int clockLineHeight = blockHeight;
-            if (timeText != null) {
+            if (analogClockView != null && analogClockView.getVisibility() == View.VISIBLE) {
+                ViewGroup.LayoutParams analogParams = analogClockView.getLayoutParams();
+                if (analogParams != null && analogParams.height > 0) {
+                    clockLineHeight = analogParams.height;
+                } else if (analogClockView.getMeasuredHeight() > 0) {
+                    clockLineHeight = analogClockView.getMeasuredHeight();
+                }
+            } else if (timeText != null) {
                 // Prefer the final row height calculated from the selected font and size;
                 // this remains accurate even when the surrounding date rows are taller.
                 ViewGroup.LayoutParams timeParams = timeText.getLayoutParams();
@@ -2493,6 +2500,39 @@ public class MainActivity extends Activity {
         }
 
         return sessions.get(0);
+    }
+
+    private void updateChargingBatteryDisplay() {
+        if (chargingBatteryView == null || prefs == null) return;
+        String mode = getString("chargingBatteryDisplayMode", "off");
+        if ("off".equals(mode)) {
+            chargingBatteryView.setBatteryState("off", 0, false,
+                    getInt("fontColor", dateTextColor));
+            return;
+        }
+        int percent = 0;
+        boolean pluggedIn = false;
+        try {
+            Intent battery = registerReceiver(null,
+                    new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+            if (battery != null) {
+                int level = battery.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
+                int scale = battery.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
+                if (level >= 0 && scale > 0) {
+                    percent = Math.max(0, Math.min(100,
+                            Math.round(level * 100f / scale)));
+                }
+                int plugged = battery.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0);
+                int status = battery.getIntExtra(BatteryManager.EXTRA_STATUS,
+                        BatteryManager.BATTERY_STATUS_UNKNOWN);
+                pluggedIn = plugged != 0
+                        || status == BatteryManager.BATTERY_STATUS_CHARGING
+                        || status == BatteryManager.BATTERY_STATUS_FULL;
+            }
+        } catch (Throwable ignored) {
+        }
+        chargingBatteryView.setBatteryState(mode, percent, pluggedIn,
+                getInt("fontColor", dateTextColor));
     }
 
     private void updateClock() {
