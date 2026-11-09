@@ -35,6 +35,7 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.CompoundButton;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.PopupMenu;
 import android.widget.ScrollView;
@@ -471,6 +472,7 @@ screenTitle.setText("הגדרות");
         addSpinner(content, "תבנית התאריך הלועזי",
                 currentGregorianDateSamples(gregorianDateFormats),
                 gregorianDateFormats, "gregorianDateFormat");
+        addCustomGregorianPatternEditor(content);
         addSegmentedChoices(content, "סגנון השעון",
                 new String[]{"דיגיטלי", "אנלוגי", "דיגיטלי מפוצל"},
                 new String[]{"digital", "analog", "split"}, "clockStyle");
@@ -1657,10 +1659,137 @@ screenTitle.setText("הגדרות");
             choiceRow.addView(item, new LinearLayout.LayoutParams(0, -2, 1f));
         }
 
+        LinearLayout customColorRow = new LinearLayout(this);
+        customColorRow.setOrientation(LinearLayout.HORIZONTAL);
+        customColorRow.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        customColorRow.setGravity(Gravity.CENTER_VERTICAL);
+        customColorRow.setPadding(dp(5), dp(7), dp(5), dp(2));
+        View customColorSwatch = new View(this);
+        customColorSwatch.setBackground(makeCustomColorDot(
+                getInt(key, "screenBackgroundColor".equals(key) ? Color.BLACK : Color.WHITE)));
+        customColorRow.addView(customColorSwatch,
+                new LinearLayout.LayoutParams(dp(28), dp(28)));
+        TextView customColorLabel = textView("בחירת צבע מותאם אישית", 14, ON_SURFACE);
+        customColorLabel.setGravity(Gravity.CENTER_VERTICAL);
+        LinearLayout.LayoutParams customLabelParams =
+                new LinearLayout.LayoutParams(-2, dp(32));
+        customLabelParams.rightMargin = dp(9);
+        customColorRow.addView(customColorLabel, customLabelParams);
+        customColorRow.setClickable(true);
+        customColorRow.setFocusable(true);
+        customColorRow.setOnClickListener(v -> showCustomColorDialog(key, customColorSwatch));
+        LinearLayout.LayoutParams customColorParams = new LinearLayout.LayoutParams(-1, -2);
+        customColorParams.topMargin = dp(5);
+        choices.addView(customColorRow, customColorParams);
+
         LinearLayout.LayoutParams choicesParams =
                 new LinearLayout.LayoutParams(-1, -2);
         choicesParams.topMargin = dp(9);
         card.addView(choices, choicesParams);
+    }
+
+    private GradientDrawable makeCustomColorDot(int color) {
+        GradientDrawable dot = new GradientDrawable();
+        dot.setShape(GradientDrawable.OVAL);
+        dot.setColor(color);
+        dot.setStroke(dp(1), Color.rgb(145, 170, 196));
+        return dot;
+    }
+
+    private void showCustomColorDialog(String key, View preview) {
+        int current = getInt(key, "screenBackgroundColor".equals(key) ? Color.BLACK : Color.WHITE);
+        EditText valueInput = new EditText(this);
+        valueInput.setSingleLine(true);
+        valueInput.setInputType(android.text.InputType.TYPE_CLASS_TEXT
+                | android.text.InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS);
+        valueInput.setHint("#RRGGBB או #AARRGGBB");
+        valueInput.setText(String.format(Locale.US, "#%08X", current));
+        valueInput.setSelection(valueInput.length());
+        valueInput.setTextDirection(View.TEXT_DIRECTION_LTR);
+        valueInput.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+        LinearLayout panel = new LinearLayout(this);
+        panel.setOrientation(LinearLayout.VERTICAL);
+        panel.setPadding(dp(20), dp(8), dp(20), dp(4));
+        panel.addView(valueInput, new LinearLayout.LayoutParams(-1, dp(48)));
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setTitle("צבע מותאם אישית")
+                .setView(panel)
+                .setNegativeButton("ביטול", null)
+                .setPositiveButton("שמירה", null)
+                .create();
+        dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+                .setOnClickListener(v -> {
+                    String entered = valueInput.getText() == null ? ""
+                            : valueInput.getText().toString().trim();
+                    try {
+                        if (!entered.startsWith("#")) entered = "#" + entered;
+                        int parsed = Color.parseColor(entered);
+                        persistOption(key, String.format(Locale.US, "#%08X", parsed));
+                        preview.setBackground(makeCustomColorDot(parsed));
+                        dialog.dismiss();
+                    } catch (IllegalArgumentException ex) {
+                        valueInput.setError("יש להזין צבע תקין, לדוגמה #123456");
+                    }
+                }));
+        dialog.show();
+        Window window = dialog.getWindow();
+        if (window != null) {
+            window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            window.setLayout(Math.min(dp(420), getResources().getDisplayMetrics().widthPixels - dp(32)),
+                    WindowManager.LayoutParams.WRAP_CONTENT);
+        }
+    }
+
+    private void addCustomGregorianPatternEditor(LinearLayout parent) {
+        LinearLayout card = addSettingCard(parent, "תבנית תאריך מותאמת אישית",
+                "gregorianDateCustomPattern");
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        TextView pattern = textView(getString("gregorianDateCustomPattern", "dd.MM.yyyy"), 14, MUTED);
+        pattern.setSingleLine(true);
+        pattern.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        row.addView(pattern, new LinearLayout.LayoutParams(0, dp(38), 1f));
+        Button edit = makeActionButton("עריכה");
+        edit.setOnClickListener(v -> showCustomGregorianPatternDialog(pattern));
+        row.addView(edit, new LinearLayout.LayoutParams(dp(92), dp(38)));
+        LinearLayout.LayoutParams rowParams = new LinearLayout.LayoutParams(-1, -2);
+        rowParams.topMargin = dp(4);
+        card.addView(row, rowParams);
+    }
+
+    private void showCustomGregorianPatternDialog(TextView preview) {
+        EditText input = new EditText(this);
+        input.setSingleLine(true);
+        input.setTextDirection(View.TEXT_DIRECTION_LTR);
+        input.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+        input.setHint("dd.MM.yyyy");
+        input.setText(getString("gregorianDateCustomPattern", "dd.MM.yyyy"));
+        input.setSelection(input.length());
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setTitle("תבנית תאריך מותאמת")
+                .setMessage("אפשר להשתמש בסימנים של SimpleDateFormat, למשל: EEE · dd.MM.yyyy")
+                .setView(input)
+                .setNegativeButton("ביטול", null)
+                .setPositiveButton("שמירה", null)
+                .create();
+        dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+                .setOnClickListener(v -> {
+                    String value = input.getText() == null ? ""
+                            : input.getText().toString().trim();
+                    try {
+                        if (value.isEmpty()) throw new IllegalArgumentException();
+                        new SimpleDateFormat(value, Locale.US).format(new java.util.Date());
+                        prefs.edit().putString("gregorianDateCustomPattern", value)
+                                .putString("gregorianDateFormat", value).apply();
+                        preview.setText(value);
+                        dialog.dismiss();
+                    } catch (IllegalArgumentException ex) {
+                        input.setError("תבנית לא תקינה");
+                    }
+                }));
+        dialog.show();
     }
 
     private void refreshPermissionDependentToggles() {
@@ -1943,6 +2072,9 @@ screenTitle.setText("הגדרות");
                         ? (TextView) convertView : new TextView(SettingsActivity.this);
                 view.setText(names[position]);
                 styleSpinnerText(view, true, false);
+                if ("fontFamily".equals(key)) {
+                    view.setTypeface(fontPreviewTypeface(values[position]));
+                }
                 return view;
             }
 
@@ -1952,6 +2084,9 @@ screenTitle.setText("הגדרות");
                 TextView view = new TextView(SettingsActivity.this);
                 view.setText(names[position]);
                 styleDropdownOptionText(view, position == selectedIndex(key, values));
+                if ("fontFamily".equals(key)) {
+                    view.setTypeface(fontPreviewTypeface(values[position]));
+                }
                 view.setLayoutParams(new android.widget.AbsListView.LayoutParams(-1, dp(39)));
                 return view;
             }
@@ -2015,6 +2150,19 @@ screenTitle.setText("הגדרות");
 
             @Override public void onNothingSelected(AdapterView<?> parent) {}
         });
+    }
+
+    private Typeface fontPreviewTypeface(String family) {
+        if (family == null) return Typeface.DEFAULT;
+        if (family.startsWith("custom:")) {
+            try {
+                return Typeface.createFromAsset(getAssets(),
+                        "fonts/" + family.substring("custom:".length()));
+            } catch (Throwable ignored) {
+                return Typeface.DEFAULT;
+            }
+        }
+        return Typeface.create(family, Typeface.NORMAL);
     }
 
     private void styleSpinnerText(TextView view, boolean selected, boolean selectedOption) {
