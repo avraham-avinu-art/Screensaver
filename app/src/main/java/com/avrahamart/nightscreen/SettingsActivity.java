@@ -30,7 +30,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Process;
 import android.provider.Settings;
-import android.service.quicksettings.TileService;
 import android.view.Gravity;
 import android.view.View;
 import android.view.Window;
@@ -1080,15 +1079,21 @@ screenTitle.setText("הגדרות");
     private void requestQuickSettingsTile() {
         if (Build.VERSION.SDK_INT >= 33) {
             try {
-                TileService.requestAddTileService(this,
+                android.app.StatusBarManager statusBarManager =
+                        getSystemService(android.app.StatusBarManager.class);
+                if (statusBarManager == null) throw new IllegalStateException();
+                statusBarManager.requestAddTileService(
                         new ComponentName(this, ScreensaverTileService.class),
                         "שומר מסך", Icon.createWithResource(this, R.drawable.ic_launcher),
                         getMainExecutor(), result -> {
-                            if (result == TileService.TILE_ADD_REQUEST_RESULT_TILE_ADDED) {
+                            if (result == android.app.StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ADDED) {
                                 AppToast.makeText(this, "אריח שומר מסך נוסף להגדרות המהירות.",
                                         Toast.LENGTH_LONG).show();
-                            } else if (result == TileService.TILE_ADD_REQUEST_RESULT_TILE_ALREADY_ADDED) {
+                            } else if (result == android.app.StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ALREADY_ADDED) {
                                 AppToast.makeText(this, "אריח שומר מסך כבר נוסף.",
+                                        Toast.LENGTH_LONG).show();
+                            } else {
+                                AppToast.makeText(this, "לא ניתן להוסיף את האריח כרגע. אפשר להוסיף אותו ידנית בעריכת ההגדרות המהירות.",
                                         Toast.LENGTH_LONG).show();
                             }
                         });
