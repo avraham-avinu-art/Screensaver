@@ -2,6 +2,7 @@ package com.avrahamart.nightscreen;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.AppOpsManager;
 import android.app.NotificationManager;
 import android.app.admin.DevicePolicyManager;
 import android.content.ActivityNotFoundException;
@@ -26,6 +27,7 @@ import android.text.SpannableStringBuilder;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Process;
 import android.provider.Settings;
 import android.view.Gravity;
 import android.view.View;
@@ -51,6 +53,11 @@ import com.kosherjava.zmanim.hebrewcalendar.JewishDate;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Locale;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 public class SettingsActivity extends Activity {
     private static final int REQUEST_ENABLE_SCREEN_LOCK_ADMIN = 8142;
@@ -597,6 +604,107 @@ screenTitle.setText("הגדרות");
         addCheck(content, "הפעלה אוטומטית בטעינה", "autoStartOnCharge", false);
         addCheck(content, "ללא כיבוי בטעינה", "noShutdownWhileCharging", false);
         addCheck(content, "הצגת אחוז הסוללה", "showBatteryPercent", false);
+        addCheck(content, "השהיה באפליקציות מוחרגות",
+                "pauseWhenExcludedAppActive", false);
+        addExcludedAppsPicker(content);
+    }
+
+    private void addExcludedAppsPicker(LinearLayout parent) {
+        LinearLayout card = addCard(parent, "בחירת אפליקציות להחרגה");
+        TextView description = textView(
+                "אפשר לבחור אפליקציות שבהן שומר מסך לא יופעל אוטומטית. נדרשת הרשאת נתוני שימוש של Android.",
+                14, MUTED);
+        description.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        description.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
+        description.setTextDirection(View.TEXT_DIRECTION_RTL);
+        description.setLineSpacing(dp(3), 1f);
+        card.addView(description, new LinearLayout.LayoutParams(-1, -2));
+        Button choose = makeActionButton("בחירת אפליקציות");
+        LinearLayout.LayoutParams buttonParams = new LinearLayout.LayoutParams(-1, dp(42));
+        buttonParams.topMargin = dp(8);
+        card.addView(choose, buttonParams);
+        choose.setOnClickListener(v -> {
+            if (!hasUsageAccess()) {
+                AppToast.makeText(this,
+                        "כדי לזהות אפליקציה פעילה, יש לאפשר לשומר מסך גישה לנתוני שימוש במסך הבא.",
+                        Toast.LENGTH_LONG).show();
+                try {
+                    startActivity(new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS));
+                } catch (Throwable ignored) {
+                    AppToast.makeText(this, "הגדרת נתוני שימוש אינה זמינה במכשיר זה.",
+                            Toast.LENGTH_LONG).show();
+                }
+                return;
+            }
+            showExcludedAppsDialog();
+        });
+    }
+
+    private boolean hasUsageAccess() {
+        try {
+            AppOpsManager manager = (AppOpsManager) getSystemService(APP_OPS_SERVICE);
+            if (manager == null) return false;
+            return manager.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS,
+                    Process.myUid(), getPackageName()) == AppOpsManager.MODE_ALLOWED;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    private void showExcludedAppsDialog() {
+        Intent launcher = new Intent(Intent.ACTION_MAIN);
+        launcher.addCategory(Intent.CATEGORY_LAUNCHER);
+        List<android.content.pm.ResolveInfo> resolved =
+                getPackageManager().queryIntentActivities(launcher, 0);
+        java.util.Map<String, CharSequence> labels = new java.util.TreeMap<>(
+                (left, right) -> {
+                    try {
+                        return android.text.TextUtils.getStringOrSpannedString(
+                                getPackageManager().getApplicationLabel(
+                                        getPackageManager().getApplicationInfo(left, 0)))
+                                .toString().compareToIgnoreCase(
+                                getPackageManager().getApplicationLabel(
+                                        getPackageManager().getApplicationInfo(right, 0)).toString());
+                    } catch (Throwable ignored) {
+                        return left.compareToIgnoreCase(right);
+                    }
+                });
+        for (android.content.pm.ResolveInfo info : resolved) {
+            if (info.activityInfo == null) continue;
+            String packageName = info.activityInfo.packageName;
+            if (getPackageName().equals(packageName)) continue;
+            try {
+                CharSequence label = info.loadLabel(getPackageManager());
+                labels.put(packageName, label == null ? packageName : label);
+            } catch (Throwable ignored) {
+                labels.put(packageName, packageName);
+            }
+        }
+
+        List<String> packages = new ArrayList<>(labels.keySet());
+        List<String> names = new ArrayList<>();
+        boolean[] checked = new boolean[packages.size()];
+        Set<String> selected = new HashSet<>(
+                prefs.getStringSet("excludedForegroundPackages", Collections.emptySet()));
+        for (int i = 0; i < packages.size(); i++) {
+            names.add(String.valueOf(labels.get(packages.get(i))));
+            checked[i] = selected.contains(packages.get(i));
+        }
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setTitle("אפליקציות מוחרגות")
+                .setMultiChoiceItems(names.toArray(new String[0]), checked,
+                        (d, which, isChecked) -> checked[which] = isChecked)
+                .setNegativeButton("ביטול", null)
+                .setPositiveButton("שמירה", (d, which) -> {
+                    Set<String> updated = new HashSet<>();
+                    for (int i = 0; i < packages.size(); i++) {
+                        if (checked[i]) updated.add(packages.get(i));
+                    }
+                    prefs.edit().putStringSet("excludedForegroundPackages", updated).apply();
+                })
+                .create();
+        dialog.show();
     }
 
     private void buildAppearanceSettings() {
