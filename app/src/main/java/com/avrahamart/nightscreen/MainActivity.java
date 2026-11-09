@@ -932,7 +932,6 @@ public class MainActivity extends Activity {
         e.putString("backgroundStyle", getString("backgroundStyle", "solid"));
         e.putString("clockDatePosition", getString("clockDatePosition", "upper"));
         e.putString("playerPosition", getString("playerPosition", "bottom"));
-        e.putString("playerSize", getString("playerSize", "17"));
         e.putBoolean("nightModeEnabled", getBool("nightModeEnabled", false));
         e.putBoolean("batteryProtectionEnabled", getBool("batteryProtectionEnabled", false));
         e.putBoolean("dynamicAlbumBackgroundEnabled", getBool("dynamicAlbumBackgroundEnabled", false));
