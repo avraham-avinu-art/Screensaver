@@ -1013,9 +1013,6 @@ public class MainActivity extends Activity {
         e.putBoolean("nightModeEnabled", getBool("nightModeEnabled", false));
         e.putBoolean("batteryProtectionEnabled", getBool("batteryProtectionEnabled", false));
         e.putBoolean("useAndroidDreamForCharging", getBool("useAndroidDreamForCharging", false));
-        if (getBool("useAndroidDreamForCharging", false)) {
-            e.putBoolean("autoStartOnCharge", false);
-        }
         e.putBoolean("showAlbumArt", getBool("showAlbumArt", true));
         e.putInt("playerSize", getInt("playerSize", 17));
         e.putInt("fontWeight", getInt("fontWeight", 0));
@@ -1070,7 +1067,9 @@ public class MainActivity extends Activity {
         e.putInt("buttonColor", getInt("buttonColor", Color.rgb(45,45,45)));
         e.putInt("buttonBorderColor", getInt("buttonBorderColor", Color.rgb(110,110,110)));
         e.putString("screenSaverDuration", getString("screenSaverDuration", "device"));
-        e.putBoolean("autoStartOnCharge", getBool("autoStartOnCharge", false));
+        e.putBoolean("autoStartOnCharge",
+                getBool("autoStartOnCharge", false)
+                        && !getBool("useAndroidDreamForCharging", false));
         e.putBoolean("noShutdownWhileCharging",
                 getBool("noShutdownWhileCharging", false));
         e.putBoolean("showBatteryPercent", getBool("showBatteryPercent", false));
