@@ -12,6 +12,7 @@ import android.os.Looper;
 import android.os.PowerManager;
 import android.os.SystemClock;
 import android.provider.Settings;
+import android.util.Log;
 
 import java.io.File;
 import java.io.RandomAccessFile;
@@ -19,11 +20,11 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 
 /**
- * Handles independent automatic-start events. A screen-off event is only a
- * trigger to inspect the real device-lock state; it is never treated as a lock
- * by itself.
+ * Dynamic receiver owned by LockScreenMonitorService. Each event has its own
+ * independent preference gate; BOOT_COMPLETED is handled elsewhere.
  */
 public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
+    private static final String TAG = "NightScreenAutoStart";
     private static final long DEFAULT_LOCK_STATE_WAIT_MS = 30_000L;
     private static final long MAX_LOCK_STATE_WAIT_MS = 10 * 60_000L;
     private static final long LOCK_STATE_POLL_MS = 250L;
@@ -37,113 +38,123 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         if (intent == null || intent.getAction() == null) return;
+
         String action = intent.getAction();
         SharedPreferences prefs =
                 context.getSharedPreferences("settings", Context.MODE_PRIVATE);
 
         if (Intent.ACTION_USER_PRESENT.equals(action)) {
-            MainActivity.clearPausedByDeviceLockState();
+            onUserUnlocked(prefs);
+        } else if (Intent.ACTION_SCREEN_OFF.equals(action)) {
+            onScreenOff(context, prefs);
+        } else if (Intent.ACTION_SCREEN_ON.equals(action)) {
+            onScreenOn(context, prefs);
+        } else if (Intent.ACTION_POWER_CONNECTED.equals(action)) {
+            onPowerConnected(context, prefs);
+        }
+    }
+
+    private void onUserUnlocked(SharedPreferences prefs) {
+        cancelPendingLockCheck();
+        prefs.edit().putBoolean("deviceLockStartConsumed", false).apply();
+        MainActivity.clearPausedByDeviceLockState();
+    }
+
+    /** SCREEN_OFF may start only the device-lock confirmation flow. */
+    private void onScreenOff(Context context, SharedPreferences prefs) {
+        if (!AutoStartPolicy.isEnabledForAction(
+                Intent.ACTION_SCREEN_OFF,
+                prefs.getBoolean("autoStartOnDeviceLock", false),
+                false, false, false, false)) return;
+
+        if (!LockScreenMonitorService.isLockMonitoringActive()
+                || prefs.getBoolean("deviceLockStartConsumed", false)
+                || !canLaunchFromBackground(context)) return;
+
+        beginDeviceLockCheck(context.getApplicationContext());
+    }
+
+    /** SCREEN_ON may start only the wake route, never the lock route. */
+    private void onScreenOn(Context context, SharedPreferences prefs) {
+        if (pendingLockCheck != null && !isDeviceLocked(context)) {
             cancelPendingLockCheck();
-            // Rearm only after Android reports that the user has actually unlocked.
-            prefs.edit().putBoolean("deviceLockStartConsumed", false).apply();
-            return;
         }
 
-        if (Intent.ACTION_SCREEN_ON.equals(action)) {
-            // A pending lock delay is no longer relevant if the display woke while
-            // the device is still unlocked. If it is already locked, keep checking.
-            if (pendingLockCheck != null && !isDeviceLocked(context)) {
-                cancelPendingLockCheck();
-            }
+        if (!AutoStartPolicy.isEnabledForAction(
+                Intent.ACTION_SCREEN_ON,
+                false, false,
+                prefs.getBoolean("autoStartOnWake", false),
+                false, false)) return;
 
-            if (prefs.getBoolean("autoStartOnWake", false)
-                    && LockScreenMonitorService.isLockMonitoringActive()
-                    && !isMainActivityActivelyResumed(context)
-                    && canLaunchFromBackground(context)) {
-                Intent launch = new Intent(context, MainActivity.class);
-                launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
-                        | Intent.FLAG_ACTIVITY_CLEAR_TOP
-                        | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-                launch.putExtra(MainActivity.EXTRA_OPENED_BY_WAKE, true);
-                try {
-                    context.startActivity(launch);
-                } catch (Throwable ignored) {
-                    // Respect device-specific background-launch restrictions.
-                }
-            }
-            return;
-        }
+        // If the device is locked and lock-start is enabled, the lock event owns
+        // this cycle. Do not create a second launch with a different source.
+        if (isDeviceLocked(context)
+                && prefs.getBoolean("autoStartOnDeviceLock", false)) return;
 
-        if (Intent.ACTION_POWER_CONNECTED.equals(action)) {
-            // Android Dream is an alternative route. In that mode the system
-            // starts ScreensaverDreamService; this receiver must not start a
-            // second Activity for the same charging event.
-            if (prefs.getBoolean("useAndroidDreamForCharging", true)
-                    || !prefs.getBoolean("autoStartOnCharge", false)) return;
-            if (!canLaunchFromBackground(context)) return;
-            if (!claimPowerConnectedEvent(context)) return;
+        if (!LockScreenMonitorService.isLockMonitoringActive()
+                || isMainActivityActivelyResumed(context)
+                || !canLaunchFromBackground(context)) return;
 
-            Intent launch = new Intent(context, MainActivity.class);
-            launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
-                    | Intent.FLAG_ACTIVITY_CLEAR_TOP
-                    | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-            launch.putExtra(MainActivity.EXTRA_OPENED_BY_CHARGER, true);
-            try {
-                context.startActivity(launch);
-            } catch (Throwable ignored) {
-                // Respect device-specific background-launch restrictions.
-            }
-            return;
-        }
+        AutoStartActivityLauncher.launch(context, AutoStartPolicy.Trigger.DEVICE_WAKE);
+    }
 
-        if (Intent.ACTION_SCREEN_OFF.equals(action)
-                && prefs.getBoolean("autoStartOnDeviceLock", false)
-                && LockScreenMonitorService.isLockMonitoringActive()
-                && !prefs.getBoolean("deviceLockStartConsumed", false)
-                && canLaunchFromBackground(context)) {
-            beginDeviceLockCheck(context.getApplicationContext());
-        }
+    /** POWER_CONNECTED may start only the app-managed charging route. */
+    private void onPowerConnected(Context context, SharedPreferences prefs) {
+        if (!AutoStartPolicy.isEnabledForAction(
+                Intent.ACTION_POWER_CONNECTED,
+                false, false, false,
+                prefs.getBoolean("autoStartOnCharge", false),
+                prefs.getBoolean("useAndroidDreamForCharging", true))) return;
+
+        if (!canLaunchFromBackground(context)) return;
+
+        // A locked cycle belongs to the explicit lock trigger when that option
+        // is enabled; charging must not masquerade as another lock activation.
+        if (isDeviceLocked(context)
+                && prefs.getBoolean("autoStartOnDeviceLock", false)) return;
+
+        if (isMainActivityActivelyResumed(context)
+                || !claimPowerConnectedEvent(context)) return;
+
+        AutoStartActivityLauncher.launch(context, AutoStartPolicy.Trigger.CHARGER);
     }
 
     private void beginDeviceLockCheck(Context appContext) {
         if (pendingLockCheck != null) return;
 
-        SharedPreferences prefs = appContext.getSharedPreferences(
-                "settings", Context.MODE_PRIVATE);
+        SharedPreferences prefs =
+                appContext.getSharedPreferences("settings", Context.MODE_PRIVATE);
         if (!prefs.getBoolean("autoStartOnDeviceLock", false)
                 || !LockScreenMonitorService.isLockMonitoringActive()
                 || prefs.getBoolean("deviceLockStartConsumed", false)) return;
 
-        KeyguardManager keyguardManager =
+        KeyguardManager keyguard =
                 (KeyguardManager) appContext.getSystemService(Context.KEYGUARD_SERVICE);
-        // A swipe-only keyguard is not a device lock: Android considers the
-        // device unlocked because no authentication is required.
-        if (keyguardManager == null || !keyguardManager.isDeviceSecure()) return;
+        // A swipe-only keyguard is not a secure device lock.
+        if (keyguard == null || !keyguard.isDeviceSecure()) return;
 
-        PowerManager powerManager =
+        PowerManager power =
                 (PowerManager) appContext.getSystemService(Context.POWER_SERVICE);
         long waitWindowMs = getDeviceLockWaitWindowMs(appContext);
         try {
-            if (powerManager != null) {
-                pendingLockWakeLock = powerManager.newWakeLock(
-                        PowerManager.PARTIAL_WAKE_LOCK,
-                        "NightScreen:DeviceLockCheck");
+            if (power != null) {
+                pendingLockWakeLock = power.newWakeLock(
+                        PowerManager.PARTIAL_WAKE_LOCK, "NightScreen:DeviceLockCheck");
                 pendingLockWakeLock.acquire(waitWindowMs + 2_000L);
             }
-        } catch (Throwable ignored) {
+        } catch (Throwable error) {
             pendingLockWakeLock = null;
+            Log.w(TAG, "Unable to hold CPU while checking device lock", error);
         }
 
-        lockCheckDeadlineElapsedRealtime =
-                SystemClock.elapsedRealtime() + waitWindowMs;
+        lockCheckDeadlineElapsedRealtime = SystemClock.elapsedRealtime() + waitWindowMs;
         pendingLockCheck = new Runnable() {
-            @Override
-            public void run() {
-                SharedPreferences currentPrefs = appContext.getSharedPreferences(
-                        "settings", Context.MODE_PRIVATE);
-                if (!currentPrefs.getBoolean("autoStartOnDeviceLock", false)
+            @Override public void run() {
+                SharedPreferences current =
+                        appContext.getSharedPreferences("settings", Context.MODE_PRIVATE);
+                if (!current.getBoolean("autoStartOnDeviceLock", false)
                         || !LockScreenMonitorService.isLockMonitoringActive()
-                        || currentPrefs.getBoolean("deviceLockStartConsumed", false)
+                        || current.getBoolean("deviceLockStartConsumed", false)
                         || !canLaunchFromBackground(appContext)) {
                     finishPendingLockCheck();
                     return;
@@ -165,32 +176,23 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
         mainHandler.postDelayed(pendingLockCheck, LOCK_STATE_INITIAL_DELAY_MS);
     }
 
-    /**
-     * Android may delay applying Keyguard after the display turns off. Read the
-     * configured lock-after-screen-off delay when the platform exposes it and
-     * keep the bounded monitor alive long enough to observe that transition.
-     */
     private long getDeviceLockWaitWindowMs(Context context) {
         long waitMs = DEFAULT_LOCK_STATE_WAIT_MS;
         try {
-            long lockAfterTimeoutMs = Settings.Secure.getLong(
-                    context.getContentResolver(),
-                    "lock_screen_lock_after_timeout",
-                    0L);
-            if (lockAfterTimeoutMs > 0L) {
-                waitMs = Math.max(waitMs, lockAfterTimeoutMs + 5_000L);
-            }
+            long lockAfter = Settings.Secure.getLong(
+                    context.getContentResolver(), "lock_screen_lock_after_timeout", 0L);
+            if (lockAfter > 0L) waitMs = Math.max(waitMs, lockAfter + 5_000L);
         } catch (Throwable ignored) {
-            // Some Android builds do not expose this secure setting to apps.
+            // This secure setting is not exposed on every Android build.
         }
         return Math.min(MAX_LOCK_STATE_WAIT_MS, waitMs);
     }
 
     private boolean isDeviceLocked(Context context) {
-        KeyguardManager keyguardManager =
+        KeyguardManager keyguard =
                 (KeyguardManager) context.getSystemService(Context.KEYGUARD_SERVICE);
         try {
-            return keyguardManager != null && keyguardManager.isDeviceLocked();
+            return keyguard != null && keyguard.isDeviceLocked();
         } catch (Throwable ignored) {
             return false;
         }
@@ -204,24 +206,13 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
                 || !isDeviceLocked(context)
                 || !canLaunchFromBackground(context)) return;
 
-        // Consume this actual locked-state transition once. Unlike the previous
-        // implementation, do not reject the launch merely because the app process
-        // is visible: MainActivity may be paused behind the lock screen and must
-        // receive this intent so it can display above Keyguard.
         synchronized (AutoStartOnPowerReceiver.class) {
             if (prefs.getBoolean("deviceLockStartConsumed", false)) return;
             if (!prefs.edit().putBoolean("deviceLockStartConsumed", true).commit()) return;
         }
 
-        Intent launch = new Intent(context, MainActivity.class);
-        launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
-                | Intent.FLAG_ACTIVITY_CLEAR_TOP
-                | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        launch.putExtra(MainActivity.EXTRA_OPENED_BY_DEVICE_LOCK, true);
-        try {
-            context.startActivity(launch);
-        } catch (Throwable ignored) {
-            // Allow a later retry if Android rejected this launch.
+        if (!AutoStartActivityLauncher.launch(context, AutoStartPolicy.Trigger.DEVICE_LOCK)) {
+            // Keep this lock cycle eligible for retry if Android rejected the start.
             prefs.edit().putBoolean("deviceLockStartConsumed", false).apply();
         }
     }
@@ -245,13 +236,12 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
     }
 
     private boolean claimPowerConnectedEvent(Context context) {
-        // The receiver can exist in more than one app process. A short file lock
-        // prevents duplicate launches for the same plug-in event.
+        // File lock serializes overlapping callbacks if Android restarts a process
+        // while the previous charger callback is still unwinding.
         synchronized (AutoStartOnPowerReceiver.class) {
-            File guardFile = new File(
-                    context.getNoBackupFilesDir(), "power_connected_guard.bin");
+            File guard = new File(context.getNoBackupFilesDir(), "power_connected_guard.bin");
             long now = SystemClock.elapsedRealtime();
-            try (RandomAccessFile file = new RandomAccessFile(guardFile, "rw");
+            try (RandomAccessFile file = new RandomAccessFile(guard, "rw");
                  FileChannel channel = file.getChannel();
                  FileLock ignored = channel.lock()) {
                 long previous = -10_000L;
@@ -264,26 +254,24 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
                 file.seek(0L);
                 file.writeLong(now);
                 return true;
-            } catch (Throwable ignored) {
-                // Preserve the charger action if storage locking is unavailable.
+            } catch (Throwable error) {
+                Log.w(TAG, "Unable to serialize charger event", error);
                 return true;
             }
         }
     }
 
     private boolean isMainActivityActivelyResumed(Context context) {
-        SharedPreferences prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE);
-        return prefs.getBoolean("mainActivityResumed", false)
-                && isMainActivityVisible(context);
-    }
+        SharedPreferences prefs =
+                context.getSharedPreferences("settings", Context.MODE_PRIVATE);
+        if (!prefs.getBoolean("mainActivityResumed", false)) return false;
 
-    private boolean isMainActivityVisible(Context context) {
-        ActivityManager activityManager =
+        ActivityManager manager =
                 (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
-        if (activityManager == null) return false;
+        if (manager == null) return false;
         try {
             java.util.List<ActivityManager.RunningAppProcessInfo> processes =
-                    activityManager.getRunningAppProcesses();
+                    manager.getRunningAppProcesses();
             if (processes == null) return false;
             for (ActivityManager.RunningAppProcessInfo process : processes) {
                 if (context.getPackageName().equals(process.processName)) {
