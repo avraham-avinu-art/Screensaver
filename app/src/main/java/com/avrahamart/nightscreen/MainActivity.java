@@ -112,7 +112,6 @@ public class MainActivity extends Activity {
     private ContentObserver screenOffTimeoutObserver;
     private boolean screenOffTimeoutObserverRegistered = false;
     private boolean openedByCharger = false;
-    private boolean openedByDeviceLock = false;
     private boolean bottomSwipeCandidate = false;
     private boolean bottomSwipeDragging = false;
     private boolean bottomSwipeDismissAnimating = false;
@@ -128,6 +127,11 @@ public class MainActivity extends Activity {
         @Override public void onReceive(Context context, Intent intent) {
             if (intent == null || intent.getAction() == null) return;
             String action = intent.getAction();
+            if (Intent.ACTION_USER_PRESENT.equals(action)) {
+                mainActivityPausedByDeviceLock = false;
+                clearInitialDeviceLockLaunchOverride();
+                return;
+            }
             if (Intent.ACTION_POWER_CONNECTED.equals(action)
                     || Intent.ACTION_POWER_DISCONNECTED.equals(action)) {
                 updateChargingBatteryDisplay();
@@ -399,7 +403,6 @@ public class MainActivity extends Activity {
     private void applyDeviceLockLaunchFlags(Intent intent) {
         if (intent == null
                 || !intent.getBooleanExtra(EXTRA_OPENED_BY_DEVICE_LOCK, false)) return;
-        openedByDeviceLock = true;
         if (Build.VERSION.SDK_INT >= 27) {
             setTurnScreenOn(true);
         }
@@ -408,25 +411,59 @@ public class MainActivity extends Activity {
                         | android.view.WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON);
     }
 
+    private boolean isDeviceLockedNow() {
+        try {
+            android.app.KeyguardManager keyguard =
+                    (android.app.KeyguardManager) getSystemService(KEYGUARD_SERVICE);
+            return keyguard != null && keyguard.isDeviceLocked();
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
     /**
-     * When prevention is enabled, Android must not activate the keyguard over
-     * the active screensaver. An activation explicitly triggered by a device
-     * lock remains allowed to appear above the already-active keyguard.
+     * The lock-start marker belongs to one locked cycle only. Remove it after
+     * the user unlocks so later wake/charge/boot launches cannot inherit it.
+     */
+    private void clearInitialDeviceLockLaunchOverride() {
+        Intent current = getIntent();
+        if (current == null
+                || !current.getBooleanExtra(EXTRA_OPENED_BY_DEVICE_LOCK, false)) return;
+
+        Intent updated = new Intent(current);
+        updated.removeExtra(EXTRA_OPENED_BY_DEVICE_LOCK);
+        setIntent(updated);
+
+        if (Build.VERSION.SDK_INT >= 27) setTurnScreenOn(false);
+        getWindow().clearFlags(
+                android.view.WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON);
+        applyPreventLockWhileActivePreference();
+    }
+
+    /**
+     * Lock-screen visibility while the selected activity session is active is
+     * normal screensaver behavior and does not depend on the continuation switch.
+     * That switch is consulted only after the selected duration ended and the
+     * Activity is waiting for the next screen wake.
      */
     private void applyPreventLockWhileActivePreference() {
         boolean preventLock = LockBehaviorPreferences.isPreventionEnabled(this);
-        boolean openedByDeviceLock =
-                getIntent().getBooleanExtra(EXTRA_OPENED_BY_DEVICE_LOCK, false);
-        if (!getBool("continueOnLockScreen", false)) {
+        if (getIntent() != null
+                && getIntent().getBooleanExtra(EXTRA_OPENED_BY_DEVICE_LOCK, false)
+                && !isDeviceLockedNow()) {
+            Intent updated = new Intent(getIntent());
+            updated.removeExtra(EXTRA_OPENED_BY_DEVICE_LOCK);
+            setIntent(updated);
+            if (Build.VERSION.SDK_INT >= 27) setTurnScreenOn(false);
+            getWindow().clearFlags(
+                    android.view.WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON);
+        }
+        boolean continueOnLockScreen = getBool("continueOnLockScreen", false);
+        if (!continueOnLockScreen) {
             lockScreenContinuationArmed = false;
         }
-        // The initial activation caused by an actual device-lock event must be
-        // visible above Keyguard even when continuation is disabled. The
-        // "continue on lock screen" preference applies only after the selected
-        // activity duration ends and the display turns off.
-        boolean showAboveExistingKeyguard = openedByDeviceLock
-                || (getBool("continueOnLockScreen", false)
-                    && lockScreenContinuationArmed);
+        boolean showAboveExistingKeyguard = !waitingForScreenWakeAfterActivityEnd
+                || (continueOnLockScreen && lockScreenContinuationArmed);
 
         if (Build.VERSION.SDK_INT >= 27) {
             setShowWhenLocked(showAboveExistingKeyguard);
@@ -471,7 +508,7 @@ public class MainActivity extends Activity {
         if (!disabledFeatures.isEmpty()) {
             AppToast.makeText(this, disabledFeatures, Toast.LENGTH_LONG).show();
         }
-        NightScreenApplication.syncChargerReceiver(this);
+        LockScreenMonitorService.sync(this);
         applyPreventLockWhileActivePreference();
         try {
             if (settingsDialogOpen) {
@@ -2241,6 +2278,13 @@ public class MainActivity extends Activity {
 
     private void resumeScreensaverAfterScreenWake() {
         if (!waitingForScreenWakeAfterActivityEnd || !isScreenInteractive()) return;
+        if (!getBool("continueOnLockScreen", false)) {
+            waitingForScreenWakeAfterActivityEnd = false;
+            lockScreenContinuationArmed = false;
+            applyPreventLockWhileActivePreference();
+            finishAffinity();
+            return;
+        }
         waitingForScreenWakeAfterActivityEnd = false;
         lockScreenContinuationArmed = getBool("continueOnLockScreen", false);
         applyPreventLockWhileActivePreference();
@@ -2320,6 +2364,7 @@ public class MainActivity extends Activity {
         filter.addAction(Intent.ACTION_BATTERY_CHANGED);
         filter.addAction(Intent.ACTION_SCREEN_ON);
         filter.addAction(Intent.ACTION_SCREEN_OFF);
+        filter.addAction(Intent.ACTION_USER_PRESENT);
         filter.addAction(Intent.ACTION_TIME_TICK);
         filter.addAction(Intent.ACTION_TIME_CHANGED);
         filter.addAction(Intent.ACTION_DATE_CHANGED);
