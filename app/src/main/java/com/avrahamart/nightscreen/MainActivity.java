@@ -73,8 +73,6 @@ public class MainActivity extends Activity {
             "com.avrahamart.nightscreen.EXTRA_OPENED_BY_CHARGER";
     public static final String EXTRA_OPENED_BY_DEVICE_LOCK =
             "com.avrahamart.nightscreen.EXTRA_OPENED_BY_DEVICE_LOCK";
-    public static final String ACTION_FINISH_FROM_NOTIFICATION =
-            "com.screensaver.action.FINISH_FROM_NOTIFICATION";
     private static volatile boolean mainActivityResumed = false;
     private static volatile boolean mainActivitySessionAlive = false;
     private static volatile boolean mainActivityPausedByDeviceLock = false;
@@ -126,12 +124,9 @@ public class MainActivity extends Activity {
             String action = intent.getAction();
             if (Intent.ACTION_POWER_CONNECTED.equals(action)
                     || Intent.ACTION_POWER_DISCONNECTED.equals(action)) {
-                updateBatteryPercentView();
                 if (getBool("noShutdownWhileCharging", false)) {
                     scheduleAutoOff(true);
                 }
-            } else if (Intent.ACTION_BATTERY_CHANGED.equals(action)) {
-                updateBatteryPercentView();
             } else if (Intent.ACTION_TIME_TICK.equals(action)
                     || Intent.ACTION_TIME_CHANGED.equals(action)
                     || Intent.ACTION_DATE_CHANGED.equals(action)
@@ -199,10 +194,6 @@ public class MainActivity extends Activity {
     private TextView mediaProgressText;
     private TextView mediaCurrentText;
     private TextView mediaTotalText;
-    private LinearLayout batteryInfoPanel;
-    private TextView batteryPercentText;
-    private TextView batteryStatusText;
-    private android.widget.ProgressBar batteryLevelBar;
     private LinearLayout mediaProgressRow;
     private SeekBar mediaSeekBar;
     private MediaController lastKnownMediaController;
@@ -229,8 +220,7 @@ public class MainActivity extends Activity {
     private LinearLayout mediaSetup;
     private LinearLayout mediaMirror;
     private TextView mediaTitle;
-    private ImageView mediaArtwork;
-    private int currentAlbumAccentColor = Color.rgb(33, 52, 75);
+    private Bitmap currentAlbumArt;
     private ImageView mediaPlayPause;
     private FrameLayout mediaControlsHolder;
     private ImageView mediaPrev;
@@ -355,11 +345,6 @@ public class MainActivity extends Activity {
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         setIntent(intent);
-        if (intent != null
-                && ACTION_FINISH_FROM_NOTIFICATION.equals(intent.getAction())) {
-            finish();
-            return;
-        }
         if (intent != null && (intent.getBooleanExtra(EXTRA_OPENED_BY_CHARGER, false)
                 || intent.getBooleanExtra(EXTRA_OPENED_BY_DEVICE_LOCK, false))) {
             applyChargingLaunchFlags(intent);
@@ -623,61 +608,6 @@ public class MainActivity extends Activity {
         buildSystemMediaMirror(mediaHolder);
 
 
-        batteryInfoPanel = new LinearLayout(this);
-        batteryInfoPanel.setOrientation(LinearLayout.VERTICAL);
-        batteryInfoPanel.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        batteryInfoPanel.setPadding(dp(7), dp(5), dp(7), dp(5));
-        GradientDrawable batteryPanelBackground = new GradientDrawable();
-        batteryPanelBackground.setColor(Color.argb(220, 13, 25, 39));
-        batteryPanelBackground.setCornerRadius(dp(11));
-        batteryPanelBackground.setStroke(dp(1), Color.rgb(60, 82, 106));
-        batteryInfoPanel.setBackground(batteryPanelBackground);
-
-        LinearLayout batteryRow = new LinearLayout(this);
-        batteryRow.setOrientation(LinearLayout.HORIZONTAL);
-        batteryRow.setGravity(Gravity.CENTER_VERTICAL);
-        batteryRow.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        batteryPercentText = textView("", 13, Color.rgb(220, 232, 245));
-        batteryPercentText.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-        batteryPercentText.setTextSize(12);
-        batteryPercentText.setBackground(new BatteryOutlineDrawable());
-        batteryPercentText.setGravity(Gravity.CENTER);
-        batteryPercentText.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-        batteryPercentText.setTextDirection(View.TEXT_DIRECTION_LTR);
-        batteryPercentText.setIncludeFontPadding(false);
-        batteryRow.addView(batteryPercentText, new LinearLayout.LayoutParams(dp(48), dp(28)));
-
-        batteryStatusText = textView("", 10, Color.rgb(190, 207, 225));
-        batteryStatusText.setGravity(Gravity.CENTER);
-        batteryStatusText.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-        batteryStatusText.setMaxLines(2);
-        LinearLayout.LayoutParams batteryStatusParams =
-                new LinearLayout.LayoutParams(dp(56), dp(30));
-        batteryStatusParams.rightMargin = dp(5);
-        batteryRow.addView(batteryStatusText, batteryStatusParams);
-        batteryInfoPanel.addView(batteryRow, new LinearLayout.LayoutParams(-1, dp(30)));
-
-        batteryLevelBar = new android.widget.ProgressBar(this, null,
-                android.R.attr.progressBarStyleHorizontal);
-        batteryLevelBar.setMax(100);
-        batteryLevelBar.setProgress(0);
-        if (Build.VERSION.SDK_INT >= 21) {
-            batteryLevelBar.setProgressTintList(
-                    android.content.res.ColorStateList.valueOf(Color.rgb(87, 174, 208)));
-            batteryLevelBar.setProgressBackgroundTintList(
-                    android.content.res.ColorStateList.valueOf(Color.rgb(48, 65, 82)));
-        }
-        LinearLayout.LayoutParams batteryBarParams =
-                new LinearLayout.LayoutParams(-1, dp(3));
-        batteryBarParams.topMargin = dp(3);
-        batteryInfoPanel.addView(batteryLevelBar, batteryBarParams);
-        batteryInfoPanel.setVisibility(View.GONE);
-        FrameLayout.LayoutParams batteryPanelParams = new FrameLayout.LayoutParams(
-                dp(124), dp(49), Gravity.TOP | Gravity.RIGHT);
-        batteryPanelParams.rightMargin = dp(12);
-        batteryPanelParams.topMargin = dp(12);
-        stage.addView(batteryInfoPanel, batteryPanelParams);
-
         stage.post(() -> {
             applySettings();
             updateScreenPositions(stageView, clockBlockView, mediaHolderView);
@@ -917,21 +847,6 @@ public class MainActivity extends Activity {
         totalParams.leftMargin = dp(4);
         mediaProgressRow.addView(mediaTotalText, totalParams);
 
-        mediaArtwork = new ImageView(this);
-        mediaArtwork.setScaleType(ImageView.ScaleType.CENTER_CROP);
-        mediaArtwork.setVisibility(View.GONE);
-        GradientDrawable artworkBackground = new GradientDrawable();
-        artworkBackground.setColor(Color.rgb(22, 36, 52));
-        artworkBackground.setCornerRadius(dp(9));
-        artworkBackground.setStroke(dp(1), Color.rgb(49, 70, 94));
-        mediaArtwork.setBackground(artworkBackground);
-        if (Build.VERSION.SDK_INT >= 21) mediaArtwork.setClipToOutline(true);
-        LinearLayout.LayoutParams artworkParams =
-                new LinearLayout.LayoutParams(dp(54), dp(54));
-        artworkParams.gravity = Gravity.CENTER_HORIZONTAL;
-        artworkParams.bottomMargin = dp(5);
-        mediaMirror.addView(mediaArtwork, artworkParams);
-
         // Artist first and song title immediately below it, followed by progress.
         LinearLayout.LayoutParams detailsParams = new LinearLayout.LayoutParams(-1, dp(30));
         mediaMirror.addView(mediaDetails, detailsParams);
@@ -1019,8 +934,19 @@ public class MainActivity extends Activity {
         e.putString("playerPosition", getString("playerPosition", "bottom"));
         e.putBoolean("nightModeEnabled", getBool("nightModeEnabled", false));
         e.putBoolean("batteryProtectionEnabled", getBool("batteryProtectionEnabled", false));
-        e.putBoolean("useAndroidDreamForCharging", getBool("useAndroidDreamForCharging", false));
-        e.putBoolean("showAlbumArt", getBool("showAlbumArt", true));
+        boolean chargeMethodDefaultApplied =
+                getBool("chargeActivationMethodDefaultV1Applied", false);
+        boolean useAndroidDreamForCharging = getBool("useAndroidDreamForCharging", true);
+        if (!chargeMethodDefaultApplied) {
+            // Android Dream is the default method for the existing charge auto-start switch.
+            // The legacy overlay-based method remains selectable and fully supported.
+            useAndroidDreamForCharging = true;
+            e.putBoolean("chargeActivationMethodDefaultV1Applied", true);
+        }
+        e.putBoolean("useAndroidDreamForCharging", useAndroidDreamForCharging);
+        e.putBoolean("frameUseAlbumArt",
+                getBool("frameUseAlbumArt", getBool("showAlbumArt", true)));
+        e.remove("showAlbumArt");
         e.putInt("playerSize", getInt("playerSize", 17));
         e.putInt("fontWeight", getInt("fontWeight", 0));
         String savedFontFamily = getString("fontFamily", "sans-serif");
@@ -1074,11 +1000,11 @@ public class MainActivity extends Activity {
         e.putInt("buttonColor", getInt("buttonColor", Color.rgb(45,45,45)));
         e.putInt("buttonBorderColor", getInt("buttonBorderColor", Color.rgb(110,110,110)));
         e.putString("screenSaverDuration", getString("screenSaverDuration", "device"));
-        // Charging activation is handled exclusively by Android DreamService.
-        e.putBoolean("autoStartOnCharge", false);
+        // Keep the existing charge auto-start setting for both activation routes.
+        e.putBoolean("autoStartOnCharge", getBool("autoStartOnCharge", false));
         e.putBoolean("noShutdownWhileCharging",
                 getBool("noShutdownWhileCharging", false));
-        e.putBoolean("showBatteryPercent", getBool("showBatteryPercent", false));
+        e.remove("showBatteryPercent");
         if (!getBool("chargingOptionsSplitV1Applied", false)) {
             // Migrate the old activity-time choice once to the dedicated charging switch.
             if ("charging".equals(getString("screenSaverDuration", "device"))) {
@@ -1545,7 +1471,6 @@ public class MainActivity extends Activity {
                 updateScreenPositions(stageView, clockBlockView, mediaHolderView);
             }
         }
-        updateBatteryPercentView();
         updateClock();
     }
 
@@ -1673,36 +1598,6 @@ public class MainActivity extends Activity {
         view.invalidate();
     }
 
-    private final class BatteryOutlineDrawable extends Drawable {
-        private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        private final float density = getResources().getDisplayMetrics().density;
-
-        @Override public void draw(Canvas canvas) {
-            android.graphics.Rect bounds = getBounds();
-            float left = bounds.left + 2f * density;
-            float top = bounds.top + 4f * density;
-            float right = bounds.right - 7f * density;
-            float bottom = bounds.bottom - 4f * density;
-            paint.setColor(Color.rgb(156, 178, 203));
-            paint.setStyle(Paint.Style.STROKE);
-            paint.setStrokeWidth(1.15f * density);
-            canvas.drawRoundRect(left, top, right, bottom, 3f * density, 3f * density, paint);
-            paint.setStyle(Paint.Style.FILL);
-            float capLeft = right + 1f * density;
-            float capTop = bounds.top + bounds.height() * 0.37f;
-            float capBottom = bounds.top + bounds.height() * 0.63f;
-            canvas.drawRoundRect(capLeft, capTop, bounds.right - 1f * density,
-                    capBottom, 1f * density, 1f * density, paint);
-        }
-
-        @Override public void setAlpha(int alpha) { paint.setAlpha(alpha); invalidateSelf(); }
-        @Override public void setColorFilter(android.graphics.ColorFilter filter) {
-            paint.setColorFilter(filter); invalidateSelf();
-        }
-        @Override public int getOpacity() { return android.graphics.PixelFormat.TRANSLUCENT; }
-    }
-
-    
     private boolean isBatteryProtectionNeeded() {
         int threshold = Math.max(1, Math.min(50,
                 getInt("batteryProtectionThreshold", 20)));
@@ -1723,48 +1618,6 @@ public class MainActivity extends Activity {
     }
 
     
-    private void updateBatteryPercentView() {
-        if (batteryInfoPanel == null) return;
-        if (!getBool("showBatteryPercent", false)) {
-            batteryInfoPanel.setVisibility(View.GONE);
-            return;
-        }
-        try {
-            Intent battery = registerReceiver(null,
-                    new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
-            if (battery == null) {
-                batteryInfoPanel.setVisibility(View.GONE);
-                return;
-            }
-            int level = battery.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
-            int scale = battery.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
-            if (level < 0 || scale <= 0) {
-                batteryInfoPanel.setVisibility(View.GONE);
-                return;
-            }
-            int percent = Math.max(0, Math.min(100, Math.round(level * 100f / scale)));
-            int plugged = battery.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0);
-            int status = battery.getIntExtra(BatteryManager.EXTRA_STATUS,
-                    BatteryManager.BATTERY_STATUS_UNKNOWN);
-            String stateText;
-            if (status == BatteryManager.BATTERY_STATUS_CHARGING) {
-                stateText = "בטעינה";
-            } else if (status == BatteryManager.BATTERY_STATUS_FULL) {
-                stateText = "טעונה";
-            } else if (plugged != 0) {
-                stateText = "מחוברת לחשמל";
-            } else {
-                stateText = "פועלת על סוללה";
-            }
-            batteryPercentText.setText(percent + "%");
-            batteryStatusText.setText(stateText);
-            batteryLevelBar.setProgress(percent);
-            batteryInfoPanel.setVisibility(View.VISIBLE);
-        } catch (Throwable ignored) {
-            batteryInfoPanel.setVisibility(View.GONE);
-        }
-    }
-
     private int getScreenBackgroundColor() {
         return getInt("screenBackgroundColor", Color.BLACK);
     }
@@ -1841,44 +1694,7 @@ public class MainActivity extends Activity {
         return hour >= start || hour < end;
     }
 
-    private int extractAlbumAccentColor(Bitmap artwork) {
-        if (artwork == null || artwork.isRecycled()
-                || artwork.getWidth() <= 0 || artwork.getHeight() <= 0) {
-            return Color.rgb(33, 52, 75);
-        }
-        Bitmap sample = null;
-        try {
-            sample = Bitmap.createScaledBitmap(artwork, 16, 16, true);
-            long red = 0L, green = 0L, blue = 0L, weightTotal = 0L;
-            for (int y = 0; y < sample.getHeight(); y++) {
-                for (int x = 0; x < sample.getWidth(); x++) {
-                    int pixel = sample.getPixel(x, y);
-                    if (Color.alpha(pixel) < 100) continue;
-                    float[] hsv = new float[3];
-                    Color.colorToHSV(pixel, hsv);
-                    int weight = Math.max(1, Math.round(1f + hsv[1] * 3f));
-                    red += (long) Color.red(pixel) * weight;
-                    green += (long) Color.green(pixel) * weight;
-                    blue += (long) Color.blue(pixel) * weight;
-                    weightTotal += weight;
-                }
-            }
-            if (weightTotal == 0L) return Color.rgb(33, 52, 75);
-            int average = Color.rgb((int) (red / weightTotal),
-                    (int) (green / weightTotal), (int) (blue / weightTotal));
-            float[] hsv = new float[3];
-            Color.colorToHSV(average, hsv);
-            hsv[1] = Math.max(0.25f, Math.min(0.78f, hsv[1]));
-            hsv[2] = Math.max(0.42f, Math.min(0.72f, hsv[2]));
-            return Color.HSVToColor(hsv);
-        } catch (Throwable ignored) {
-            return Color.rgb(33, 52, 75);
-        } finally {
-            if (sample != null && sample != artwork && !sample.isRecycled()) sample.recycle();
-        }
-    }
-
-    private void applyScreenAppearance() {
+    private void applyScreenAppearance()    private void applyScreenAppearance() {
         int backgroundColor = getScreenBackgroundColor();
         Drawable screenBackground = createScreenBackgroundDrawable();
         if (stageView != null) {
@@ -1920,6 +1736,7 @@ public class MainActivity extends Activity {
         if (!enabled) {
             mediaMirror.setBackgroundColor(Color.TRANSPARENT);
             mediaMirror.setPadding(0, 0, 0, 0);
+            if (Build.VERSION.SDK_INT >= 21) mediaMirror.setClipToOutline(false);
             return;
         }
         try {
@@ -1930,21 +1747,39 @@ public class MainActivity extends Activity {
                     : selectedWidth == 2 ? 1.25f : 1.5f;
             int strokeWidthPx = Math.max(1, Math.round(
                     strokeWidthDp * getResources().getDisplayMetrics().density));
-            boolean hasAlbumColor = getBool("showAlbumArt", true)
-                    && mediaArtwork != null && mediaArtwork.getVisibility() == View.VISIBLE;
-            int innerColor = hasAlbumColor
-                    ? blendWithBlack(currentAlbumAccentColor, 0.46f)
-                    : Color.rgb(20, 36, 56);
-            GradientDrawable background = new GradientDrawable();
-            background.setColor(innerColor);
-            background.setCornerRadius(dp(radius));
-            background.setStroke(strokeWidthPx, frameColor);
-            mediaMirror.setBackground(background);
+            GradientDrawable base = new GradientDrawable();
+            base.setColor(Color.rgb(20, 36, 56));
+            base.setCornerRadius(dp(radius));
+            GradientDrawable border = new GradientDrawable();
+            border.setColor(Color.TRANSPARENT);
+            border.setCornerRadius(dp(radius));
+            border.setStroke(strokeWidthPx, frameColor);
+            boolean useAlbumArt = getBool("frameUseAlbumArt", true)
+                    && currentAlbumArt != null && !currentAlbumArt.isRecycled();
+            if (useAlbumArt) {
+                android.graphics.drawable.BitmapDrawable artworkLayer =
+                        new android.graphics.drawable.BitmapDrawable(
+                                getResources(), currentAlbumArt);
+                artworkLayer.setGravity(Gravity.FILL);
+                artworkLayer.setAlpha(185);
+                GradientDrawable textScrim = new GradientDrawable();
+                textScrim.setColor(Color.argb(126, 9, 19, 33));
+                textScrim.setCornerRadius(dp(radius));
+                mediaMirror.setBackground(new android.graphics.drawable.LayerDrawable(
+                        new android.graphics.drawable.Drawable[]{
+                                base, artworkLayer, textScrim, border
+                        }));
+            } else {
+                mediaMirror.setBackground(new android.graphics.drawable.LayerDrawable(
+                        new android.graphics.drawable.Drawable[]{base, border}));
+            }
+            if (Build.VERSION.SDK_INT >= 21) mediaMirror.setClipToOutline(true);
             int inset = Math.max(dp(5), strokeWidthPx + dp(3));
             mediaMirror.setPadding(inset, inset, inset, inset);
         } catch (Throwable ignored) {
             mediaMirror.setBackgroundColor(Color.TRANSPARENT);
             mediaMirror.setPadding(0, 0, 0, 0);
+            if (Build.VERSION.SDK_INT >= 21) mediaMirror.setClipToOutline(false);
         }
     }
 
@@ -2283,6 +2118,7 @@ public class MainActivity extends Activity {
                 || settingsDialogOpen || isFinishing()) return;
 
         String duration = getString("screenSaverDuration", "device");
+        ScreenOffLaunchGuard.recordHandled(this);
         boolean systemManagedDuration = "device".equals(duration) || "0".equals(duration);
         boolean continueOnLockScreen = getBool("continueOnLockScreen", false);
 
@@ -2340,7 +2176,6 @@ public class MainActivity extends Activity {
         IntentFilter filter = new IntentFilter();
         filter.addAction(Intent.ACTION_POWER_CONNECTED);
         filter.addAction(Intent.ACTION_POWER_DISCONNECTED);
-        filter.addAction(Intent.ACTION_BATTERY_CHANGED);
         filter.addAction(Intent.ACTION_SCREEN_ON);
         filter.addAction(Intent.ACTION_SCREEN_OFF);
         filter.addAction(Intent.ACTION_TIME_TICK);
@@ -2599,7 +2434,6 @@ public class MainActivity extends Activity {
     private void updateClock() {
         if (timeText == null || gregorianText == null || hebrewText == null) return;
         now.setTimeInMillis(System.currentTimeMillis());
-        updateBatteryPercentView();
         String formattedTime = numericTime();
         if (!formattedTime.contentEquals(timeText.getText())) {
             timeText.setText(formattedTime);
@@ -3371,7 +3205,6 @@ public class MainActivity extends Activity {
     }
 
     private void updateAlbumArtwork(MediaMetadata metadata) {
-        if (mediaArtwork == null) return;
         Bitmap artwork = null;
         if (metadata != null) {
             try { artwork = metadata.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART); }
@@ -3385,33 +3218,17 @@ public class MainActivity extends Activity {
                 catch (Throwable ignored) {}
             }
         }
-        boolean showArtwork = getBool("showAlbumArt", true)
-                && artwork != null && !artwork.isRecycled();
-        if (!showArtwork) {
-            mediaArtwork.setImageDrawable(null);
-            mediaArtwork.setVisibility(View.GONE);
-            currentAlbumAccentColor = Color.rgb(33, 52, 75);
-        } else {
-            mediaArtwork.animate().cancel();
-            mediaArtwork.setAlpha(1f);
-            mediaArtwork.setImageBitmap(artwork);
-            mediaArtwork.setVisibility(View.VISIBLE);
-            currentAlbumAccentColor = extractAlbumAccentColor(artwork);
+        currentAlbumArt = artwork != null && !artwork.isRecycled() ? artwork : null;
+        if (mediaMirror != null) {
+            boolean active = mediaController != null && hasUsableMediaSession(mediaController);
+            applyMediaFrame(active);
         }
     }
 
-    
-
     private void hideMediaMirror() {
         stopMediaProgressTicker();
-        if (mediaArtwork != null) {
-            mediaArtwork.setImageDrawable(null);
-            mediaArtwork.setVisibility(View.GONE);
-        }
-        currentAlbumAccentColor = Color.rgb(33, 52, 75);
-        if (mediaMirror != null) {
-            mediaMirror.setVisibility(View.GONE);
-        }
+        currentAlbumArt = null;
+        if (mediaMirror != null) mediaMirror.setVisibility(View.GONE);
         stopTitleMarquee();
         stopArtistMarquee();
     }
