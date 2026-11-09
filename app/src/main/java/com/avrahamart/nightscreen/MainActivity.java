@@ -3806,7 +3806,13 @@ public class MainActivity extends Activity {
         }
 
         private void drawSplit(Canvas canvas) {
-            String hourText = String.valueOf(hour % 12 == 0 ? 12 : hour % 12);
+            String timeMode = getString("timeFormat", "system");
+            boolean use24Hour = "24".equals(timeMode)
+                    || ("system".equals(timeMode)
+                    && android.text.format.DateFormat.is24HourFormat(MainActivity.this));
+            int displayedHour = use24Hour ? hour
+                    : (hour % 12 == 0 ? 12 : hour % 12);
+            String hourText = String.valueOf(displayedHour);
             String minuteText = String.format(Locale.US, "%02d", minute);
             paint.setTypeface(clockTypeface);
             paint.setColor(clockColor);
