@@ -2504,6 +2504,7 @@ public class MainActivity extends Activity {
 
     private void updateChargingBatteryDisplay() {
         if (chargingBatteryView == null || prefs == null) return;
+        int previousVisibility = chargingBatteryView.getVisibility();
         String mode = getString("chargingBatteryDisplayMode", "off");
         if ("off".equals(mode)) {
             chargingBatteryView.setBatteryState("off", 0, false,
@@ -2526,13 +2527,46 @@ public class MainActivity extends Activity {
                 int status = battery.getIntExtra(BatteryManager.EXTRA_STATUS,
                         BatteryManager.BATTERY_STATUS_UNKNOWN);
                 pluggedIn = plugged != 0
-                        || status == BatteryManager.BATTERY_STATUS_CHARGING
-                        || status == BatteryManager.BATTERY_STATUS_FULL;
+                        || status == BatteryManager.BATTERY_STATUS_CHARGING;
             }
         } catch (Throwable ignored) {
         }
         chargingBatteryView.setBatteryState(mode, percent, pluggedIn,
                 getInt("fontColor", dateTextColor));
+        if (previousVisibility != chargingBatteryView.getVisibility()) {
+            updateClockBlockHeightForChargingIndicator();
+        }
+    }
+
+    private void updateClockBlockHeightForChargingIndicator() {
+        if (clockBlockView == null || timeText == null) return;
+        int totalHeight = 0;
+        for (int i = 0; i < clockBlockView.getChildCount(); i++) {
+            View child = clockBlockView.getChildAt(i);
+            if (child.getVisibility() == View.GONE) continue;
+            ViewGroup.LayoutParams rawParams = child.getLayoutParams();
+            int childHeight = child.getMeasuredHeight();
+            int topMargin = 0;
+            int bottomMargin = 0;
+            if (rawParams instanceof LinearLayout.LayoutParams) {
+                LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) rawParams;
+                if (params.height >= 0) childHeight = params.height;
+                topMargin = params.topMargin;
+                bottomMargin = params.bottomMargin;
+            } else if (rawParams != null && rawParams.height >= 0) {
+                childHeight = rawParams.height;
+            }
+            totalHeight += Math.max(0, childHeight) + topMargin + bottomMargin;
+        }
+        if (totalHeight <= 0) return;
+        FrameLayout.LayoutParams blockParams =
+                (FrameLayout.LayoutParams) clockBlockView.getLayoutParams();
+        if (blockParams != null && blockParams.height != totalHeight) {
+            blockParams.height = totalHeight;
+            clockBlockView.setLayoutParams(blockParams);
+            clockBlockView.post(() -> updateScreenPositions(
+                    stageView, clockBlockView, mediaHolderView));
+        }
     }
 
     private void updateClock() {
@@ -3097,11 +3131,19 @@ public class MainActivity extends Activity {
             handler.removeCallbacks(hidePlayerControlsIntroWindowRunnable);
             playerControlsIntroWindowVisible = !"off".equals(controlsMode);
             playerControlsIntroWindowDeadlineElapsedRealtime = 0L;
-        } else if (playbackActive && (trackChanged || repeatedOrRestartedTrack)) {
-            startPlayerControlsIntroWindow(PLAYER_START_WINDOW_MS);
         } else if (playbackActive
-                && (firstObservedTrack || playbackJustStarted || controlsModeJustEnabled)
-                && positionMs < PLAYER_START_WINDOW_MS) {
+                && (trackChanged || repeatedOrRestartedTrack
+                || firstObservedTrack || playbackJustStarted || controlsModeJustEnabled)) {
+            if (positionMs < PLAYER_START_WINDOW_MS) {
+                startPlayerControlsIntroWindow(
+                        PLAYER_START_WINDOW_MS - Math.max(0L, positionMs));
+            } else {
+                handler.removeCallbacks(hidePlayerControlsIntroWindowRunnable);
+                playerControlsIntroWindowVisible = false;
+                playerControlsIntroWindowDeadlineElapsedRealtime = 0L;
+            }
+        } else if (playbackActive && positionMs < PLAYER_START_WINDOW_MS
+                && !playerControlsIntroWindowVisible && controlsModeJustEnabled) {
             startPlayerControlsIntroWindow(
                     PLAYER_START_WINDOW_MS - Math.max(0L, positionMs));
         }
@@ -3365,6 +3407,9 @@ public class MainActivity extends Activity {
 
     private void hideMediaMirror() {
         stopMediaProgressTicker();
+        handler.removeCallbacks(hidePlayerControlsIntroWindowRunnable);
+        playerControlsIntroWindowVisible = false;
+        playerControlsIntroWindowDeadlineElapsedRealtime = 0L;
         currentAlbumArt = null;
         if (mediaMirror != null) mediaMirror.setVisibility(View.GONE);
         stopTitleMarquee();
