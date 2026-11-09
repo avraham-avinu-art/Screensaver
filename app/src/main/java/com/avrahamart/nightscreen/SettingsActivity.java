@@ -597,6 +597,10 @@ screenTitle.setText("הגדרות");
         addCheck(content, "הפעלה אוטומטית בהתעוררות", "autoStartOnWake", false);
         addCheck(content, "הפעלה אוטומטית בטעינה ובעגינה", "autoStartOnCharge", false);
         addCheck(content, "ללא כיבוי בטעינה", "noShutdownWhileCharging", false);
+        addSegmentedChoices(content, "תצוגת סוללה בטעינה",
+                new String[]{"ללא", "אחוזים", "סמל", "סמל ואחוזים"},
+                new String[]{"off", "percent", "icon", "icon_percent"},
+                "chargingBatteryDisplayMode");
         addCheck(content, "השהיה באפליקציות מוחרגות",
                 "pauseWhenExcludedAppActive", false);
         if (currentSettingsGroup != null && currentSettingsGroup.getChildCount() > 1) {
@@ -741,7 +745,9 @@ screenTitle.setText("הגדרות");
                 new String[]{"כבוי", "פועל", "פועל בתחילת שיר"},
                 new String[]{"off", "on", "start"}, "playerDisplayMode");
         addCheck(content, "פרטי האמן", "showDetails", getBool("showDetails", true));
-        addCheck(content, "זמני השיר ופקדי הנגן", "showProgress", true);
+        addSegmentedChoices(content, "הצגת שורת מיקום ופקדי הנגן",
+                new String[]{"כבוי", "פועל", "פועל בתחילת שיר"},
+                new String[]{"off", "on", "start"}, "playerControlsDisplayMode");
         addDiscreteSlider(content, "גודל הנגן",
                 new String[]{"קטן", "בינוני", "גדול", "ענק"},
                 new String[]{"14", "17", "20", "23"}, "playerSize");
@@ -1005,7 +1011,8 @@ screenTitle.setText("הגדרות");
         if ("playerDisplayMode".equals(key)) return "הצגת נגן המערכת בזמן שהוא פועל";
         if ("showPlayerOnlyAtStart".equals(key)) return "הצגת הנגן רק בתחילת כל שיר";
         if ("showDetails".equals(key)) return "כשמופיע בפרטי השיר את שם האמן, הצגת שם האמן מעל שם השיר";
-        if ("showProgress".equals(key)) return "הצגת נגן מלא, כולל זמני השיר סרגל התקדמות ולחצני שליטה בנגן";
+        if ("playerControlsDisplayMode".equals(key)) return "בחירת אופן הצגת שורת המיקום, זמני השיר ולחצני השליטה: תמיד, או למשך 6 שניות בתחילת כל שיר";
+        if ("chargingBatteryDisplayMode".equals(key)) return "בחירת האופן שבו תוצג רמת הסוללה כל עוד המכשיר מחובר לטעינה";
         if ("clockHorizontalOffset".equals(key)) return "הזזת כל תצוגת השעון והתאריך ימינה או שמאלה";
         if ("playerHorizontalOffset".equals(key)) return "הזזת הנגן ימינה או שמאלה";
         if ("backgroundStyle".equals(key)) return "בחירת אופן הצגת צבע הרקע";
@@ -2148,7 +2155,8 @@ screenTitle.setText("הגדרות");
         if ("clockDatePosition".equals(key)) return "position-arrows";
         if ("showPlayerOnlyAtStart".equals(key)) return "circle-play";
         if ("showDetails".equals(key)) return "artist";
-        if ("showProgress".equals(key)) return "progress-time-digital";
+        if ("playerControlsDisplayMode".equals(key)) return "progress-time-digital";
+        if ("chargingBatteryDisplayMode".equals(key)) return "icon-battery-percent";
         if ("playerSize".equals(key)) return "player-size-resize";
         if ("playerPosition".equals(key)) return "panel-bottom";
         if ("frameEnabled".equals(key)) return "frame-dashed";
