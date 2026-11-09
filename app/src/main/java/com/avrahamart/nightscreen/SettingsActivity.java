@@ -1736,7 +1736,7 @@ screenTitle.setText("הגדרות");
         if (window != null) {
             window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
             window.setLayout(Math.min(dp(420), getResources().getDisplayMetrics().widthPixels - dp(32)),
-                    WindowManager.LayoutParams.WRAP_CONTENT);
+                    android.view.WindowManager.LayoutParams.WRAP_CONTENT);
         }
     }
 
