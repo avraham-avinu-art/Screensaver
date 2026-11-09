@@ -8,7 +8,7 @@ import android.os.Build;
 import android.provider.Settings;
 import android.util.Log;
 
-/** Handles only device boot and app replacement. It never handles lock or wake. */
+/** Handles only system boot and app replacement; never treats either as a lock event. */
 public final class LockScreenBootReceiver extends BroadcastReceiver {
     private static final String TAG = "NightScreenAutoStart";
 
@@ -21,32 +21,35 @@ public final class LockScreenBootReceiver extends BroadcastReceiver {
 
         SharedPreferences prefs =
                 context.getSharedPreferences("settings", Context.MODE_PRIVATE);
-
         if (Intent.ACTION_BOOT_COMPLETED.equals(action)) {
-            // A reboot starts a new lock cycle.
+            // Each completed reboot begins a fresh lock cycle.
             prefs.edit().putBoolean("deviceLockStartConsumed", false).apply();
         }
 
-        // This call starts monitoring only for lock, wake, or app-managed charge.
-        // Boot itself is handled by this manifest receiver and needs no service.
+        // Starts the monitor only if lock, wake, or app-managed charging is enabled.
+        // Boot itself is exclusively handled below.
         LockScreenMonitorService.sync(context);
 
-        boolean bootTrigger = AutoStartPolicy.isEnabledForAction(
+        boolean bootEnabled = AutoStartPolicy.isEnabledForAction(
                 action,
                 false,
                 prefs.getBoolean("autoStartOnBoot", false),
                 false,
                 false,
                 false);
-        if (!bootTrigger) return;
+        if (!bootEnabled) return;
 
         if (Build.VERSION.SDK_INT >= 29 && !Settings.canDrawOverlays(context)) {
-            Log.w(TAG, "Boot auto-start is enabled, but the overlay permission is missing.");
+            Log.w(TAG, "Boot auto-start is enabled, but SYSTEM_ALERT_WINDOW was not granted.");
             return;
         }
 
-        // Use the same source-specific PendingIntent launcher as the other triggers.
-        // On Android 14/15+, it explicitly opts in to sender/creator BAL privileges.
-        AutoStartActivityLauncher.launch(context, AutoStartPolicy.Trigger.DEVICE_BOOT);
+        // The PendingIntent includes the explicit BAL sender/creator opt-ins used
+        // by Android 14+ and Android 15+ for a launch requested from a receiver.
+        boolean launched = AutoStartActivityLauncher.launch(
+                context, AutoStartPolicy.Trigger.DEVICE_BOOT);
+        if (!launched) {
+            Log.e(TAG, "Unable to start the screensaver from BOOT_COMPLETED.");
+        }
     }
 }
