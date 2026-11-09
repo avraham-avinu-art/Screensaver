@@ -495,6 +495,12 @@ screenTitle.setText("הגדרות");
         addSegmentedChoices(content, "תצוגת שעה",
                 new String[]{"24 שעות", "12 שעות"},
                 new String[]{"24", "12"}, "timeFormat");
+        addSegmentedChoices(content, "סוג השעון",
+                new String[]{"דיגיטלי", "אנלוגי"},
+                new String[]{"digital", "analog"}, "clockDisplayMode");
+        addSegmentedChoices(content, "עיצוב לוח השעון",
+                new String[]{"קלאסי", "נקי", "ספרות"},
+                new String[]{"classic", "minimal", "numerals"}, "clockDialStyle");
         addDiscreteSlider(content, "גודל",
                 new String[]{"קטן", "בינוני", "רגיל", "גדול", "ענק"},
                 new String[]{"60", "72", "84", "96", "108"}, "clockDateSize");
@@ -801,7 +807,8 @@ screenTitle.setText("הגדרות");
     private String settingsGroupTitleFor(String key) {
         switch (currentCategory) {
             case CATEGORY_CLOCK_DATE:
-                if ("timeFormat".equals(key)) return "תצוגת השעה";
+                if ("timeFormat".equals(key) || "clockDisplayMode".equals(key)
+                        || "clockDialStyle".equals(key)) return "תצוגת השעה";
                 if ("showHebrew".equals(key) || "showGregorian".equals(key)
                         || "hebrewDateFormat".equals(key) || "gregorianDateFormat".equals(key)) {
                     return "הצגת תאריכים";
@@ -995,6 +1002,8 @@ screenTitle.setText("הגדרות");
         if ("hebrewDateFormat".equals(key)) return "בחירת תבנית התצוגה של התאריך העברי";
         if ("gregorianDateFormat".equals(key)) return "בחירת תבנית התצוגה של התאריך הלועזי";
         if ("clockDateSize".equals(key)) return "בחירת גודל התצוגה של השעון והתאריך";
+        if ("clockDisplayMode".equals(key)) return "בחירה בין תצוגת שעה דיגיטלית לבין שעון אנלוגי עם מחוגים";
+        if ("clockDialStyle".equals(key)) return "בחירת מראה לוח השעון האנלוגי וסימוני השעות";
         if ("fontWeight".equals(key)) return "בחירת עובי גופן השעון והתאריך";
         if ("clockDatePosition".equals(key)) return "בחירת מיקום הצגת השעון והתאריך במסך";
         if ("screenSaverDuration".equals(key)) return "בחירת משך זמן הצגת השומר מסך";
@@ -2152,6 +2161,8 @@ screenTitle.setText("הגדרות");
         if ("fontWeight".equals(key)) return "bold";
         if ("fontFamily".equals(key)) return "font-family";
         if ("clockDateSize".equals(key)) return "clock-size";
+        if ("clockDisplayMode".equals(key)) return "clock";
+        if ("clockDialStyle".equals(key)) return "watch";
         if ("clockDatePosition".equals(key)) return "position-arrows";
         if ("showPlayerOnlyAtStart".equals(key)) return "circle-play";
         if ("showDetails".equals(key)) return "artist";
