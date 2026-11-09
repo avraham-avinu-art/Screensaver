@@ -246,8 +246,7 @@ private LinearLayout clockDateCard;
             }
             refreshPermissionDependentToggles();
             LockScreenMonitorService.sync(this);
-            NightScreenApplication.syncChargerReceiver(this);
-            ensureAutoStartNotificationPermission();
+                        ensureAutoStartNotificationPermission();
             updateDeviceCapabilityNotice();
         }
     }
@@ -1348,15 +1347,13 @@ screenTitle.setText("הגדרות");
                 prefs.edit().putBoolean(key, checked).apply();
 
                 if ("autoStartOnCharge".equals(key)) {
-                    NightScreenApplication.syncChargerReceiver(this);
-                    LockScreenMonitorService.sync(this);
+                                        LockScreenMonitorService.sync(this);
                 }
             } catch (Throwable ignored) {
             }
             if ("useAndroidDreamForCharging".equals(key)) {
                 prefs.edit().putBoolean("autoStartOverlayPermissionPending", false).apply();
-                NightScreenApplication.syncChargerReceiver(this);
-                LockScreenMonitorService.sync(this);
+                                LockScreenMonitorService.sync(this);
                 if (checked) {
                     openingSystemSettingsForAutoStart = getBool("autoStartOnCharge", false);
                     try {
@@ -1423,8 +1420,7 @@ screenTitle.setText("הגדרות");
                             .apply();
                 }
                 LockScreenMonitorService.sync(this);
-                NightScreenApplication.syncChargerReceiver(this);
-                updateOverlayPermissionCardVisibility();
+                                updateOverlayPermissionCardVisibility();
             } else if ("autoStartOnBoot".equals(key) || "autoStartOnWake".equals(key)) {
                 if (checked && Build.VERSION.SDK_INT >= 29
                         && !Settings.canDrawOverlays(this)) {
@@ -1438,12 +1434,12 @@ screenTitle.setText("הגדרות");
                         toggle.setChecked(false);
                     }
                 }
-                if ("autoStartOnBoot".equals(key) || "autoStartOnWake".equals(key)) {
+                // Boot is handled by BOOT_COMPLETED; only wake needs a monitor.
+                if ("autoStartOnWake".equals(key)) {
                     LockScreenMonitorService.sync(this);
                 }
                 if ("autoStartOnWake".equals(key)) {
-                    NightScreenApplication.syncChargerReceiver(this);
-                }
+                                    }
             } else if ("showPlayer".equals(key)) {
                 if (checked && !hasNotificationAccess()) {
                     prefs.edit().putBoolean("showPlayerPermissionPending", true).apply();
@@ -2092,10 +2088,10 @@ screenTitle.setText("הגדרות");
         if (Build.VERSION.SDK_INT < 33
                 || checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
                     == android.content.pm.PackageManager.PERMISSION_GRANTED) return;
-        boolean anyAutoStartEnabled = getBool("autoStartOnCharge", false)
-                || getBool("autoStartOnDeviceLock", false)
-                || getBool("autoStartOnBoot", false)
-                || getBool("autoStartOnWake", false);
+        boolean anyAutoStartEnabled = getBool("autoStartOnDeviceLock", false)
+                || getBool("autoStartOnWake", false)
+                || (getBool("autoStartOnCharge", false)
+                    && !getBool("useAndroidDreamForCharging", true));
         if (!anyAutoStartEnabled
                 || prefs.getBoolean("autoStartNotificationPermissionAsked", false)) return;
 
@@ -2176,8 +2172,7 @@ screenTitle.setText("הגדרות");
 
         prefs.edit().putBoolean("autoStartOnCharge", false).apply();
         LockScreenMonitorService.sync(this);
-        NightScreenApplication.syncChargerReceiver(this);
-        if (autoStartOnChargeToggle != null && autoStartOnChargeToggle.isChecked()) {
+                if (autoStartOnChargeToggle != null && autoStartOnChargeToggle.isChecked()) {
             autoStartOnChargeToggle.setChecked(false);
         }
         AppToast.makeText(this,
