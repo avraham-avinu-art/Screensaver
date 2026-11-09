@@ -1829,7 +1829,9 @@ public class MainActivity extends Activity {
                 android.graphics.drawable.BitmapDrawable artworkLayer =
                         new android.graphics.drawable.BitmapDrawable(
                                 getResources(), currentAlbumArt);
-                artworkLayer.setGravity(Gravity.FILL);
+                // Crop the album artwork into the existing frame bounds; the bitmap
+                // must never participate in measuring or expanding the media frame.
+                artworkLayer.setGravity(Gravity.CENTER_CROP);
                 artworkLayer.setAlpha(185);
                 GradientDrawable textScrim = new GradientDrawable();
                 textScrim.setColor(Color.argb(126, 9, 19, 33));
