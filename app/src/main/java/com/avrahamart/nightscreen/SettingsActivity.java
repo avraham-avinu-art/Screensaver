@@ -1015,6 +1015,7 @@ screenTitle.setText("הגדרות");
         if ("autoStartOnDeviceLock".equals(key)) return "הפעלת שומר מסך באופן אוטומטי בעת נעילת המכשיר";
         if ("autoStartOnBoot".equals(key)) return "הפעלת שומר מסך באופן אוטומטי לאחר הפעלת המכשיר";
         if ("autoStartOnWake".equals(key)) return "הפעלת השומר מסך באופן אוטומטי כשהמכשיר מתעורר ממצב שינה";
+        if ("autoStartOnCharge".equals(key)) return "הפעלת השומר מסך אוטומטית בחיבור המכשיר לטעינה";
         if ("noShutdownWhileCharging".equals(key)) return "השארת השומר מסך פועל כל עוד המכשיר מחובר לטעינה";
         if ("screenBackgroundColor".equals(key)) return "בחירת צבע הרקע של שומר המסך";
         if ("screenBrightness".equals(key)) return "התאמת בהירות התצוגה של שומר המסך";
@@ -1345,6 +1346,7 @@ screenTitle.setText("הגדרות");
 
                 if ("autoStartOnCharge".equals(key)) {
                     NightScreenApplication.syncChargerReceiver(this);
+                    LockScreenMonitorService.sync(this);
                 }
             } catch (Throwable ignored) {
             }
@@ -1400,6 +1402,9 @@ screenTitle.setText("הגדרות");
                 NightScreenApplication.syncChargerReceiver(this);
                 updateOverlayPermissionCardVisibility();
             } else if ("autoStartOnBoot".equals(key) || "autoStartOnWake".equals(key)) {
+                if ("autoStartOnBoot".equals(key)) {
+                    LockScreenMonitorService.sync(this);
+                }
                 if (checked && Build.VERSION.SDK_INT >= 29
                         && !Settings.canDrawOverlays(this)) {
                     AppToast.makeText(this,
