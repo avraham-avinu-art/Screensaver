@@ -462,8 +462,9 @@ public class MainActivity extends Activity {
         if (!continueOnLockScreen) {
             lockScreenContinuationArmed = false;
         }
-        boolean showAboveExistingKeyguard = !waitingForScreenWakeAfterActivityEnd
-                || (continueOnLockScreen && lockScreenContinuationArmed);
+        boolean activeSession = !waitingForScreenWakeAfterActivityEnd && !isFinishing();
+        boolean showAboveExistingKeyguard = AutoStartPolicy.shouldShowWhenLocked(
+                activeSession, continueOnLockScreen, lockScreenContinuationArmed);
 
         if (Build.VERSION.SDK_INT >= 27) {
             setShowWhenLocked(showAboveExistingKeyguard);
