@@ -218,6 +218,8 @@ public class MainActivity extends Activity {
     private LinearLayout mediaSetup;
     private LinearLayout mediaMirror;
     private TextView mediaTitle;
+    private ImageView mediaArtwork;
+    private int currentAlbumAccentColor = Color.rgb(33, 52, 75);
     private ImageView mediaPlayPause;
     private ImageView mediaPrev;
     private ImageView mediaNext;
@@ -648,6 +650,11 @@ public class MainActivity extends Activity {
                 cp.topMargin = Math.max(0, Math.round(h / 4f - clockLineHeight / 2f));
             } else if ("middle".equals(clockPos)) {
                 cp.topMargin = Math.max(0, Math.round(h * 0.50f - blockHeight / 2f));
+            } else if ("custom".equals(clockPos)) {
+                int verticalPercent = Math.max(0, Math.min(100,
+                        getInt("clockCustomVerticalPosition", 25)));
+                cp.topMargin = Math.max(0, Math.round(
+                        h * verticalPercent / 100f - blockHeight / 2f));
             } else {
                 // "למעלה" keeps the top edge of the block aligned with the screen top.
                 cp.topMargin = 0;
@@ -666,9 +673,15 @@ public class MainActivity extends Activity {
             } else {
                 mp.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
                 int mediaH = Math.max(0, mediaHolder.getMeasuredHeight());
-                // "Lower quarter" is positioned 20% above the bottom edge,
-                // while "bottom" remains anchored to the very bottom edge.
-                mp.topMargin = Math.max(0, Math.round((h * 0.65f) - mediaH / 2f));
+                if ("custom".equals(playerPos)) {
+                    int verticalPercent = Math.max(0, Math.min(100,
+                            getInt("playerCustomVerticalPosition", 65)));
+                    mp.topMargin = Math.max(0, Math.round(
+                            h * verticalPercent / 100f - mediaH / 2f));
+                } else {
+                    // "Lower quarter" is positioned 20% above the bottom edge.
+                    mp.topMargin = Math.max(0, Math.round((h * 0.65f) - mediaH / 2f));
+                }
                 mp.bottomMargin = 0;
                 mp.height = FrameLayout.LayoutParams.WRAP_CONTENT;
             }
@@ -731,7 +744,7 @@ public class MainActivity extends Activity {
         mediaMirror.setOrientation(LinearLayout.VERTICAL);
         mediaMirror.setGravity(Gravity.TOP | Gravity.CENTER_HORIZONTAL);
         mediaMirror.setPadding(0, 0, 0, 0);
-        mediaMirror.setBackgroundColor(getScreenBackgroundColor());
+        mediaMirror.setBackgroundColor(Color.TRANSPARENT);
         mediaMirror.setVisibility(View.GONE);
 
         // The reference player is intentionally clean: the position row is
@@ -817,6 +830,18 @@ public class MainActivity extends Activity {
                 new LinearLayout.LayoutParams(dp(48), dp(32));
         totalParams.leftMargin = dp(4);
         mediaProgressRow.addView(mediaTotalText, totalParams);
+
+        mediaArtwork = new ImageView(this);
+        mediaArtwork.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        mediaArtwork.setVisibility(View.GONE);
+        mediaArtwork.setBackground(roundOutline(Color.rgb(22, 36, 52), dp(9),
+                Color.rgb(49, 70, 94)));
+        if (Build.VERSION.SDK_INT >= 21) mediaArtwork.setClipToOutline(true);
+        LinearLayout.LayoutParams artworkParams =
+                new LinearLayout.LayoutParams(dp(54), dp(54));
+        artworkParams.gravity = Gravity.CENTER_HORIZONTAL;
+        artworkParams.bottomMargin = dp(5);
+        mediaMirror.addView(mediaArtwork, artworkParams);
 
         // Artist first and song title immediately below it, followed by progress.
         LinearLayout.LayoutParams detailsParams = new LinearLayout.LayoutParams(-1, dp(30));
@@ -1636,26 +1661,131 @@ public class MainActivity extends Activity {
         return getInt("screenBackgroundColor", Color.BLACK);
     }
 
+    private boolean usesLayeredBackground() {
+        return !"solid".equals(getString("backgroundStyle", "solid"))
+                || (getBool("dynamicAlbumBackgroundEnabled", false)
+                && mediaController != null && mediaArtwork != null
+                && mediaArtwork.getVisibility() == View.VISIBLE);
+    }
+
+    private Drawable createScreenBackgroundDrawable() {
+        int base = getScreenBackgroundColor();
+        String style = getString("backgroundStyle", "solid");
+        boolean dynamic = getBool("dynamicAlbumBackgroundEnabled", false)
+                && mediaController != null && mediaArtwork != null
+                && mediaArtwork.getVisibility() == View.VISIBLE;
+        int accent = dynamic ? currentAlbumAccentColor : blendWithBlack(base, 0.25f);
+        if ("solid".equals(style) && !dynamic) {
+            return new android.graphics.drawable.ColorDrawable(base);
+        }
+        if ("gradient".equals(style)) {
+            return new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
+                    new int[]{blendWithBlack(accent, 0.48f), base,
+                            blendWithBlack(base, 0.42f)});
+        }
+        if ("glow".equals(style) || dynamic) {
+            GradientDrawable glow = new GradientDrawable(
+                    GradientDrawable.Orientation.TL_BR,
+                    new int[]{blendWithBlack(accent, 0.42f), base,
+                            blendWithBlack(base, 0.35f)});
+            glow.setGradientType(GradientDrawable.RADIAL_GRADIENT);
+            glow.setGradientRadius(dp(Math.max(300, Math.max(
+                    getResources().getDisplayMetrics().widthPixels,
+                    getResources().getDisplayMetrics().heightPixels))));
+            glow.setGradientCenter(0.5f, 0.38f);
+            return glow;
+        }
+        if ("vignette".equals(style)) {
+            GradientDrawable vignette = new GradientDrawable(
+                    GradientDrawable.Orientation.TL_BR,
+                    new int[]{base, blendWithBlack(base, 0.30f),
+                            blendWithBlack(base, 0.72f)});
+            vignette.setGradientType(GradientDrawable.RADIAL_GRADIENT);
+            vignette.setGradientRadius(dp(Math.max(300, Math.max(
+                    getResources().getDisplayMetrics().widthPixels,
+                    getResources().getDisplayMetrics().heightPixels))));
+            vignette.setGradientCenter(0.5f, 0.45f);
+            return vignette;
+        }
+        return new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
+                new int[]{base, blendWithBlack(base, 0.32f)});
+    }
+
+    private boolean isAutomaticNightModeActive() {
+        if (!getBool("nightModeEnabled", false)) return false;
+        int start = Math.max(0, Math.min(23, getInt("nightModeStartHour", 22)));
+        int end = Math.max(0, Math.min(23, getInt("nightModeEndHour", 7)));
+        if (start == end) return false;
+        Calendar current = Calendar.getInstance();
+        int hour = current.get(Calendar.HOUR_OF_DAY);
+        if (start < end) return hour >= start && hour < end;
+        return hour >= start || hour < end;
+    }
+
+    private int extractAlbumAccentColor(Bitmap artwork) {
+        if (artwork == null || artwork.isRecycled()
+                || artwork.getWidth() <= 0 || artwork.getHeight() <= 0) {
+            return Color.rgb(33, 52, 75);
+        }
+        Bitmap sample = null;
+        try {
+            sample = Bitmap.createScaledBitmap(artwork, 16, 16, true);
+            long red = 0L, green = 0L, blue = 0L, weightTotal = 0L;
+            for (int y = 0; y < sample.getHeight(); y++) {
+                for (int x = 0; x < sample.getWidth(); x++) {
+                    int pixel = sample.getPixel(x, y);
+                    if (Color.alpha(pixel) < 100) continue;
+                    float[] hsv = new float[3];
+                    Color.colorToHSV(pixel, hsv);
+                    int weight = Math.max(1, Math.round(1f + hsv[1] * 3f));
+                    red += (long) Color.red(pixel) * weight;
+                    green += (long) Color.green(pixel) * weight;
+                    blue += (long) Color.blue(pixel) * weight;
+                    weightTotal += weight;
+                }
+            }
+            if (weightTotal == 0L) return Color.rgb(33, 52, 75);
+            int average = Color.rgb((int) (red / weightTotal),
+                    (int) (green / weightTotal), (int) (blue / weightTotal));
+            float[] hsv = new float[3];
+            Color.colorToHSV(average, hsv);
+            hsv[1] = Math.max(0.25f, Math.min(0.78f, hsv[1]));
+            hsv[2] = Math.max(0.42f, Math.min(0.72f, hsv[2]));
+            return Color.HSVToColor(hsv);
+        } catch (Throwable ignored) {
+            return Color.rgb(33, 52, 75);
+        } finally {
+            if (sample != null && sample != artwork && !sample.isRecycled()) sample.recycle();
+        }
+    }
+
     private void applyScreenAppearance() {
         int backgroundColor = getScreenBackgroundColor();
+        Drawable screenBackground = createScreenBackgroundDrawable();
         if (stageView != null) {
-            stageView.setBackgroundColor(backgroundColor);
+            stageView.setBackground(screenBackground);
             if (stageView.getParent() instanceof View) {
-                ((View) stageView.getParent()).setBackgroundColor(backgroundColor);
+                ((View) stageView.getParent()).setBackground(createScreenBackgroundDrawable());
             }
         }
-        getWindow().getDecorView().setBackgroundColor(backgroundColor);
+        getWindow().getDecorView().setBackground(createScreenBackgroundDrawable());
 
         // -1 means follow the device's brightness setting. A percentage applies
         // only to this Activity and does not modify the user's system setting.
         int brightnessPercent = getInt("screenBrightness", -1);
         float requestedBrightness = brightnessPercent < 0 ? -1f
                 : Math.max(0.01f, Math.min(1.0f, brightnessPercent / 100.0f));
+        float brightnessCap = 1f;
         if (getBool("batteryProtectionEnabled", false) && isBatteryOrThermalProtectionNeeded()) {
-            // This only lowers this Activity window brightness; system brightness is untouched.
-            float protectionCap = 0.25f;
+            brightnessCap = Math.min(brightnessCap, 0.25f);
+        }
+        if (isAutomaticNightModeActive()) {
+            brightnessCap = Math.min(brightnessCap, 0.20f);
+        }
+        if (brightnessCap < 1f) {
+            // These caps affect only this Activity window, never system-wide brightness.
             requestedBrightness = requestedBrightness < 0f
-                    ? protectionCap : Math.min(requestedBrightness, protectionCap);
+                    ? brightnessCap : Math.min(requestedBrightness, brightnessCap);
         }
         android.view.WindowManager.LayoutParams attributes = getWindow().getAttributes();
         attributes.screenBrightness = requestedBrightness < 0f
@@ -1668,7 +1798,11 @@ public class MainActivity extends Activity {
         if (mediaMirror == null) return;
         boolean enabled = getBool("frameEnabled", false) && hasActiveSong;
         if (!enabled) {
-            mediaMirror.setBackgroundColor(getScreenBackgroundColor());
+            if (usesLayeredBackground()) {
+                mediaMirror.setBackgroundColor(Color.TRANSPARENT);
+            } else {
+                mediaMirror.setBackgroundColor(getScreenBackgroundColor());
+            }
             mediaMirror.setPadding(0, 0, 0, 0);
             return;
         }
