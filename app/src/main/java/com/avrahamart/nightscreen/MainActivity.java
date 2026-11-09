@@ -228,6 +228,7 @@ public class MainActivity extends Activity {
     private ImageView mediaArtwork;
     private int currentAlbumAccentColor = Color.rgb(33, 52, 75);
     private ImageView mediaPlayPause;
+    private FrameLayout mediaControlsHolder;
     private ImageView mediaPrev;
     private ImageView mediaNext;
 
@@ -958,6 +959,7 @@ public class MainActivity extends Activity {
         mediaMirror.addView(mediaProgressRow, progressParams);
 
         FrameLayout controls = new FrameLayout(this);
+        mediaControlsHolder = controls;
         controls.setPadding(0, 0, 0, 0);
         controls.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
 
@@ -3087,6 +3089,9 @@ public class MainActivity extends Activity {
                 setProgressRowVisible(false);
             }
             boolean controlsVisible = arePlayerControlsVisible();
+            if (mediaControlsHolder != null) {
+                mediaControlsHolder.setVisibility(controlsVisible ? View.VISIBLE : View.GONE);
+            }
             mediaPlayPause.setVisibility(controlsVisible ? View.VISIBLE : View.GONE);
                 boolean isPlaying = playback == PlaybackState.STATE_PLAYING;
             mediaPlayPause.setImageResource(
