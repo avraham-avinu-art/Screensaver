@@ -708,6 +708,14 @@ public class MainActivity extends Activity {
                 mirrorParams.width = Math.min(dp(760), Math.max(dp(1), w - dp(20)));
                 mediaMirror.setLayoutParams(mirrorParams);
             }
+            if (mediaSeekBar != null && mediaSeekBar.getLayoutParams() instanceof LinearLayout.LayoutParams) {
+                LinearLayout.LayoutParams seekParams =
+                        (LinearLayout.LayoutParams) mediaSeekBar.getLayoutParams();
+                float playerScale = Math.max(0.72f, Math.min(1.45f,
+                        getInt("playerSize", 17) / 17f));
+                seekParams.width = Math.max(dp(80), Math.round(mediaProgressBaseWidth * playerScale));
+                mediaSeekBar.setLayoutParams(seekParams);
+            }
 
             String clockPos = getString("clockDatePosition", "top");
             String playerPos = getString("playerPosition", "bottom");
