@@ -792,7 +792,7 @@ screenTitle.setText("הגדרות");
                 "useAndroidDreamForCharging", false);
 
         LinearLayout diagnosticsCard = addCard(content, "אבחון פעילות האפליקציה");
-        boolean active = MainActivity.isMainActivityResumed();
+        boolean active = MainActivity.isMainActivitySessionAlive();
         String report = "מצב שומר המסך: " + (active ? "פעיל" : "לא פעיל") + "\n"
                 + "הפעלת הנגן: " + getPlayerModeLabel() + "\n"
                 + "הפעלה אוטומטית בנעילה: "
