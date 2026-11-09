@@ -869,6 +869,9 @@ screenTitle.setText("הגדרות");
     }
 
     private void buildAppearanceSettings() {
+        addSegmentedChoices(content, "סידור במצב לרוחב",
+                new String[]{"אוטומטי", "אנכי", "אופקי"},
+                new String[]{"auto", "vertical", "horizontal"}, "landscapeLayoutMode");
         addColorChoices(content, "צבע המסך",
                 new String[]{"שחור", "כחול", "כחול כהה", "טורקיז",
                         "אפור פחם", "ירוק יער", "כחול עמוק", "אפור אבן"},
@@ -1067,6 +1070,7 @@ screenTitle.setText("הגדרות");
                 }
                 return "שומר מסך במצב טעינה";
             case CATEGORY_APPEARANCE:
+                if ("landscapeLayoutMode".equals(key)) return "סידור המסך";
                 if ("screenBackgroundColor".equals(key) || "screenBrightness".equals(key)
                         || "backgroundStyle".equals(key) || "dynamicAlbumBackgroundEnabled".equals(key)) {
                     return "התאמת מראה המסך";
@@ -1268,6 +1272,7 @@ screenTitle.setText("הגדרות");
         if ("clockStyle".equals(key)) return "בחירת שעון ספרתי רגיל, מחוגים או ספרות מפוצלות";
         if ("playerCustomVerticalPosition".equals(key)) return "בחירת הגובה של מרכז הנגן ביחס לגובה המסך";
         if ("backgroundStyle".equals(key)) return "בחירת אופן הצגת צבע הרקע";
+        if ("landscapeLayoutMode".equals(key)) return "בחירת סידור השעון והנגן כאשר המכשיר נמצא לרוחב";
         if ("dynamicAlbumBackgroundEnabled".equals(key)) return "התאמת גווני הרקע לצבעים המרכזיים שבעטיפת האלבום בזמן נגינה";
         if ("showAlbumArt".equals(key)) return "הצגת תמונת האלבום לצד פרטי השיר";
         if ("nightModeEnabled".equals(key)) return "הפחתת בהירות מסך השומר מסך בשעות שנבחרו, בלי לשנות את בהירות המכשיר";
