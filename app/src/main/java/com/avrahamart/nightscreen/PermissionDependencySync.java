@@ -55,7 +55,6 @@ public final class PermissionDependencySync {
 
         if (disableLockStart || disableChargeStart || disableBootStart || disableWakeStart) {
             LockScreenMonitorService.sync(context);
-            NightScreenApplication.syncChargerReceiver(context);
         }
 
         ArrayList<String> messages = new ArrayList<>();
