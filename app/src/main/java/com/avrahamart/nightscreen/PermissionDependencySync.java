@@ -27,8 +27,11 @@ public final class PermissionDependencySync {
 
         boolean disableLockStart =
                 prefs.getBoolean("autoStartOnDeviceLock", false) && overlayRequired;
-        boolean disableChargeStart =
-                prefs.getBoolean("autoStartOnCharge", false) && overlayRequired;
+        boolean useAndroidDreamForCharging =
+                prefs.getBoolean("useAndroidDreamForCharging", false);
+        boolean oldChargeStartEnabled = prefs.getBoolean("autoStartOnCharge", false);
+        boolean disableChargeStart = oldChargeStartEnabled
+                && (useAndroidDreamForCharging || overlayRequired);
         boolean disableBootStart =
                 prefs.getBoolean("autoStartOnBoot", false) && overlayRequired;
         boolean disableWakeStart =
@@ -59,7 +62,7 @@ public final class PermissionDependencySync {
         if (disableLockStart) {
             messages.add("ההפעלה האוטומטית בנעילה כובתה מפני שהרשאת ההצגה מעל אפליקציות אחרות בוטלה.");
         }
-        if (disableChargeStart) {
+        if (disableChargeStart && !useAndroidDreamForCharging) {
             messages.add("ההפעלה האוטומטית בטעינה כובתה מפני שהרשאת ההצגה מעל אפליקציות אחרות בוטלה.");
         }
         if (disableBootStart) {
