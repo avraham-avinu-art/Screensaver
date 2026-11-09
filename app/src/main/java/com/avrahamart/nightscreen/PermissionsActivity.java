@@ -2,6 +2,7 @@ package com.avrahamart.nightscreen;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.AppOpsManager;
 import android.app.admin.DevicePolicyManager;
 import android.app.NotificationManager;
 import android.content.ActivityNotFoundException;
@@ -14,6 +15,7 @@ import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Process;
 import android.provider.Settings;
 import android.view.Gravity;
 import android.view.View;
@@ -37,6 +39,8 @@ public class PermissionsActivity extends Activity {
     private TextView notificationStatus;
     private TextView overlayStatus;
     private TextView adminStatus;
+    private TextView usageStatus;
+    private Button usageButton;
     private Button notificationButton;
     private Button overlayButton;
     private Button adminButton;
@@ -112,6 +116,7 @@ public class PermissionsActivity extends Activity {
 
         addNotificationPermissionCard(cards);
         addOverlayPermissionCard(cards);
+        addUsageAccessPermissionCard(cards);
         addDeviceAdminPermissionCard(cards);
 
         scroll.addView(cards, new ScrollView.LayoutParams(-1, -2));
@@ -167,6 +172,31 @@ public class PermissionsActivity extends Activity {
                     }
                     openOverlayPermissionSettings();
                 });
+    }
+
+    private void addUsageAccessPermissionCard(LinearLayout parent) {
+        LinearLayout card = makeCard(parent, "הרשאת נתוני שימוש",
+                "נדרשת לזיהוי האפליקציה הפעילה ולהשהיית שומר מסך באפליקציות שבחרת להחריג.");
+        usageStatus = addStatus(card);
+        usageButton = addPermissionButton(card, "ניהול הרשאת נתוני שימוש", v -> {
+            try {
+                startActivity(new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS));
+            } catch (Throwable ignored) {
+                AppToast.makeText(this, "הגדרת נתוני שימוש אינה זמינה במכשיר זה.",
+                        Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
+    private boolean hasUsageAccess() {
+        try {
+            AppOpsManager manager = (AppOpsManager) getSystemService(APP_OPS_SERVICE);
+            return manager != null && manager.checkOpNoThrow(
+                    AppOpsManager.OPSTR_GET_USAGE_STATS, Process.myUid(),
+                    getPackageName()) == AppOpsManager.MODE_ALLOWED;
+        } catch (Throwable ignored) {
+            return false;
+        }
     }
 
     private void addDeviceAdminPermissionCard(LinearLayout parent) {
@@ -272,6 +302,16 @@ public class PermissionsActivity extends Activity {
                 ? "ניהול הרשאת הצגה מעל אפליקציות"
                 : "הפעל הרשאת הצגה מעל אפליקציות");
         overlayButton.setEnabled(true);
+
+        boolean usageGranted = hasUsageAccess();
+        usageStatus.setText(usageGranted
+                ? "ההרשאה ניתנה — ניתן לזהות אפליקציות פעילות."
+                : "ההרשאה עדיין לא ניתנה; בחירת אפליקציות מוחרגות לא תפעל.");
+        usageStatus.setTextColor(usageGranted ? ACCENT : MUTED);
+        usageButton.setText(usageGranted
+                ? "ניהול הרשאת נתוני שימוש"
+                : "הפעל הרשאת נתוני שימוש");
+        usageButton.setEnabled(true);
 
         boolean adminGranted = isAdminActive();
         adminStatus.setText(adminGranted
