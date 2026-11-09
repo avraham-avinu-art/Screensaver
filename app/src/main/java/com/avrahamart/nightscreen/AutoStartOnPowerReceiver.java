@@ -86,11 +86,6 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
                 prefs.getBoolean("autoStartOnWake", false),
                 false, false)) return;
 
-        // If the device is locked and lock-start is enabled, the lock event owns
-        // this cycle. Do not create a second launch with a different source.
-        if (isDeviceLocked(context)
-                && prefs.getBoolean("autoStartOnDeviceLock", false)) return;
-
         if (!LockScreenMonitorService.isLockMonitoringActive()
                 || isMainActivityActivelyResumed(context)
                 || !canLaunchFromBackground(context)) return;
@@ -107,11 +102,6 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
                 prefs.getBoolean("useAndroidDreamForCharging", true))) return;
 
         if (!canLaunchFromBackground(context)) return;
-
-        // A locked cycle belongs to the explicit lock trigger when that option
-        // is enabled; charging must not masquerade as another lock activation.
-        if (isDeviceLocked(context)
-                && prefs.getBoolean("autoStartOnDeviceLock", false)) return;
 
         if (isMainActivityActivelyResumed(context)
                 || !claimPowerConnectedEvent(context)) return;
