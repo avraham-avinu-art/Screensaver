@@ -1387,6 +1387,7 @@ screenTitle.setText("הגדרות");
                             .apply();
                 }
                 updateOverlayPermissionCardVisibility();
+                LockScreenMonitorService.sync(this);
             } else if ("autoStartOnDeviceLock".equals(key)) {
                 if (checked && Build.VERSION.SDK_INT >= 29
                         && !Settings.canDrawOverlays(this)) {
@@ -1402,9 +1403,6 @@ screenTitle.setText("הגדרות");
                 NightScreenApplication.syncChargerReceiver(this);
                 updateOverlayPermissionCardVisibility();
             } else if ("autoStartOnBoot".equals(key) || "autoStartOnWake".equals(key)) {
-                if ("autoStartOnBoot".equals(key)) {
-                    LockScreenMonitorService.sync(this);
-                }
                 if (checked && Build.VERSION.SDK_INT >= 29
                         && !Settings.canDrawOverlays(this)) {
                     AppToast.makeText(this,
@@ -1415,8 +1413,10 @@ screenTitle.setText("הגדרות");
                         toggle.setChecked(false);
                     }
                 }
-                if ("autoStartOnWake".equals(key)) {
+                if ("autoStartOnBoot".equals(key) || "autoStartOnWake".equals(key)) {
                     LockScreenMonitorService.sync(this);
+                }
+                if ("autoStartOnWake".equals(key)) {
                     NightScreenApplication.syncChargerReceiver(this);
                 }
             } else if ("showPlayer".equals(key)) {
@@ -2099,6 +2099,8 @@ screenTitle.setText("הגדרות");
                 || getBool("useAndroidDreamForCharging", true)) return;
 
         prefs.edit().putBoolean("autoStartOnCharge", false).apply();
+        LockScreenMonitorService.sync(this);
+        NightScreenApplication.syncChargerReceiver(this);
         if (autoStartOnChargeToggle != null && autoStartOnChargeToggle.isChecked()) {
             autoStartOnChargeToggle.setChecked(false);
         }
