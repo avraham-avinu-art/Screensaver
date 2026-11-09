@@ -24,6 +24,8 @@ public final class ScreensaverDreamService extends DreamService {
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Calendar now = Calendar.getInstance();
     private TextView timeView;
+    private AnalogClockView analogClockView;
+    private BatteryChargeIndicatorView chargingBatteryView;
     private TextView gregorianView;
     private TextView hebrewView;
     private boolean dreaming = false;
@@ -93,6 +95,11 @@ public final class ScreensaverDreamService extends DreamService {
         timeView.setGravity(Gravity.CENTER);
         clockBlock.addView(timeView, new LinearLayout.LayoutParams(-1, -2));
 
+        analogClockView = new AnalogClockView(this);
+        analogClockView.setVisibility(View.GONE);
+        clockBlock.addView(analogClockView,
+                new LinearLayout.LayoutParams(dp(120), dp(120)));
+
         gregorianView = makeText("", 22, Color.WHITE);
         gregorianView.setGravity(Gravity.CENTER);
         LinearLayout.LayoutParams gregorianParams = new LinearLayout.LayoutParams(-1, -2);
@@ -102,6 +109,13 @@ public final class ScreensaverDreamService extends DreamService {
         hebrewView = makeText("", 22, Color.WHITE);
         hebrewView.setGravity(Gravity.CENTER);
         clockBlock.addView(hebrewView, new LinearLayout.LayoutParams(-1, -2));
+
+        chargingBatteryView = new BatteryChargeIndicatorView(this);
+        chargingBatteryView.setVisibility(View.GONE);
+        LinearLayout.LayoutParams batteryParams =
+                new LinearLayout.LayoutParams(-2, dp(28));
+        batteryParams.topMargin = dp(5);
+        clockBlock.addView(chargingBatteryView, batteryParams);
 
         root.addView(clockBlock, new FrameLayout.LayoutParams(-1, -2,
                 Gravity.TOP | Gravity.CENTER_HORIZONTAL));
@@ -130,6 +144,17 @@ public final class ScreensaverDreamService extends DreamService {
         gregorianView.setTextColor(color);
         hebrewView.setTextColor(color);
         timeView.setTypeface(face);
+        boolean analog = "analog".equals(p.getString("clockDisplayMode", "digital"));
+        int analogDiameter = dp(Math.max(96, Math.round(clockSize * 1.30f)));
+        analogClockView.setDialStyle(p.getString("clockDialStyle", "classic"));
+        analogClockView.setColors(color, p.getInt("screenBackgroundColor", Color.BLACK));
+        analogClockView.setVisibility(analog ? View.VISIBLE : View.GONE);
+        LinearLayout.LayoutParams analogParams =
+                (LinearLayout.LayoutParams) analogClockView.getLayoutParams();
+        analogParams.width = analog ? analogDiameter : 0;
+        analogParams.height = analog ? analogDiameter : 0;
+        analogClockView.setLayoutParams(analogParams);
+        timeView.setVisibility(analog ? View.GONE : View.VISIBLE);
         gregorianView.setTypeface(face);
         hebrewView.setTypeface(face);
         timeView.setTextSize(clockSize);
@@ -137,6 +162,7 @@ public final class ScreensaverDreamService extends DreamService {
         hebrewView.setTextSize(clockSize * 0.26f);
         gregorianView.setVisibility(p.getBoolean("showGregorian", true) ? View.VISIBLE : View.GONE);
         hebrewView.setVisibility(p.getBoolean("showHebrew", true) ? View.VISIBLE : View.GONE);
+        updateChargingBatteryDisplay();
     }
 
     private boolean isChargeDreamEnabled() {
@@ -145,9 +171,39 @@ public final class ScreensaverDreamService extends DreamService {
                 && settings.getBoolean("autoStartOnCharge", false);
     }
 
+    private void updateChargingBatteryDisplay() {
+        if (chargingBatteryView == null) return;
+        android.content.SharedPreferences settings = prefs();
+        String mode = settings.getString("chargingBatteryDisplayMode", "off");
+        int percent = 0;
+        boolean pluggedIn = false;
+        try {
+            android.content.Intent battery = registerReceiver(null,
+                    new android.content.IntentFilter(android.content.Intent.ACTION_BATTERY_CHANGED));
+            if (battery != null) {
+                int level = battery.getIntExtra(android.os.BatteryManager.EXTRA_LEVEL, -1);
+                int scale = battery.getIntExtra(android.os.BatteryManager.EXTRA_SCALE, -1);
+                if (level >= 0 && scale > 0) {
+                    percent = Math.max(0, Math.min(100, Math.round(level * 100f / scale)));
+                }
+                int status = battery.getIntExtra(android.os.BatteryManager.EXTRA_STATUS,
+                        android.os.BatteryManager.BATTERY_STATUS_UNKNOWN);
+                int plugType = battery.getIntExtra(android.os.BatteryManager.EXTRA_PLUGGED, 0);
+                pluggedIn = plugType != 0
+                        || status == android.os.BatteryManager.BATTERY_STATUS_CHARGING
+                        || status == android.os.BatteryManager.BATTERY_STATUS_FULL;
+            }
+        } catch (Throwable ignored) {
+        }
+        chargingBatteryView.setBatteryState(mode, percent, pluggedIn,
+                settings.getInt("fontColor", Color.WHITE));
+    }
+
     private void updateClock() {
         if (timeView == null) return;
         now.setTimeInMillis(System.currentTimeMillis());
+        analogClockView.setTime(now.get(Calendar.HOUR_OF_DAY), now.get(Calendar.MINUTE));
+        updateChargingBatteryDisplay();
         boolean use24 = "24".equals(prefs().getString("timeFormat", "24"));
         int hour = now.get(Calendar.HOUR_OF_DAY);
         if (use24) {
