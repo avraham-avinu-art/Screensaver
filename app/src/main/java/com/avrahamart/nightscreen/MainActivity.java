@@ -3142,10 +3142,6 @@ public class MainActivity extends Activity {
                 playerControlsIntroWindowVisible = false;
                 playerControlsIntroWindowDeadlineElapsedRealtime = 0L;
             }
-        } else if (playbackActive && positionMs < PLAYER_START_WINDOW_MS
-                && !playerControlsIntroWindowVisible && controlsModeJustEnabled) {
-            startPlayerControlsIntroWindow(
-                    PLAYER_START_WINDOW_MS - Math.max(0L, positionMs));
         }
 
         lastObservedTrackIdentity = trackIdentity;
