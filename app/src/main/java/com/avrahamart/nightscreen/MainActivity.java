@@ -677,13 +677,14 @@ public class MainActivity extends Activity {
                     mirrorParams.width = Math.max(dp(160), halfWidth - dp(18));
                     mediaMirror.setLayoutParams(mirrorParams);
                 }
+                mediaProgressBaseWidth = Math.max(dp(70), halfWidth - dp(125));
                 if (mediaSeekBar != null && mediaSeekBar.getLayoutParams() instanceof LinearLayout.LayoutParams) {
                     LinearLayout.LayoutParams seekParams =
                             (LinearLayout.LayoutParams) mediaSeekBar.getLayoutParams();
                     float playerScale = Math.max(0.72f, Math.min(1.45f,
                             getInt("playerSize", 17) / 17f));
                     seekParams.width = Math.max(dp(70),
-                            Math.round((halfWidth - dp(125)) * playerScale));
+                            Math.round(mediaProgressBaseWidth * playerScale));
                     mediaSeekBar.setLayoutParams(seekParams);
                 }
                 return;
@@ -694,6 +695,8 @@ public class MainActivity extends Activity {
             restoreClockParams.width = -1;
             restoreClockParams.height = FrameLayout.LayoutParams.WRAP_CONTENT;
             clockBlock.setLayoutParams(restoreClockParams);
+            mediaProgressBaseWidth = Math.max(dp(120),
+                    Math.round(getResources().getDisplayMetrics().widthPixels * 0.36f));
             FrameLayout.LayoutParams restoreMediaParams =
                     (FrameLayout.LayoutParams) mediaHolder.getLayoutParams();
             restoreMediaParams.width = -1;
