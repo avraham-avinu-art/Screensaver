@@ -25,6 +25,9 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
 
         if (Intent.ACTION_USER_PRESENT.equals(action)) {
             MainActivity.clearPausedByDeviceLockState();
+            // A new lock cycle may trigger once after the user unlocks the device.
+            context.getSharedPreferences("settings", Context.MODE_PRIVATE)
+                    .edit().putBoolean("deviceLockStartConsumed", false).apply();
             return;
         }
 
@@ -66,7 +69,9 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
         }
 
         if (Intent.ACTION_SCREEN_OFF.equals(action)
+                && prefs.getBoolean("autoStartOnDeviceLock", false)
                 && LockScreenMonitorService.isLockMonitoringActive()
+                && !prefs.getBoolean("deviceLockStartConsumed", false)
                 && canLaunchFromBackground(context)) {
             // SCREEN_OFF is only a cue to inspect the lock state, not a launch trigger.
             // The delayed check below launches only if Android confirms the keyguard
@@ -103,8 +108,11 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
 
     private void launchOnDeviceLockIfStillLocked(Context context) {
         SharedPreferences prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE);
-        if (!LockScreenMonitorService.isLockMonitoringActive()) return;
-        if (isMainActivityVisible(context)) return;
+        // Other automatic-start options may keep the monitor service alive, but
+        // they must never activate the device-lock path.
+        if (!prefs.getBoolean("autoStartOnDeviceLock", false)
+                || !LockScreenMonitorService.isLockMonitoringActive()
+                || prefs.getBoolean("deviceLockStartConsumed", false)) return;
 
         PowerManager powerManager =
                 (PowerManager) context.getSystemService(Context.POWER_SERVICE);
@@ -115,6 +123,15 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
         if (keyguardManager == null || !keyguardManager.isKeyguardLocked()) return;
         if (!canLaunchFromBackground(context)) return;
 
+        // Consume this lock transition once, even if the screensaver was already
+        // visible. Repeated SCREEN_OFF broadcasts while still locked must not
+        // launch it again; ACTION_USER_PRESENT rearms the next lock transition.
+        synchronized (AutoStartOnPowerReceiver.class) {
+            if (prefs.getBoolean("deviceLockStartConsumed", false)) return;
+            if (!prefs.edit().putBoolean("deviceLockStartConsumed", true).commit()) return;
+        }
+        if (isMainActivityVisible(context)) return;
+
         Intent launch = new Intent(context, MainActivity.class);
         launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
                 | Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -123,7 +140,8 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
         try {
             context.startActivity(launch);
         } catch (Throwable ignored) {
-            // Background activity launch restrictions vary by Android build.
+            // Allow a later retry if Android rejected this launch.
+            prefs.edit().putBoolean("deviceLockStartConsumed", false).apply();
         }
     }
 
