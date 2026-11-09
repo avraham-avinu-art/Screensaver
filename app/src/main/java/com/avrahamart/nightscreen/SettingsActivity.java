@@ -19,6 +19,7 @@ import android.graphics.Path;
 import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.Icon;
 import android.text.style.StyleSpan;
 import android.text.style.RelativeSizeSpan;
 import android.text.style.ForegroundColorSpan;
@@ -29,6 +30,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Process;
 import android.provider.Settings;
+import android.service.quicksettings.TileService;
 import android.view.Gravity;
 import android.view.View;
 import android.view.Window;
@@ -1057,6 +1059,46 @@ screenTitle.setText("הגדרות");
                         Toast.LENGTH_LONG).show();
             }
         });
+
+        LinearLayout tileCard = addCard(content, "הפעלה מהירה");
+        TextView tileDescription = textView(
+                "אפשר להוסיף אריח לשורת ההגדרות המהירות, כדי לפתוח את שומר מסך בנגיעה אחת.",
+                14, MUTED);
+        tileDescription.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        tileDescription.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
+        tileDescription.setTextDirection(View.TEXT_DIRECTION_RTL);
+        tileDescription.setLineSpacing(dp(3), 1f);
+        tileDescription.setIncludeFontPadding(false);
+        tileCard.addView(tileDescription, new LinearLayout.LayoutParams(-1, -2));
+        Button addTileButton = makeActionButton("הוספת אריח להפעלה מהירה");
+        LinearLayout.LayoutParams tileButtonParams = new LinearLayout.LayoutParams(-1, dp(42));
+        tileButtonParams.topMargin = dp(10);
+        tileCard.addView(addTileButton, tileButtonParams);
+        addTileButton.setOnClickListener(v -> requestQuickSettingsTile());
+    }
+
+    private void requestQuickSettingsTile() {
+        if (Build.VERSION.SDK_INT >= 33) {
+            try {
+                TileService.requestAddTileService(this,
+                        new ComponentName(this, ScreensaverTileService.class),
+                        "שומר מסך", Icon.createWithResource(this, R.drawable.ic_launcher),
+                        getMainExecutor(), result -> {
+                            if (result == TileService.TILE_ADD_REQUEST_RESULT_TILE_ADDED) {
+                                AppToast.makeText(this, "אריח שומר מסך נוסף להגדרות המהירות.",
+                                        Toast.LENGTH_LONG).show();
+                            } else if (result == TileService.TILE_ADD_REQUEST_RESULT_TILE_ALREADY_ADDED) {
+                                AppToast.makeText(this, "אריח שומר מסך כבר נוסף.",
+                                        Toast.LENGTH_LONG).show();
+                            }
+                        });
+                return;
+            } catch (Throwable ignored) {
+            }
+        }
+        AppToast.makeText(this,
+                "פתח את וילון ההגדרות המהירות, בחר עריכה והוסף את האריח ״שומר מסך״ לרשימה.",
+                Toast.LENGTH_LONG).show();
     }
 
     private String settingsGroupTitleFor(String key) {
