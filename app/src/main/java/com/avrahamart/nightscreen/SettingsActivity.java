@@ -246,7 +246,7 @@ private LinearLayout clockDateCard;
             }
             refreshPermissionDependentToggles();
             LockScreenMonitorService.sync(this);
-                        ensureAutoStartNotificationPermission();
+            ensureAutoStartNotificationPermission();
             updateDeviceCapabilityNotice();
         }
     }
@@ -1346,14 +1346,11 @@ screenTitle.setText("הגדרות");
             try {
                 prefs.edit().putBoolean(key, checked).apply();
 
-                if ("autoStartOnCharge".equals(key)) {
-                                        LockScreenMonitorService.sync(this);
-                }
             } catch (Throwable ignored) {
             }
             if ("useAndroidDreamForCharging".equals(key)) {
                 prefs.edit().putBoolean("autoStartOverlayPermissionPending", false).apply();
-                                LockScreenMonitorService.sync(this);
+                LockScreenMonitorService.sync(this);
                 if (checked) {
                     openingSystemSettingsForAutoStart = getBool("autoStartOnCharge", false);
                     try {
@@ -1420,7 +1417,7 @@ screenTitle.setText("הגדרות");
                             .apply();
                 }
                 LockScreenMonitorService.sync(this);
-                                updateOverlayPermissionCardVisibility();
+                updateOverlayPermissionCardVisibility();
             } else if ("autoStartOnBoot".equals(key) || "autoStartOnWake".equals(key)) {
                 if (checked && Build.VERSION.SDK_INT >= 29
                         && !Settings.canDrawOverlays(this)) {
@@ -1438,8 +1435,6 @@ screenTitle.setText("הגדרות");
                 if ("autoStartOnWake".equals(key)) {
                     LockScreenMonitorService.sync(this);
                 }
-                if ("autoStartOnWake".equals(key)) {
-                                    }
             } else if ("showPlayer".equals(key)) {
                 if (checked && !hasNotificationAccess()) {
                     prefs.edit().putBoolean("showPlayerPermissionPending", true).apply();
