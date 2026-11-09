@@ -17,22 +17,9 @@ public final class LockScreenBootReceiver extends BroadcastReceiver {
                 && !Intent.ACTION_MY_PACKAGE_REPLACED.equals(action)) return;
 
         SharedPreferences prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE);
-        boolean autoStartOnBoot = prefs.getBoolean("autoStartOnBoot", false);
-        boolean monitorNeeded = prefs.getBoolean("autoStartOnDeviceLock", false)
-                || prefs.getBoolean("autoStartOnWake", false);
-        if (monitorNeeded) LockScreenMonitorService.sync(context);
-
-        if (!Intent.ACTION_BOOT_COMPLETED.equals(action) || !autoStartOnBoot) return;
+        if (!prefs.getBoolean("autoStartOnDeviceLock", false)) return;
         if (Build.VERSION.SDK_INT >= 29 && !Settings.canDrawOverlays(context)) return;
 
-        Intent launch = new Intent(context, MainActivity.class);
-        launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
-                | Intent.FLAG_ACTIVITY_CLEAR_TOP
-                | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        try {
-            context.startActivity(launch);
-        } catch (Throwable ignored) {
-            // Android background-launch restrictions vary by device and version.
-        }
+        LockScreenMonitorService.sync(context);
     }
 }
