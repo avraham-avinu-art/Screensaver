@@ -32,7 +32,7 @@ public final class ScreensaverDreamService extends DreamService {
     private final Runnable refreshRunnable = new Runnable() {
         @Override public void run() {
             if (!dreaming) return;
-            if (!prefs().getBoolean("useAndroidDreamForCharging", false)) {
+            if (!isChargeDreamEnabled()) {
                 finish();
                 return;
             }
@@ -137,6 +137,12 @@ public final class ScreensaverDreamService extends DreamService {
         hebrewView.setTextSize(clockSize * 0.26f);
         gregorianView.setVisibility(p.getBoolean("showGregorian", true) ? View.VISIBLE : View.GONE);
         hebrewView.setVisibility(p.getBoolean("showHebrew", true) ? View.VISIBLE : View.GONE);
+    }
+
+    private boolean isChargeDreamEnabled() {
+        android.content.SharedPreferences settings = prefs();
+        return settings.getBoolean("useAndroidDreamForCharging", true)
+                && settings.getBoolean("autoStartOnCharge", false);
     }
 
     private void updateClock() {
