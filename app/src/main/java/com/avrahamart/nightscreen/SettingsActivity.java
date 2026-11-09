@@ -97,12 +97,12 @@ private LinearLayout clockDateCard;
     private DevicePolicyManager devicePolicyManager;
     private ComponentName screenLockAdminComponent;
     private LinearLayout currentCard;
-    private LinearLayout livePreviewCard;
-    private TextView livePreviewClock;
-    private TextView livePreviewGregorian;
-    private TextView livePreviewHebrew;
-    private TextView livePreviewPlayer;
-    private FrameLayout livePreviewSurface;
+
+
+
+
+
+
     private TextView screenTitle;
     private TextView screenSubtitle;
     private ScrollView settingsScroll;
@@ -427,13 +427,11 @@ screenTitle.setText("הגדרות");
         clockDateCard = null;
         playerFrameCard = null;
         activityCapabilityNotice = null;
-        livePreviewCard = null;
-        livePreviewClock = null;
-        livePreviewGregorian = null;
-        livePreviewHebrew = null;
-        livePreviewPlayer = null;
-        livePreviewSurface = null;
-        if (category != CATEGORY_ADVANCED) addSettingsLivePreview();
+
+
+
+
+
 
         switch (category) {
             case CATEGORY_CLOCK_DATE:
@@ -477,215 +475,38 @@ screenTitle.setText("הגדרות");
         }
     }
 
-    private void addSettingsLivePreview() {
-        livePreviewCard = addCard(content, "תצוגה מקדימה");
-        livePreviewSurface = new FrameLayout(this);
-        livePreviewSurface.setBackground(roundOutline(
-                getInt("screenBackgroundColor", Color.BLACK), dp(14), CARD_OUTLINE));
-        livePreviewSurface.setClipToPadding(false);
-        livePreviewSurface.setClipChildren(false);
+    
 
-        LinearLayout sample = new LinearLayout(this);
-        sample.setOrientation(LinearLayout.VERTICAL);
-        sample.setGravity(Gravity.CENTER);
-        sample.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        sample.setPadding(dp(8), dp(5), dp(8), dp(5));
+    
 
-        livePreviewClock = textView("12:34", 40, Color.WHITE);
-        livePreviewClock.setGravity(Gravity.CENTER);
-        livePreviewClock.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-        livePreviewClock.setIncludeFontPadding(false);
-        sample.addView(livePreviewClock, new LinearLayout.LayoutParams(-1, dp(58)));
-
-        livePreviewGregorian = textView("יום ב׳ · 09.11.2026", 14, Color.WHITE);
-        livePreviewGregorian.setGravity(Gravity.CENTER);
-        livePreviewGregorian.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-        livePreviewGregorian.setIncludeFontPadding(false);
-        sample.addView(livePreviewGregorian, new LinearLayout.LayoutParams(-1, dp(25)));
-
-        livePreviewHebrew = textView("", 14, Color.WHITE);
-        livePreviewHebrew.setGravity(Gravity.CENTER);
-        livePreviewHebrew.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-        livePreviewHebrew.setIncludeFontPadding(false);
-        sample.addView(livePreviewHebrew, new LinearLayout.LayoutParams(-1, dp(25)));
-
-        livePreviewPlayer = textView("אמן לדוגמה · שם השיר", 13, Color.WHITE);
-        livePreviewPlayer.setGravity(Gravity.CENTER);
-        livePreviewPlayer.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-        livePreviewPlayer.setIncludeFontPadding(false);
-        livePreviewPlayer.setVisibility(View.GONE);
-        sample.addView(livePreviewPlayer, new LinearLayout.LayoutParams(-1, dp(24)));
-
-        livePreviewSurface.addView(sample, new FrameLayout.LayoutParams(-1, -2,
-                Gravity.CENTER));
-        LinearLayout.LayoutParams surfaceParams = new LinearLayout.LayoutParams(-1, dp(132));
-        surfaceParams.topMargin = dp(4);
-        livePreviewCard.addView(livePreviewSurface, surfaceParams);
-        refreshSettingsLivePreview();
-    }
-
-    private void refreshSettingsLivePreview() {
-        if (livePreviewSurface == null || livePreviewClock == null) return;
-        try {
-            int background = getInt("screenBackgroundColor", Color.BLACK);
-            livePreviewSurface.setBackground(roundOutline(background, dp(14), CARD_OUTLINE));
-            int color = getInt("fontColor", Color.rgb(220, 220, 220));
-            String family = getString("fontFamily", "sans-serif");
-            Typeface face = Typeface.create("sans-serif", Typeface.NORMAL);
-            if (family.startsWith("custom:")) {
-                try {
-                    face = Typeface.createFromAsset(getAssets(),
-                            "fonts/" + family.substring("custom:".length()));
-                } catch (Throwable ignored) {}
-            } else {
-                face = Typeface.create(family, Typeface.NORMAL);
-            }
-            int weight = getInt("fontWeight", 0);
-            if (weight >= 1) face = Typeface.create(face, Typeface.BOLD);
-            livePreviewClock.setTypeface(face);
-            livePreviewGregorian.setTypeface(face);
-            livePreviewHebrew.setTypeface(face);
-            livePreviewPlayer.setTypeface(face);
-            livePreviewClock.setTextColor(color);
-            livePreviewGregorian.setTextColor(color);
-            livePreviewHebrew.setTextColor(color);
-            livePreviewPlayer.setTextColor(color);
-
-            int clockSize = getInt("clockDateSize", 84);
-            livePreviewClock.setTextSize(Math.max(25, Math.min(44, clockSize * 0.48f)));
-            int gregorianScale = getInt("gregorianDateScale", -1);
-            int hebrewScale = getInt("hebrewDateScale", -1);
-            livePreviewGregorian.setTextSize(gregorianScale > 0
-                    ? Math.max(9, Math.min(22, clockSize * gregorianScale / 100f * 0.48f))
-                    : Math.max(9, Math.min(22, clockSize * 0.26f * 0.48f)));
-            livePreviewHebrew.setTextSize(hebrewScale > 0
-                    ? Math.max(9, Math.min(22, clockSize * hebrewScale / 100f * 0.48f))
-                    : Math.max(9, Math.min(22, clockSize * 0.26f * 0.48f)));
-            livePreviewGregorian.setVisibility(getBool("showGregorian", true)
-                    ? View.VISIBLE : View.GONE);
-            livePreviewHebrew.setVisibility(getBool("showHebrew", true)
-                    ? View.VISIBLE : View.GONE);
-            livePreviewPlayer.setVisibility(currentCategory == CATEGORY_PLAYER
-                    ? View.VISIBLE : View.GONE);
-
-            Calendar sampleNow = Calendar.getInstance();
-            String timeMode = getString("timeFormat", "system");
-            boolean use24 = "24".equals(timeMode) || ("system".equals(timeMode)
-                    && android.text.format.DateFormat.is24HourFormat(this));
-            int hour = sampleNow.get(Calendar.HOUR_OF_DAY);
-            if (use24) {
-                livePreviewClock.setText(String.format(Locale.US, "%d:%02d", hour,
-                        sampleNow.get(Calendar.MINUTE)));
-            } else {
-                int hour12 = hour % 12;
-                if (hour12 == 0) hour12 = 12;
-                livePreviewClock.setText(String.format(Locale.US, "%d:%02d", hour12,
-                        sampleNow.get(Calendar.MINUTE)));
-            }
-            String pattern = getString("gregorianDateFormat", "dd.MM.yyyy");
-            try {
-                livePreviewGregorian.setText(new SimpleDateFormat(pattern, Locale.US)
-                        .format(sampleNow.getTime()));
-            } catch (Throwable ignored) {
-                livePreviewGregorian.setText(new SimpleDateFormat("dd.MM.yyyy", Locale.US)
-                        .format(sampleNow.getTime()));
-            }
-            livePreviewHebrew.setText(currentHebrewDateSamples()[0]);
-            livePreviewPlayer.setVisibility(currentCategory == CATEGORY_PLAYER
-                    && !"off".equals(getString("playerDisplayMode", "off"))
-                    ? View.VISIBLE : View.GONE);
-            String clockStyle = getString("clockStyle", "digital");
-            if ("analog".equals(clockStyle)) {
-                livePreviewClock.setText("◷");
-            } else if ("split".equals(clockStyle)) {
-                String[] timeParts = livePreviewClock.getText().toString().split(":");
-                if (timeParts.length == 2) {
-                    livePreviewClock.setText(timeParts[0] + "   " + timeParts[1]);
-                }
-            }
-            View sampleView = livePreviewSurface.getChildAt(0);
-            if (sampleView != null) {
-                sampleView.setTranslationX(livePreviewSurface.getWidth()
-                        * Math.max(-0.20f, Math.min(0.20f,
-                        getInt("clockHorizontalOffset", 0) / 100f)));
-                FrameLayout.LayoutParams sampleParams =
-                        (FrameLayout.LayoutParams) sampleView.getLayoutParams();
-                String position = getString("clockDatePosition", "upper");
-                sampleParams.gravity = "top".equals(position)
-                        ? Gravity.TOP | Gravity.CENTER_HORIZONTAL
-                        : "middle".equals(position) ? Gravity.CENTER
-                        : Gravity.TOP | Gravity.CENTER_HORIZONTAL;
-                if ("top".equals(position)) sampleParams.topMargin = dp(3);
-                else if ("custom".equals(position)) {
-                    sampleParams.topMargin = Math.max(0, Math.min(dp(75),
-                            Math.round(dp(132) * getInt("clockCustomVerticalPosition", 25) / 100f)));
-                } else if ("upper".equals(position)) sampleParams.topMargin = dp(20);
-                else sampleParams.topMargin = 0;
-                sampleView.setLayoutParams(sampleParams);
-            }
-        } catch (Throwable ignored) {
-        }
-    }
-
+    
     private void buildClockDateSettings() {
         addCheck(content, "תאריך עברי", "showHebrew", true);
-        String[] hebrewDateFormats = {
-                "plain", "yearArticle", "monthBet", "monthBetYearArticle"
-        };
+        String[] hebrewDateFormats = {"plain", "yearArticle", "monthBet", "monthBetYearArticle"};
         addSpinner(content, "תבנית התאריך העברי",
-                currentHebrewDateSamples(),
-                hebrewDateFormats, "hebrewDateFormat");
+                currentHebrewDateSamples(), hebrewDateFormats, "hebrewDateFormat");
         addCheck(content, "תאריך לועזי", "showGregorian", true);
         String[] gregorianDateFormats = {
                 "dd.MM.yyyy", "dd.MM.yy", "dd/MM/yy",
                 "dd/MM/yyyy", "yyyy/MM/dd", "d 'ב'MMMM yyyy"
         };
-        String customGregorianPattern = getString(
-                "gregorianDateCustomPattern", "dd.MM.yyyy");
-        String[] gregorianDateValues = new String[gregorianDateFormats.length + 1];
-        String[] gregorianDateNames = new String[gregorianDateFormats.length + 1];
-        System.arraycopy(gregorianDateFormats, 0, gregorianDateValues, 0,
-                gregorianDateFormats.length);
-        System.arraycopy(currentGregorianDateSamples(gregorianDateFormats), 0,
-                gregorianDateNames, 0, gregorianDateFormats.length);
-        gregorianDateValues[gregorianDateFormats.length] = customGregorianPattern;
-        gregorianDateNames[gregorianDateFormats.length] =
-                currentGregorianDateSamples(new String[]{customGregorianPattern})[0];
         addSpinner(content, "תבנית התאריך הלועזי",
-                gregorianDateNames, gregorianDateValues, "gregorianDateFormat");
-        addCustomGregorianPatternEditor(content);
-        addSegmentedChoices(content, "סגנון השעון",
-                new String[]{"דיגיטלי", "אנלוגי", "דיגיטלי מפוצל"},
-                new String[]{"digital", "analog", "split"}, "clockStyle");
+                currentGregorianDateSamples(gregorianDateFormats),
+                gregorianDateFormats, "gregorianDateFormat");
         addSegmentedChoices(content, "תצוגת שעה",
-                new String[]{"לפי המכשיר", "24 שעות", "12 שעות"},
-                new String[]{"system", "24", "12"}, "timeFormat");
+                new String[]{"24 שעות", "12 שעות"},
+                new String[]{"24", "12"}, "timeFormat");
         addDiscreteSlider(content, "גודל",
                 new String[]{"קטן", "בינוני", "רגיל", "גדול", "ענק"},
                 new String[]{"60", "72", "84", "96", "108"}, "clockDateSize");
-        addDiscreteSlider(content, "גודל התאריך הלועזי",
-                new String[]{"לפי השעון", "18%", "22%", "26%", "30%"},
-                new String[]{"-1", "18", "22", "26", "30"}, "gregorianDateScale");
-        addDiscreteSlider(content, "גודל התאריך העברי",
-                new String[]{"לפי השעון", "18%", "22%", "26%", "30%"},
-                new String[]{"-1", "18", "22", "26", "30"}, "hebrewDateScale");
         addDiscreteSlider(content, "עובי הגופן",
                 new String[]{"דק", "רגיל", "מודגש", "עבה"},
                 new String[]{"-1", "0", "1", "2"}, "fontWeight");
         addSegmentedChoices(content, "מיקום",
-                new String[]{"בראש המסך", "ברבע העליון", "במרכז המסך", "מיקום מותאם"},
-                new String[]{"top", "upper", "middle", "custom"}, "clockDatePosition");
-        addDiscreteSlider(content, "מיקום אנכי מותאם",
-                new String[]{"0%", "10%", "20%", "30%", "40%", "50%", "60%", "70%", "80%", "90%"},
-                new String[]{"0", "10", "20", "30", "40", "50", "60", "70", "80", "90"},
-                "clockCustomVerticalPosition");
-        addDiscreteSlider(content, "הזזה אופקית",
-                new String[]{"20%-", "15%-", "10%-", "5%-", "מרכז", "5%+", "10%+", "15%+", "20%+"},
-                new String[]{"-20", "-15", "-10", "-5", "0", "5", "10", "15", "20"},
-                "clockHorizontalOffset");
+                new String[]{"בראש המסך", "ברבע העליון", "במרכז המסך"},
+                new String[]{"top", "upper", "middle"}, "clockDatePosition");
+        addLineSlider(content, "הזזה אופקית", "clockHorizontalOffset", -20, 20);
     }
-
-
 
     private String[] currentGregorianDateSamples(String[] patterns) {
         Calendar today = Calendar.getInstance();
@@ -775,16 +596,21 @@ screenTitle.setText("הגדרות");
         addCheck(content, "הפעלה אוטומטית בנעילה", "autoStartOnDeviceLock", false);
         addCheck(content, "הפעלה אוטומטית בהדלקה", "autoStartOnBoot", false);
         addCheck(content, "הפעלה אוטומטית בהתעוררות", "autoStartOnWake", false);
-        addCheck(content, "הפעלה אוטומטית בטעינה", "autoStartOnCharge", false);
         addCheck(content, "ללא כיבוי בטעינה", "noShutdownWhileCharging", false);
         addCheck(content, "הצגת אחוז הסוללה", "showBatteryPercent", false);
         addCheck(content, "השהיה באפליקציות מוחרגות",
                 "pauseWhenExcludedAppActive", false);
-        addExcludedAppsPicker(content);
+        if (currentSettingsGroup != null && currentSettingsGroup.getChildCount() > 1) {
+            View exclusionCard = currentSettingsGroup.getChildAt(
+                    currentSettingsGroup.getChildCount() - 1);
+            if (exclusionCard instanceof LinearLayout) {
+                addExcludedAppsPicker((LinearLayout) exclusionCard);
+            }
+        }
     }
 
     private void addExcludedAppsPicker(LinearLayout parent) {
-        LinearLayout card = addCard(parent, "בחירת אפליקציות להחרגה");
+        LinearLayout card = parent;
         TextView description = textView(
                 "אפשר לבחור אפליקציות שבהן שומר מסך לא יופעל אוטומטית. נדרשת הרשאת נתוני שימוש של Android.",
                 14, MUTED);
@@ -879,10 +705,8 @@ screenTitle.setText("הגדרות");
         dialog.show();
     }
 
+    
     private void buildAppearanceSettings() {
-        addSegmentedChoices(content, "סידור במצב לרוחב",
-                new String[]{"אוטומטי", "אנכי", "אופקי"},
-                new String[]{"auto", "vertical", "horizontal"}, "landscapeLayoutMode");
         addColorChoices(content, "צבע המסך",
                 new String[]{"שחור", "כחול", "כחול כהה", "טורקיז",
                         "אפור פחם", "ירוק יער", "כחול עמוק", "אפור אבן"},
@@ -892,8 +716,6 @@ screenTitle.setText("הגדרות");
         addSegmentedChoices(content, "סגנון הרקע",
                 new String[]{"אחיד", "מעבר צבע", "זוהר עדין", "הצללה"},
                 new String[]{"solid", "gradient", "glow", "vignette"}, "backgroundStyle");
-        addCheck(content, "רקע דינמי לפי עטיפת האלבום",
-                "dynamicAlbumBackgroundEnabled", false);
         addDiscreteSlider(content, "בהירות המסך",
                 new String[]{"לפי המכשיר", "25%", "50%", "75%", "100%"},
                 new String[]{"-1", "25", "50", "75", "100"}, "screenBrightness");
@@ -914,30 +736,20 @@ screenTitle.setText("הגדרות");
                 new String[]{"white", "blue", "silver", "gray", "light"}, "fontColor");
     }
 
+    
     private void buildPlayerSettings() {
-        addSegmentedChoices(content, "הצגת הנגן",
-                new String[]{"כבוי", "פועל", "פועל בתחילת שיר"},
+        addSegmentedChoices(content, "הפעלת הנגן",
+                new String[]{"כבוי", "פועל", "פועל בתחילת שיר (6 שניות)"},
                 new String[]{"off", "on", "start"}, "playerDisplayMode");
         addCheck(content, "פרטי האמן", "showDetails", getBool("showDetails", true));
         addCheck(content, "זמני השיר ופקדי הנגן", "showProgress", true);
-        addSegmentedChoices(content, "משך הצגת פקדי הנגן",
-                new String[]{"תמיד", "3 שניות", "5 שניות", "10 שניות", "15 שניות", "30 שניות"},
-                new String[]{"0", "3", "5", "10", "15", "30"},
-                "playerControlsTimeout");
         addDiscreteSlider(content, "גודל הנגן",
                 new String[]{"קטן", "בינוני", "גדול", "ענק"},
                 new String[]{"14", "17", "20", "23"}, "playerSize");
         addSegmentedChoices(content, "מיקום הנגן",
-                new String[]{"ברבע התחתון", "בתחתית המסך", "מיקום מותאם"},
-                new String[]{"lower", "bottom", "custom"}, "playerPosition");
-        addDiscreteSlider(content, "מיקום אנכי מותאם לנגן",
-                new String[]{"0%", "10%", "20%", "30%", "40%", "50%", "60%", "70%", "80%", "90%"},
-                new String[]{"0", "10", "20", "30", "40", "50", "60", "70", "80", "90"},
-                "playerCustomVerticalPosition");
-        addDiscreteSlider(content, "הזזה אופקית של הנגן",
-                new String[]{"20%-", "15%-", "10%-", "5%-", "מרכז", "5%+", "10%+", "15%+", "20%+"},
-                new String[]{"-20", "-15", "-10", "-5", "0", "5", "10", "15", "20"},
-                "playerHorizontalOffset");
+                new String[]{"ברבע התחתון", "בתחתית המסך"},
+                new String[]{"lower", "bottom"}, "playerPosition");
+        addLineSlider(content, "הזזה אופקית של הנגן", "playerHorizontalOffset", -20, 20);
         addCheck(content, "הצגת עטיפת האלבום", "showAlbumArt", true);
         addCheck(content, "הצג מסגרת", "frameEnabled", false);
         addColorChoices(content, "צבע מסגרת",
@@ -951,80 +763,52 @@ screenTitle.setText("הגדרות");
                 new String[]{"0", "10", "20"}, "frameRadius");
     }
 
+    
     private void buildAdvancedSettings() {
         if (!prefs.contains("batteryProtectionThreshold")) {
             prefs.edit().putInt("batteryProtectionThreshold", 20).apply();
+        }
+        if ("system".equals(getString("timeFormat", "24"))) {
+            prefs.edit().putString("timeFormat", "24").apply();
         }
         addCheck(content, "מצב לילה אוטומטי", "nightModeEnabled", false);
         String[] hourNames = new String[24];
         String[] hourValues = new String[24];
         for (int hour = 0; hour < 24; hour++) {
-            hourNames[hour] = String.format(java.util.Locale.US, "%02d:00", hour);
+            hourNames[hour] = String.format(Locale.US, "%02d:00", hour);
             hourValues[hour] = String.valueOf(hour);
         }
         addSpinner(content, "שעת התחלת מצב לילה", hourNames, hourValues, "nightModeStartHour");
         addSpinner(content, "שעת סיום מצב לילה", hourNames, hourValues, "nightModeEndHour");
-        addCheck(content, "הגנה אוטומטית בסוללה חלשה או בחימום",
+
+        addCheck(content, "הגנה אוטומטית כשהסוללה מתרוקנת",
                 "batteryProtectionEnabled", false);
         addDiscreteSlider(content, "סף סוללה להפעלת ההגנה",
                 new String[]{"10%", "15%", "20%", "25%", "30%"},
                 new String[]{"10", "15", "20", "25", "30"},
                 "batteryProtectionThreshold");
 
-        LinearLayout diagnosticsCard = addCard(content, "אבחון ומידע על המכשיר");
-        String batterySummary = "לא זמין";
-        try {
-            Intent battery = registerReceiver(null,
-                    new android.content.IntentFilter(Intent.ACTION_BATTERY_CHANGED));
-            if (battery != null) {
-                int level = battery.getIntExtra(android.os.BatteryManager.EXTRA_LEVEL, -1);
-                int scale = battery.getIntExtra(android.os.BatteryManager.EXTRA_SCALE, -1);
-                if (level >= 0 && scale > 0) {
-                    batterySummary = Math.max(0, Math.min(100,
-                            Math.round(level * 100f / scale))) + "%";
-                }
-            }
-        } catch (Throwable ignored) {
-        }
-        String thermalSummary = "לא נתמך בגרסת Android זו";
-        if (Build.VERSION.SDK_INT >= 29) {
-            try {
-                android.os.PowerManager power =
-                        (android.os.PowerManager) getSystemService(POWER_SERVICE);
-                if (power != null) {
-                    int status = power.getCurrentThermalStatus();
-                    switch (status) {
-                        case android.os.PowerManager.THERMAL_STATUS_NONE:
-                        case android.os.PowerManager.THERMAL_STATUS_LIGHT:
-                            thermalSummary = "תקין";
-                            break;
-                        case android.os.PowerManager.THERMAL_STATUS_MODERATE:
-                            thermalSummary = "חימום בינוני";
-                            break;
-                        case android.os.PowerManager.THERMAL_STATUS_SEVERE:
-                            thermalSummary = "חימום גבוה";
-                            break;
-                        case android.os.PowerManager.THERMAL_STATUS_CRITICAL:
-                        case android.os.PowerManager.THERMAL_STATUS_EMERGENCY:
-                        case android.os.PowerManager.THERMAL_STATUS_SHUTDOWN:
-                            thermalSummary = "חימום קריטי";
-                            break;
-                        default:
-                            thermalSummary = "לא ידוע";
-                            break;
-                    }
-                }
-            } catch (Throwable ignored) {
-            }
-        }
-        String report = "גרסת Android: " + Build.VERSION.RELEASE
-                + " (API " + Build.VERSION.SDK_INT + ")\n"
-                + "רמת סוללה: " + batterySummary + "\n"
-                + "מצב חום: " + thermalSummary + "\n"
+        addCheck(content, "הפעלה באמצעות שומר המסך של Android בטעינה ובעגינה",
+                "useAndroidDreamForCharging", false);
+
+        LinearLayout diagnosticsCard = addCard(content, "אבחון פעילות האפליקציה");
+        boolean active = MainActivity.isMainActivityResumed();
+        String report = "מצב שומר המסך: " + (active ? "פעיל" : "לא פעיל") + "\n"
+                + "הפעלת הנגן: " + getPlayerModeLabel() + "\n"
+                + "הפעלה אוטומטית בנעילה: "
+                + (getBool("autoStartOnDeviceLock", false) ? "מופעלת" : "כבויה") + "\n"
+                + "הפעלה אוטומטית בהתעוררות: "
+                + (getBool("autoStartOnWake", false) ? "מופעלת" : "כבויה") + "\n"
+                + "הפעלה אוטומטית לאחר אתחול: "
+                + (getBool("autoStartOnBoot", false) ? "מופעלת" : "כבויה") + "\n"
+                + "שומר מסך של Android בטעינה ובעגינה: "
+                + (getBool("useAndroidDreamForCharging", false) ? "מופעל" : "כבוי") + "\n"
                 + "גישה להתראות: " + (hasNotificationAccess() ? "פעילה" : "לא פעילה") + "\n"
                 + "הצגה מעל אפליקציות: "
                 + (Build.VERSION.SDK_INT < 23 || Settings.canDrawOverlays(this)
-                        ? "פעילה" : "לא פעילה");
+                        ? "פעילה" : "לא פעילה") + "\n"
+                + "נתוני שימוש לאפליקציות מוחרגות: "
+                + (hasUsageAccess() ? "פעילים" : "לא פעילים");
         TextView diagnosticText = textView(report, 14, MUTED);
         diagnosticText.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         diagnosticText.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
@@ -1032,79 +816,17 @@ screenTitle.setText("הגדרות");
         diagnosticText.setLineSpacing(dp(4), 1f);
         diagnosticText.setIncludeFontPadding(false);
         diagnosticsCard.addView(diagnosticText, new LinearLayout.LayoutParams(-1, -2));
-
-        LinearLayout dreamCard = addCard(content, "שומר מסך של Android");
-        TextView dreamDescription = textView(
-                "אפשר לרשום את שומר מסך גם ברשימת שומרי המסך של Android. מצב זה נוסף כאפשרות משלימה ואינו מחליף את מנגנוני ההפעלה האוטומטית הקיימים.",
-                14, MUTED);
-        dreamDescription.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        dreamDescription.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
-        dreamDescription.setTextDirection(View.TEXT_DIRECTION_RTL);
-        dreamDescription.setLineSpacing(dp(3), 1f);
-        dreamDescription.setIncludeFontPadding(false);
-        dreamCard.addView(dreamDescription, new LinearLayout.LayoutParams(-1, -2));
-        Button dreamSettingsButton = makeActionButton("פתיחת הגדרות שומר המסך של Android");
-        LinearLayout.LayoutParams dreamButtonParams = new LinearLayout.LayoutParams(-1, dp(42));
-        dreamButtonParams.topMargin = dp(10);
-        dreamCard.addView(dreamSettingsButton, dreamButtonParams);
-        dreamSettingsButton.setOnClickListener(v -> {
-            try {
-                startActivity(new Intent(Settings.ACTION_DREAM_SETTINGS));
-            } catch (ActivityNotFoundException ignored) {
-                AppToast.makeText(this, "הגדרת שומרי מסך אינה זמינה במכשיר זה.",
-                        Toast.LENGTH_LONG).show();
-            } catch (Throwable ignored) {
-                AppToast.makeText(this, "לא ניתן לפתוח את הגדרות שומר המסך במכשיר זה.",
-                        Toast.LENGTH_LONG).show();
-            }
-        });
-
-        LinearLayout tileCard = addCard(content, "הפעלה מהירה");
-        TextView tileDescription = textView(
-                "אפשר להוסיף אריח לשורת ההגדרות המהירות, כדי לפתוח את שומר מסך בנגיעה אחת.",
-                14, MUTED);
-        tileDescription.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        tileDescription.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
-        tileDescription.setTextDirection(View.TEXT_DIRECTION_RTL);
-        tileDescription.setLineSpacing(dp(3), 1f);
-        tileDescription.setIncludeFontPadding(false);
-        tileCard.addView(tileDescription, new LinearLayout.LayoutParams(-1, -2));
-        Button addTileButton = makeActionButton("הוספת אריח להפעלה מהירה");
-        LinearLayout.LayoutParams tileButtonParams = new LinearLayout.LayoutParams(-1, dp(42));
-        tileButtonParams.topMargin = dp(10);
-        tileCard.addView(addTileButton, tileButtonParams);
-        addTileButton.setOnClickListener(v -> requestQuickSettingsTile());
     }
 
-    private void requestQuickSettingsTile() {
-        if (Build.VERSION.SDK_INT >= 33) {
-            try {
-                android.app.StatusBarManager statusBarManager =
-                        getSystemService(android.app.StatusBarManager.class);
-                if (statusBarManager == null) throw new IllegalStateException();
-                statusBarManager.requestAddTileService(
-                        new ComponentName(this, ScreensaverTileService.class),
-                        "שומר מסך", Icon.createWithResource(this, R.drawable.ic_launcher),
-                        getMainExecutor(), result -> {
-                            if (result == android.app.StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ADDED) {
-                                AppToast.makeText(this, "אריח שומר מסך נוסף להגדרות המהירות.",
-                                        Toast.LENGTH_LONG).show();
-                            } else if (result == android.app.StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ALREADY_ADDED) {
-                                AppToast.makeText(this, "אריח שומר מסך כבר נוסף.",
-                                        Toast.LENGTH_LONG).show();
-                            } else {
-                                AppToast.makeText(this, "לא ניתן להוסיף את האריח כרגע. אפשר להוסיף אותו ידנית בעריכת ההגדרות המהירות.",
-                                        Toast.LENGTH_LONG).show();
-                            }
-                        });
-                return;
-            } catch (Throwable ignored) {
-            }
+    private String getPlayerModeLabel() {
+        String mode = getString("playerDisplayMode", "off");
+        if ("start".equals(mode) || getBool("showPlayerOnlyAtStart", false)) {
+            return "פועל בתחילת שיר";
         }
-        AppToast.makeText(this,
-                "פתח את וילון ההגדרות המהירות, בחר עריכה והוסף את האריח ״שומר מסך״ לרשימה.",
-                Toast.LENGTH_LONG).show();
+        return "on".equals(mode) || getBool("showPlayer", false) ? "פועל" : "כבוי";
     }
+
+    
 
     private String settingsGroupTitleFor(String key) {
         switch (currentCategory) {
@@ -1127,9 +849,8 @@ screenTitle.setText("הגדרות");
                 }
                 return "שומר מסך במצב טעינה";
             case CATEGORY_APPEARANCE:
-                if ("landscapeLayoutMode".equals(key)) return "סידור המסך";
-                if ("screenBackgroundColor".equals(key) || "screenBrightness".equals(key)
-                        || "backgroundStyle".equals(key) || "dynamicAlbumBackgroundEnabled".equals(key)) {
+                        if ("screenBackgroundColor".equals(key) || "screenBrightness".equals(key)
+                        || "backgroundStyle".equals(key)) {
                     return "התאמת מראה המסך";
                 }
                 return "גופן וצבע הטקסט";
@@ -1143,7 +864,7 @@ screenTitle.setText("הגדרות");
                 if ("nightModeEnabled".equals(key) || "nightModeStartHour".equals(key)
                         || "nightModeEndHour".equals(key)) return "מצב לילה";
                 if ("batteryProtectionEnabled".equals(key)
-                        || "batteryProtectionThreshold".equals(key)) return "הגנה על המכשיר";
+                        || "batteryProtectionThreshold".equals(key)) return "הגנה על הסוללה";
                 return "אבחון ומידע טכני";
             default:
                 return "הגדרות";
@@ -1322,23 +1043,17 @@ screenTitle.setText("הגדרות");
         if ("showPlayerOnlyAtStart".equals(key)) return "הצגת הנגן רק בתחילת כל שיר";
         if ("showDetails".equals(key)) return "כשמופיע בפרטי השיר את שם האמן, הצגת שם האמן מעל שם השיר";
         if ("showProgress".equals(key)) return "הצגת נגן מלא, כולל זמני השיר סרגל התקדמות ולחצני שליטה בנגן";
-        if ("playerControlsTimeout".equals(key)) return "הצגת סרגל ההתקדמות ופקדי הנגן לזמן מוגדר לאחר תחילת שיר חדש; פרטי השיר יישארו מוצגים";
-        if ("clockCustomVerticalPosition".equals(key)) return "בחירת הגובה של מרכז השעון והתאריך ביחס לגובה המסך";
         if ("clockHorizontalOffset".equals(key)) return "הזזת כל תצוגת השעון והתאריך ימינה או שמאלה";
         if ("playerHorizontalOffset".equals(key)) return "הזזת הנגן ימינה או שמאלה";
-        if ("clockStyle".equals(key)) return "בחירת שעון ספרתי רגיל, מחוגים או ספרות מפוצלות";
         if ("playerCustomVerticalPosition".equals(key)) return "בחירת הגובה של מרכז הנגן ביחס לגובה המסך";
         if ("backgroundStyle".equals(key)) return "בחירת אופן הצגת צבע הרקע";
         if ("landscapeLayoutMode".equals(key)) return "בחירת סידור השעון והנגן כאשר המכשיר נמצא לרוחב";
-        if ("dynamicAlbumBackgroundEnabled".equals(key)) return "התאמת גווני הרקע לצבעים המרכזיים שבעטיפת האלבום בזמן נגינה";
         if ("showAlbumArt".equals(key)) return "הצגת תמונת האלבום לצד פרטי השיר";
         if ("nightModeEnabled".equals(key)) return "הפחתת בהירות מסך השומר מסך בשעות שנבחרו, בלי לשנות את בהירות המכשיר";
         if ("nightModeStartHour".equals(key)) return "השעה שבה מצב לילה אוטומטי מתחיל";
         if ("nightModeEndHour".equals(key)) return "השעה שבה מצב לילה אוטומטי מסתיים";
-        if ("timeFormat".equals(key)) return "בחירת תצוגת 12 או 24 שעות, או שימוש בהגדרת המכשיר";
-        if ("gregorianDateScale".equals(key)) return "התאמת גודל התאריך הלועזי בנפרד מגודל השעון";
-        if ("hebrewDateScale".equals(key)) return "התאמת גודל התאריך העברי בנפרד מגודל השעון";
-        if ("batteryProtectionEnabled".equals(key)) return "הפחתת בהירות המסך באופן אוטומטי כאשר הסוללה חלשה או כשהמכשיר מתחמם";
+        if ("timeFormat".equals(key)) return "בחירת תצוגת שעה בת 12 או 24 שעות";
+        if ("batteryProtectionEnabled".equals(key)) return "הפחתת בהירות המסך באופן אוטומטי כשהסוללה יורדת מתחת לסף שנבחר";
         if ("batteryProtectionThreshold".equals(key)) return "מתחת לאחוז שנבחר תופעל הפחתת בהירות, כל עוד המכשיר אינו בטעינה";
         if ("playerSize".equals(key)) return "בחירת גודל התצוגה של הנגן";
         if ("playerPosition".equals(key)) return "בחירת מיקום הצגת הנגן במסך";
@@ -1647,13 +1362,29 @@ screenTitle.setText("הגדרות");
         toggle.setOnCheckedChangeListener((button, checked) -> {
             try {
                 prefs.edit().putBoolean(key, checked).apply();
-                refreshSettingsLivePreview();
+
                 if ("autoStartOnCharge".equals(key)) {
                     NightScreenApplication.syncChargerReceiver(this);
                 }
             } catch (Throwable ignored) {
             }
-            if ("autoStartOnCharge".equals(key)) {
+            if ("useAndroidDreamForCharging".equals(key)) {
+                if (checked) {
+                    prefs.edit().putBoolean("autoStartOnCharge", false)
+                            .putBoolean("autoStartOverlayPermissionPending", false).apply();
+                    NightScreenApplication.syncChargerReceiver(this);
+                    LockScreenMonitorService.sync(this);
+                    try {
+                        startActivity(new Intent(Settings.ACTION_DREAM_SETTINGS));
+                    } catch (Throwable ignored) {
+                        prefs.edit().putBoolean(key, false).apply();
+                        toggle.setChecked(false);
+                        AppToast.makeText(this,
+                                "הגדרות שומר המסך של Android אינן זמינות במכשיר זה.",
+                                Toast.LENGTH_LONG).show();
+                    }
+                }
+            } else if ("autoStartOnCharge".equals(key)) {
                 if (checked && Build.VERSION.SDK_INT >= 29
                         && !Settings.canDrawOverlays(this)) {
                     prefs.edit().putBoolean("autoStartOverlayPermissionPending", true).apply();
@@ -1725,6 +1456,56 @@ screenTitle.setText("הגדרות");
 
     // Use one consistent segmented selector for all discrete settings.
     // Existing values and ranges are intentionally preserved.
+
+    private void addLineSlider(LinearLayout parent, String label, String key,
+                               int minValue, int maxValue) {
+        LinearLayout card = addSettingCard(parent, label, key);
+        TextView valueText = textView("", 14, ACCENT);
+        valueText.setGravity(Gravity.CENTER);
+        valueText.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        valueText.setTextDirection(View.TEXT_DIRECTION_LTR);
+        card.addView(valueText, new LinearLayout.LayoutParams(-1, dp(24)));
+
+        SeekBar seekBar = new SeekBar(this);
+        seekBar.setMax(maxValue - minValue);
+        seekBar.setProgress(Math.max(0, Math.min(maxValue - minValue,
+                getInt(key, 0) - minValue)));
+        seekBar.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+        seekBar.setContentDescription(label);
+        if (Build.VERSION.SDK_INT >= 21) {
+            seekBar.setProgressTintList(ColorStateList.valueOf(ACCENT));
+            seekBar.setThumbTintList(ColorStateList.valueOf(ON_SURFACE));
+            seekBar.setProgressBackgroundTintList(ColorStateList.valueOf(TRACK));
+        }
+        LinearLayout.LayoutParams seekParams = new LinearLayout.LayoutParams(-1, dp(42));
+        seekParams.leftMargin = dp(4);
+        seekParams.rightMargin = dp(4);
+        card.addView(seekBar, seekParams);
+
+        LinearLayout range = new LinearLayout(this);
+        range.setOrientation(LinearLayout.HORIZONTAL);
+        range.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+        TextView low = textView(minValue + "%", 12, MUTED);
+        TextView high = textView("+" + maxValue + "%", 12, MUTED);
+        low.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
+        high.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        range.addView(low, new LinearLayout.LayoutParams(0, dp(20), 1f));
+        range.addView(high, new LinearLayout.LayoutParams(0, dp(20), 1f));
+        card.addView(range, new LinearLayout.LayoutParams(-1, dp(20)));
+
+        seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override public void onProgressChanged(SeekBar bar, int progress, boolean fromUser) {
+                int value = progress + minValue;
+                valueText.setText(value == 0 ? "מרכז" : (value > 0 ? "+" : "") + value + "%");
+                if (fromUser) prefs.edit().putInt(key, value).apply();
+            }
+            @Override public void onStartTrackingTouch(SeekBar bar) { }
+            @Override public void onStopTrackingTouch(SeekBar bar) { }
+        });
+        int initial = seekBar.getProgress() + minValue;
+        valueText.setText(initial == 0 ? "מרכז" : (initial > 0 ? "+" : "") + initial + "%");
+    }
+
     private LinearLayout addDiscreteSlider(LinearLayout parent, String label,
                                             String[] names, String[] values, String key) {
         return addSegmentedChoices(parent, label, names, values, key);
@@ -2065,23 +1846,94 @@ screenTitle.setText("הגדרות");
         return dot;
     }
 
+    
     private void showCustomColorDialog(String key, View preview) {
         int current = getInt(key, "screenBackgroundColor".equals(key) ? Color.BLACK : Color.WHITE);
+        float[] hsv = new float[3];
+        Color.colorToHSV(current, hsv);
+
+        LinearLayout panel = new LinearLayout(this);
+        panel.setOrientation(LinearLayout.VERTICAL);
+        panel.setPadding(dp(18), dp(10), dp(18), dp(8));
+        panel.setBackgroundColor(Color.rgb(18, 31, 47));
+
+        TextView previewLabel = textView("תצוגת הצבע שנבחר", 14, ON_SURFACE);
+        previewLabel.setGravity(Gravity.CENTER);
+        panel.addView(previewLabel, new LinearLayout.LayoutParams(-1, dp(26)));
+
+        View colorPreview = new View(this);
+        GradientDrawable swatchBg = new GradientDrawable();
+        swatchBg.setColor(current);
+        swatchBg.setCornerRadius(dp(12));
+        swatchBg.setStroke(dp(1), Color.rgb(174, 196, 216));
+        colorPreview.setBackground(swatchBg);
+        LinearLayout.LayoutParams swatchParams = new LinearLayout.LayoutParams(-1, dp(76));
+        swatchParams.topMargin = dp(5);
+        swatchParams.bottomMargin = dp(6);
+        panel.addView(colorPreview, swatchParams);
+
+        TextView hexLabel = textView(String.format(Locale.US, "#%06X", current & 0xFFFFFF),
+                15, ON_SURFACE);
+        hexLabel.setGravity(Gravity.CENTER);
+        hexLabel.setTextDirection(View.TEXT_DIRECTION_LTR);
+        panel.addView(hexLabel, new LinearLayout.LayoutParams(-1, dp(25)));
+
         EditText valueInput = new EditText(this);
         valueInput.setSingleLine(true);
         valueInput.setInputType(android.text.InputType.TYPE_CLASS_TEXT
                 | android.text.InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS);
-        valueInput.setHint("#RRGGBB או #AARRGGBB");
-        valueInput.setText(String.format(Locale.US, "#%08X", current));
+        valueInput.setHint("#RRGGBB");
+        valueInput.setText(String.format(Locale.US, "#%06X", current & 0xFFFFFF));
         valueInput.setSelection(valueInput.length());
         valueInput.setTextDirection(View.TEXT_DIRECTION_LTR);
         valueInput.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-        LinearLayout panel = new LinearLayout(this);
-        panel.setOrientation(LinearLayout.VERTICAL);
-        panel.setPadding(dp(20), dp(8), dp(20), dp(4));
-        panel.addView(valueInput, new LinearLayout.LayoutParams(-1, dp(48)));
+        valueInput.setTextColor(ON_SURFACE);
+        valueInput.setHintTextColor(MUTED);
+        valueInput.setBackgroundTintList(ColorStateList.valueOf(ACCENT));
+        panel.addView(valueInput, new LinearLayout.LayoutParams(-1, dp(46)));
+
+        String[] captions = {"גוון", "רוויה", "בהירות"};
+        int[] maxes = {360, 100, 100};
+        for (int i = 0; i < 3; i++) {
+            final int index = i;
+            TextView caption = textView(captions[i], 14, ON_SURFACE);
+            caption.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+            panel.addView(caption, new LinearLayout.LayoutParams(-1, dp(25)));
+
+            SeekBar bar = new SeekBar(this);
+            bar.setMax(maxes[i]);
+            bar.setProgress(Math.round(hsv[i] * (i == 0 ? 1f : 100f)));
+            if (Build.VERSION.SDK_INT >= 21) {
+                bar.setProgressTintList(ColorStateList.valueOf(ACCENT));
+                bar.setThumbTintList(ColorStateList.valueOf(ON_SURFACE));
+                bar.setProgressBackgroundTintList(ColorStateList.valueOf(TRACK));
+            }
+            bar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+                @Override public void onProgressChanged(SeekBar seek, int progress, boolean fromUser) {
+                    if (!fromUser) return;
+                    hsv[index] = index == 0 ? progress : progress / 100f;
+                    int selected = Color.HSVToColor(hsv);
+                    GradientDrawable bg = new GradientDrawable();
+                    bg.setColor(selected);
+                    bg.setCornerRadius(dp(12));
+                    bg.setStroke(dp(1), Color.rgb(174, 196, 216));
+                    colorPreview.setBackground(bg);
+                    hexLabel.setText(String.format(Locale.US, "#%06X", selected & 0xFFFFFF));
+                    int luminance = Math.round(Color.red(selected) * 0.299f
+                            + Color.green(selected) * 0.587f
+                            + Color.blue(selected) * 0.114f);
+                    previewLabel.setTextColor(luminance < 135
+                            ? Color.WHITE : Color.rgb(8, 26, 42));
+                    previewLabel.setBackgroundColor(selected);
+                }
+                @Override public void onStartTrackingTouch(SeekBar seek) { }
+                @Override public void onStopTrackingTouch(SeekBar seek) { }
+            });
+            panel.addView(bar, new LinearLayout.LayoutParams(-1, dp(35)));
+        }
+
         AlertDialog dialog = new AlertDialog.Builder(this)
-                .setTitle("צבע מותאם אישית")
+                .setTitle("בחירת צבע מותאם אישית")
                 .setView(panel)
                 .setNegativeButton("ביטול", null)
                 .setPositiveButton("שמירה", null)
@@ -2091,6 +1943,7 @@ screenTitle.setText("הגדרות");
                     String entered = valueInput.getText() == null ? ""
                             : valueInput.getText().toString().trim();
                     try {
+                        if (entered.isEmpty()) entered = hexLabel.getText().toString();
                         if (!entered.startsWith("#")) entered = "#" + entered;
                         int parsed = Color.parseColor(entered);
                         persistOption(key, String.format(Locale.US, "#%08X", parsed));
@@ -2104,62 +1957,10 @@ screenTitle.setText("הגדרות");
         Window window = dialog.getWindow();
         if (window != null) {
             window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-            window.setLayout(Math.min(dp(420), getResources().getDisplayMetrics().widthPixels - dp(32)),
+            window.setLayout(Math.min(dp(420),
+                    getResources().getDisplayMetrics().widthPixels - dp(32)),
                     android.view.WindowManager.LayoutParams.WRAP_CONTENT);
         }
-    }
-
-    private void addCustomGregorianPatternEditor(LinearLayout parent) {
-        LinearLayout card = addSettingCard(parent, "תבנית תאריך מותאמת אישית",
-                "gregorianDateCustomPattern");
-        LinearLayout row = new LinearLayout(this);
-        row.setOrientation(LinearLayout.HORIZONTAL);
-        row.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        row.setGravity(Gravity.CENTER_VERTICAL);
-        TextView pattern = textView(getString("gregorianDateCustomPattern", "dd.MM.yyyy"), 14, MUTED);
-        pattern.setSingleLine(true);
-        pattern.setEllipsize(android.text.TextUtils.TruncateAt.END);
-        row.addView(pattern, new LinearLayout.LayoutParams(0, dp(38), 1f));
-        Button edit = makeActionButton("עריכה");
-        edit.setOnClickListener(v -> showCustomGregorianPatternDialog(pattern));
-        row.addView(edit, new LinearLayout.LayoutParams(dp(92), dp(38)));
-        LinearLayout.LayoutParams rowParams = new LinearLayout.LayoutParams(-1, -2);
-        rowParams.topMargin = dp(4);
-        card.addView(row, rowParams);
-    }
-
-    private void showCustomGregorianPatternDialog(TextView preview) {
-        EditText input = new EditText(this);
-        input.setSingleLine(true);
-        input.setTextDirection(View.TEXT_DIRECTION_LTR);
-        input.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-        input.setHint("dd.MM.yyyy");
-        input.setText(getString("gregorianDateCustomPattern", "dd.MM.yyyy"));
-        input.setSelection(input.length());
-        AlertDialog dialog = new AlertDialog.Builder(this)
-                .setTitle("תבנית תאריך מותאמת")
-                .setMessage("אפשר להשתמש בסימנים של SimpleDateFormat, למשל: EEE · dd.MM.yyyy")
-                .setView(input)
-                .setNegativeButton("ביטול", null)
-                .setPositiveButton("שמירה", null)
-                .create();
-        dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_POSITIVE)
-                .setOnClickListener(v -> {
-                    String value = input.getText() == null ? ""
-                            : input.getText().toString().trim();
-                    try {
-                        if (value.isEmpty()) throw new IllegalArgumentException();
-                        new SimpleDateFormat(value, Locale.US).format(new java.util.Date());
-                        prefs.edit().putString("gregorianDateCustomPattern", value)
-                                .putString("gregorianDateFormat", value).apply();
-                        preview.setText(value);
-                        refreshSettingsLivePreview();
-                        dialog.dismiss();
-                    } catch (IllegalArgumentException ex) {
-                        input.setError("תבנית לא תקינה");
-                    }
-                }));
-        dialog.show();
     }
 
     private void refreshPermissionDependentToggles() {
@@ -2285,13 +2086,9 @@ screenTitle.setText("הגדרות");
                     || "screenBackgroundColor".equals(key)) {
                 editor.putInt(key, colorValue(value));
             } else if ("fontWeight".equals(key) || "clockDateSize".equals(key)
-                    || "gregorianDateScale".equals(key) || "hebrewDateScale".equals(key)
-                    || "clockCustomVerticalPosition".equals(key)
                     || "clockHorizontalOffset".equals(key)
                     || "playerHorizontalOffset".equals(key)
-                    || "playerCustomVerticalPosition".equals(key)
                     || "batteryProtectionThreshold".equals(key)
-                    || "playerControlsTimeout".equals(key)
                     || "nightModeStartHour".equals(key) || "nightModeEndHour".equals(key)
                     || "playerSize".equals(key) || "frameWidth".equals(key)
                     || "frameRadius".equals(key) || "screenBrightness".equals(key)) {
@@ -2300,7 +2097,7 @@ screenTitle.setText("הגדרות");
                 editor.putString(key, value);
             }
             editor.apply();
-            refreshSettingsLivePreview();
+
         } catch (Throwable ignored) {
         }
     }
@@ -2444,7 +2241,6 @@ screenTitle.setText("הגדרות");
                 view.setText(names[position]);
                 styleSpinnerText(view, true, false);
                 if ("fontFamily".equals(key)) {
-                    view.setTypeface(fontPreviewTypeface(values[position]));
                 }
                 return view;
             }
@@ -2456,7 +2252,6 @@ screenTitle.setText("הגדרות");
                 view.setText(names[position]);
                 styleDropdownOptionText(view, position == selectedIndex(key, values));
                 if ("fontFamily".equals(key)) {
-                    view.setTypeface(fontPreviewTypeface(values[position]));
                 }
                 view.setLayoutParams(new android.widget.AbsListView.LayoutParams(-1, dp(39)));
                 return view;
@@ -2523,18 +2318,7 @@ screenTitle.setText("הגדרות");
         });
     }
 
-    private Typeface fontPreviewTypeface(String family) {
-        if (family == null) return Typeface.DEFAULT;
-        if (family.startsWith("custom:")) {
-            try {
-                return Typeface.createFromAsset(getAssets(),
-                        "fonts/" + family.substring("custom:".length()));
-            } catch (Throwable ignored) {
-                return Typeface.DEFAULT;
-            }
-        }
-        return Typeface.create(family, Typeface.NORMAL);
-    }
+    
 
     private void styleSpinnerText(TextView view, boolean selected, boolean selectedOption) {
         view.setTextColor(Color.rgb(7, 31, 49));
@@ -2659,13 +2443,9 @@ screenTitle.setText("הגדרות");
             }
             return -1;
         } else if ("fontWeight".equals(key) || "clockDateSize".equals(key)
-                || "gregorianDateScale".equals(key) || "hebrewDateScale".equals(key)
-                || "clockCustomVerticalPosition".equals(key)
                 || "clockHorizontalOffset".equals(key)
                 || "playerHorizontalOffset".equals(key)
-                || "playerCustomVerticalPosition".equals(key)
                 || "batteryProtectionThreshold".equals(key)
-                || "playerControlsTimeout".equals(key)
                 || "nightModeStartHour".equals(key) || "nightModeEndHour".equals(key)
                 || "playerSize".equals(key) || "frameWidth".equals(key)
                 || "frameRadius".equals(key) || "screenBrightness".equals(key)) {
