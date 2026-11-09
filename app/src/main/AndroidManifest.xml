@@ -78,6 +78,17 @@
         </receiver>
 
         <service
+            android:name=".ScreensaverTileService"
+            android:label="שומר מסך"
+            android:icon="@drawable/ic_launcher"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
+        <service
             android:name=".SystemMediaNotificationListener"
             android:process=":notifications"
             android:label="Night Screen"
