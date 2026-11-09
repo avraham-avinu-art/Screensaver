@@ -59,7 +59,8 @@ public final class NightScreenApplication extends Application {
         boolean notificationAccess = hasNotificationAccess(this);
         android.content.SharedPreferences prefs =
                 getSharedPreferences("settings", MODE_PRIVATE);
-        boolean chargingEnabled = prefs.getBoolean("autoStartOnCharge", false);
+        boolean chargingEnabled = prefs.getBoolean("autoStartOnCharge", false)
+                && !prefs.getBoolean("useAndroidDreamForCharging", false);
         boolean lockMonitorEnabled = prefs.getBoolean("autoStartOnDeviceLock", false)
                 || prefs.getBoolean("autoStartOnWake", false);
 
