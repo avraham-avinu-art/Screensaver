@@ -1889,6 +1889,33 @@ screenTitle.setText("הגדרות");
         valueInput.setHintTextColor(MUTED);
         valueInput.setBackgroundTintList(ColorStateList.valueOf(ACCENT));
         panel.addView(valueInput, new LinearLayout.LayoutParams(-1, dp(46)));
+        valueInput.addTextChangedListener(new android.text.TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence value, int start,
+                                                    int count, int after) { }
+            @Override public void onTextChanged(CharSequence value, int start,
+                                                int before, int count) { }
+            @Override public void afterTextChanged(android.text.Editable value) {
+                String entered = value == null ? "" : value.toString().trim();
+                try {
+                    if (!entered.startsWith("#")) entered = "#" + entered;
+                    int selected = Color.parseColor(entered);
+                    GradientDrawable bg = new GradientDrawable();
+                    bg.setColor(selected);
+                    bg.setCornerRadius(dp(12));
+                    bg.setStroke(dp(1), Color.rgb(174, 196, 216));
+                    colorPreview.setBackground(bg);
+                    hexLabel.setText(String.format(Locale.US, "#%06X", selected & 0xFFFFFF));
+                    int luminance = Math.round(Color.red(selected) * 0.299f
+                            + Color.green(selected) * 0.587f
+                            + Color.blue(selected) * 0.114f);
+                    previewLabel.setTextColor(luminance < 135
+                            ? Color.WHITE : Color.rgb(8, 26, 42));
+                    previewLabel.setBackgroundColor(selected);
+                } catch (IllegalArgumentException ignored) {
+                    // Keep the last valid swatch visible while the user edits the hex value.
+                }
+            }
+        });
 
         String[] captions = {"גוון", "רוויה", "בהירות"};
         int[] maxes = {360, 100, 100};
