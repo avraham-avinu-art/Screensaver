@@ -179,6 +179,14 @@ public final class LockScreenMonitorService extends Service {
                 .setShowWhen(false)
                 .setCategory(Notification.CATEGORY_SERVICE)
                 .setVisibility(Notification.VISIBILITY_SECRET);
+        Intent settingsIntent = new Intent(this, SettingsActivity.class);
+        settingsIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        PendingIntent settingsPendingIntent = PendingIntent.getActivity(
+                this, NOTIFICATION_ID + 1, settingsIntent, pendingFlags);
+
+        builder.addAction(R.drawable.media_play, "הפעל עכשיו", contentIntent);
+        builder.addAction(R.drawable.icon_settings, "הגדרות", settingsPendingIntent);
         builder.setPriority(Notification.PRIORITY_LOW)
                 .setSound(null)
                 .setVibrate(new long[0])
