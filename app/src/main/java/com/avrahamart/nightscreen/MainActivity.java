@@ -172,7 +172,7 @@ public class MainActivity extends Activity {
             new SimpleDateFormat("dd.MM.yyyy", Locale.US);
 
     private TextView timeText;
-    private ClockStyleView clockStyleView;
+
     private TextView gregorianText;
     private TextView hebrewText;
     private final int dateTextColor = Color.rgb(220, 220, 220);
@@ -205,14 +205,7 @@ public class MainActivity extends Activity {
     private long currentMediaDurationMs = 0L;
     private boolean lastPlaybackWasActive = false;
     private boolean lastPlayerIntroOnlySetting = false;
-    private boolean playerControlsWindowVisible = false;
-    private long playerControlsWindowDeadlineElapsedRealtime = 0L;
-    private final Runnable hidePlayerControlsWindowRunnable = () -> {
-        playerControlsWindowVisible = false;
-        playerControlsWindowDeadlineElapsedRealtime = 0L;
-        renderMediaMirror();
-        refreshMediaHolderPosition();
-    };
+
     private boolean playerIntroWindowVisible = false;
     private long playerIntroWindowDeadlineElapsedRealtime = 0L;
     private final Runnable hidePlayerIntroWindowRunnable = () -> {
@@ -572,12 +565,8 @@ public class MainActivity extends Activity {
         clockBlock.setOrientation(LinearLayout.VERTICAL);
         clockBlock.setGravity(Gravity.CENTER_HORIZONTAL);
 
-        clockStyleView = new ClockStyleView(this);
-        clockStyleView.setVisibility(View.GONE);
         int initialClockSize = getInt("clockDateSize", 96);
         int initialClockHeight = Math.max(dp(62), dp(initialClockSize));
-        clockBlock.addView(clockStyleView, new LinearLayout.LayoutParams(-1, initialClockHeight));
-
         timeText = clockDateTextView("--:--", getInt("clockDateSize", 96), Color.rgb(247, 247, 247));
         timeText.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
         timeText.setGravity(Gravity.CENTER);
@@ -645,52 +634,6 @@ public class MainActivity extends Activity {
             int w = stage.getWidth();
             if (h <= 0 || w <= 0) return;
 
-            String layoutMode = getString("landscapeLayoutMode", "auto");
-            boolean landscapeSplit = w > h && !"vertical".equals(layoutMode)
-                    && ("auto".equals(layoutMode) || "horizontal".equals(layoutMode));
-            if (landscapeSplit) {
-                int halfWidth = Math.max(dp(180), w / 2);
-                FrameLayout.LayoutParams clockParams =
-                        (FrameLayout.LayoutParams) clockBlock.getLayoutParams();
-                clockParams.width = halfWidth;
-                clockParams.height = FrameLayout.LayoutParams.WRAP_CONTENT;
-                clockParams.gravity = Gravity.LEFT | Gravity.CENTER_VERTICAL;
-                clockParams.topMargin = 0;
-                clockParams.bottomMargin = 0;
-                clockBlock.setTranslationX(halfWidth * Math.max(-0.20f, Math.min(0.20f,
-                        getInt("clockHorizontalOffset", 0) / 100f)));
-                clockBlock.setLayoutParams(clockParams);
-
-                FrameLayout.LayoutParams mediaParams =
-                        (FrameLayout.LayoutParams) mediaHolder.getLayoutParams();
-                mediaParams.width = halfWidth;
-                mediaParams.height = FrameLayout.LayoutParams.WRAP_CONTENT;
-                mediaParams.gravity = Gravity.RIGHT | Gravity.CENTER_VERTICAL;
-                mediaParams.topMargin = 0;
-                mediaParams.bottomMargin = 0;
-                mediaHolder.setTranslationX(halfWidth * Math.max(-0.20f, Math.min(0.20f,
-                        getInt("playerHorizontalOffset", 0) / 100f)));
-                mediaHolder.setLayoutParams(mediaParams);
-
-                if (mediaMirror != null && mediaMirror.getLayoutParams() instanceof LinearLayout.LayoutParams) {
-                    LinearLayout.LayoutParams mirrorParams =
-                            (LinearLayout.LayoutParams) mediaMirror.getLayoutParams();
-                    mirrorParams.width = Math.max(dp(160), halfWidth - dp(18));
-                    mediaMirror.setLayoutParams(mirrorParams);
-                }
-                mediaProgressBaseWidth = Math.max(dp(70), halfWidth - dp(125));
-                if (mediaSeekBar != null && mediaSeekBar.getLayoutParams() instanceof LinearLayout.LayoutParams) {
-                    LinearLayout.LayoutParams seekParams =
-                            (LinearLayout.LayoutParams) mediaSeekBar.getLayoutParams();
-                    float playerScale = Math.max(0.72f, Math.min(1.45f,
-                            getInt("playerSize", 17) / 17f));
-                    seekParams.width = Math.max(dp(70),
-                            Math.round(mediaProgressBaseWidth * playerScale));
-                    mediaSeekBar.setLayoutParams(seekParams);
-                }
-                return;
-            }
-
             FrameLayout.LayoutParams restoreClockParams =
                     (FrameLayout.LayoutParams) clockBlock.getLayoutParams();
             restoreClockParams.width = -1;
@@ -744,11 +687,6 @@ public class MainActivity extends Activity {
                 cp.topMargin = Math.max(0, Math.round(h / 4f - clockLineHeight / 2f));
             } else if ("middle".equals(clockPos)) {
                 cp.topMargin = Math.max(0, Math.round(h * 0.50f - blockHeight / 2f));
-            } else if ("custom".equals(clockPos)) {
-                int verticalPercent = Math.max(0, Math.min(100,
-                        getInt("clockCustomVerticalPosition", 25)));
-                cp.topMargin = Math.max(0, Math.round(
-                        h * verticalPercent / 100f - blockHeight / 2f));
             } else {
                 // "למעלה" keeps the top edge of the block aligned with the screen top.
                 cp.topMargin = 0;
@@ -770,15 +708,8 @@ public class MainActivity extends Activity {
             } else {
                 mp.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
                 int mediaH = Math.max(0, mediaHolder.getMeasuredHeight());
-                if ("custom".equals(playerPos)) {
-                    int verticalPercent = Math.max(0, Math.min(100,
-                            getInt("playerCustomVerticalPosition", 65)));
-                    mp.topMargin = Math.max(0, Math.round(
-                            h * verticalPercent / 100f - mediaH / 2f));
-                } else {
-                    // "Lower quarter" is positioned 20% above the bottom edge.
-                    mp.topMargin = Math.max(0, Math.round((h * 0.65f) - mediaH / 2f));
-                }
+                // "Lower quarter" is positioned 20% above the bottom edge.
+                mp.topMargin = Math.max(0, Math.round((h * 0.65f) - mediaH / 2f));
                 mp.bottomMargin = 0;
                 mp.height = FrameLayout.LayoutParams.WRAP_CONTENT;
             }
@@ -852,7 +783,6 @@ public class MainActivity extends Activity {
         mediaTitle.setSingleLine(true);
         mediaTitle.setTextDirection(View.TEXT_DIRECTION_FIRST_STRONG_RTL);
         mediaTitle.setIncludeFontPadding(true);
-        mediaTitle.setOnClickListener(v -> openSourcePlayer());
         mediaTitle.addOnLayoutChangeListener((view, left, top, right, bottom,
                                               oldLeft, oldTop, oldRight, oldBottom) -> {
             if ((right - left) != (oldRight - oldLeft)) {
@@ -865,7 +795,6 @@ public class MainActivity extends Activity {
         mediaDetails.setSingleLine(true);
         mediaDetails.setTextDirection(View.TEXT_DIRECTION_FIRST_STRONG_RTL);
         mediaDetails.setIncludeFontPadding(true);
-        mediaDetails.setOnClickListener(v -> openSourcePlayer());
         mediaDetails.addOnLayoutChangeListener((view, left, top, right, bottom,
                                                 oldLeft, oldTop, oldRight, oldBottom) -> {
             if ((right - left) != (oldRight - oldLeft)) {
@@ -939,7 +868,6 @@ public class MainActivity extends Activity {
         artworkBackground.setStroke(dp(1), Color.rgb(49, 70, 94));
         mediaArtwork.setBackground(artworkBackground);
         if (Build.VERSION.SDK_INT >= 21) mediaArtwork.setClipToOutline(true);
-        mediaArtwork.setOnClickListener(v -> openSourcePlayer());
         LinearLayout.LayoutParams artworkParams =
                 new LinearLayout.LayoutParams(dp(54), dp(54));
         artworkParams.gravity = Gravity.CENTER_HORIZONTAL;
@@ -1018,25 +946,25 @@ public class MainActivity extends Activity {
         e.putInt("screenBrightness", getInt("screenBrightness", -1));
         e.putInt("fontSize", getInt("fontSize", 17));
         e.putInt("clockDateSize", getInt("clockDateSize", 84));
-        e.putInt("gregorianDateScale", getInt("gregorianDateScale", -1));
-        e.putInt("hebrewDateScale", getInt("hebrewDateScale", -1));
-        e.putInt("clockCustomVerticalPosition", getInt("clockCustomVerticalPosition", 25));
-        e.putInt("playerCustomVerticalPosition", getInt("playerCustomVerticalPosition", 65));
         e.putInt("clockHorizontalOffset", getInt("clockHorizontalOffset", 0));
         e.putInt("playerHorizontalOffset", getInt("playerHorizontalOffset", 0));
-        e.putString("clockStyle", getString("clockStyle", "digital"));
-        e.putString("landscapeLayoutMode", getString("landscapeLayoutMode", "auto"));
         e.putInt("nightModeStartHour", getInt("nightModeStartHour", 22));
         e.putInt("nightModeEndHour", getInt("nightModeEndHour", 7));
         e.putInt("batteryProtectionThreshold", getInt("batteryProtectionThreshold", 20));
-        e.putInt("playerControlsTimeout", getInt("playerControlsTimeout", 0));
-        e.putString("timeFormat", getString("timeFormat", "system"));
+        String selectedTimeFormat = getString("timeFormat", "24");
+        if (!"12".equals(selectedTimeFormat) && !"24".equals(selectedTimeFormat)) {
+            selectedTimeFormat = "24";
+        }
+        e.putString("timeFormat", selectedTimeFormat);
         e.putString("backgroundStyle", getString("backgroundStyle", "solid"));
         e.putString("clockDatePosition", getString("clockDatePosition", "upper"));
         e.putString("playerPosition", getString("playerPosition", "bottom"));
         e.putBoolean("nightModeEnabled", getBool("nightModeEnabled", false));
         e.putBoolean("batteryProtectionEnabled", getBool("batteryProtectionEnabled", false));
-        e.putBoolean("dynamicAlbumBackgroundEnabled", getBool("dynamicAlbumBackgroundEnabled", false));
+        e.putBoolean("useAndroidDreamForCharging", getBool("useAndroidDreamForCharging", false));
+        if (getBool("useAndroidDreamForCharging", false)) {
+            e.putBoolean("autoStartOnCharge", false);
+        }
         e.putBoolean("showAlbumArt", getBool("showAlbumArt", true));
         e.putInt("playerSize", getInt("playerSize", 17));
         e.putInt("fontWeight", getInt("fontWeight", 0));
@@ -1344,28 +1272,10 @@ public class MainActivity extends Activity {
         timeText.setFontFeatureSettings(fontFeatures);
 
         int effectiveClockSize = effectiveClockDateSize(fontFamily, clockDateSize);
-        String clockStyle = getString("clockStyle", "digital");
-        if (clockStyleView != null) {
-            clockStyleView.setClockStyle(clockStyle);
-            clockStyleView.setClockTypeface(tf);
-            clockStyleView.setClockColor(displayTextColor);
-            clockStyleView.setClockSize(effectiveClockSize);
-            clockStyleView.setVisibility("digital".equals(clockStyle) ? View.GONE : View.VISIBLE);
-            clockStyleView.invalidate();
-        }
-        if (timeText != null) {
-            timeText.setVisibility("digital".equals(clockStyle) ? View.VISIBLE : View.GONE);
-        }
         float dateSize = dateTextSizeForClockPreset(effectiveClockSize);
-        int gregorianScale = getInt("gregorianDateScale", -1);
-        int hebrewScale = getInt("hebrewDateScale", -1);
-        float gregorianDateSize = gregorianScale > 0
-                ? effectiveClockSize * gregorianScale / 100f : dateSize;
-        float hebrewDateSize = hebrewScale > 0
-                ? effectiveClockSize * hebrewScale / 100f : dateSize;
         float clockDisplaySize = effectiveClockSize;
-        gregorianText.setTextSize(gregorianDateSize);
-        hebrewText.setTextSize(hebrewDateSize);
+        gregorianText.setTextSize(dateSize);
+        hebrewText.setTextSize(dateSize);
         timeText.setTextSize(clockDisplaySize);
         gregorianText.setTypeface(tf);
         hebrewText.setTypeface(tf);
@@ -1743,34 +1653,24 @@ public class MainActivity extends Activity {
         @Override public int getOpacity() { return android.graphics.PixelFormat.TRANSLUCENT; }
     }
 
-    private boolean isBatteryOrThermalProtectionNeeded() {
+    
+    private boolean isBatteryProtectionNeeded() {
         int threshold = Math.max(1, Math.min(50,
                 getInt("batteryProtectionThreshold", 20)));
         try {
             Intent battery = registerReceiver(null,
                     new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
-            if (battery != null) {
-                int level = battery.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
-                int scale = battery.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
-                int plugged = battery.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0);
-                if (level >= 0 && scale > 0 && plugged == 0) {
-                    int percent = Math.max(0, Math.min(100,
-                            Math.round(level * 100f / scale)));
-                    if (percent <= threshold) return true;
-                }
-            }
+            if (battery == null) return false;
+            int level = battery.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
+            int scale = battery.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
+            int plugged = battery.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0);
+            if (level < 0 || scale <= 0 || plugged != 0) return false;
+            int percent = Math.max(0, Math.min(100,
+                    Math.round(level * 100f / scale)));
+            return percent <= threshold;
         } catch (Throwable ignored) {
+            return false;
         }
-        if (Build.VERSION.SDK_INT >= 29) {
-            try {
-                android.os.PowerManager power =
-                        (android.os.PowerManager) getSystemService(POWER_SERVICE);
-                return power != null && power.getCurrentThermalStatus()
-                        >= android.os.PowerManager.THERMAL_STATUS_MODERATE;
-            } catch (Throwable ignored) {
-            }
-        }
-        return false;
     }
 
     private void updateBatteryPercentView() {
@@ -1804,54 +1704,65 @@ public class MainActivity extends Activity {
         return getInt("screenBackgroundColor", Color.BLACK);
     }
 
+    
     private boolean usesLayeredBackground() {
-        return !"solid".equals(getString("backgroundStyle", "solid"))
-                || (getBool("dynamicAlbumBackgroundEnabled", false)
-                && mediaController != null && mediaArtwork != null
-                && mediaArtwork.getVisibility() == View.VISIBLE);
+        return !"solid".equals(getString("backgroundStyle", "solid"));
+    }
+
+    
+    private int mixColor(int from, int to, float amount) {
+        float f = Math.max(0f, Math.min(1f, amount));
+        return Color.rgb(
+                Math.round(Color.red(from) * (1f - f) + Color.red(to) * f),
+                Math.round(Color.green(from) * (1f - f) + Color.green(to) * f),
+                Math.round(Color.blue(from) * (1f - f) + Color.blue(to) * f));
     }
 
     private Drawable createScreenBackgroundDrawable() {
         int base = getScreenBackgroundColor();
         String style = getString("backgroundStyle", "solid");
-        boolean dynamic = getBool("dynamicAlbumBackgroundEnabled", false)
-                && mediaController != null && mediaArtwork != null
-                && mediaArtwork.getVisibility() == View.VISIBLE;
-        int accent = dynamic ? currentAlbumAccentColor : blendWithBlack(base, 0.25f);
-        if ("solid".equals(style) && !dynamic) {
+        if ("solid".equals(style)) {
             return new android.graphics.drawable.ColorDrawable(base);
         }
         if ("gradient".equals(style)) {
-            return new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
-                    new int[]{blendWithBlack(accent, 0.48f), base,
-                            blendWithBlack(base, 0.42f)});
+            return new GradientDrawable(GradientDrawable.Orientation.TL_BR,
+                    new int[]{
+                            mixColor(base, Color.rgb(47, 89, 132), 0.52f),
+                            mixColor(base, Color.rgb(20, 36, 56), 0.30f),
+                            mixColor(base, Color.rgb(5, 12, 22), 0.68f)
+                    });
         }
-        if ("glow".equals(style) || dynamic) {
+        if ("glow".equals(style)) {
             GradientDrawable glow = new GradientDrawable(
-                    GradientDrawable.Orientation.TL_BR,
-                    new int[]{blendWithBlack(accent, 0.42f), base,
-                            blendWithBlack(base, 0.35f)});
+                    GradientDrawable.Orientation.TOP_BOTTOM,
+                    new int[]{
+                            mixColor(base, Color.rgb(52, 112, 169), 0.78f),
+                            mixColor(base, Color.rgb(25, 56, 88), 0.44f),
+                            base
+                    });
             glow.setGradientType(GradientDrawable.RADIAL_GRADIENT);
-            glow.setGradientRadius(dp(Math.max(300, Math.max(
+            glow.setGradientRadius(dp(Math.max(250, Math.round(Math.max(
                     getResources().getDisplayMetrics().widthPixels,
-                    getResources().getDisplayMetrics().heightPixels))));
-            glow.setGradientCenter(0.5f, 0.38f);
+                    getResources().getDisplayMetrics().heightPixels) * 0.78f))));
+            glow.setGradientCenter(0.5f, 0.42f);
             return glow;
         }
         if ("vignette".equals(style)) {
             GradientDrawable vignette = new GradientDrawable(
                     GradientDrawable.Orientation.TL_BR,
-                    new int[]{base, blendWithBlack(base, 0.30f),
-                            blendWithBlack(base, 0.72f)});
+                    new int[]{
+                            base,
+                            mixColor(base, Color.BLACK, 0.62f),
+                            Color.BLACK
+                    });
             vignette.setGradientType(GradientDrawable.RADIAL_GRADIENT);
-            vignette.setGradientRadius(dp(Math.max(300, Math.max(
+            vignette.setGradientRadius(dp(Math.max(250, Math.round(Math.max(
                     getResources().getDisplayMetrics().widthPixels,
-                    getResources().getDisplayMetrics().heightPixels))));
+                    getResources().getDisplayMetrics().heightPixels) * 0.66f))));
             vignette.setGradientCenter(0.5f, 0.45f);
             return vignette;
         }
-        return new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
-                new int[]{base, blendWithBlack(base, 0.32f)});
+        return new android.graphics.drawable.ColorDrawable(base);
     }
 
     private boolean isAutomaticNightModeActive() {
@@ -1919,7 +1830,7 @@ public class MainActivity extends Activity {
         float requestedBrightness = brightnessPercent < 0 ? -1f
                 : Math.max(0.01f, Math.min(1.0f, brightnessPercent / 100.0f));
         float brightnessCap = 1f;
-        if (getBool("batteryProtectionEnabled", false) && isBatteryOrThermalProtectionNeeded()) {
+        if (getBool("batteryProtectionEnabled", false) && isBatteryProtectionNeeded()) {
             brightnessCap = Math.min(brightnessCap, 0.25f);
         }
         if (isAutomaticNightModeActive()) {
@@ -1937,45 +1848,37 @@ public class MainActivity extends Activity {
         getWindow().setAttributes(attributes);
     }
 
+    
     private void applyMediaFrame(boolean hasActiveSong) {
         if (mediaMirror == null) return;
         boolean enabled = getBool("frameEnabled", false) && hasActiveSong;
         if (!enabled) {
-            if (usesLayeredBackground()) {
-                mediaMirror.setBackgroundColor(Color.TRANSPARENT);
-            } else {
-                mediaMirror.setBackgroundColor(getScreenBackgroundColor());
-            }
+            mediaMirror.setBackgroundColor(Color.TRANSPARENT);
             mediaMirror.setPadding(0, 0, 0, 0);
             return;
         }
-
         try {
             int radius = Math.max(0, getInt("frameRadius", 10));
             int selectedWidth = Math.max(1, Math.min(3, getInt("frameWidth", 1)));
             int frameColor = getInt("frameColor", Color.WHITE);
-
-            // Settings cards use a 1dp outline. Keep the thin player frame
-            // exactly at that base thickness, and reduce the other two levels
-            // from 2/3dp to 1.25/1.5dp so they remain distinct but lighter.
             float strokeWidthDp = selectedWidth == 1 ? 1.0f
                     : selectedWidth == 2 ? 1.25f : 1.5f;
             int strokeWidthPx = Math.max(1, Math.round(
                     strokeWidthDp * getResources().getDisplayMetrics().density));
-
-            // Keep the same settings-card surface, with one clean outline.
+            boolean hasAlbumColor = getBool("showAlbumArt", true)
+                    && mediaArtwork != null && mediaArtwork.getVisibility() == View.VISIBLE;
+            int innerColor = hasAlbumColor
+                    ? blendWithBlack(currentAlbumAccentColor, 0.46f)
+                    : Color.rgb(20, 36, 56);
             GradientDrawable background = new GradientDrawable();
-            background.setColor(Color.rgb(20, 36, 56));
+            background.setColor(innerColor);
             background.setCornerRadius(dp(radius));
             background.setStroke(strokeWidthPx, frameColor);
             mediaMirror.setBackground(background);
-
-            // Keep the text and controls inside the card outline.
             int inset = Math.max(dp(5), strokeWidthPx + dp(3));
             mediaMirror.setPadding(inset, inset, inset, inset);
         } catch (Throwable ignored) {
-            // A frame drawing problem must never make the media player disappear.
-            mediaMirror.setBackgroundColor(getScreenBackgroundColor());
+            mediaMirror.setBackgroundColor(Color.TRANSPARENT);
             mediaMirror.setPadding(0, 0, 0, 0);
         }
     }
@@ -2631,12 +2534,6 @@ public class MainActivity extends Activity {
     private void updateClock() {
         if (timeText == null || gregorianText == null || hebrewText == null) return;
         now.setTimeInMillis(System.currentTimeMillis());
-        if (clockStyleView != null && clockStyleView.getVisibility() == View.VISIBLE) {
-            clockStyleView.setCurrentTime(now.get(Calendar.HOUR_OF_DAY),
-                    now.get(Calendar.MINUTE), now.get(Calendar.SECOND));
-            clockStyleView.invalidate();
-        }
-
         String formattedTime = numericTime();
         if (!formattedTime.contentEquals(timeText.getText())) {
             timeText.setText(formattedTime);
@@ -2712,10 +2609,7 @@ public class MainActivity extends Activity {
     }
 
     private String numericTime() {
-        String mode = getString("timeFormat", "system");
-        boolean use24Hour = "24".equals(mode)
-                || ("system".equals(mode)
-                && android.text.format.DateFormat.is24HourFormat(this));
+        boolean use24Hour = "24".equals(getString("timeFormat", "24"));
         int hourOfDay = now.get(Calendar.HOUR_OF_DAY);
         int minute = now.get(Calendar.MINUTE);
         if (use24Hour) {
@@ -3005,7 +2899,6 @@ public class MainActivity extends Activity {
             if (titleChanged) {
                 stopTitleMarquee();
                 mediaTitle.setText(title);
-                fadeInMediaText(mediaTitle);
                 mediaTitle.post(() -> updateTitleMarqueeIfNeeded());
             }
             mediaTitle.setVisibility(View.VISIBLE);
@@ -3060,7 +2953,6 @@ public class MainActivity extends Activity {
             if (artistChanged) {
                 stopArtistMarquee();
                 mediaDetails.setText(lastArtist);
-                fadeInMediaText(mediaDetails);
             }
             mediaDetails.setVisibility(showDetails && !lastArtist.isEmpty() ? View.VISIBLE : View.GONE);
             if (artistChanged && showDetails && !lastArtist.isEmpty()) {
@@ -3141,20 +3033,12 @@ public class MainActivity extends Activity {
         }
     }
 
+    
     private boolean arePlayerControlsVisible() {
-        int timeoutSeconds = Math.max(0, getInt("playerControlsTimeout", 0));
-        if (timeoutSeconds == 0) return true;
-        return playerControlsWindowVisible
-                && SystemClock.elapsedRealtime() < playerControlsWindowDeadlineElapsedRealtime;
+        return true;
     }
 
-    private void startPlayerControlsWindow(long durationMs) {
-        long delay = Math.max(1L, durationMs);
-        playerControlsWindowVisible = true;
-        playerControlsWindowDeadlineElapsedRealtime = SystemClock.elapsedRealtime() + delay;
-        handler.removeCallbacks(hidePlayerControlsWindowRunnable);
-        handler.postDelayed(hidePlayerControlsWindowRunnable, delay);
-    }
+    
 
     private void observeTrackForPlayerIntro(String trackIdentity,
                                             boolean playbackActive,
@@ -3167,16 +3051,6 @@ public class MainActivity extends Activity {
                 && positionMs < PLAYER_START_WINDOW_MS
                 && lastObservedTrackPositionMs - positionMs > 5_000L;
         boolean playbackJustStarted = playbackActive && !lastPlaybackWasActive;
-        boolean controlsShouldRestart = playbackActive && (firstObservedTrack
-                || trackChanged || repeatedOrRestartedTrack || playbackJustStarted);
-        int controlsTimeoutSeconds = Math.max(0, getInt("playerControlsTimeout", 0));
-        if (controlsTimeoutSeconds == 0) {
-            handler.removeCallbacks(hidePlayerControlsWindowRunnable);
-            playerControlsWindowVisible = true;
-            playerControlsWindowDeadlineElapsedRealtime = 0L;
-        } else if (controlsShouldRestart) {
-            startPlayerControlsWindow(controlsTimeoutSeconds * 1000L);
-        }
         boolean introOnly = getBool("showPlayerOnlyAtStart", false);
         boolean introOnlyJustEnabled = introOnly && !lastPlayerIntroOnlySetting;
 
@@ -3453,50 +3327,14 @@ public class MainActivity extends Activity {
             currentAlbumAccentColor = Color.rgb(33, 52, 75);
         } else {
             mediaArtwork.animate().cancel();
-            mediaArtwork.setAlpha(0f);
+            mediaArtwork.setAlpha(1f);
             mediaArtwork.setImageBitmap(artwork);
             mediaArtwork.setVisibility(View.VISIBLE);
-            mediaArtwork.animate().alpha(1f).setDuration(280L).start();
             currentAlbumAccentColor = extractAlbumAccentColor(artwork);
         }
-        if (getBool("dynamicAlbumBackgroundEnabled", false)) {
-            applyScreenAppearance();
-        }
     }
 
-    private void fadeInMediaText(TextView view) {
-        if (view == null) return;
-        view.animate().cancel();
-        view.setAlpha(0f);
-        view.animate().alpha(1f).setDuration(260L).start();
-    }
-
-    private void openSourcePlayer() {
-        MediaController controller = mediaController != null
-                ? mediaController : lastKnownMediaController;
-        if (controller == null) return;
-        try {
-            PendingIntent sessionActivity = controller.getSessionActivity();
-            if (sessionActivity != null) {
-                sessionActivity.send();
-                return;
-            }
-        } catch (PendingIntent.CanceledException ignored) {
-        } catch (Throwable ignored) {
-        }
-        try {
-            String packageName = controller.getPackageName();
-            if (packageName == null || packageName.trim().isEmpty()) return;
-            Intent launch = getPackageManager().getLaunchIntentForPackage(packageName);
-            if (launch != null) {
-                launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
-                        | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                startActivity(launch);
-            }
-        } catch (ActivityNotFoundException ignored) {
-        } catch (Throwable ignored) {
-        }
-    }
+    
 
     private void hideMediaMirror() {
         stopMediaProgressTicker();
@@ -3505,7 +3343,6 @@ public class MainActivity extends Activity {
             mediaArtwork.setVisibility(View.GONE);
         }
         currentAlbumAccentColor = Color.rgb(33, 52, 75);
-        if (getBool("dynamicAlbumBackgroundEnabled", false)) applyScreenAppearance();
         if (mediaMirror != null) {
             mediaMirror.setVisibility(View.GONE);
         }
@@ -3747,110 +3584,7 @@ public class MainActivity extends Activity {
         return view;
     }
 
-    private final class ClockStyleView extends View {
-        private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        private String clockStyle = "analog";
-        private Typeface clockTypeface = Typeface.create("sans-serif", Typeface.NORMAL);
-        private int clockColor = Color.WHITE;
-        private float clockSize = 84f;
-        private int hour;
-        private int minute;
-        private int second;
-
-        ClockStyleView(Context context) {
-            super(context);
-            setLayerType(View.LAYER_TYPE_SOFTWARE, null);
-        }
-
-        void setClockStyle(String value) {
-            clockStyle = value == null ? "analog" : value;
-        }
-        void setClockTypeface(Typeface value) {
-            if (value != null) clockTypeface = value;
-        }
-        void setClockColor(int value) { clockColor = value; }
-        void setClockSize(float value) { clockSize = value; }
-        void setCurrentTime(int h, int m, int s) {
-            hour = h; minute = m; second = s;
-        }
-
-        @Override protected void onDraw(Canvas canvas) {
-            super.onDraw(canvas);
-            if ("analog".equals(clockStyle)) drawAnalog(canvas);
-            else if ("split".equals(clockStyle)) drawSplit(canvas);
-        }
-
-        private void drawAnalog(Canvas canvas) {
-            float cx = getWidth() / 2f;
-            float cy = getHeight() / 2f;
-            float radius = Math.min(getWidth() * 0.43f, getHeight() * 0.43f);
-            if (radius <= 0f) return;
-            paint.setColor(blendWithBlack(clockColor, 0.72f));
-            paint.setStyle(Paint.Style.STROKE);
-            paint.setStrokeWidth(dpFloat(1.4f));
-            canvas.drawCircle(cx, cy, radius, paint);
-            for (int tick = 0; tick < 60; tick++) {
-                double angle = Math.toRadians(tick * 6d - 90d);
-                boolean major = tick % 5 == 0;
-                float outer = radius - dp(2);
-                float inner = outer - dp(major ? 9 : 4);
-                paint.setColor(major ? clockColor : blendWithBlack(clockColor, 0.38f));
-                paint.setStrokeWidth(dpFloat(major ? 1.6f : 0.8f));
-                canvas.drawLine(cx + (float) Math.cos(angle) * inner,
-                        cy + (float) Math.sin(angle) * inner,
-                        cx + (float) Math.cos(angle) * outer,
-                        cy + (float) Math.sin(angle) * outer, paint);
-            }
-            paint.setStyle(Paint.Style.STROKE);
-            paint.setStrokeCap(Paint.Cap.ROUND);
-            paint.setColor(clockColor);
-            paint.setStrokeWidth(dpFloat(3.2f));
-            drawHand(canvas, cx, cy, radius * 0.52f,
-                    (hour % 12 + minute / 60f) * 30f - 90f);
-            paint.setStrokeWidth(dpFloat(2.0f));
-            drawHand(canvas, cx, cy, radius * 0.76f,
-                    (minute + second / 60f) * 6f - 90f);
-            paint.setStrokeWidth(dpFloat(0.9f));
-            paint.setColor(blendWithBlack(clockColor, 0.24f));
-            drawHand(canvas, cx, cy, radius * 0.82f,
-                    second * 6f - 90f);
-            paint.setStyle(Paint.Style.FILL);
-            paint.setColor(clockColor);
-            canvas.drawCircle(cx, cy, dp(3), paint);
-        }
-
-        private void drawHand(Canvas canvas, float cx, float cy, float length, float degrees) {
-            double angle = Math.toRadians(degrees);
-            canvas.drawLine(cx, cy,
-                    cx + (float) Math.cos(angle) * length,
-                    cy + (float) Math.sin(angle) * length, paint);
-        }
-
-        private void drawSplit(Canvas canvas) {
-            String timeMode = getString("timeFormat", "system");
-            boolean use24Hour = "24".equals(timeMode)
-                    || ("system".equals(timeMode)
-                    && android.text.format.DateFormat.is24HourFormat(MainActivity.this));
-            int displayedHour = use24Hour ? hour
-                    : (hour % 12 == 0 ? 12 : hour % 12);
-            String hourText = String.valueOf(displayedHour);
-            String minuteText = String.format(Locale.US, "%02d", minute);
-            paint.setTypeface(clockTypeface);
-            paint.setColor(clockColor);
-            paint.setStyle(Paint.Style.FILL);
-            paint.setTextAlign(Paint.Align.CENTER);
-            paint.setTextSize(dpFloat(clockSize * 0.72f));
-            Paint.FontMetrics fm = paint.getFontMetrics();
-            float baseline = getHeight() / 2f - (fm.ascent + fm.descent) / 2f;
-            float center = getWidth() / 2f;
-            float gap = dpFloat(clockSize * 0.12f);
-            canvas.drawText(hourText, center - gap, baseline, paint);
-            paint.setTextSize(dpFloat(clockSize * 0.60f));
-            canvas.drawText(":", center, baseline, paint);
-            paint.setTextSize(dpFloat(clockSize * 0.72f));
-            canvas.drawText(minuteText, center + gap * 1.8f, baseline, paint);
-        }
-    }
+    
 
     private final class ClockDateTextView extends TextView {
         private float edgeErosionPx;
