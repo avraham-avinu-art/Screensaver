@@ -16,6 +16,9 @@ public final class NightScreenApplication extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
+        // Charging activation is handled exclusively by Android DreamService.
+        getSharedPreferences("settings", MODE_PRIVATE).edit()
+                .putBoolean("autoStartOnCharge", false).apply();
         updateChargerReceiverRegistration();
     }
 
