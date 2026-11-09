@@ -3637,7 +3637,7 @@ public class MainActivity extends Activity {
             if (radius <= 0f) return;
             paint.setColor(blendWithBlack(clockColor, 0.72f));
             paint.setStyle(Paint.Style.STROKE);
-            paint.setStrokeWidth(dp(1.4f));
+            paint.setStrokeWidth(dpFloat(1.4f));
             canvas.drawCircle(cx, cy, radius, paint);
             for (int tick = 0; tick < 60; tick++) {
                 double angle = Math.toRadians(tick * 6d - 90d);
@@ -3645,7 +3645,7 @@ public class MainActivity extends Activity {
                 float outer = radius - dp(2);
                 float inner = outer - dp(major ? 9 : 4);
                 paint.setColor(major ? clockColor : blendWithBlack(clockColor, 0.38f));
-                paint.setStrokeWidth(dp(major ? 1.6f : 0.8f));
+                paint.setStrokeWidth(dpFloat(major ? 1.6f : 0.8f));
                 canvas.drawLine(cx + (float) Math.cos(angle) * inner,
                         cy + (float) Math.sin(angle) * inner,
                         cx + (float) Math.cos(angle) * outer,
@@ -3654,13 +3654,13 @@ public class MainActivity extends Activity {
             paint.setStyle(Paint.Style.STROKE);
             paint.setStrokeCap(Paint.Cap.ROUND);
             paint.setColor(clockColor);
-            paint.setStrokeWidth(dp(3.2f));
+            paint.setStrokeWidth(dpFloat(3.2f));
             drawHand(canvas, cx, cy, radius * 0.52f,
                     (hour % 12 + minute / 60f) * 30f - 90f);
-            paint.setStrokeWidth(dp(2.0f));
+            paint.setStrokeWidth(dpFloat(2.0f));
             drawHand(canvas, cx, cy, radius * 0.76f,
                     (minute + second / 60f) * 6f - 90f);
-            paint.setStrokeWidth(dp(0.9f));
+            paint.setStrokeWidth(dpFloat(0.9f));
             paint.setColor(blendWithBlack(clockColor, 0.24f));
             drawHand(canvas, cx, cy, radius * 0.82f,
                     second * 6f - 90f);
@@ -3683,15 +3683,15 @@ public class MainActivity extends Activity {
             paint.setColor(clockColor);
             paint.setStyle(Paint.Style.FILL);
             paint.setTextAlign(Paint.Align.CENTER);
-            paint.setTextSize(dp(clockSize * 0.72f));
+            paint.setTextSize(dpFloat(clockSize * 0.72f));
             Paint.FontMetrics fm = paint.getFontMetrics();
             float baseline = getHeight() / 2f - (fm.ascent + fm.descent) / 2f;
             float center = getWidth() / 2f;
-            float gap = dp(clockSize * 0.12f);
+            float gap = dpFloat(clockSize * 0.12f);
             canvas.drawText(hourText, center - gap, baseline, paint);
-            paint.setTextSize(dp(clockSize * 0.60f));
+            paint.setTextSize(dpFloat(clockSize * 0.60f));
             canvas.drawText(":", center, baseline, paint);
-            paint.setTextSize(dp(clockSize * 0.72f));
+            paint.setTextSize(dpFloat(clockSize * 0.72f));
             canvas.drawText(minuteText, center + gap * 1.8f, baseline, paint);
         }
     }
@@ -3778,6 +3778,10 @@ public class MainActivity extends Activity {
     private int dp(int value) {
         return Math.round(
                 value * getResources().getDisplayMetrics().density);
+    }
+
+    private float dpFloat(float value) {
+        return value * getResources().getDisplayMetrics().density;
     }
 
     private void hideSystemUi() {
