@@ -420,11 +420,13 @@ public class MainActivity extends Activity {
         if (!getBool("continueOnLockScreen", false)) {
             lockScreenContinuationArmed = false;
         }
-        // Every activation path obeys the same explicit lock-screen policy.
-        // An automatic start may open the Activity, but it must not keep the
-        // screensaver visible over Keyguard unless continuation is enabled.
-        boolean showAboveExistingKeyguard = getBool("continueOnLockScreen", false)
-                && (openedByDeviceLock || lockScreenContinuationArmed);
+        // The initial activation caused by an actual device-lock event must be
+        // visible above Keyguard even when continuation is disabled. The
+        // "continue on lock screen" preference applies only after the selected
+        // activity duration ends and the display turns off.
+        boolean showAboveExistingKeyguard = openedByDeviceLock
+                || (getBool("continueOnLockScreen", false)
+                    && lockScreenContinuationArmed);
 
         if (Build.VERSION.SDK_INT >= 27) {
             setShowWhenLocked(showAboveExistingKeyguard);
