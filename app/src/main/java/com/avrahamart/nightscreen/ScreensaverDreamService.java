@@ -45,7 +45,7 @@ public final class ScreensaverDreamService extends DreamService {
     @Override
     public void onAttachedToWindow() {
         super.onAttachedToWindow();
-        if (!prefs().getBoolean("useAndroidDreamForCharging", false)) {
+        if (!isChargeDreamEnabled()) {
             finish();
             return;
         }
