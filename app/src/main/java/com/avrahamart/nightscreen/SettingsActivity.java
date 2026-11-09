@@ -639,9 +639,19 @@ screenTitle.setText("הגדרות");
                 "dd.MM.yyyy", "dd.MM.yy", "dd/MM/yy",
                 "dd/MM/yyyy", "yyyy/MM/dd", "d 'ב'MMMM yyyy"
         };
+        String customGregorianPattern = getString(
+                "gregorianDateCustomPattern", "dd.MM.yyyy");
+        String[] gregorianDateValues = new String[gregorianDateFormats.length + 1];
+        String[] gregorianDateNames = new String[gregorianDateFormats.length + 1];
+        System.arraycopy(gregorianDateFormats, 0, gregorianDateValues, 0,
+                gregorianDateFormats.length);
+        System.arraycopy(currentGregorianDateSamples(gregorianDateFormats), 0,
+                gregorianDateNames, 0, gregorianDateFormats.length);
+        gregorianDateValues[gregorianDateFormats.length] = customGregorianPattern;
+        gregorianDateNames[gregorianDateFormats.length] =
+                currentGregorianDateSamples(new String[]{customGregorianPattern})[0];
         addSpinner(content, "תבנית התאריך הלועזי",
-                currentGregorianDateSamples(gregorianDateFormats),
-                gregorianDateFormats, "gregorianDateFormat");
+                gregorianDateNames, gregorianDateValues, "gregorianDateFormat");
         addCustomGregorianPatternEditor(content);
         addSegmentedChoices(content, "סגנון השעון",
                 new String[]{"דיגיטלי", "אנלוגי", "דיגיטלי מפוצל"},
