@@ -179,7 +179,7 @@ public class MainActivity extends Activity {
     private SharedPreferences prefs;
     private ImageView settingsButton;
     private FrameLayout settingsButtonHitArea;
-    private TextView batteryPercentText;
+
     private final Runnable hideSettingsButtonRunnable = () -> {
         if (settingsButtonHitArea != null) settingsButtonHitArea.setVisibility(View.GONE);
         else if (settingsButton != null) settingsButton.setVisibility(View.GONE);
@@ -192,6 +192,10 @@ public class MainActivity extends Activity {
     private TextView mediaProgressText;
     private TextView mediaCurrentText;
     private TextView mediaTotalText;
+    private LinearLayout batteryInfoPanel;
+    private TextView batteryPercentText;
+    private TextView batteryStatusText;
+    private android.widget.ProgressBar batteryLevelBar;
     private LinearLayout mediaProgressRow;
     private SeekBar mediaSeekBar;
     private MediaController lastKnownMediaController;
@@ -512,7 +516,6 @@ public class MainActivity extends Activity {
         handler.removeCallbacks(screenOnReleaseRunnable);
         handler.removeCallbacks(hideSettingsButtonRunnable);
         handler.removeCallbacks(hideProgressRowAfterMetadataChange);
-        handler.removeCallbacks(hidePlayerControlsWindowRunnable);
         handler.removeCallbacks(hidePreviousButtonIfStillUnsupported);
         handler.removeCallbacks(hideNextButtonIfStillUnsupported);
         unregisterActiveSessionsListener();
@@ -605,20 +608,61 @@ public class MainActivity extends Activity {
         // Notification permission guidance now lives only in Settings.
         buildSystemMediaMirror(mediaHolder);
 
-        batteryPercentText = textView("", 15, Color.rgb(156, 178, 203));
-        batteryPercentText.setTypeface(Typeface.create("sans-serif-thin", Typeface.NORMAL));
+
+        batteryInfoPanel = new LinearLayout(this);
+        batteryInfoPanel.setOrientation(LinearLayout.VERTICAL);
+        batteryInfoPanel.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        batteryInfoPanel.setPadding(dp(7), dp(5), dp(7), dp(5));
+        GradientDrawable batteryPanelBackground = new GradientDrawable();
+        batteryPanelBackground.setColor(Color.argb(220, 13, 25, 39));
+        batteryPanelBackground.setCornerRadius(dp(11));
+        batteryPanelBackground.setStroke(dp(1), Color.rgb(60, 82, 106));
+        batteryInfoPanel.setBackground(batteryPanelBackground);
+
+        LinearLayout batteryRow = new LinearLayout(this);
+        batteryRow.setOrientation(LinearLayout.HORIZONTAL);
+        batteryRow.setGravity(Gravity.CENTER_VERTICAL);
+        batteryRow.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        batteryPercentText = textView("", 13, Color.rgb(220, 232, 245));
+        batteryPercentText.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         batteryPercentText.setTextSize(12);
         batteryPercentText.setBackground(new BatteryOutlineDrawable());
         batteryPercentText.setGravity(Gravity.CENTER);
         batteryPercentText.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         batteryPercentText.setTextDirection(View.TEXT_DIRECTION_LTR);
         batteryPercentText.setIncludeFontPadding(false);
-        batteryPercentText.setVisibility(View.GONE);
-        FrameLayout.LayoutParams batteryPercentParams = new FrameLayout.LayoutParams(
-                dp(54), dp(30), Gravity.TOP | Gravity.RIGHT);
-        batteryPercentParams.rightMargin = dp(14);
-        batteryPercentParams.topMargin = dp(17);
-        stage.addView(batteryPercentText, batteryPercentParams);
+        batteryRow.addView(batteryPercentText, new LinearLayout.LayoutParams(dp(48), dp(28)));
+
+        batteryStatusText = textView("", 10, Color.rgb(190, 207, 225));
+        batteryStatusText.setGravity(Gravity.CENTER);
+        batteryStatusText.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        batteryStatusText.setMaxLines(2);
+        LinearLayout.LayoutParams batteryStatusParams =
+                new LinearLayout.LayoutParams(dp(56), dp(30));
+        batteryStatusParams.rightMargin = dp(5);
+        batteryRow.addView(batteryStatusText, batteryStatusParams);
+        batteryInfoPanel.addView(batteryRow, new LinearLayout.LayoutParams(-1, dp(30)));
+
+        batteryLevelBar = new android.widget.ProgressBar(this, null,
+                android.R.attr.progressBarStyleHorizontal);
+        batteryLevelBar.setMax(100);
+        batteryLevelBar.setProgress(0);
+        if (Build.VERSION.SDK_INT >= 21) {
+            batteryLevelBar.setProgressTintList(
+                    android.content.res.ColorStateList.valueOf(Color.rgb(87, 174, 208)));
+            batteryLevelBar.setProgressBackgroundTintList(
+                    android.content.res.ColorStateList.valueOf(Color.rgb(48, 65, 82)));
+        }
+        LinearLayout.LayoutParams batteryBarParams =
+                new LinearLayout.LayoutParams(-1, dp(3));
+        batteryBarParams.topMargin = dp(3);
+        batteryInfoPanel.addView(batteryLevelBar, batteryBarParams);
+        batteryInfoPanel.setVisibility(View.GONE);
+        FrameLayout.LayoutParams batteryPanelParams = new FrameLayout.LayoutParams(
+                dp(124), dp(49), Gravity.TOP | Gravity.RIGHT);
+        batteryPanelParams.rightMargin = dp(12);
+        batteryPanelParams.topMargin = dp(12);
+        stage.addView(batteryInfoPanel, batteryPanelParams);
 
         stage.post(() -> {
             applySettings();
@@ -1295,13 +1339,6 @@ public class MainActivity extends Activity {
         // Centering and clipping can occur when this row is shorter than the font metrics.
         int clockH = Math.max(dp(62), measuredLineHeight(
                 timeText, "0123456789:00", 2, effectiveClockSize));
-        if (!"digital".equals(clockStyle)) {
-            clockH = Math.max(clockH, dp(Math.round(effectiveClockSize * 0.92f)));
-        }
-        if (clockStyleView != null && clockStyleView.getLayoutParams() != null) {
-            clockStyleView.getLayoutParams().height = clockH;
-            clockStyleView.requestLayout();
-        }
         int gregorianH = Math.max(dateRowHeightForClockPreset(effectiveClockSize),
                 measuredLineHeight(gregorianText, "יום ה׳ · 22.10.2026", 0, 24));
         int hebrewH = Math.max(dateRowHeightForClockPreset(effectiveClockSize),
@@ -1673,30 +1710,46 @@ public class MainActivity extends Activity {
         }
     }
 
+    
     private void updateBatteryPercentView() {
-        if (batteryPercentText == null) return;
-        if (!getBool("showBatteryPercent", false) || !isDeviceCharging()) {
-            batteryPercentText.setVisibility(View.GONE);
+        if (batteryInfoPanel == null) return;
+        if (!getBool("showBatteryPercent", false)) {
+            batteryInfoPanel.setVisibility(View.GONE);
             return;
         }
         try {
             Intent battery = registerReceiver(null,
                     new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
             if (battery == null) {
-                batteryPercentText.setVisibility(View.GONE);
+                batteryInfoPanel.setVisibility(View.GONE);
                 return;
             }
             int level = battery.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
             int scale = battery.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
             if (level < 0 || scale <= 0) {
-                batteryPercentText.setVisibility(View.GONE);
+                batteryInfoPanel.setVisibility(View.GONE);
                 return;
             }
             int percent = Math.max(0, Math.min(100, Math.round(level * 100f / scale)));
+            int plugged = battery.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0);
+            int status = battery.getIntExtra(BatteryManager.EXTRA_STATUS,
+                    BatteryManager.BATTERY_STATUS_UNKNOWN);
+            String stateText;
+            if (status == BatteryManager.BATTERY_STATUS_CHARGING) {
+                stateText = "בטעינה";
+            } else if (status == BatteryManager.BATTERY_STATUS_FULL) {
+                stateText = "טעונה";
+            } else if (plugged != 0) {
+                stateText = "מחוברת לחשמל";
+            } else {
+                stateText = "פועלת על סוללה";
+            }
             batteryPercentText.setText(percent + "%");
-            batteryPercentText.setVisibility(View.VISIBLE);
+            batteryStatusText.setText(stateText);
+            batteryLevelBar.setProgress(percent);
+            batteryInfoPanel.setVisibility(View.VISIBLE);
         } catch (Throwable ignored) {
-            batteryPercentText.setVisibility(View.GONE);
+            batteryInfoPanel.setVisibility(View.GONE);
         }
     }
 
@@ -2534,6 +2587,7 @@ public class MainActivity extends Activity {
     private void updateClock() {
         if (timeText == null || gregorianText == null || hebrewText == null) return;
         now.setTimeInMillis(System.currentTimeMillis());
+        updateBatteryPercentView();
         String formattedTime = numericTime();
         if (!formattedTime.contentEquals(timeText.getText())) {
             timeText.setText(formattedTime);
