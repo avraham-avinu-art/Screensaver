@@ -1074,9 +1074,8 @@ public class MainActivity extends Activity {
         e.putInt("buttonColor", getInt("buttonColor", Color.rgb(45,45,45)));
         e.putInt("buttonBorderColor", getInt("buttonBorderColor", Color.rgb(110,110,110)));
         e.putString("screenSaverDuration", getString("screenSaverDuration", "device"));
-        e.putBoolean("autoStartOnCharge",
-                getBool("autoStartOnCharge", false)
-                        && !getBool("useAndroidDreamForCharging", false));
+        // Charging activation is handled exclusively by Android DreamService.
+        e.putBoolean("autoStartOnCharge", false);
         e.putBoolean("noShutdownWhileCharging",
                 getBool("noShutdownWhileCharging", false));
         e.putBoolean("showBatteryPercent", getBool("showBatteryPercent", false));
