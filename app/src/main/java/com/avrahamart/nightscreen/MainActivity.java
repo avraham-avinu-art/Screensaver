@@ -73,6 +73,8 @@ public class MainActivity extends Activity {
             "com.avrahamart.nightscreen.EXTRA_OPENED_BY_CHARGER";
     public static final String EXTRA_OPENED_BY_DEVICE_LOCK =
             "com.avrahamart.nightscreen.EXTRA_OPENED_BY_DEVICE_LOCK";
+    public static final String ACTION_FINISH_FROM_NOTIFICATION =
+            "com.screensaver.action.FINISH_FROM_NOTIFICATION";
     private static volatile boolean mainActivityResumed = false;
     private static volatile boolean mainActivityPausedByDeviceLock = false;
 
@@ -347,6 +349,11 @@ public class MainActivity extends Activity {
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         setIntent(intent);
+        if (intent != null
+                && ACTION_FINISH_FROM_NOTIFICATION.equals(intent.getAction())) {
+            finish();
+            return;
+        }
         if (intent != null && (intent.getBooleanExtra(EXTRA_OPENED_BY_CHARGER, false)
                 || intent.getBooleanExtra(EXTRA_OPENED_BY_DEVICE_LOCK, false))) {
             applyChargingLaunchFlags(intent);
