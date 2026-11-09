@@ -190,8 +190,7 @@ public final class ScreensaverDreamService extends DreamService {
                         android.os.BatteryManager.BATTERY_STATUS_UNKNOWN);
                 int plugType = battery.getIntExtra(android.os.BatteryManager.EXTRA_PLUGGED, 0);
                 pluggedIn = plugType != 0
-                        || status == android.os.BatteryManager.BATTERY_STATUS_CHARGING
-                        || status == android.os.BatteryManager.BATTERY_STATUS_FULL;
+                        || status == android.os.BatteryManager.BATTERY_STATUS_CHARGING;
             }
         } catch (Throwable ignored) {
         }
@@ -251,13 +250,19 @@ public final class ScreensaverDreamService extends DreamService {
         if (height <= 0) return;
         String position = prefs().getString("clockDatePosition", "upper");
         int blockHeight = Math.max(clockBlock.getMeasuredHeight(), dp(80));
+        int clockLineHeight = blockHeight;
+        if (analogClockView != null && analogClockView.getVisibility() == View.VISIBLE) {
+            clockLineHeight = Math.max(0, analogClockView.getMeasuredHeight());
+        } else if (timeView != null && timeView.getVisibility() == View.VISIBLE) {
+            clockLineHeight = Math.max(0, timeView.getMeasuredHeight());
+        }
         int top;
         if ("top".equals(position)) {
             top = 0;
         } else if ("middle".equals(position)) {
             top = Math.max(0, Math.round(height * 0.5f - blockHeight * 0.5f));
         } else {
-            top = Math.max(0, Math.round(height * 0.25f - blockHeight * 0.5f));
+            top = Math.max(0, Math.round(height * 0.25f - clockLineHeight * 0.5f));
         }
         FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) clockBlock.getLayoutParams();
         params.topMargin = top;
