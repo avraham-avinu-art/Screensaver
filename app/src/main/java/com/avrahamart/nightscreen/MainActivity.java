@@ -755,6 +755,7 @@ public class MainActivity extends Activity {
         mediaTitle.setSingleLine(true);
         mediaTitle.setTextDirection(View.TEXT_DIRECTION_FIRST_STRONG_RTL);
         mediaTitle.setIncludeFontPadding(true);
+        mediaTitle.setOnClickListener(v -> openSourcePlayer());
         mediaTitle.addOnLayoutChangeListener((view, left, top, right, bottom,
                                               oldLeft, oldTop, oldRight, oldBottom) -> {
             if ((right - left) != (oldRight - oldLeft)) {
@@ -767,6 +768,7 @@ public class MainActivity extends Activity {
         mediaDetails.setSingleLine(true);
         mediaDetails.setTextDirection(View.TEXT_DIRECTION_FIRST_STRONG_RTL);
         mediaDetails.setIncludeFontPadding(true);
+        mediaDetails.setOnClickListener(v -> openSourcePlayer());
         mediaDetails.addOnLayoutChangeListener((view, left, top, right, bottom,
                                                 oldLeft, oldTop, oldRight, oldBottom) -> {
             if ((right - left) != (oldRight - oldLeft)) {
@@ -837,6 +839,7 @@ public class MainActivity extends Activity {
         mediaArtwork.setBackground(roundOutline(Color.rgb(22, 36, 52), dp(9),
                 Color.rgb(49, 70, 94)));
         if (Build.VERSION.SDK_INT >= 21) mediaArtwork.setClipToOutline(true);
+        mediaArtwork.setOnClickListener(v -> openSourcePlayer());
         LinearLayout.LayoutParams artworkParams =
                 new LinearLayout.LayoutParams(dp(54), dp(54));
         artworkParams.gravity = Gravity.CENTER_HORIZONTAL;
@@ -2853,13 +2856,16 @@ public class MainActivity extends Activity {
             title = removeFileExtension(title);
             String previousTitle = mediaTitle.getText() == null
                     ? "" : mediaTitle.getText().toString();
-            if (!title.equals(previousTitle)) {
+            boolean titleChanged = !title.equals(previousTitle);
+            if (titleChanged) {
                 stopTitleMarquee();
                 mediaTitle.setText(title);
+                fadeInMediaText(mediaTitle);
                 mediaTitle.post(() -> updateTitleMarqueeIfNeeded());
             }
             mediaTitle.setVisibility(View.VISIBLE);
             lastTitle = title;
+            updateAlbumArtwork(metadata);
             String artist = metadata == null ? "" : metadata.getString(MediaMetadata.METADATA_KEY_ARTIST);
             artist = artist == null ? "" : artist.trim();
             if (artist.equalsIgnoreCase("unknown artist") ||
@@ -2909,6 +2915,7 @@ public class MainActivity extends Activity {
             if (artistChanged) {
                 stopArtistMarquee();
                 mediaDetails.setText(lastArtist);
+                fadeInMediaText(mediaDetails);
             }
             mediaDetails.setVisibility(showDetails && !lastArtist.isEmpty() ? View.VISIBLE : View.GONE);
             if (artistChanged && showDetails && !lastArtist.isEmpty()) {
@@ -3219,8 +3226,79 @@ public class MainActivity extends Activity {
         }
     }
 
+    private void updateAlbumArtwork(MediaMetadata metadata) {
+        if (mediaArtwork == null) return;
+        Bitmap artwork = null;
+        if (metadata != null) {
+            try { artwork = metadata.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART); }
+            catch (Throwable ignored) {}
+            if (artwork == null) {
+                try { artwork = metadata.getBitmap(MediaMetadata.METADATA_KEY_ART); }
+                catch (Throwable ignored) {}
+            }
+            if (artwork == null) {
+                try { artwork = metadata.getBitmap(MediaMetadata.METADATA_KEY_DISPLAY_ICON); }
+                catch (Throwable ignored) {}
+            }
+        }
+        boolean showArtwork = getBool("showAlbumArt", true)
+                && artwork != null && !artwork.isRecycled();
+        if (!showArtwork) {
+            mediaArtwork.setImageDrawable(null);
+            mediaArtwork.setVisibility(View.GONE);
+            currentAlbumAccentColor = Color.rgb(33, 52, 75);
+        } else {
+            mediaArtwork.setImageBitmap(artwork);
+            mediaArtwork.setVisibility(View.VISIBLE);
+            currentAlbumAccentColor = extractAlbumAccentColor(artwork);
+        }
+        if (getBool("dynamicAlbumBackgroundEnabled", false)) {
+            applyScreenAppearance();
+        }
+    }
+
+    private void fadeInMediaText(TextView view) {
+        if (view == null) return;
+        view.animate().cancel();
+        view.setAlpha(0f);
+        view.animate().alpha(1f).setDuration(260L).start();
+    }
+
+    private void openSourcePlayer() {
+        MediaController controller = mediaController != null
+                ? mediaController : lastKnownMediaController;
+        if (controller == null) return;
+        try {
+            PendingIntent sessionActivity = controller.getSessionActivity();
+            if (sessionActivity != null) {
+                sessionActivity.send();
+                return;
+            }
+        } catch (PendingIntent.CanceledException ignored) {
+        } catch (Throwable ignored) {
+        }
+        try {
+            String packageName = controller.getPackageName();
+            if (packageName == null || packageName.trim().isEmpty()) return;
+            Intent launch = getPackageManager().getLaunchIntentForPackage(packageName);
+            if (launch != null) {
+                launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                        | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                startActivity(launch);
+            }
+        } catch (ActivityNotFoundException ignored) {
+        } catch (Throwable ignored) {
+        }
+    }
+
     private void hideMediaMirror() {
         stopMediaProgressTicker();
+        if (mediaArtwork != null) {
+            mediaArtwork.setImageDrawable(null);
+            mediaArtwork.setVisibility(View.GONE);
+        }
+        currentAlbumAccentColor = Color.rgb(33, 52, 75);
+        if (getBool("dynamicAlbumBackgroundEnabled", false)) applyScreenAppearance();
         if (mediaMirror != null) {
             mediaMirror.setVisibility(View.GONE);
         }
