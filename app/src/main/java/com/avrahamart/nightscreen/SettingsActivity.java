@@ -1051,6 +1051,7 @@ screenTitle.setText("הגדרות");
         if ("nightModeEndHour".equals(key)) return "השעה שבה מצב לילה אוטומטי מסתיים";
         if ("timeFormat".equals(key)) return "בחירת תצוגת שעה בת 12 או 24 שעות";
         if ("batteryProtectionEnabled".equals(key)) return "הפחתת בהירות המסך באופן אוטומטי כשהסוללה יורדת מתחת לסף שנבחר";
+        if ("useAndroidDreamForCharging".equals(key)) return "משתמש בשומר המסך של Android במקום בהפעלה האוטומטית הרגילה בטעינה ובעגינה. יש לבחור את „שומר מסך” גם בהגדרות שומר המסך של Android; מצב זה אינו דורש הרשאת הצגה מעל אפליקציות.";
         if ("batteryProtectionThreshold".equals(key)) return "מתחת לאחוז שנבחר תופעל הפחתת בהירות, כל עוד המכשיר אינו בטעינה";
         if ("playerSize".equals(key)) return "בחירת גודל התצוגה של הנגן";
         if ("playerPosition".equals(key)) return "בחירת מיקום הצגת הנגן במסך";
@@ -1915,7 +1916,10 @@ screenTitle.setText("הגדרות");
                     bg.setCornerRadius(dp(12));
                     bg.setStroke(dp(1), Color.rgb(174, 196, 216));
                     colorPreview.setBackground(bg);
-                    hexLabel.setText(String.format(Locale.US, "#%06X", selected & 0xFFFFFF));
+                    String selectedHex = String.format(Locale.US, "#%06X", selected & 0xFFFFFF);
+                    hexLabel.setText(selectedHex);
+                    valueInput.setText(selectedHex);
+                    valueInput.setSelection(valueInput.length());
                     int luminance = Math.round(Color.red(selected) * 0.299f
                             + Color.green(selected) * 0.587f
                             + Color.blue(selected) * 0.114f);
