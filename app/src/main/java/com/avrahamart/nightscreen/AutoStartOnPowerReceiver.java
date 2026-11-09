@@ -24,7 +24,8 @@ import java.nio.channels.FileLock;
  * by itself.
  */
 public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
-    private static final long LOCK_STATE_WAIT_MS = 30_000L;
+    private static final long DEFAULT_LOCK_STATE_WAIT_MS = 30_000L;
+    private static final long MAX_LOCK_STATE_WAIT_MS = 10 * 60_000L;
     private static final long LOCK_STATE_POLL_MS = 250L;
     private static final long LOCK_STATE_INITIAL_DELAY_MS = 350L;
 
@@ -57,8 +58,7 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
 
             if (prefs.getBoolean("autoStartOnWake", false)
                     && LockScreenMonitorService.isLockMonitoringActive()
-                    && canLaunchFromBackground(context)
-                    && !isMainActivityVisible(context)) {
+                    && canLaunchFromBackground(context)) {
                 Intent launch = new Intent(context, MainActivity.class);
                 launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
                         | Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -120,19 +120,20 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
 
         PowerManager powerManager =
                 (PowerManager) appContext.getSystemService(Context.POWER_SERVICE);
+        long waitWindowMs = getDeviceLockWaitWindowMs(appContext);
         try {
             if (powerManager != null) {
                 pendingLockWakeLock = powerManager.newWakeLock(
                         PowerManager.PARTIAL_WAKE_LOCK,
                         "NightScreen:DeviceLockCheck");
-                pendingLockWakeLock.acquire(LOCK_STATE_WAIT_MS + 2_000L);
+                pendingLockWakeLock.acquire(waitWindowMs + 2_000L);
             }
         } catch (Throwable ignored) {
             pendingLockWakeLock = null;
         }
 
         lockCheckDeadlineElapsedRealtime =
-                SystemClock.elapsedRealtime() + LOCK_STATE_WAIT_MS;
+                SystemClock.elapsedRealtime() + waitWindowMs;
         pendingLockCheck = new Runnable() {
             @Override
             public void run() {
@@ -160,6 +161,27 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
             }
         };
         mainHandler.postDelayed(pendingLockCheck, LOCK_STATE_INITIAL_DELAY_MS);
+    }
+
+    /**
+     * Android may delay applying Keyguard after the display turns off. Read the
+     * configured lock-after-screen-off delay when the platform exposes it and
+     * keep the bounded monitor alive long enough to observe that transition.
+     */
+    private long getDeviceLockWaitWindowMs(Context context) {
+        long waitMs = DEFAULT_LOCK_STATE_WAIT_MS;
+        try {
+            long lockAfterTimeoutMs = Settings.Secure.getLong(
+                    context.getContentResolver(),
+                    "lock_screen_lock_after_timeout",
+                    0L);
+            if (lockAfterTimeoutMs > 0L) {
+                waitMs = Math.max(waitMs, lockAfterTimeoutMs + 5_000L);
+            }
+        } catch (Throwable ignored) {
+            // Some Android builds do not expose this secure setting to apps.
+        }
+        return Math.min(MAX_LOCK_STATE_WAIT_MS, waitMs);
     }
 
     private boolean isDeviceLocked(Context context) {

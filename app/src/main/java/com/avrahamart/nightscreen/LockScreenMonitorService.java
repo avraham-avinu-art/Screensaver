@@ -139,6 +139,20 @@ public final class LockScreenMonitorService extends Service {
             return START_NOT_STICKY;
         }
 
+        // If the service was restarted after the user unlocked the phone, clear
+        // a stale one-per-lock-cycle latch. Do not clear it while the device is
+        // actually locked.
+        if (prefs.getBoolean("autoStartOnDeviceLock", false)) {
+            try {
+                android.app.KeyguardManager keyguard =
+                        (android.app.KeyguardManager) getSystemService(KEYGUARD_SERVICE);
+                if (keyguard != null && !keyguard.isDeviceLocked()) {
+                    prefs.edit().putBoolean("deviceLockStartConsumed", false).apply();
+                }
+            } catch (Throwable ignored) {
+            }
+        }
+
         cancelScheduledRestart();
         updateLockReceiverRegistration();
         Notification notification = buildQuietNotification();
