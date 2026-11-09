@@ -3343,25 +3343,40 @@ public class MainActivity extends Activity {
                     (UsageStatsManager) getSystemService(USAGE_STATS_SERVICE);
             if (usage == null) return false;
             long nowMs = System.currentTimeMillis();
-            UsageEvents events = usage.queryEvents(nowMs - 30_000L, nowMs);
+            UsageEvents events = usage.queryEvents(nowMs - 24L * 60L * 60L * 1000L, nowMs);
             if (events == null) return false;
             UsageEvents.Event event = new UsageEvents.Event();
-            String lastExternalPackage = null;
-            long lastExternalTime = 0L;
+            String lastTopPackage = null;
+            long lastTopEventTime = 0L;
+            boolean lastTopStillActive = false;
             while (events.hasNextEvent()) {
                 events.getNextEvent(event);
                 int type = event.getEventType();
+                String packageName = event.getPackageName();
+                if (packageName == null || packageName.equals(getPackageName())) continue;
                 boolean foregroundEvent = type == UsageEvents.Event.MOVE_TO_FOREGROUND
                         || (Build.VERSION.SDK_INT >= 29
                         && type == UsageEvents.Event.ACTIVITY_RESUMED);
-                if (!foregroundEvent) continue;
-                String packageName = event.getPackageName();
-                if (packageName == null || packageName.equals(getPackageName())) continue;
-                lastExternalPackage = packageName;
-                lastExternalTime = event.getTimeStamp();
+                boolean backgroundEvent = type == UsageEvents.Event.MOVE_TO_BACKGROUND
+                        || (Build.VERSION.SDK_INT >= 29
+                        && (type == UsageEvents.Event.ACTIVITY_PAUSED
+                        || type == UsageEvents.Event.ACTIVITY_STOPPED));
+                if (foregroundEvent) {
+                    lastTopPackage = packageName;
+                    lastTopEventTime = event.getTimeStamp();
+                    lastTopStillActive = true;
+                } else if (backgroundEvent && packageName.equals(lastTopPackage)) {
+                    long eventAge = Math.max(0L, nowMs - event.getTimeStamp());
+                    // A pause in the last few seconds can be caused by this very
+                    // screensaver Activity opening over the previously visible app.
+                    lastTopStillActive = eventAge <= 3_000L;
+                    lastTopEventTime = event.getTimeStamp();
+                    if (!lastTopStillActive) lastTopPackage = null;
+                }
             }
-            return lastExternalPackage != null && excluded.contains(lastExternalPackage)
-                    && nowMs - lastExternalTime <= 20_000L;
+            return lastTopStillActive && lastTopPackage != null
+                    && excluded.contains(lastTopPackage)
+                    && nowMs - lastTopEventTime <= 10_000L;
         } catch (Throwable ignored) {
             return false;
         }
