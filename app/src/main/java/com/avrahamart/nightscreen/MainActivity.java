@@ -3403,9 +3403,15 @@ public class MainActivity extends Activity {
 
     private void hideMediaMirror() {
         stopMediaProgressTicker();
+        handler.removeCallbacks(hidePlayerIntroWindowRunnable);
         handler.removeCallbacks(hidePlayerControlsIntroWindowRunnable);
+        playerIntroWindowVisible = false;
+        playerIntroWindowDeadlineElapsedRealtime = 0L;
         playerControlsIntroWindowVisible = false;
         playerControlsIntroWindowDeadlineElapsedRealtime = 0L;
+        lastObservedTrackIdentity = null;
+        lastObservedTrackPositionMs = -1L;
+        lastPlaybackWasActive = false;
         currentAlbumArt = null;
         if (mediaMirror != null) mediaMirror.setVisibility(View.GONE);
         stopTitleMarquee();
