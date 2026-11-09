@@ -58,7 +58,7 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
 
             if (prefs.getBoolean("autoStartOnWake", false)
                     && LockScreenMonitorService.isLockMonitoringActive()
-                    && !MainActivity.isMainActivityResumed()
+                    && !isMainActivityActivelyResumed(context)
                     && canLaunchFromBackground(context)) {
                 Intent launch = new Intent(context, MainActivity.class);
                 launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
@@ -269,6 +269,12 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
                 return true;
             }
         }
+    }
+
+    private boolean isMainActivityActivelyResumed(Context context) {
+        SharedPreferences prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE);
+        return prefs.getBoolean("mainActivityResumed", false)
+                && isMainActivityVisible(context);
     }
 
     private boolean isMainActivityVisible(Context context) {

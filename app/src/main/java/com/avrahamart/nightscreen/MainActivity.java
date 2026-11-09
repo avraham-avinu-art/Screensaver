@@ -456,6 +456,8 @@ public class MainActivity extends Activity {
     protected void onResume() {
         super.onResume();
         mainActivityResumed = true;
+        getSharedPreferences("settings", MODE_PRIVATE).edit()
+                .putBoolean("mainActivityResumed", true).apply();
         mainActivityPausedByDeviceLock = false;
         if (shouldPauseForExcludedForegroundApp()) {
             mainActivityResumed = false;
@@ -518,6 +520,8 @@ public class MainActivity extends Activity {
         mainActivityPausedByDeviceLock =
                 keyguardManager != null && keyguardManager.isKeyguardLocked();
         mainActivityResumed = false;
+        getSharedPreferences("settings", MODE_PRIVATE).edit()
+                .putBoolean("mainActivityResumed", false).apply();
         stopClockUpdates();
         handler.removeCallbacks(mediaSessionRefreshRunnable);
         stopMediaProgressTicker();
