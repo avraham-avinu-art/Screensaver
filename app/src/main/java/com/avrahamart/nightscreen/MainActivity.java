@@ -2124,7 +2124,6 @@ public class MainActivity extends Activity {
                 || settingsDialogOpen || isFinishing()) return;
 
         String duration = getString("screenSaverDuration", "device");
-        ScreenOffLaunchGuard.recordHandled(this);
         boolean systemManagedDuration = "device".equals(duration) || "0".equals(duration);
         boolean continueOnLockScreen = getBool("continueOnLockScreen", false);
 
