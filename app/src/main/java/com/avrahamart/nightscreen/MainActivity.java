@@ -198,6 +198,14 @@ public class MainActivity extends Activity {
     private long currentMediaDurationMs = 0L;
     private boolean lastPlaybackWasActive = false;
     private boolean lastPlayerIntroOnlySetting = false;
+    private boolean playerControlsWindowVisible = false;
+    private long playerControlsWindowDeadlineElapsedRealtime = 0L;
+    private final Runnable hidePlayerControlsWindowRunnable = () -> {
+        playerControlsWindowVisible = false;
+        playerControlsWindowDeadlineElapsedRealtime = 0L;
+        renderMediaMirror();
+        refreshMediaHolderPosition();
+    };
     private boolean playerIntroWindowVisible = false;
     private long playerIntroWindowDeadlineElapsedRealtime = 0L;
     private final Runnable hidePlayerIntroWindowRunnable = () -> {
@@ -243,7 +251,8 @@ public class MainActivity extends Activity {
     private final Runnable hideProgressRowAfterMetadataChange = () -> {
         progressHidePending = false;
         if (mediaProgressRow == null) return;
-        if (!getBool("showProgress", true) || getCurrentMediaDuration() <= 0L) {
+        if (!getBool("showProgress", true) || !arePlayerControlsVisible()
+                || getCurrentMediaDuration() <= 0L) {
             setProgressRowVisible(false);
         } else {
             setProgressRowVisible(true);
@@ -254,6 +263,7 @@ public class MainActivity extends Activity {
         @Override public void run() {
             if (!mainActivityResumed || isFinishing()) return;
             updateClock();
+            applyScreenAppearance();
             scheduleNextClockUpdate();
         }
     };
@@ -494,6 +504,7 @@ public class MainActivity extends Activity {
         handler.removeCallbacks(screenOnReleaseRunnable);
         handler.removeCallbacks(hideSettingsButtonRunnable);
         handler.removeCallbacks(hideProgressRowAfterMetadataChange);
+        handler.removeCallbacks(hidePlayerControlsWindowRunnable);
         handler.removeCallbacks(hidePreviousButtonIfStillUnsupported);
         handler.removeCallbacks(hideNextButtonIfStillUnsupported);
         unregisterActiveSessionsListener();
@@ -1185,9 +1196,15 @@ public class MainActivity extends Activity {
 
         int effectiveClockSize = effectiveClockDateSize(fontFamily, clockDateSize);
         float dateSize = dateTextSizeForClockPreset(effectiveClockSize);
+        int gregorianScale = getInt("gregorianDateScale", -1);
+        int hebrewScale = getInt("hebrewDateScale", -1);
+        float gregorianDateSize = gregorianScale > 0
+                ? effectiveClockSize * gregorianScale / 100f : dateSize;
+        float hebrewDateSize = hebrewScale > 0
+                ? effectiveClockSize * hebrewScale / 100f : dateSize;
         float clockDisplaySize = effectiveClockSize;
-        gregorianText.setTextSize(dateSize);
-        hebrewText.setTextSize(dateSize);
+        gregorianText.setTextSize(gregorianDateSize);
+        hebrewText.setTextSize(hebrewDateSize);
         timeText.setTextSize(clockDisplaySize);
         gregorianText.setTypeface(tf);
         hebrewText.setTypeface(tf);
@@ -1402,6 +1419,7 @@ public class MainActivity extends Activity {
             }
         }
         updateBatteryPercentView();
+        updateClock();
     }
 
     private int dateClockGapDp(int clockSize) {
@@ -1557,6 +1575,36 @@ public class MainActivity extends Activity {
         @Override public int getOpacity() { return android.graphics.PixelFormat.TRANSLUCENT; }
     }
 
+    private boolean isBatteryOrThermalProtectionNeeded() {
+        int threshold = Math.max(1, Math.min(50,
+                getInt("batteryProtectionThreshold", 20)));
+        try {
+            Intent battery = registerReceiver(null,
+                    new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+            if (battery != null) {
+                int level = battery.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
+                int scale = battery.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
+                int plugged = battery.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0);
+                if (level >= 0 && scale > 0 && plugged == 0) {
+                    int percent = Math.max(0, Math.min(100,
+                            Math.round(level * 100f / scale)));
+                    if (percent <= threshold) return true;
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        if (Build.VERSION.SDK_INT >= 29) {
+            try {
+                android.os.PowerManager power =
+                        (android.os.PowerManager) getSystemService(POWER_SERVICE);
+                return power != null && power.getCurrentThermalStatus()
+                        >= android.os.PowerManager.THERMAL_STATUS_MODERATE;
+            } catch (Throwable ignored) {
+            }
+        }
+        return false;
+    }
+
     private void updateBatteryPercentView() {
         if (batteryPercentText == null) return;
         if (!getBool("showBatteryPercent", false) || !isDeviceCharging()) {
@@ -1601,10 +1649,18 @@ public class MainActivity extends Activity {
         // -1 means follow the device's brightness setting. A percentage applies
         // only to this Activity and does not modify the user's system setting.
         int brightnessPercent = getInt("screenBrightness", -1);
-        android.view.WindowManager.LayoutParams attributes = getWindow().getAttributes();
-        attributes.screenBrightness = brightnessPercent < 0
-                ? android.view.WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+        float requestedBrightness = brightnessPercent < 0 ? -1f
                 : Math.max(0.01f, Math.min(1.0f, brightnessPercent / 100.0f));
+        if (getBool("batteryProtectionEnabled", false) && isBatteryOrThermalProtectionNeeded()) {
+            // This only lowers this Activity window brightness; system brightness is untouched.
+            float protectionCap = 0.25f;
+            requestedBrightness = requestedBrightness < 0f
+                    ? protectionCap : Math.min(requestedBrightness, protectionCap);
+        }
+        android.view.WindowManager.LayoutParams attributes = getWindow().getAttributes();
+        attributes.screenBrightness = requestedBrightness < 0f
+                ? android.view.WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+                : requestedBrightness;
         getWindow().setAttributes(attributes);
     }
 
@@ -2374,9 +2430,19 @@ public class MainActivity extends Activity {
     }
 
     private String numericTime() {
-        return String.format(Locale.US, "%d:%02d",
-                now.get(Calendar.HOUR_OF_DAY),
-                now.get(Calendar.MINUTE));
+        String mode = getString("timeFormat", "system");
+        boolean use24Hour = "24".equals(mode)
+                || ("system".equals(mode)
+                && android.text.format.DateFormat.is24HourFormat(this));
+        int hourOfDay = now.get(Calendar.HOUR_OF_DAY);
+        int minute = now.get(Calendar.MINUTE);
+        if (use24Hour) {
+            return String.format(Locale.US, "%d:%02d", hourOfDay, minute);
+        }
+        int hour = hourOfDay % 12;
+        if (hour == 0) hour = 12;
+        String period = hourOfDay < 12 ? " לפנה״צ" : " אחה״צ";
+        return String.format(Locale.US, "%d:%02d", hour, minute) + period;
     }
 
     private String hebrewWeekday() {
@@ -2714,7 +2780,8 @@ public class MainActivity extends Activity {
             if (artistChanged && showDetails && !lastArtist.isEmpty()) {
                 mediaDetails.post(() -> updateArtistMarqueeIfNeeded());
             }
-            boolean showProgressSetting = getBool("showProgress", true);
+            boolean showProgressSetting = getBool("showProgress", true)
+                    && arePlayerControlsVisible();
             if (!showProgressSetting) {
                 // With the progress row disabled, no periodic progress work is needed.
                 stopMediaProgressTicker();
@@ -2735,7 +2802,8 @@ public class MainActivity extends Activity {
             } else {
                 setProgressRowVisible(false);
             }
-            mediaPlayPause.setVisibility(View.VISIBLE);
+            boolean controlsVisible = arePlayerControlsVisible();
+            mediaPlayPause.setVisibility(controlsVisible ? View.VISIBLE : View.GONE);
                 boolean isPlaying = playback == PlaybackState.STATE_PLAYING;
             mediaPlayPause.setImageResource(
                     isPlaying ? R.drawable.media_pause : R.drawable.media_play);
@@ -2745,24 +2813,33 @@ public class MainActivity extends Activity {
 
             long actions = state.getActions();
 
-            if ((actions & PlaybackState.ACTION_SKIP_TO_PREVIOUS) != 0L) {
+            if (!controlsVisible) {
                 handler.removeCallbacks(hidePreviousButtonIfStillUnsupported);
-                previousButtonHidePending = false;
-                mediaPrev.setVisibility(View.VISIBLE);
-            } else if (mediaPrev.getVisibility() == View.VISIBLE && !previousButtonHidePending) {
-                // Some players briefly clear action flags while changing tracks.
-                previousButtonHidePending = true;
-                handler.postDelayed(hidePreviousButtonIfStillUnsupported, 1500L);
-            }
-
-            if ((actions & PlaybackState.ACTION_SKIP_TO_NEXT) != 0L) {
                 handler.removeCallbacks(hideNextButtonIfStillUnsupported);
+                previousButtonHidePending = false;
                 nextButtonHidePending = false;
-                mediaNext.setVisibility(View.VISIBLE);
-            } else if (mediaNext.getVisibility() == View.VISIBLE && !nextButtonHidePending) {
-                // Avoid a one-frame disappearance during a track hand-off.
-                nextButtonHidePending = true;
-                handler.postDelayed(hideNextButtonIfStillUnsupported, 1500L);
+                mediaPrev.setVisibility(View.GONE);
+                mediaNext.setVisibility(View.GONE);
+            } else {
+                if ((actions & PlaybackState.ACTION_SKIP_TO_PREVIOUS) != 0L) {
+                    handler.removeCallbacks(hidePreviousButtonIfStillUnsupported);
+                    previousButtonHidePending = false;
+                    mediaPrev.setVisibility(View.VISIBLE);
+                } else if (mediaPrev.getVisibility() == View.VISIBLE && !previousButtonHidePending) {
+                    // Some players briefly clear action flags while changing tracks.
+                    previousButtonHidePending = true;
+                    handler.postDelayed(hidePreviousButtonIfStillUnsupported, 1500L);
+                }
+
+                if ((actions & PlaybackState.ACTION_SKIP_TO_NEXT) != 0L) {
+                    handler.removeCallbacks(hideNextButtonIfStillUnsupported);
+                    nextButtonHidePending = false;
+                    mediaNext.setVisibility(View.VISIBLE);
+                } else if (mediaNext.getVisibility() == View.VISIBLE && !nextButtonHidePending) {
+                    // Avoid a one-frame disappearance during a track hand-off.
+                    nextButtonHidePending = true;
+                    handler.postDelayed(hideNextButtonIfStillUnsupported, 1500L);
+                }
             }
 
             applyMediaFrame(true);
@@ -2772,6 +2849,21 @@ public class MainActivity extends Activity {
         } catch (Throwable ignored) {
             hideMediaMirror();
         }
+    }
+
+    private boolean arePlayerControlsVisible() {
+        int timeoutSeconds = Math.max(0, getInt("playerControlsTimeout", 0));
+        if (timeoutSeconds == 0) return true;
+        return playerControlsWindowVisible
+                && SystemClock.elapsedRealtime() < playerControlsWindowDeadlineElapsedRealtime;
+    }
+
+    private void startPlayerControlsWindow(long durationMs) {
+        long delay = Math.max(1L, durationMs);
+        playerControlsWindowVisible = true;
+        playerControlsWindowDeadlineElapsedRealtime = SystemClock.elapsedRealtime() + delay;
+        handler.removeCallbacks(hidePlayerControlsWindowRunnable);
+        handler.postDelayed(hidePlayerControlsWindowRunnable, delay);
     }
 
     private void observeTrackForPlayerIntro(String trackIdentity,
@@ -2785,6 +2877,16 @@ public class MainActivity extends Activity {
                 && positionMs < PLAYER_START_WINDOW_MS
                 && lastObservedTrackPositionMs - positionMs > 5_000L;
         boolean playbackJustStarted = playbackActive && !lastPlaybackWasActive;
+        boolean controlsShouldRestart = playbackActive && (firstObservedTrack
+                || trackChanged || repeatedOrRestartedTrack || playbackJustStarted);
+        int controlsTimeoutSeconds = Math.max(0, getInt("playerControlsTimeout", 0));
+        if (controlsTimeoutSeconds == 0) {
+            handler.removeCallbacks(hidePlayerControlsWindowRunnable);
+            playerControlsWindowVisible = true;
+            playerControlsWindowDeadlineElapsedRealtime = 0L;
+        } else if (controlsShouldRestart) {
+            startPlayerControlsWindow(controlsTimeoutSeconds * 1000L);
+        }
         boolean introOnly = getBool("showPlayerOnlyAtStart", false);
         boolean introOnlyJustEnabled = introOnly && !lastPlayerIntroOnlySetting;
 
@@ -2837,7 +2939,7 @@ public class MainActivity extends Activity {
             stopTitleMarquee();
             stopArtistMarquee();
             stopMediaProgressTicker();
-        } else if (getBool("showProgress", true)) {
+        } else if (getBool("showProgress", true) && arePlayerControlsVisible()) {
             scheduleMediaProgressTicker();
         } else {
             stopMediaProgressTicker();
@@ -2846,7 +2948,7 @@ public class MainActivity extends Activity {
 
     private boolean isMediaProgressPollingEnabled() {
         if (!mainActivityResumed || !getBool("showPlayer", false)
-                || !getBool("showProgress", true)
+                || !getBool("showProgress", true) || !arePlayerControlsVisible()
                 || mediaMirror == null || mediaMirror.getVisibility() != View.VISIBLE
                 || mediaController == null) return false;
         try {
