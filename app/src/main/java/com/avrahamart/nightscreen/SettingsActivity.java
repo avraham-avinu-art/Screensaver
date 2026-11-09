@@ -96,6 +96,12 @@ private LinearLayout clockDateCard;
     private DevicePolicyManager devicePolicyManager;
     private ComponentName screenLockAdminComponent;
     private LinearLayout currentCard;
+    private LinearLayout livePreviewCard;
+    private TextView livePreviewClock;
+    private TextView livePreviewGregorian;
+    private TextView livePreviewHebrew;
+    private TextView livePreviewPlayer;
+    private FrameLayout livePreviewSurface;
     private TextView screenTitle;
     private TextView screenSubtitle;
     private ScrollView settingsScroll;
@@ -420,6 +426,13 @@ screenTitle.setText("הגדרות");
         clockDateCard = null;
         playerFrameCard = null;
         activityCapabilityNotice = null;
+        livePreviewCard = null;
+        livePreviewClock = null;
+        livePreviewGregorian = null;
+        livePreviewHebrew = null;
+        livePreviewPlayer = null;
+        livePreviewSurface = null;
+        if (category != CATEGORY_ADVANCED) addSettingsLivePreview();
 
         switch (category) {
             case CATEGORY_CLOCK_DATE:
@@ -460,6 +473,127 @@ screenTitle.setText("הגדרות");
                     (LinearLayout.LayoutParams) currentSettingsGroup.getLayoutParams();
             params.bottomMargin = dp(10);
             currentSettingsGroup.setLayoutParams(params);
+        }
+    }
+
+    private void addSettingsLivePreview() {
+        livePreviewCard = addCard(content, "תצוגה מקדימה");
+        livePreviewSurface = new FrameLayout(this);
+        livePreviewSurface.setBackground(roundOutline(
+                getInt("screenBackgroundColor", Color.BLACK), dp(14), CARD_OUTLINE));
+        livePreviewSurface.setClipToPadding(false);
+        livePreviewSurface.setClipChildren(false);
+
+        LinearLayout sample = new LinearLayout(this);
+        sample.setOrientation(LinearLayout.VERTICAL);
+        sample.setGravity(Gravity.CENTER);
+        sample.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        sample.setPadding(dp(8), dp(5), dp(8), dp(5));
+
+        livePreviewClock = textView("12:34", 40, Color.WHITE);
+        livePreviewClock.setGravity(Gravity.CENTER);
+        livePreviewClock.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        livePreviewClock.setIncludeFontPadding(false);
+        sample.addView(livePreviewClock, new LinearLayout.LayoutParams(-1, dp(58)));
+
+        livePreviewGregorian = textView("יום ב׳ · 09.11.2026", 14, Color.WHITE);
+        livePreviewGregorian.setGravity(Gravity.CENTER);
+        livePreviewGregorian.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        livePreviewGregorian.setIncludeFontPadding(false);
+        sample.addView(livePreviewGregorian, new LinearLayout.LayoutParams(-1, dp(25)));
+
+        livePreviewHebrew = textView("", 14, Color.WHITE);
+        livePreviewHebrew.setGravity(Gravity.CENTER);
+        livePreviewHebrew.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        livePreviewHebrew.setIncludeFontPadding(false);
+        sample.addView(livePreviewHebrew, new LinearLayout.LayoutParams(-1, dp(25)));
+
+        livePreviewPlayer = textView("אמן לדוגמה · שם השיר", 13, Color.WHITE);
+        livePreviewPlayer.setGravity(Gravity.CENTER);
+        livePreviewPlayer.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        livePreviewPlayer.setIncludeFontPadding(false);
+        livePreviewPlayer.setVisibility(View.GONE);
+        sample.addView(livePreviewPlayer, new LinearLayout.LayoutParams(-1, dp(24)));
+
+        livePreviewSurface.addView(sample, new FrameLayout.LayoutParams(-1, -2,
+                Gravity.CENTER));
+        LinearLayout.LayoutParams surfaceParams = new LinearLayout.LayoutParams(-1, dp(132));
+        surfaceParams.topMargin = dp(4);
+        livePreviewCard.addView(livePreviewSurface, surfaceParams);
+        refreshSettingsLivePreview();
+    }
+
+    private void refreshSettingsLivePreview() {
+        if (livePreviewSurface == null || livePreviewClock == null) return;
+        try {
+            int background = getInt("screenBackgroundColor", Color.BLACK);
+            livePreviewSurface.setBackground(roundOutline(background, dp(14), CARD_OUTLINE));
+            int color = getInt("fontColor", Color.rgb(220, 220, 220));
+            String family = getString("fontFamily", "sans-serif");
+            Typeface face = Typeface.create("sans-serif", Typeface.NORMAL);
+            if (family.startsWith("custom:")) {
+                try {
+                    face = Typeface.createFromAsset(getAssets(),
+                            "fonts/" + family.substring("custom:".length()));
+                } catch (Throwable ignored) {}
+            } else {
+                face = Typeface.create(family, Typeface.NORMAL);
+            }
+            int weight = getInt("fontWeight", 0);
+            if (weight >= 1) face = Typeface.create(face, Typeface.BOLD);
+            livePreviewClock.setTypeface(face);
+            livePreviewGregorian.setTypeface(face);
+            livePreviewHebrew.setTypeface(face);
+            livePreviewPlayer.setTypeface(face);
+            livePreviewClock.setTextColor(color);
+            livePreviewGregorian.setTextColor(color);
+            livePreviewHebrew.setTextColor(color);
+            livePreviewPlayer.setTextColor(color);
+
+            int clockSize = getInt("clockDateSize", 84);
+            livePreviewClock.setTextSize(Math.max(25, Math.min(44, clockSize * 0.48f)));
+            int gregorianScale = getInt("gregorianDateScale", -1);
+            int hebrewScale = getInt("hebrewDateScale", -1);
+            livePreviewGregorian.setTextSize(gregorianScale > 0
+                    ? Math.max(9, Math.min(22, clockSize * gregorianScale / 100f * 0.48f))
+                    : Math.max(9, Math.min(22, clockSize * 0.26f * 0.48f)));
+            livePreviewHebrew.setTextSize(hebrewScale > 0
+                    ? Math.max(9, Math.min(22, clockSize * hebrewScale / 100f * 0.48f))
+                    : Math.max(9, Math.min(22, clockSize * 0.26f * 0.48f)));
+            livePreviewGregorian.setVisibility(getBool("showGregorian", true)
+                    ? View.VISIBLE : View.GONE);
+            livePreviewHebrew.setVisibility(getBool("showHebrew", true)
+                    ? View.VISIBLE : View.GONE);
+            livePreviewPlayer.setVisibility(currentCategory == CATEGORY_PLAYER
+                    ? View.VISIBLE : View.GONE);
+
+            Calendar sampleNow = Calendar.getInstance();
+            String timeMode = getString("timeFormat", "system");
+            boolean use24 = "24".equals(timeMode) || ("system".equals(timeMode)
+                    && android.text.format.DateFormat.is24HourFormat(this));
+            int hour = sampleNow.get(Calendar.HOUR_OF_DAY);
+            if (use24) {
+                livePreviewClock.setText(String.format(Locale.US, "%d:%02d", hour,
+                        sampleNow.get(Calendar.MINUTE)));
+            } else {
+                int hour12 = hour % 12;
+                if (hour12 == 0) hour12 = 12;
+                livePreviewClock.setText(String.format(Locale.US, "%d:%02d", hour12,
+                        sampleNow.get(Calendar.MINUTE)));
+            }
+            String pattern = getString("gregorianDateFormat", "dd.MM.yyyy");
+            try {
+                livePreviewGregorian.setText(new SimpleDateFormat(pattern, Locale.US)
+                        .format(sampleNow.getTime()));
+            } catch (Throwable ignored) {
+                livePreviewGregorian.setText(new SimpleDateFormat("dd.MM.yyyy", Locale.US)
+                        .format(sampleNow.getTime()));
+            }
+            livePreviewHebrew.setText(currentHebrewDateSamples()[0]);
+            livePreviewPlayer.setVisibility(currentCategory == CATEGORY_PLAYER
+                    && getString("playerDisplayMode", "off") != "off"
+                    ? View.VISIBLE : View.GONE);
+        } catch (Throwable ignored) {
         }
     }
 
@@ -1422,6 +1556,7 @@ screenTitle.setText("הגדרות");
         toggle.setOnCheckedChangeListener((button, checked) -> {
             try {
                 prefs.edit().putBoolean(key, checked).apply();
+                refreshSettingsLivePreview();
                 if ("autoStartOnCharge".equals(key)) {
                     NightScreenApplication.syncChargerReceiver(this);
                 }
@@ -1916,6 +2051,7 @@ screenTitle.setText("הגדרות");
                         prefs.edit().putString("gregorianDateCustomPattern", value)
                                 .putString("gregorianDateFormat", value).apply();
                         preview.setText(value);
+                        refreshSettingsLivePreview();
                         dialog.dismiss();
                     } catch (IllegalArgumentException ex) {
                         input.setError("תבנית לא תקינה");
@@ -2062,6 +2198,7 @@ screenTitle.setText("הגדרות");
                 editor.putString(key, value);
             }
             editor.apply();
+            refreshSettingsLivePreview();
         } catch (Throwable ignored) {
         }
     }
