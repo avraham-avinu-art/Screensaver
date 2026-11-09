@@ -1343,11 +1343,9 @@ screenTitle.setText("הגדרות");
         row.addView(toggle, 0, switchParams);
 
         toggle.setOnCheckedChangeListener((button, checked) -> {
+            boolean openingSystemSettingsForAutoStart = false;
             try {
                 prefs.edit().putBoolean(key, checked).apply();
-                if (checked && isAutoStartSetting(key)) {
-                    ensureAutoStartNotificationPermission();
-                }
 
                 if ("autoStartOnCharge".equals(key)) {
                     NightScreenApplication.syncChargerReceiver(this);
@@ -1360,6 +1358,7 @@ screenTitle.setText("הגדרות");
                 NightScreenApplication.syncChargerReceiver(this);
                 LockScreenMonitorService.sync(this);
                 if (checked) {
+                    openingSystemSettingsForAutoStart = getBool("autoStartOnCharge", false);
                     try {
                         startActivity(new Intent(Settings.ACTION_DREAM_SETTINGS));
                     } catch (Throwable ignored) {
@@ -1377,6 +1376,7 @@ screenTitle.setText("הגדרות");
                 }
             } else if ("autoStartOnCharge".equals(key)) {
                 if (checked && getBool("useAndroidDreamForCharging", true)) {
+                    openingSystemSettingsForAutoStart = true;
                     AppToast.makeText(this,
                             "כדי להפעיל שומר מסך בטעינה דרך Android, בחר במסך הבא את שומר מסך והגדר הפעלה בזמן טעינה.",
                             Toast.LENGTH_LONG).show();
@@ -1391,6 +1391,7 @@ screenTitle.setText("הגדרות");
                 if (checked && !getBool("useAndroidDreamForCharging", true)
                         && Build.VERSION.SDK_INT >= 29
                         && !Settings.canDrawOverlays(this)) {
+                    openingSystemSettingsForAutoStart = true;
                     prefs.edit().putBoolean("autoStartOverlayPermissionPending", true).apply();
                     requestChargerOverlayPermission();
                 } else {
@@ -1408,6 +1409,7 @@ screenTitle.setText("הגדרות");
             } else if ("autoStartOnDeviceLock".equals(key)) {
                 if (checked && Build.VERSION.SDK_INT >= 29
                         && !Settings.canDrawOverlays(this)) {
+                    openingSystemSettingsForAutoStart = true;
                     prefs.edit().putBoolean("autoStartOnLockOverlayPermissionPending", true).apply();
                     requestLockStartOverlayPermission();
                 } else {
@@ -1428,7 +1430,9 @@ screenTitle.setText("הגדרות");
                     AppToast.makeText(this,
                             "כדי לאפשר הפעלה אוטומטית לאחר אתחול או התעוררות, יש לאפשר לשומר מסך הצגה מעל אפליקציות אחרות.",
                             Toast.LENGTH_LONG).show();
-                    if (!openOverlayPermissionSettings()) {
+                    if (openOverlayPermissionSettings()) {
+                        openingSystemSettingsForAutoStart = true;
+                    } else {
                         prefs.edit().putBoolean(key, false).apply();
                         toggle.setChecked(false);
                     }
@@ -1457,6 +1461,13 @@ screenTitle.setText("הגדרות");
                     startActivity(new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS));
                 } catch (Throwable ignored) {
                 }
+            }
+
+            // Do not open two Android permission/settings screens at the same time.
+            // If an external settings screen was opened above, onResume() requests
+            // the notification permission after the user returns.
+            if (!openingSystemSettingsForAutoStart) {
+                ensureAutoStartNotificationPermission();
             }
         });
         row.setOnClickListener(v -> {
