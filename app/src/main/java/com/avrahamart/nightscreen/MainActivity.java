@@ -76,10 +76,15 @@ public class MainActivity extends Activity {
     public static final String ACTION_FINISH_FROM_NOTIFICATION =
             "com.screensaver.action.FINISH_FROM_NOTIFICATION";
     private static volatile boolean mainActivityResumed = false;
+    private static volatile boolean mainActivitySessionAlive = false;
     private static volatile boolean mainActivityPausedByDeviceLock = false;
 
     public static boolean isMainActivityResumed() {
         return mainActivityResumed;
+    }
+
+    public static boolean isMainActivitySessionAlive() {
+        return mainActivitySessionAlive;
     }
 
     public static boolean wasMainActivityPausedByDeviceLock() {
@@ -306,6 +311,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
+        mainActivitySessionAlive = true;
         try {
             prefs = getSharedPreferences("settings", MODE_PRIVATE);
             initSettings();
@@ -516,6 +522,7 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        mainActivitySessionAlive = false;
         handler.removeCallbacks(clockUpdateRunnable);
         handler.removeCallbacks(mediaSessionRefreshRunnable);
         handler.removeCallbacks(mediaProgressTicker);
