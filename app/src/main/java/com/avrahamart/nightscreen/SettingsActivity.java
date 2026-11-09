@@ -1648,6 +1648,17 @@ screenTitle.setText("הגדרות");
                 } else {
                     prefs.edit().putBoolean("showPlayerPermissionPending", false).apply();
                 }
+            } else if ("pauseWhenExcludedAppActive".equals(key)
+                    && checked && !hasUsageAccess()) {
+                prefs.edit().putBoolean(key, false).apply();
+                toggle.setChecked(false);
+                AppToast.makeText(this,
+                        "כדי להפעיל החרגת אפליקציות, יש לאפשר תחילה הרשאת נתוני שימוש.",
+                        Toast.LENGTH_LONG).show();
+                try {
+                    startActivity(new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS));
+                } catch (Throwable ignored) {
+                }
             }
         });
         row.setOnClickListener(v -> {
