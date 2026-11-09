@@ -48,6 +48,12 @@ public final class ScreenOffLaunchGuard {
             if (file.length() < 8L) return false;
             file.seek(0L);
             long handledAt = file.readLong();
+
+            // Consume the marker while holding the cross-process lock. Only the
+            // receiver for this already-handled broadcast is suppressed; a later
+            // real screen-off event can start the screensaver immediately.
+            file.setLength(0L);
+            file.getFD().sync();
             return now >= handledAt && now - handledAt < SUPPRESSION_WINDOW_MS;
         } catch (Throwable ignored) {
             // Fail open so a genuine future device-lock event is not suppressed.
