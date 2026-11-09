@@ -788,11 +788,11 @@ screenTitle.setText("הגדרות");
                 new String[]{"10", "15", "20", "25", "30"},
                 "batteryProtectionThreshold");
 
-        addCheck(content, "הפעלת הנגן בטעינה דרך שומר המסך של Android",
+        addCheck(content, "בחירת מסלול ההפעלה בטעינה ובעגינה דרך שומר המסך של Android",
                 "useAndroidDreamForCharging", getBool("useAndroidDreamForCharging", true));
     }
 
-        private String settingsGroupTitleFor(String key) {
+    private String settingsGroupTitleFor(String key) {
         switch (currentCategory) {
             case CATEGORY_CLOCK_DATE:
                 if ("timeFormat".equals(key)) return "תצוגת השעה";
@@ -1456,7 +1456,7 @@ screenTitle.setText("הגדרות");
                 getInt(key, 0) - minValue)));
         seekBar.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         seekBar.setContentDescription(label);
-        seekBar.setMinHeight(dp(48));
+        seekBar.setMinimumHeight(dp(48));
         seekBar.setPadding(dp(8), 0, dp(8), 0);
         if (Build.VERSION.SDK_INT >= 21) {
             seekBar.setProgressTintList(ColorStateList.valueOf(ACCENT));
