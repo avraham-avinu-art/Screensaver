@@ -800,7 +800,7 @@ screenTitle.setText("הגדרות");
                 new String[]{"10", "15", "20", "25", "30"},
                 "batteryProtectionThreshold");
 
-        addCheck(content, "בחירת מסלול ההפעלה בטעינה ובעגינה דרך שומר המסך של Android",
+        addCheck(content, "הגדרת הפעלה אוטומטית בטעינה דרך הגדרות אנדרואיד",
                 "useAndroidDreamForCharging", getBool("useAndroidDreamForCharging", true));
     }
 
@@ -1033,7 +1033,7 @@ screenTitle.setText("הגדרות");
         if ("nightModeEndHour".equals(key)) return "השעה שבה מצב לילה אוטומטי מסתיים";
         if ("timeFormat".equals(key)) return "בחירת תצוגת שעה בת 12 או 24 שעות";
         if ("batteryProtectionEnabled".equals(key)) return "הפחתת בהירות המסך באופן אוטומטי כשהסוללה יורדת מתחת לסף שנבחר";
-        if ("useAndroidDreamForCharging".equals(key)) return "הגדרת הפעלה אוטומטית בטעינה דרך הגדרות אנדרואיד";
+        if ("useAndroidDreamForCharging".equals(key)) return "קובע באיזה מסלול תפעל ההגדרה „הפעלה אוטומטית בטעינה ובעגינה”: שומר המסך של Android (ברירת מחדל) או הצגה מעל אפליקציות. במסלול Android יש לבחור את „שומר מסך” בהגדרות המערכת.";
         if ("batteryProtectionThreshold".equals(key)) return "מתחת לאחוז שנבחר תופעל הפחתת בהירות, כל עוד המכשיר אינו בטעינה";
         if ("playerSize".equals(key)) return "בחירת גודל התצוגה של הנגן";
         if ("playerPosition".equals(key)) return "בחירת מיקום הצגת הנגן במסך";
