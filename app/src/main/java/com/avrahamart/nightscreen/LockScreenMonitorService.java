@@ -85,6 +85,7 @@ public final class LockScreenMonitorService extends Service {
 
     private void updateLockReceiverRegistration() {
         if (receiverRegistered && lockReceiver != null) {
+            lockReceiver.cancelPendingLockCheck();
             try {
                 unregisterReceiver(lockReceiver);
             } catch (Throwable ignored) {
@@ -219,6 +220,7 @@ public final class LockScreenMonitorService extends Service {
         // Do not schedule a restart when the user explicitly turns the feature off.
         scheduleRestartIfEnabled();
         if (receiverRegistered && lockReceiver != null) {
+            lockReceiver.cancelPendingLockCheck();
             try {
                 unregisterReceiver(lockReceiver);
             } catch (Throwable ignored) {

@@ -61,6 +61,7 @@ import java.util.Set;
 
 public class SettingsActivity extends Activity {
     private static final int REQUEST_ENABLE_SCREEN_LOCK_ADMIN = 8142;
+    private static final int REQUEST_AUTO_START_NOTIFICATION_PERMISSION = 8143;
     private static final int SURFACE = Color.rgb(9, 19, 33);
     private static final int CARD_SURFACE = Color.rgb(20, 36, 56);
     private static final int CONTROL_SURFACE = Color.rgb(27, 47, 70);
@@ -246,6 +247,7 @@ private LinearLayout clockDateCard;
             refreshPermissionDependentToggles();
             LockScreenMonitorService.sync(this);
             NightScreenApplication.syncChargerReceiver(this);
+            ensureAutoStartNotificationPermission();
             updateDeviceCapabilityNotice();
         }
     }
@@ -1343,6 +1345,9 @@ screenTitle.setText("הגדרות");
         toggle.setOnCheckedChangeListener((button, checked) -> {
             try {
                 prefs.edit().putBoolean(key, checked).apply();
+                if (checked && isAutoStartSetting(key)) {
+                    ensureAutoStartNotificationPermission();
+                }
 
                 if ("autoStartOnCharge".equals(key)) {
                     NightScreenApplication.syncChargerReceiver(this);
@@ -2043,6 +2048,49 @@ screenTitle.setText("הגדרות");
         }
         if (autoStartOnWakeToggle != null) {
             autoStartOnWakeToggle.setChecked(getBool("autoStartOnWake", false));
+        }
+    }
+
+    private boolean isAutoStartSetting(String key) {
+        return "autoStartOnCharge".equals(key)
+                || "autoStartOnDeviceLock".equals(key)
+                || "autoStartOnBoot".equals(key)
+                || "autoStartOnWake".equals(key);
+    }
+
+    /**
+     * Android 13+ requires the runtime notification permission for the
+     * persistent automatic-start service notification to appear in the drawer.
+     * The foreground service itself remains independent of this permission.
+     */
+    private void ensureAutoStartNotificationPermission() {
+        if (Build.VERSION.SDK_INT < 33
+                || checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
+                    == android.content.pm.PackageManager.PERMISSION_GRANTED) return;
+        boolean anyAutoStartEnabled = getBool("autoStartOnCharge", false)
+                || getBool("autoStartOnDeviceLock", false)
+                || getBool("autoStartOnBoot", false)
+                || getBool("autoStartOnWake", false);
+        if (!anyAutoStartEnabled
+                || prefs.getBoolean("autoStartNotificationPermissionAsked", false)) return;
+
+        prefs.edit().putBoolean("autoStartNotificationPermissionAsked", true).apply();
+        requestPermissions(
+                new String[]{android.Manifest.permission.POST_NOTIFICATIONS},
+                REQUEST_AUTO_START_NOTIFICATION_PERMISSION);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                                           int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode != REQUEST_AUTO_START_NOTIFICATION_PERMISSION) return;
+        LockScreenMonitorService.sync(this);
+        if (grantResults.length == 0
+                || grantResults[0] != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            AppToast.makeText(this,
+                    "ההפעלה האוטומטית יכולה לפעול, אך ההתראה המתמשכת לא תופיע במגירת ההתראות ללא הרשאת התראות.",
+                    Toast.LENGTH_LONG).show();
         }
     }
 
