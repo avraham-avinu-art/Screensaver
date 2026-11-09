@@ -601,7 +601,7 @@ screenTitle.setText("הגדרות");
         addCheck(content, "הפעלה אוטומטית בנעילה", "autoStartOnDeviceLock", false);
         addCheck(content, "הפעלה אוטומטית בהדלקה", "autoStartOnBoot", false);
         addCheck(content, "הפעלה אוטומטית בהתעוררות", "autoStartOnWake", false);
-        addCheck(content, "הפעלה אוטומטית בטעינה ובעגינה", "autoStartOnCharge", false);
+        addCheck(content, "הפעלה אוטומטית בטעינה", "autoStartOnCharge", false);
         addCheck(content, "ללא כיבוי בטעינה", "noShutdownWhileCharging", false);
         addSegmentedChoices(content, "תצוגת סוללה בטעינה",
                 new String[]{"ללא", "אחוזים", "סמל", "סמל ואחוזים"},
@@ -824,6 +824,9 @@ screenTitle.setText("הגדרות");
                         || "autoStartOnWake".equals(key) || "autoStartOnCharge".equals(key)) {
                     return "הפעלות אוטומטיות";
                 }
+                if ("pauseWhenExcludedAppActive".equals(key)) {
+                    return "השהיה באפליקציות מוחרגות";
+                }
                 return "שומר מסך במצב טעינה";
             case CATEGORY_APPEARANCE:
                         if ("screenBackgroundColor".equals(key) || "screenBrightness".equals(key)
@@ -1030,7 +1033,7 @@ screenTitle.setText("הגדרות");
         if ("nightModeEndHour".equals(key)) return "השעה שבה מצב לילה אוטומטי מסתיים";
         if ("timeFormat".equals(key)) return "בחירת תצוגת שעה בת 12 או 24 שעות";
         if ("batteryProtectionEnabled".equals(key)) return "הפחתת בהירות המסך באופן אוטומטי כשהסוללה יורדת מתחת לסף שנבחר";
-        if ("useAndroidDreamForCharging".equals(key)) return "קובע באיזה מסלול תפעל ההגדרה „הפעלה אוטומטית בטעינה ובעגינה”: שומר המסך של Android (ברירת מחדל) או הצגה מעל אפליקציות. במסלול Android יש לבחור את „שומר מסך” בהגדרות המערכת.";
+        if ("useAndroidDreamForCharging".equals(key)) return "הגדרת הפעלה אוטומטית בטעינה דרך הגדרות אנדרואיד";
         if ("batteryProtectionThreshold".equals(key)) return "מתחת לאחוז שנבחר תופעל הפחתת בהירות, כל עוד המכשיר אינו בטעינה";
         if ("playerSize".equals(key)) return "בחירת גודל התצוגה של הנגן";
         if ("playerPosition".equals(key)) return "בחירת מיקום הצגת הנגן במסך";
@@ -1443,18 +1446,12 @@ screenTitle.setText("הגדרות");
                                int minValue, int maxValue) {
         LinearLayout card = addSettingCard(parent, label, key);
 
-        LinearLayout valueRow = new LinearLayout(this);
-        valueRow.setOrientation(LinearLayout.HORIZONTAL);
-        valueRow.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        valueRow.setGravity(Gravity.CENTER_VERTICAL);
+        LinearLayout resetRow = new LinearLayout(this);
+        resetRow.setOrientation(LinearLayout.HORIZONTAL);
+        resetRow.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        resetRow.setGravity(Gravity.CENTER_VERTICAL);
 
-        TextView valueText = textView("", 15, ACCENT);
-        valueText.setGravity(Gravity.CENTER);
-        valueText.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-        valueText.setTextDirection(View.TEXT_DIRECTION_LTR);
-        valueRow.addView(valueText, new LinearLayout.LayoutParams(0, dp(30), 1f));
-
-        TextView reset = textView("איפוס", 13, ON_SURFACE);
+        TextView reset = textView("איפוס לברירת מחדל", 13, ON_SURFACE);
         reset.setGravity(Gravity.CENTER);
         reset.setIncludeFontPadding(false);
         reset.setPadding(dp(12), dp(5), dp(12), dp(5));
@@ -1462,8 +1459,10 @@ screenTitle.setText("הגדרות");
         reset.setClickable(true);
         reset.setFocusable(true);
         reset.setContentDescription("איפוס " + label + " לברירת המחדל");
-        valueRow.addView(reset, new LinearLayout.LayoutParams(-2, dp(32)));
-        card.addView(valueRow, new LinearLayout.LayoutParams(-1, dp(34)));
+        resetRow.addView(reset, new LinearLayout.LayoutParams(-2, dp(32)));
+        View resetSpacer = new View(this);
+        resetRow.addView(resetSpacer, new LinearLayout.LayoutParams(dp(8), dp(1)));
+        card.addView(resetRow, new LinearLayout.LayoutParams(-1, dp(34)));
 
         SeekBar seekBar = new SeekBar(this);
         seekBar.setMax(maxValue - minValue);
@@ -1483,29 +1482,25 @@ screenTitle.setText("הגדרות");
         seekParams.rightMargin = dp(2);
         card.addView(seekBar, seekParams);
 
-        LinearLayout range = new LinearLayout(this);
-        range.setOrientation(LinearLayout.HORIZONTAL);
-        range.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-        TextView low = textView("−" + Math.abs(minValue) + "%", 12, MUTED);
-        TextView center = textView("0% · ברירת מחדל", 12, MUTED);
-        TextView high = textView("+" + maxValue + "%", 12, MUTED);
-        low.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
-        center.setGravity(Gravity.CENTER);
-        high.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        range.addView(low, new LinearLayout.LayoutParams(0, dp(22), 1f));
-        range.addView(center, new LinearLayout.LayoutParams(0, dp(22), 1f));
-        range.addView(high, new LinearLayout.LayoutParams(0, dp(22), 1f));
-        card.addView(range, new LinearLayout.LayoutParams(-1, dp(22)));
+        LinearLayout directions = new LinearLayout(this);
+        directions.setOrientation(LinearLayout.HORIZONTAL);
+        directions.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+        TextView left = textView("שמאלה", 12, MUTED);
+        TextView right = textView("ימינה", 12, MUTED);
+        left.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
+        right.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        directions.addView(left, new LinearLayout.LayoutParams(0, dp(22), 1f));
+        directions.addView(right, new LinearLayout.LayoutParams(0, dp(22), 1f));
+        card.addView(directions, new LinearLayout.LayoutParams(-1, dp(22)));
 
-        Runnable updateValue = () -> {
+        Runnable updateReset = () -> {
             int value = seekBar.getProgress() + minValue;
-            valueText.setText(value == 0 ? "0% · מרכז" : (value > 0 ? "+" : "") + value + "%");
-            reset.setAlpha(value == 0 ? 0.55f : 1f);
+            reset.setAlpha(value == 0 ? 0.65f : 1f);
         };
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override public void onProgressChanged(SeekBar bar, int progress, boolean fromUser) {
                 int value = progress + minValue;
-                updateValue.run();
+                updateReset.run();
                 if (fromUser) prefs.edit().putInt(key, value).apply();
             }
             @Override public void onStartTrackingTouch(SeekBar bar) { }
@@ -1515,9 +1510,9 @@ screenTitle.setText("הגדרות");
             int defaultValue = Math.max(minValue, Math.min(maxValue, 0));
             seekBar.setProgress(defaultValue - minValue);
             prefs.edit().putInt(key, defaultValue).apply();
-            updateValue.run();
+            updateReset.run();
         });
-        updateValue.run();
+        updateReset.run();
     }
 
     private LinearLayout addDiscreteSlider(LinearLayout parent, String label,
@@ -1548,7 +1543,7 @@ screenTitle.setText("הגדרות");
         final int[] responsiveTextWidths = new int[names.length];
         final int[] responsiveExpandedWidths = new int[names.length];
         int initial = selectedIndex(key, values);
-        int optionTileHeight = 37;
+        int optionTileHeight = "clockDialStyle".equals(key) ? 88 : 37;
 
         for (int i = 0; i < names.length; i++) {
             final int index = i;
@@ -1575,7 +1570,25 @@ screenTitle.setText("הגדרות");
                 option.setAutoSizeTextTypeUniformWithConfiguration(
                         10, 14, 1, android.util.TypedValue.COMPLEX_UNIT_SP);
             }
-            tile.addView(option, new FrameLayout.LayoutParams(-1, -1));
+            if ("clockDialStyle".equals(key)) {
+                LinearLayout previewContent = new LinearLayout(this);
+                previewContent.setOrientation(LinearLayout.VERTICAL);
+                previewContent.setGravity(Gravity.CENTER);
+                previewContent.setPadding(0, dp(3), 0, dp(2));
+                AnalogClockView dialPreview = new AnalogClockView(this);
+                dialPreview.setTime(10, 10);
+                dialPreview.setColors(ON_SURFACE, CARD_SURFACE);
+                dialPreview.setDialStyle(values[i]);
+                previewContent.addView(dialPreview,
+                        new LinearLayout.LayoutParams(dp(56), dp(56)));
+                option.setGravity(Gravity.CENTER);
+                option.setTextSize(12);
+                previewContent.addView(option,
+                        new LinearLayout.LayoutParams(-1, dp(22)));
+                tile.addView(previewContent, new FrameLayout.LayoutParams(-1, -1));
+            } else {
+                tile.addView(option, new FrameLayout.LayoutParams(-1, -1));
+            }
             options[i] = option;
 
             tile.setContentDescription(label + ": " + names[i]);
@@ -1613,12 +1626,15 @@ screenTitle.setText("הגדרות");
             boolean mayExpandOnNarrowScreens =
                     (("screenBrightness".equals(key)
                             || "screenSaverDuration".equals(key)) && i == 0)
-                    || ("playerDisplayMode".equals(key) && i == 2);
+                    || (("playerDisplayMode".equals(key)
+                            || "playerControlsDisplayMode".equals(key)) && i == 2)
+                    || ("chargingBatteryDisplayMode".equals(key) && i == 3);
             if (mayExpandOnNarrowScreens) {
                 int textWidth = (int) Math.ceil(option.getPaint().measureText(names[i]));
                 responsiveTextWidths[i] = textWidth + dp(2);
-                int extraWidth = "playerDisplayMode".equals(key) && i == 2
-                        ? 16 : 8;
+                int extraWidth = (("playerDisplayMode".equals(key)
+                        || "playerControlsDisplayMode".equals(key)) && i == 2)
+                        ? 16 : ("chargingBatteryDisplayMode".equals(key) && i == 3 ? 18 : 8);
                 responsiveExpandedWidths[i] = textWidth + dp(extraWidth);
             }
 
@@ -1869,40 +1885,38 @@ screenTitle.setText("הגדרות");
 
         LinearLayout panel = new LinearLayout(this);
         panel.setOrientation(LinearLayout.VERTICAL);
-        panel.setPadding(dp(16), dp(12), dp(16), dp(10));
-        panel.setBackgroundColor(CARD_SURFACE);
+        panel.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        panel.setPadding(dp(18), dp(16), dp(18), dp(14));
+        panel.setBackground(roundOutline(CARD_SURFACE, dp(18), CARD_OUTLINE));
+
+        TextView heading = textView("בחירת צבע מותאם אישית", 18, ON_SURFACE);
+        heading.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD));
+        heading.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        panel.addView(heading, new LinearLayout.LayoutParams(-1, dp(30)));
 
         LinearLayout sampleRow = new LinearLayout(this);
         sampleRow.setOrientation(LinearLayout.HORIZONTAL);
         sampleRow.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         sampleRow.setGravity(Gravity.CENTER_VERTICAL);
-
-        LinearLayout sampleCopy = new LinearLayout(this);
-        sampleCopy.setOrientation(LinearLayout.VERTICAL);
-        sampleCopy.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        sampleCopy.setGravity(Gravity.CENTER_VERTICAL);
-        TextView sampleTitle = textView("הצבע שנבחר", 15, ON_SURFACE);
-        sampleTitle.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD));
-        sampleCopy.addView(sampleTitle, new LinearLayout.LayoutParams(-1, -2));
-        TextView sampleHint = textView("כוון את המחוונים עד לקבלת הגוון הרצוי", 12, MUTED);
-        sampleHint.setPadding(0, dp(3), 0, 0);
-        sampleCopy.addView(sampleHint, new LinearLayout.LayoutParams(-1, -2));
-        sampleRow.addView(sampleCopy, new LinearLayout.LayoutParams(0, -2, 1f));
-
+        TextView sampleHint = textView("כוון את המחוונים עד לקבלת הגוון הרצוי", 13, MUTED);
+        sampleHint.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        sampleRow.addView(sampleHint, new LinearLayout.LayoutParams(0, dp(42), 1f));
         View colorPreview = new View(this);
         LinearLayout.LayoutParams previewParams =
-                new LinearLayout.LayoutParams(dp(42), dp(42));
+                new LinearLayout.LayoutParams(dp(44), dp(44));
         previewParams.leftMargin = dp(10);
         colorPreview.setBackground(makeCustomColorDot(current));
         sampleRow.addView(colorPreview, previewParams);
-        panel.addView(sampleRow, new LinearLayout.LayoutParams(-1, dp(48)));
+        LinearLayout.LayoutParams sampleParams = new LinearLayout.LayoutParams(-1, dp(48));
+        sampleParams.topMargin = dp(5);
+        panel.addView(sampleRow, sampleParams);
 
         View separator = new View(this);
         separator.setBackgroundColor(CARD_OUTLINE);
         LinearLayout.LayoutParams separatorParams =
                 new LinearLayout.LayoutParams(-1, dp(1));
         separatorParams.topMargin = dp(8);
-        separatorParams.bottomMargin = dp(7);
+        separatorParams.bottomMargin = dp(8);
         panel.addView(separator, separatorParams);
 
         String[] captions = {"גוון", "רוויה", "בהירות"};
@@ -1911,10 +1925,6 @@ screenTitle.setText("הגדרות");
         Runnable updateSwatch = () -> {
             int selected = Color.HSVToColor(hsv);
             colorPreview.setBackground(makeCustomColorDot(selected));
-            int luminance = Math.round(Color.red(selected) * 0.299f
-                    + Color.green(selected) * 0.587f
-                    + Color.blue(selected) * 0.114f);
-            sampleTitle.setTextColor(luminance < 135 ? Color.WHITE : ON_SURFACE);
         };
 
         for (int i = 0; i < captions.length; i++) {
@@ -1960,23 +1970,45 @@ screenTitle.setText("הגדרות");
             control.addView(bar, new LinearLayout.LayoutParams(-1, dp(38)));
             LinearLayout.LayoutParams controlParams =
                     new LinearLayout.LayoutParams(-1, -2);
-            if (i > 0) controlParams.topMargin = dp(3);
+            if (i > 0) controlParams.topMargin = dp(4);
             panel.addView(control, controlParams);
         }
 
-        AlertDialog dialog = new AlertDialog.Builder(this)
-                .setTitle("בחירת צבע מותאם אישית")
-                .setView(panel)
-                .setNegativeButton("ביטול", null)
-                .setPositiveButton("שמירה", null)
-                .create();
-        dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_POSITIVE)
-                .setOnClickListener(v -> {
-                    int selected = Color.HSVToColor(hsv);
-                    persistOption(key, String.format(Locale.US, "#%08X", selected));
-                    preview.setBackground(makeCustomColorDot(selected));
-                    dialog.dismiss();
-                }));
+        LinearLayout actions = new LinearLayout(this);
+        actions.setOrientation(LinearLayout.HORIZONTAL);
+        actions.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        actions.setGravity(Gravity.CENTER_VERTICAL);
+        TextView save = textView("שמירה", 14, Color.rgb(7, 31, 49));
+        save.setGravity(Gravity.CENTER);
+        save.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD));
+        save.setBackground(roundOutline(ACCENT, dp(10), ACCENT));
+        save.setClickable(true);
+        save.setFocusable(true);
+        TextView cancel = textView("ביטול", 14, ON_SURFACE);
+        cancel.setGravity(Gravity.CENTER);
+        cancel.setBackground(roundOutline(CONTROL_SURFACE, dp(10), OUTLINE));
+        cancel.setClickable(true);
+        cancel.setFocusable(true);
+        LinearLayout.LayoutParams actionButtonParams =
+                new LinearLayout.LayoutParams(0, dp(42), 1f);
+        actions.addView(save, actionButtonParams);
+        LinearLayout.LayoutParams cancelParams =
+                new LinearLayout.LayoutParams(0, dp(42), 1f);
+        cancelParams.rightMargin = dp(9);
+        actions.addView(cancel, cancelParams);
+        LinearLayout.LayoutParams actionsParams =
+                new LinearLayout.LayoutParams(-1, dp(42));
+        actionsParams.topMargin = dp(12);
+        panel.addView(actions, actionsParams);
+
+        AlertDialog dialog = new AlertDialog.Builder(this).setView(panel).create();
+        save.setOnClickListener(v -> {
+            int selected = Color.HSVToColor(hsv);
+            persistOption(key, String.format(Locale.US, "#%08X", selected));
+            preview.setBackground(makeCustomColorDot(selected));
+            dialog.dismiss();
+        });
+        cancel.setOnClickListener(v -> dialog.dismiss());
         dialog.show();
         Window window = dialog.getWindow();
         if (window != null) {
@@ -1984,7 +2016,7 @@ screenTitle.setText("הגדרות");
             int screenHeight = getResources().getDisplayMetrics().heightPixels;
             window.setLayout(Math.min(dp(390),
                     getResources().getDisplayMetrics().widthPixels - dp(36)),
-                    Math.min(dp(380), Math.max(dp(250), screenHeight - dp(120))));
+                    Math.min(dp(430), Math.max(dp(300), screenHeight - dp(100))));
         }
     }
 
@@ -2166,7 +2198,7 @@ screenTitle.setText("הגדרות");
         if ("showPlayerOnlyAtStart".equals(key)) return "circle-play";
         if ("showDetails".equals(key)) return "artist";
         if ("playerControlsDisplayMode".equals(key)) return "progress-time-digital";
-        if ("chargingBatteryDisplayMode".equals(key)) return "icon-battery-percent";
+        if ("chargingBatteryDisplayMode".equals(key)) return "battery-medium";
         if ("playerSize".equals(key)) return "player-size-resize";
         if ("playerPosition".equals(key)) return "panel-bottom";
         if ("frameEnabled".equals(key)) return "frame-dashed";
