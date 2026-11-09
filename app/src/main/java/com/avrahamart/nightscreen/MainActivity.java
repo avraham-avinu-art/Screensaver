@@ -126,9 +126,12 @@ public class MainActivity extends Activity {
             String action = intent.getAction();
             if (Intent.ACTION_POWER_CONNECTED.equals(action)
                     || Intent.ACTION_POWER_DISCONNECTED.equals(action)) {
+                updateChargingBatteryDisplay();
                 if (getBool("noShutdownWhileCharging", false)) {
                     scheduleAutoOff(true);
                 }
+            } else if (Intent.ACTION_BATTERY_CHANGED.equals(action)) {
+                updateChargingBatteryDisplay();
             } else if (Intent.ACTION_TIME_TICK.equals(action)
                     || Intent.ACTION_TIME_CHANGED.equals(action)
                     || Intent.ACTION_DATE_CHANGED.equals(action)
@@ -176,6 +179,8 @@ public class MainActivity extends Activity {
             new SimpleDateFormat("dd.MM.yyyy", Locale.US);
 
     private TextView timeText;
+    private AnalogClockView analogClockView;
+    private BatteryChargeIndicatorView chargingBatteryView;
 
     private TextView gregorianText;
     private TextView hebrewText;
@@ -589,6 +594,11 @@ public class MainActivity extends Activity {
         timeText.setIncludeFontPadding(false);
         clockBlock.addView(timeText, new LinearLayout.LayoutParams(-1, initialClockHeight));
 
+        analogClockView = new AnalogClockView(this);
+        analogClockView.setVisibility(View.GONE);
+        clockBlock.addView(analogClockView,
+                new LinearLayout.LayoutParams(dp(120), dp(120)));
+
         gregorianText = clockDateTextView("", 22, dateTextColor);
         gregorianText.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         gregorianText.setGravity(Gravity.CENTER);
@@ -607,6 +617,13 @@ public class MainActivity extends Activity {
         hebrewText.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         hebrewText.setIncludeFontPadding(false);
         clockBlock.addView(hebrewText, new LinearLayout.LayoutParams(-1, initialDateHeight));
+
+        chargingBatteryView = new BatteryChargeIndicatorView(this);
+        chargingBatteryView.setVisibility(View.GONE);
+        LinearLayout.LayoutParams chargingBatteryParams =
+                new LinearLayout.LayoutParams(-2, dp(28));
+        chargingBatteryParams.topMargin = dp(5);
+        clockBlock.addView(chargingBatteryView, chargingBatteryParams);
 
         int initialClockBlockHeight = initialClockHeight + initialDateHeight * 2
                 + dp(dateClockGapDp(initialClockSize)) + dp(2);
@@ -945,7 +962,11 @@ public class MainActivity extends Activity {
         e.putString("timeFormat", selectedTimeFormat);
         e.putString("backgroundStyle", getString("backgroundStyle", "solid"));
         e.putString("clockDatePosition", getString("clockDatePosition", "upper"));
+        e.putString("clockDisplayMode", getString("clockDisplayMode", "digital"));
+        e.putString("clockDialStyle", getString("clockDialStyle", "classic"));
         e.putString("playerPosition", getString("playerPosition", "bottom"));
+        e.putString("chargingBatteryDisplayMode",
+                getString("chargingBatteryDisplayMode", "off"));
         e.putBoolean("nightModeEnabled", getBool("nightModeEnabled", false));
         e.putBoolean("batteryProtectionEnabled", getBool("batteryProtectionEnabled", false));
         boolean chargeMethodDefaultApplied =
@@ -1273,6 +1294,21 @@ public class MainActivity extends Activity {
         timeText.setFontFeatureSettings(fontFeatures);
 
         int effectiveClockSize = effectiveClockDateSize(fontFamily, clockDateSize);
+        boolean analogClock = "analog".equals(getString("clockDisplayMode", "digital"));
+        int analogClockDiameter = Math.max(dp(96),
+                Math.round(dp(effectiveClockSize * 1.30f)));
+        if (analogClockView != null) {
+            analogClockView.setDialStyle(getString("clockDialStyle", "classic"));
+            analogClockView.setColors(color, getScreenBackgroundColor());
+            analogClockView.setVisibility(analogClock ? View.VISIBLE : View.GONE);
+            ViewGroup.LayoutParams analogParams = analogClockView.getLayoutParams();
+            if (analogParams != null) {
+                analogParams.width = analogClock ? analogClockDiameter : 0;
+                analogParams.height = analogClock ? analogClockDiameter : 0;
+                analogClockView.setLayoutParams(analogParams);
+            }
+        }
+        if (timeText != null) timeText.setVisibility(analogClock ? View.GONE : View.VISIBLE);
         float dateSize = dateTextSizeForClockPreset(effectiveClockSize);
         float clockDisplaySize = effectiveClockSize;
         gregorianText.setTextSize(dateSize);
@@ -1294,8 +1330,9 @@ public class MainActivity extends Activity {
         // taller than its digits, even when both rows share the same nominal font size.
         // Use complete font metrics for the clock row, not only painted glyph bounds.
         // Centering and clipping can occur when this row is shorter than the font metrics.
-        int clockH = Math.max(dp(62), measuredLineHeight(
-                timeText, "0123456789:00", 2, effectiveClockSize));
+        int clockH = analogClock ? analogClockDiameter
+                : Math.max(dp(62), measuredLineHeight(
+                        timeText, "0123456789:00", 2, effectiveClockSize));
         int gregorianH = Math.max(dateRowHeightForClockPreset(effectiveClockSize),
                 measuredLineHeight(gregorianText, "יום ה׳ · 22.10.2026", 0, 24));
         int hebrewH = Math.max(dateRowHeightForClockPreset(effectiveClockSize),
@@ -1311,10 +1348,11 @@ public class MainActivity extends Activity {
         int gregorianTopMargin = 0;
         int hebrewTopMargin = 0;
         if (showGregorian) {
-            gregorianTopMargin = visualGapMarginPx(
-                    timeText, clockH, "0123456789:00",
-                    gregorianText, gregorianH, "יום ה׳ · 22.10.2026",
-                    clockToDateGapPx);
+            gregorianTopMargin = analogClock ? clockToDateGapPx
+                    : visualGapMarginPx(
+                            timeText, clockH, "0123456789:00",
+                            gregorianText, gregorianH, "יום ה׳ · 22.10.2026",
+                            clockToDateGapPx);
         }
         if (showHebrew) {
             if (showGregorian) {
@@ -1322,6 +1360,8 @@ public class MainActivity extends Activity {
                         gregorianText, gregorianH, "יום ה׳ · 22.10.2026",
                         hebrewText, hebrewH, "כ״ט בתשרי תשפ״ז אבגדהוזחטיכלמנסעפצקרשת",
                         dateToDateGapPx);
+            } else if (analogClock) {
+                hebrewTopMargin = clockToDateGapPx;
             } else {
                 hebrewTopMargin = visualGapMarginPx(
                         timeText, clockH, "0123456789:00",
@@ -1331,7 +1371,7 @@ public class MainActivity extends Activity {
         }
 
         LinearLayout.LayoutParams tp = (LinearLayout.LayoutParams) timeText.getLayoutParams();
-        tp.height = clockH;
+        tp.height = analogClock ? 0 : clockH;
         timeText.setLayoutParams(tp);
         LinearLayout.LayoutParams gp = (LinearLayout.LayoutParams) gregorianText.getLayoutParams();
         gp.height = gregorianH;
@@ -1346,11 +1386,16 @@ public class MainActivity extends Activity {
         if (clockParent instanceof LinearLayout) {
             LinearLayout cb = (LinearLayout) clockParent;
             FrameLayout.LayoutParams cp = (FrameLayout.LayoutParams) cb.getLayoutParams();
+            updateChargingBatteryDisplay();
             int dateRowsHeight = (showGregorian ? gregorianH : 0)
                     + (showHebrew ? hebrewH : 0);
             int visibleMargins = (showGregorian ? gregorianTopMargin : 0)
                     + (showHebrew ? hebrewTopMargin : 0);
+            int batteryRowHeight = chargingBatteryView != null
+                    && chargingBatteryView.getVisibility() == View.VISIBLE ? dp(28) : 0;
+            int batteryRowMargin = batteryRowHeight > 0 ? dp(5) : 0;
             cp.height = clockH + dateRowsHeight + visibleMargins
+                    + batteryRowHeight + batteryRowMargin
                     + (visibleDates > 0 ? dp(2) : 0);
             cb.setLayoutParams(cp);
             cb.requestLayout();
@@ -2194,6 +2239,7 @@ public class MainActivity extends Activity {
         IntentFilter filter = new IntentFilter();
         filter.addAction(Intent.ACTION_POWER_CONNECTED);
         filter.addAction(Intent.ACTION_POWER_DISCONNECTED);
+        filter.addAction(Intent.ACTION_BATTERY_CHANGED);
         filter.addAction(Intent.ACTION_SCREEN_ON);
         filter.addAction(Intent.ACTION_SCREEN_OFF);
         filter.addAction(Intent.ACTION_TIME_TICK);
@@ -2456,6 +2502,10 @@ public class MainActivity extends Activity {
         if (!formattedTime.contentEquals(timeText.getText())) {
             timeText.setText(formattedTime);
         }
+        if (analogClockView != null) {
+            analogClockView.setTime(now.get(Calendar.HOUR_OF_DAY), now.get(Calendar.MINUTE));
+        }
+        updateChargingBatteryDisplay();
 
         String formattedGregorianDate = hebrewWeekday() + " "
                 + formattedGregorianDateValue();
