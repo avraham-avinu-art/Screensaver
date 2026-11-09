@@ -642,6 +642,9 @@ screenTitle.setText("הגדרות");
     }
 
     private void buildAdvancedSettings() {
+        if (!prefs.contains("batteryProtectionThreshold")) {
+            prefs.edit().putInt("batteryProtectionThreshold", 20).apply();
+        }
         addCheck(content, "הגנה אוטומטית בסוללה חלשה או בחימום",
                 "batteryProtectionEnabled", false);
         addDiscreteSlider(content, "סף סוללה להפעלת ההגנה",
