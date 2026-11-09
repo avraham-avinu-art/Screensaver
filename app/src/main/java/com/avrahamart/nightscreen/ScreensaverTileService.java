@@ -49,6 +49,8 @@ public class ScreensaverTileService extends TileService {
     private void updateTileState() {
         Tile tile = getQsTile();
         if (tile == null) return;
+        tile.setLabel("שומר מסך");
+        tile.setContentDescription("הפעלה או סיום של שומר המסך");
         tile.setState(MainActivity.isMainActivityResumed()
                 ? Tile.STATE_ACTIVE : Tile.STATE_INACTIVE);
         tile.updateTile();
