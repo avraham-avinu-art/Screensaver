@@ -47,7 +47,7 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
         }
 
         if (Intent.ACTION_POWER_CONNECTED.equals(action)) {
-            if (prefs.getBoolean("useAndroidDreamForCharging", false)
+            if (prefs.getBoolean("useAndroidDreamForCharging", true)
                     || !prefs.getBoolean("autoStartOnCharge", false)) return;
             if (!canLaunchFromBackground(context)) return;
             if (!claimPowerConnectedEvent(context)) return;
