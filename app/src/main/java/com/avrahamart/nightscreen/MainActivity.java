@@ -209,6 +209,15 @@ public class MainActivity extends Activity {
     private long currentMediaDurationMs = 0L;
     private boolean lastPlaybackWasActive = false;
     private boolean lastPlayerIntroOnlySetting = false;
+    private String lastPlayerControlsDisplayMode = "on";
+    private boolean playerControlsIntroWindowVisible = false;
+    private long playerControlsIntroWindowDeadlineElapsedRealtime = 0L;
+    private final Runnable hidePlayerControlsIntroWindowRunnable = () -> {
+        playerControlsIntroWindowVisible = false;
+        playerControlsIntroWindowDeadlineElapsedRealtime = 0L;
+        if (mediaController != null) renderMediaMirror();
+        refreshMediaHolderPosition();
+    };
 
     private boolean playerIntroWindowVisible = false;
     private long playerIntroWindowDeadlineElapsedRealtime = 0L;
@@ -257,8 +266,7 @@ public class MainActivity extends Activity {
     private final Runnable hideProgressRowAfterMetadataChange = () -> {
         progressHidePending = false;
         if (mediaProgressRow == null) return;
-        if (!getBool("showProgress", true) || !arePlayerControlsVisible()
-                || getCurrentMediaDuration() <= 0L) {
+        if (!arePlayerControlsVisible() || getCurrentMediaDuration() <= 0L) {
             setProgressRowVisible(false);
         } else {
             setProgressRowVisible(true);
@@ -985,13 +993,18 @@ public class MainActivity extends Activity {
         }
         e.putBoolean("showPlayer", showPlayerSetting);
         e.putBoolean("showDetails", getBool("showDetails", true));
-        e.putBoolean("showProgress", getBool("showProgress", true));
+        if (!prefs.contains("playerControlsDisplayMode")) {
+            e.putString("playerControlsDisplayMode",
+                    getBool("showProgress", true) ? "on" : "off");
+        }
+        e.remove("showProgress");
+        e.putString("chargingBatteryDisplayMode",
+                getString("chargingBatteryDisplayMode", "off"));
         lastTitle = getString("lastTitle", lastTitle);
         lastArtist = getString("lastArtist", lastArtist);
 
         if (!getBool("referenceLayoutV3Applied", false)) {
             e.putBoolean("showDetails", getBool("showDetails", true));
-            e.putBoolean("showProgress", true);
             e.putBoolean("frameEnabled", false);
             e.putBoolean("referenceLayoutV3Applied", true);
         } else if (!getBool("referenceLayoutV2Applied", false)) {
@@ -2863,9 +2876,8 @@ public class MainActivity extends Activity {
             if (artistChanged && showDetails && !lastArtist.isEmpty()) {
                 mediaDetails.post(() -> updateArtistMarqueeIfNeeded());
             }
-            boolean showProgressSetting = getBool("showProgress", true)
-                    && arePlayerControlsVisible();
-            if (!showProgressSetting) {
+            boolean controlsVisible = arePlayerControlsVisible();
+            if (!controlsVisible) {
                 // With the progress row disabled, no periodic progress work is needed.
                 stopMediaProgressTicker();
                 handler.removeCallbacks(hideProgressRowAfterMetadataChange);
@@ -2885,8 +2897,7 @@ public class MainActivity extends Activity {
             } else {
                 setProgressRowVisible(false);
             }
-            boolean controlsVisible = getBool("showProgress", true)
-                    && arePlayerControlsVisible();
+            controlsVisible = arePlayerControlsVisible();
             if (mediaControlsHolder != null) {
                 mediaControlsHolder.setVisibility(controlsVisible ? View.VISIBLE : View.GONE);
             }
@@ -2940,7 +2951,22 @@ public class MainActivity extends Activity {
 
     
     private boolean arePlayerControlsVisible() {
-        return true;
+        String mode = getString("playerControlsDisplayMode", "on");
+        if ("off".equals(mode)) return false;
+        if (!"start".equals(mode)) return true;
+        return playerControlsIntroWindowVisible
+                && SystemClock.elapsedRealtime()
+                < playerControlsIntroWindowDeadlineElapsedRealtime;
+    }
+
+    private void startPlayerControlsIntroWindow(long durationMs) {
+        if (!"start".equals(getString("playerControlsDisplayMode", "on"))) return;
+        long delay = Math.max(1L, durationMs);
+        playerControlsIntroWindowVisible = true;
+        playerControlsIntroWindowDeadlineElapsedRealtime =
+                SystemClock.elapsedRealtime() + delay;
+        handler.removeCallbacks(hidePlayerControlsIntroWindowRunnable);
+        handler.postDelayed(hidePlayerControlsIntroWindowRunnable, delay);
     }
 
     
@@ -2958,6 +2984,9 @@ public class MainActivity extends Activity {
         boolean playbackJustStarted = playbackActive && !lastPlaybackWasActive;
         boolean introOnly = getBool("showPlayerOnlyAtStart", false);
         boolean introOnlyJustEnabled = introOnly && !lastPlayerIntroOnlySetting;
+        String controlsMode = getString("playerControlsDisplayMode", "on");
+        boolean controlsModeJustEnabled = "start".equals(controlsMode)
+                && !"start".equals(lastPlayerControlsDisplayMode);
 
         if (!introOnly) {
             handler.removeCallbacks(hidePlayerIntroWindowRunnable);
@@ -2974,10 +3003,24 @@ public class MainActivity extends Activity {
             startPlayerIntroWindow(PLAYER_START_WINDOW_MS - Math.max(0L, positionMs));
         }
 
+        if (!"start".equals(controlsMode)) {
+            handler.removeCallbacks(hidePlayerControlsIntroWindowRunnable);
+            playerControlsIntroWindowVisible = !"off".equals(controlsMode);
+            playerControlsIntroWindowDeadlineElapsedRealtime = 0L;
+        } else if (playbackActive && (trackChanged || repeatedOrRestartedTrack)) {
+            startPlayerControlsIntroWindow(PLAYER_START_WINDOW_MS);
+        } else if (playbackActive
+                && (firstObservedTrack || playbackJustStarted || controlsModeJustEnabled)
+                && positionMs < PLAYER_START_WINDOW_MS) {
+            startPlayerControlsIntroWindow(
+                    PLAYER_START_WINDOW_MS - Math.max(0L, positionMs));
+        }
+
         lastObservedTrackIdentity = trackIdentity;
         lastObservedTrackPositionMs = positionMs;
         lastPlaybackWasActive = playbackActive;
         lastPlayerIntroOnlySetting = introOnly;
+        lastPlayerControlsDisplayMode = controlsMode;
     }
 
     private void startPlayerIntroWindow(long durationMs) {
@@ -3008,7 +3051,7 @@ public class MainActivity extends Activity {
             stopTitleMarquee();
             stopArtistMarquee();
             stopMediaProgressTicker();
-        } else if (getBool("showProgress", true) && arePlayerControlsVisible()) {
+        } else if (arePlayerControlsVisible()) {
             scheduleMediaProgressTicker();
         } else {
             stopMediaProgressTicker();
@@ -3017,7 +3060,7 @@ public class MainActivity extends Activity {
 
     private boolean isMediaProgressPollingEnabled() {
         if (!mainActivityResumed || !getBool("showPlayer", false)
-                || !getBool("showProgress", true) || !arePlayerControlsVisible()
+                || !arePlayerControlsVisible()
                 || mediaMirror == null || mediaMirror.getVisibility() != View.VISIBLE
                 || mediaController == null) return false;
         try {
@@ -3057,7 +3100,7 @@ public class MainActivity extends Activity {
         if (state == null || mediaCurrentText == null
                 || mediaTotalText == null || mediaSeekBar == null) return;
         duration = Math.max(0L, duration);
-        if (duration <= 0L || !getBool("showProgress", true)) {
+        if (duration <= 0L || !arePlayerControlsVisible()) {
             setProgressRowVisible(false);
             return;
         }
