@@ -417,8 +417,13 @@ public class MainActivity extends Activity {
         // Showing above Keyguard is controlled exclusively by the explicit
         // "continue on lock screen" setting. Neither the lock-prevention policy
         // nor the event that launched the Activity may override an opt-out.
-        boolean showAboveExistingKeyguard = getBool("continueOnLockScreen", false)
-                && (openedByDeviceLock || lockScreenContinuationArmed);
+        // An explicit auto-start caused by the device-lock event is an
+        // independent feature and must work even when post-timeout continuation
+        // is disabled. Only continuation after a later screen-off is gated by
+        // the "continue on lock screen" preference.
+        boolean showAboveExistingKeyguard = openedByDeviceLock
+                || (getBool("continueOnLockScreen", false)
+                    && lockScreenContinuationArmed);
 
         if (Build.VERSION.SDK_INT >= 27) {
             setShowWhenLocked(showAboveExistingKeyguard);
