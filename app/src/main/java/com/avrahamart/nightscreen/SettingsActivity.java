@@ -659,12 +659,10 @@ screenTitle.setText("הגדרות");
         java.util.Map<String, CharSequence> labels = new java.util.TreeMap<>(
                 (left, right) -> {
                     try {
-                        return android.text.TextUtils.getStringOrSpannedString(
-                                getPackageManager().getApplicationLabel(
-                                        getPackageManager().getApplicationInfo(left, 0)))
-                                .toString().compareToIgnoreCase(
-                                getPackageManager().getApplicationLabel(
-                                        getPackageManager().getApplicationInfo(right, 0)).toString());
+                        return getPackageManager().getApplicationLabel(
+                                getPackageManager().getApplicationInfo(left, 0)).toString()
+                                .compareToIgnoreCase(getPackageManager().getApplicationLabel(
+                                getPackageManager().getApplicationInfo(right, 0)).toString());
                     } catch (Throwable ignored) {
                         return left.compareToIgnoreCase(right);
                     }
