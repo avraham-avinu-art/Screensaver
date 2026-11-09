@@ -1371,6 +1371,7 @@ screenTitle.setText("הגדרות");
                 } else if (getBool("autoStartOnCharge", false)
                         && Build.VERSION.SDK_INT >= 29
                         && !Settings.canDrawOverlays(this)) {
+                    openingSystemSettingsForAutoStart = true;
                     prefs.edit().putBoolean("autoStartOverlayPermissionPending", true).apply();
                     requestChargerOverlayPermission();
                 }
@@ -1466,7 +1467,8 @@ screenTitle.setText("הגדרות");
             // Do not open two Android permission/settings screens at the same time.
             // If an external settings screen was opened above, onResume() requests
             // the notification permission after the user returns.
-            if (!openingSystemSettingsForAutoStart) {
+            if (!openingSystemSettingsForAutoStart
+                    && (isAutoStartSetting(key) || "useAndroidDreamForCharging".equals(key))) {
                 ensureAutoStartNotificationPermission();
             }
         });
