@@ -749,6 +749,32 @@ screenTitle.setText("הגדרות");
         diagnosticText.setLineSpacing(dp(4), 1f);
         diagnosticText.setIncludeFontPadding(false);
         diagnosticsCard.addView(diagnosticText, new LinearLayout.LayoutParams(-1, -2));
+
+        LinearLayout dreamCard = addCard(content, "שומר מסך של Android");
+        TextView dreamDescription = textView(
+                "אפשר לרשום את שומר מסך גם ברשימת שומרי המסך של Android. מצב זה נוסף כאפשרות משלימה ואינו מחליף את מנגנוני ההפעלה האוטומטית הקיימים.",
+                14, MUTED);
+        dreamDescription.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        dreamDescription.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
+        dreamDescription.setTextDirection(View.TEXT_DIRECTION_RTL);
+        dreamDescription.setLineSpacing(dp(3), 1f);
+        dreamDescription.setIncludeFontPadding(false);
+        dreamCard.addView(dreamDescription, new LinearLayout.LayoutParams(-1, -2));
+        Button dreamSettingsButton = makeActionButton("פתיחת הגדרות שומר המסך של Android");
+        LinearLayout.LayoutParams dreamButtonParams = new LinearLayout.LayoutParams(-1, dp(42));
+        dreamButtonParams.topMargin = dp(10);
+        dreamCard.addView(dreamSettingsButton, dreamButtonParams);
+        dreamSettingsButton.setOnClickListener(v -> {
+            try {
+                startActivity(new Intent(Settings.ACTION_DREAM_SETTINGS));
+            } catch (ActivityNotFoundException ignored) {
+                AppToast.makeText(this, "הגדרת שומרי מסך אינה זמינה במכשיר זה.",
+                        Toast.LENGTH_LONG).show();
+            } catch (Throwable ignored) {
+                AppToast.makeText(this, "לא ניתן לפתוח את הגדרות שומר המסך במכשיר זה.",
+                        Toast.LENGTH_LONG).show();
+            }
+        });
     }
 
     private String settingsGroupTitleFor(String key) {
