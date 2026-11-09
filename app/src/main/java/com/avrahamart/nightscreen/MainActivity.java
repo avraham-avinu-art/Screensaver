@@ -1799,6 +1799,64 @@ public class MainActivity extends Activity {
     }
 
     
+    private static final class CenterCropBitmapDrawable
+            extends android.graphics.drawable.Drawable {
+        private final android.graphics.Bitmap bitmap;
+        private final android.graphics.BitmapShader shader;
+        private final android.graphics.Paint paint =
+                new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG
+                        | android.graphics.Paint.FILTER_BITMAP_FLAG);
+        private final android.graphics.Matrix matrix = new android.graphics.Matrix();
+
+        CenterCropBitmapDrawable(android.graphics.Bitmap bitmap) {
+            this.bitmap = bitmap;
+            shader = new android.graphics.BitmapShader(bitmap,
+                    android.graphics.Shader.TileMode.CLAMP,
+                    android.graphics.Shader.TileMode.CLAMP);
+            paint.setShader(shader);
+        }
+
+        @Override
+        protected void onBoundsChange(android.graphics.Rect bounds) {
+            if (bitmap == null || bounds.width() <= 0 || bounds.height() <= 0) return;
+            float scale = Math.max(
+                    bounds.width() / (float) bitmap.getWidth(),
+                    bounds.height() / (float) bitmap.getHeight());
+            float scaledWidth = bitmap.getWidth() * scale;
+            float scaledHeight = bitmap.getHeight() * scale;
+            float dx = bounds.left + (bounds.width() - scaledWidth) * 0.5f;
+            float dy = bounds.top + (bounds.height() - scaledHeight) * 0.5f;
+            matrix.setScale(scale, scale);
+            matrix.postTranslate(dx, dy);
+            shader.setLocalMatrix(matrix);
+        }
+
+        @Override
+        public void draw(android.graphics.Canvas canvas) {
+            android.graphics.Rect bounds = getBounds();
+            if (bounds.width() > 0 && bounds.height() > 0) {
+                canvas.drawRect(bounds, paint);
+            }
+        }
+
+        @Override
+        public void setAlpha(int alpha) {
+            paint.setAlpha(Math.max(0, Math.min(255, alpha)));
+            invalidateSelf();
+        }
+
+        @Override
+        public void setColorFilter(android.graphics.ColorFilter colorFilter) {
+            paint.setColorFilter(colorFilter);
+            invalidateSelf();
+        }
+
+        @Override
+        public int getOpacity() {
+            return android.graphics.PixelFormat.TRANSLUCENT;
+        }
+    }
+
     private void applyMediaFrame(boolean hasActiveSong) {
         if (mediaMirror == null) return;
         boolean enabled = getBool("frameEnabled", false) && hasActiveSong;
@@ -1826,12 +1884,10 @@ public class MainActivity extends Activity {
             boolean useAlbumArt = getBool("frameUseAlbumArt", true)
                     && currentAlbumArt != null && !currentAlbumArt.isRecycled();
             if (useAlbumArt) {
-                android.graphics.drawable.BitmapDrawable artworkLayer =
-                        new android.graphics.drawable.BitmapDrawable(
-                                getResources(), currentAlbumArt);
-                // Crop the album artwork into the existing frame bounds; the bitmap
-                // must never participate in measuring or expanding the media frame.
-                artworkLayer.setGravity(Gravity.CENTER_CROP);
+                // Draw album art as a center-cropped shader inside the already measured
+                // frame bounds. The source bitmap never affects the frame dimensions.
+                CenterCropBitmapDrawable artworkLayer =
+                        new CenterCropBitmapDrawable(currentAlbumArt);
                 artworkLayer.setAlpha(185);
                 GradientDrawable textScrim = new GradientDrawable();
                 textScrim.setColor(Color.argb(126, 9, 19, 33));
