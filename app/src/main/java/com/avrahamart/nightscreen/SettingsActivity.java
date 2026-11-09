@@ -1020,7 +1020,7 @@ screenTitle.setText("הגדרות");
         if ("playerDisplayMode".equals(key)) return "הצגת נגן המערכת בזמן שהוא פועל";
         if ("showPlayerOnlyAtStart".equals(key)) return "הצגת הנגן רק בתחילת כל שיר";
         if ("showDetails".equals(key)) return "כשמופיע בפרטי השיר את שם האמן, הצגת שם האמן מעל שם השיר";
-        if ("playerControlsDisplayMode".equals(key)) return "בחירת אופן הצגת שורת המיקום, זמני השיר ולחצני השליטה: תמיד, או למשך 6 שניות בתחילת כל שיר";
+        if ("playerControlsDisplayMode".equals(key)) return "בחירת אופן הצגת שורת המיקום, זמני השיר ולחצני השליטה: תמיד, בתחילת כל שיר או כבוי";
         if ("chargingBatteryDisplayMode".equals(key)) return "בחירת האופן שבו תוצג רמת הסוללה כל עוד המכשיר מחובר לטעינה";
         if ("clockHorizontalOffset".equals(key)) return "הזזת כל תצוגת השעון והתאריך ימינה או שמאלה";
         if ("playerHorizontalOffset".equals(key)) return "הזזת הנגן ימינה או שמאלה";
