@@ -35,16 +35,11 @@ public final class LockScreenMonitorService extends Service {
     static boolean isMonitoringAllowed(Context context) {
         SharedPreferences prefs = context.getApplicationContext()
                 .getSharedPreferences("settings", Context.MODE_PRIVATE);
-        boolean monitorLock = prefs.getBoolean("autoStartOnDeviceLock", false);
-        boolean monitorWake = prefs.getBoolean("autoStartOnWake", false);
-        boolean appHandlesCharging = prefs.getBoolean("autoStartOnCharge", false)
-                && !prefs.getBoolean("useAndroidDreamForCharging", true)
-                && !NightScreenApplication.hasNotificationAccess(context);
-
-        // Boot is handled by LockScreenBootReceiver and does not need a resident
-        // service. Android Dream or the notification-listener process owns charging
-        // in those modes; this service runs only for events it actually monitors.
-        boolean enabled = monitorLock || monitorWake || appHandlesCharging;
+        boolean enabled = AutoStartPolicy.needsMonitorService(
+                prefs.getBoolean("autoStartOnDeviceLock", false),
+                prefs.getBoolean("autoStartOnWake", false),
+                prefs.getBoolean("autoStartOnCharge", false),
+                prefs.getBoolean("useAndroidDreamForCharging", true));
         if (!enabled) return false;
 
         return Build.VERSION.SDK_INT < 29
@@ -97,20 +92,27 @@ public final class LockScreenMonitorService extends Service {
         lockReceiver = new AutoStartOnPowerReceiver();
         IntentFilter filter = new IntentFilter();
         SharedPreferences prefs = getSharedPreferences("settings", MODE_PRIVATE);
-        if (prefs.getBoolean("autoStartOnDeviceLock", false)) {
+        if (AutoStartPolicy.isEnabledForAction(
+                Intent.ACTION_SCREEN_OFF,
+                prefs.getBoolean("autoStartOnDeviceLock", false),
+                false, false, false, false)) {
             filter.addAction(Intent.ACTION_SCREEN_OFF);
             filter.addAction(Intent.ACTION_USER_PRESENT);
         }
-        if (prefs.getBoolean("autoStartOnWake", false)) {
+        if (AutoStartPolicy.isEnabledForAction(
+                Intent.ACTION_SCREEN_ON,
+                false, false,
+                prefs.getBoolean("autoStartOnWake", false),
+                false, false)) {
             filter.addAction(Intent.ACTION_SCREEN_ON);
         }
-        // Keep charger detection in this persistent process when no notification
-        // listener is available. Android Dream mode handles charging activation
-        // itself when the user selected it in system settings.
-        SharedPreferences currentPrefs = getSharedPreferences("settings", MODE_PRIVATE);
-        boolean appHandlesCharging = currentPrefs.getBoolean("autoStartOnCharge", false)
-                && !currentPrefs.getBoolean("useAndroidDreamForCharging", true);
-        if (appHandlesCharging && !NightScreenApplication.hasNotificationAccess(this)) {
+        // This service is the only app-managed charging listener. Android Dream
+        // owns that event when the system screensaver route is selected.
+        if (AutoStartPolicy.isEnabledForAction(
+                Intent.ACTION_POWER_CONNECTED,
+                false, false, false,
+                prefs.getBoolean("autoStartOnCharge", false),
+                prefs.getBoolean("useAndroidDreamForCharging", true))) {
             filter.addAction(Intent.ACTION_POWER_CONNECTED);
         }
         if (filter.countActions() == 0) {
