@@ -487,8 +487,12 @@ screenTitle.setText("הגדרות");
                 new String[]{"דק", "רגיל", "מודגש", "עבה"},
                 new String[]{"-1", "0", "1", "2"}, "fontWeight");
         addSegmentedChoices(content, "מיקום",
-                new String[]{"בראש המסך", "ברבע העליון", "במרכז המסך"},
-                new String[]{"top", "upper", "middle"}, "clockDatePosition");
+                new String[]{"בראש המסך", "ברבע העליון", "במרכז המסך", "מיקום מותאם"},
+                new String[]{"top", "upper", "middle", "custom"}, "clockDatePosition");
+        addDiscreteSlider(content, "מיקום אנכי מותאם",
+                new String[]{"0%", "10%", "20%", "30%", "40%", "50%", "60%", "70%", "80%", "90%"},
+                new String[]{"0", "10", "20", "30", "40", "50", "60", "70", "80", "90"},
+                "clockCustomVerticalPosition");
     }
 
 
@@ -593,6 +597,11 @@ screenTitle.setText("הגדרות");
                 new String[]{"#000000", "#142438", "#091321", "#12313A",
                         "#252B33", "#20362E", "#193740", "#303943"},
                 "screenBackgroundColor");
+        addSegmentedChoices(content, "סגנון הרקע",
+                new String[]{"אחיד", "מעבר צבע", "זוהר עדין", "הצללה"},
+                new String[]{"solid", "gradient", "glow", "vignette"}, "backgroundStyle");
+        addCheck(content, "רקע דינמי לפי עטיפת האלבום",
+                "dynamicAlbumBackgroundEnabled", false);
         addDiscreteSlider(content, "בהירות המסך",
                 new String[]{"לפי המכשיר", "25%", "50%", "75%", "100%"},
                 new String[]{"-1", "25", "50", "75", "100"}, "screenBrightness");
@@ -627,8 +636,13 @@ screenTitle.setText("הגדרות");
                 new String[]{"קטן", "בינוני", "גדול", "ענק"},
                 new String[]{"14", "17", "20", "23"}, "playerSize");
         addSegmentedChoices(content, "מיקום הנגן",
-                new String[]{"ברבע התחתון", "בתחתית המסך"},
-                new String[]{"lower", "bottom"}, "playerPosition");
+                new String[]{"ברבע התחתון", "בתחתית המסך", "מיקום מותאם"},
+                new String[]{"lower", "bottom", "custom"}, "playerPosition");
+        addDiscreteSlider(content, "מיקום אנכי מותאם לנגן",
+                new String[]{"0%", "10%", "20%", "30%", "40%", "50%", "60%", "70%", "80%", "90%"},
+                new String[]{"0", "10", "20", "30", "40", "50", "60", "70", "80", "90"},
+                "playerCustomVerticalPosition");
+        addCheck(content, "הצגת עטיפת האלבום", "showAlbumArt", true);
         addCheck(content, "הצג מסגרת", "frameEnabled", false);
         addColorChoices(content, "צבע מסגרת",
                 new String[]{"לבן", "כחול עדין", "כסף", "אפור", "אפור בהיר"},
@@ -645,6 +659,15 @@ screenTitle.setText("הגדרות");
         if (!prefs.contains("batteryProtectionThreshold")) {
             prefs.edit().putInt("batteryProtectionThreshold", 20).apply();
         }
+        addCheck(content, "מצב לילה אוטומטי", "nightModeEnabled", false);
+        String[] hourNames = new String[24];
+        String[] hourValues = new String[24];
+        for (int hour = 0; hour < 24; hour++) {
+            hourNames[hour] = String.format(java.util.Locale.US, "%02d:00", hour);
+            hourValues[hour] = String.valueOf(hour);
+        }
+        addSpinner(content, "שעת התחלת מצב לילה", hourNames, hourValues, "nightModeStartHour");
+        addSpinner(content, "שעת סיום מצב לילה", hourNames, hourValues, "nightModeEndHour");
         addCheck(content, "הגנה אוטומטית בסוללה חלשה או בחימום",
                 "batteryProtectionEnabled", false);
         addDiscreteSlider(content, "סף סוללה להפעלת ההגנה",
@@ -736,7 +759,8 @@ screenTitle.setText("הגדרות");
                 }
                 return "שומר מסך במצב טעינה";
             case CATEGORY_APPEARANCE:
-                if ("screenBackgroundColor".equals(key) || "screenBrightness".equals(key)) {
+                if ("screenBackgroundColor".equals(key) || "screenBrightness".equals(key)
+                        || "backgroundStyle".equals(key) || "dynamicAlbumBackgroundEnabled".equals(key)) {
                     return "התאמת מראה המסך";
                 }
                 return "גופן וצבע הטקסט";
@@ -747,6 +771,8 @@ screenTitle.setText("הגדרות");
                 }
                 return "הצגת הנגן";
             case CATEGORY_ADVANCED:
+                if ("nightModeEnabled".equals(key) || "nightModeStartHour".equals(key)
+                        || "nightModeEndHour".equals(key)) return "מצב לילה";
                 if ("batteryProtectionEnabled".equals(key)
                         || "batteryProtectionThreshold".equals(key)) return "הגנה על המכשיר";
                 return "אבחון ומידע טכני";
@@ -928,6 +954,14 @@ screenTitle.setText("הגדרות");
         if ("showDetails".equals(key)) return "כשמופיע בפרטי השיר את שם האמן, הצגת שם האמן מעל שם השיר";
         if ("showProgress".equals(key)) return "הצגת נגן מלא, כולל זמני השיר סרגל התקדמות ולחצני שליטה בנגן";
         if ("playerControlsTimeout".equals(key)) return "הצגת סרגל ההתקדמות ופקדי הנגן לזמן מוגדר לאחר תחילת שיר חדש; פרטי השיר יישארו מוצגים";
+        if ("clockCustomVerticalPosition".equals(key)) return "בחירת הגובה של מרכז השעון והתאריך ביחס לגובה המסך";
+        if ("playerCustomVerticalPosition".equals(key)) return "בחירת הגובה של מרכז הנגן ביחס לגובה המסך";
+        if ("backgroundStyle".equals(key)) return "בחירת אופן הצגת צבע הרקע";
+        if ("dynamicAlbumBackgroundEnabled".equals(key)) return "התאמת גווני הרקע לצבעים המרכזיים שבעטיפת האלבום בזמן נגינה";
+        if ("showAlbumArt".equals(key)) return "הצגת תמונת האלבום לצד פרטי השיר";
+        if ("nightModeEnabled".equals(key)) return "הפחתת בהירות מסך השומר מסך בשעות שנבחרו, בלי לשנות את בהירות המכשיר";
+        if ("nightModeStartHour".equals(key)) return "השעה שבה מצב לילה אוטומטי מתחיל";
+        if ("nightModeEndHour".equals(key)) return "השעה שבה מצב לילה אוטומטי מסתיים";
         if ("timeFormat".equals(key)) return "בחירת תצוגת 12 או 24 שעות, או שימוש בהגדרת המכשיר";
         if ("gregorianDateScale".equals(key)) return "התאמת גודל התאריך הלועזי בנפרד מגודל השעון";
         if ("hebrewDateScale".equals(key)) return "התאמת גודל התאריך העברי בנפרד מגודל השעון";
@@ -1739,7 +1773,10 @@ screenTitle.setText("הגדרות");
                 editor.putInt(key, colorValue(value));
             } else if ("fontWeight".equals(key) || "clockDateSize".equals(key)
                     || "gregorianDateScale".equals(key) || "hebrewDateScale".equals(key)
+                    || "clockCustomVerticalPosition".equals(key)
+                    || "playerCustomVerticalPosition".equals(key)
                     || "batteryProtectionThreshold".equals(key)
+                    || "nightModeStartHour".equals(key) || "nightModeEndHour".equals(key)
                     || "playerSize".equals(key) || "frameWidth".equals(key)
                     || "frameRadius".equals(key) || "screenBrightness".equals(key)) {
                 editor.putInt(key, Integer.parseInt(value));
@@ -2087,7 +2124,10 @@ screenTitle.setText("הגדרות");
             return -1;
         } else if ("fontWeight".equals(key) || "clockDateSize".equals(key)
                 || "gregorianDateScale".equals(key) || "hebrewDateScale".equals(key)
+                || "clockCustomVerticalPosition".equals(key)
+                || "playerCustomVerticalPosition".equals(key)
                 || "batteryProtectionThreshold".equals(key)
+                || "nightModeStartHour".equals(key) || "nightModeEndHour".equals(key)
                 || "playerSize".equals(key) || "frameWidth".equals(key)
                 || "frameRadius".equals(key) || "screenBrightness".equals(key)) {
             int fallback = "clockDateSize".equals(key) ? 84
