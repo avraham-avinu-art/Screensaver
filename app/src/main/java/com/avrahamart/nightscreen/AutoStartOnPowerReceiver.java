@@ -68,6 +68,9 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
         if (Intent.ACTION_SCREEN_OFF.equals(action)
                 && LockScreenMonitorService.isLockMonitoringActive()
                 && canLaunchFromBackground(context)) {
+            // SCREEN_OFF is only a cue to inspect the lock state, not a launch trigger.
+            // The delayed check below launches only if Android confirms the keyguard
+            // is actually locked; a display turning off without a device lock is ignored.
             // Let Android finish applying the keyguard state before checking it.
             PowerManager powerManager =
                     (PowerManager) context.getSystemService(Context.POWER_SERVICE);
