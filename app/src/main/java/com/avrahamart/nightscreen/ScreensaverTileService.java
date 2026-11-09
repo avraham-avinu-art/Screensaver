@@ -22,7 +22,7 @@ public class ScreensaverTileService extends TileService {
                     | Intent.FLAG_ACTIVITY_CLEAR_TOP
                     | Intent.FLAG_ACTIVITY_SINGLE_TOP);
             if (MainActivity.isMainActivitySessionAlive()) {
-                intent.setAction(MainActivity.ACTION_FINISH_FROM_NOTIFICATION);
+                intent.setAction(MainActivity.ACTION_FINISH_FROM_TILE);
             }
             try {
                 startActivityAndCollapse(intent);
