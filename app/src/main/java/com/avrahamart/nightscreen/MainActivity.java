@@ -5,6 +5,9 @@ import android.app.ActivityOptions;
 import android.app.PendingIntent;
 import android.animation.ObjectAnimator;
 import android.app.NotificationManager;
+import android.app.AppOpsManager;
+import android.app.usage.UsageEvents;
+import android.app.usage.UsageStatsManager;
 import android.app.admin.DevicePolicyManager;
 import android.content.SharedPreferences;
 import android.content.BroadcastReceiver;
@@ -55,6 +58,9 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.Collections;
 
 public class MainActivity extends Activity {
     private static final long PLAYER_START_WINDOW_MS = 6_000L;
@@ -427,6 +433,11 @@ public class MainActivity extends Activity {
         super.onResume();
         mainActivityResumed = true;
         mainActivityPausedByDeviceLock = false;
+        if (shouldPauseForExcludedForegroundApp()) {
+            mainActivityResumed = false;
+            finish();
+            return;
+        }
         String disabledFeatures =
                 PermissionDependencySync.disableFeaturesWithoutPermissions(this);
         if (!disabledFeatures.isEmpty()) {
@@ -3239,6 +3250,46 @@ public class MainActivity extends Activity {
         if (mediaSeekBar != null) mediaSeekBar.setVisibility(visibility);
         if (mediaCurrentText != null) mediaCurrentText.setVisibility(visibility);
         if (mediaTotalText != null) mediaTotalText.setVisibility(visibility);
+    }
+
+    private boolean shouldPauseForExcludedForegroundApp() {
+        if (!getBool("pauseWhenExcludedAppActive", false)) return false;
+        Set<String> excluded = new HashSet<>(prefs.getStringSet(
+                "excludedForegroundPackages", Collections.emptySet()));
+        if (excluded.isEmpty()) return false;
+        try {
+            AppOpsManager appOps = (AppOpsManager) getSystemService(APP_OPS_SERVICE);
+            if (appOps == null || appOps.checkOpNoThrow(
+                    AppOpsManager.OPSTR_GET_USAGE_STATS,
+                    android.os.Process.myUid(), getPackageName()) != AppOpsManager.MODE_ALLOWED) {
+                return false;
+            }
+            UsageStatsManager usage =
+                    (UsageStatsManager) getSystemService(USAGE_STATS_SERVICE);
+            if (usage == null) return false;
+            long nowMs = System.currentTimeMillis();
+            UsageEvents events = usage.queryEvents(nowMs - 30_000L, nowMs);
+            if (events == null) return false;
+            UsageEvents.Event event = new UsageEvents.Event();
+            String lastExternalPackage = null;
+            long lastExternalTime = 0L;
+            while (events.hasNextEvent()) {
+                events.getNextEvent(event);
+                int type = event.getEventType();
+                boolean foregroundEvent = type == UsageEvents.Event.MOVE_TO_FOREGROUND
+                        || (Build.VERSION.SDK_INT >= 29
+                        && type == UsageEvents.Event.ACTIVITY_RESUMED);
+                if (!foregroundEvent) continue;
+                String packageName = event.getPackageName();
+                if (packageName == null || packageName.equals(getPackageName())) continue;
+                lastExternalPackage = packageName;
+                lastExternalTime = event.getTimeStamp();
+            }
+            return lastExternalPackage != null && excluded.contains(lastExternalPackage)
+                    && nowMs - lastExternalTime <= 20_000L;
+        } catch (Throwable ignored) {
+            return false;
+        }
     }
 
     private boolean hasNotificationAccess() {
