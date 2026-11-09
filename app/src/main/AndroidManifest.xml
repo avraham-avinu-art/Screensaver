@@ -76,6 +76,11 @@
             android:exported="false" />
 
         <receiver
+            android:name=".ScreensaverNotificationActionReceiver"
+            android:enabled="true"
+            android:exported="false" />
+
+        <receiver
             android:name=".LockScreenBootReceiver"
             android:enabled="true"
             android:exported="true">
@@ -101,7 +106,7 @@
         <service
             android:name=".ScreensaverTileService"
             android:label="שומר מסך"
-            android:icon="@drawable/ic_launcher"
+            android:icon="@drawable/ic_qs_screensaver"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
             android:exported="true">
             <intent-filter>
