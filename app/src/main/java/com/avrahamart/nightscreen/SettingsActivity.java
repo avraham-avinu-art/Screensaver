@@ -1378,13 +1378,13 @@ screenTitle.setText("הגדרות");
             } else if ("autoStartOnCharge".equals(key)) {
                 if (checked && getBool("useAndroidDreamForCharging", true)) {
                     AppToast.makeText(this,
-                            "כדי להפעיל שומר מסך בטעינה דרך Android, בחר במסך הבא את "שומר מסך" והגדר הפעלה בזמן טעינה.",
+                            "כדי להפעיל שומר מסך בטעינה דרך Android, בחר במסך הבא את שומר מסך והגדר הפעלה בזמן טעינה.",
                             Toast.LENGTH_LONG).show();
                     try {
                         startActivity(new Intent(Settings.ACTION_DREAM_SETTINGS));
                     } catch (Throwable ignored) {
                         AppToast.makeText(this,
-                                "לא ניתן לפתוח את הגדרות שומר המסך של Android. בחר שם את "שומר מסך" והגדר הפעלה בזמן טעינה.",
+                                "לא ניתן לפתוח את הגדרות שומר המסך של Android. בחר שם את שומר מסך והגדר הפעלה בזמן טעינה.",
                                 Toast.LENGTH_LONG).show();
                     }
                 }
