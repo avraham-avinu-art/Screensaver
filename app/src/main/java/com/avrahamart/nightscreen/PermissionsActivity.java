@@ -157,7 +157,7 @@ public class PermissionsActivity extends Activity {
 
     private void addOverlayPermissionCard(LinearLayout parent) {
         LinearLayout card = makeCard(parent, "הרשאת תצוגה על אפליקציות",
-                "ההרשאה נדרשת להפעלה אוטומטית בטעינה, בנעילה, בהפעלת המכשיר ובהתעוררות ממצב שינה.");
+                "ההרשאה נדרשת להפעלה אוטומטית בטעינה ובנעילה.");
         overlayStatus = addStatus(card);
         overlayButton = addPermissionButton(card,
                 "הפעל הרשאת הצגה מעל אפליקציות", v -> {
