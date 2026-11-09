@@ -1026,8 +1026,6 @@ public class MainActivity extends Activity {
                     getBool("showProgress", true) ? "on" : "off");
         }
         e.remove("showProgress");
-        e.putString("chargingBatteryDisplayMode",
-                getString("chargingBatteryDisplayMode", "off"));
         lastTitle = getString("lastTitle", lastTitle);
         lastArtist = getString("lastArtist", lastArtist);
 
