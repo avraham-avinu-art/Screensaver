@@ -168,8 +168,8 @@ public final class LockScreenMonitorService extends Service {
         PendingIntent contentIntent = PendingIntent.getActivity(
                 this, NOTIFICATION_ID, launchIntent, pendingFlags);
 
-        // KeyMapper-style notification semantics: ongoing and silent, with an action
-        // that opens the app; it is not tied to the settings Activity lifecycle.
+        // The notification action disables automatic activation; it does not
+        // toggle or close the currently visible screensaver session.
         builder.setSmallIcon(R.drawable.ic_notification_transparent)
                 .setContentTitle("הפעלה אוטומטית בנעילת המכשיר")
                 .setContentText("שירות ההפעלה האוטומטית פעיל.")
@@ -189,7 +189,7 @@ public final class LockScreenMonitorService extends Service {
                 ScreensaverNotificationActionReceiver.class);
         PendingIntent togglePendingIntent = PendingIntent.getBroadcast(
                 this, NOTIFICATION_ID + 2, toggleIntent, pendingFlags);
-        builder.addAction(R.drawable.media_play, "הפעל / סיים", togglePendingIntent);
+        builder.addAction(R.drawable.icon_power_off, "ביטול הפעלה אוטומטית", togglePendingIntent);
         builder.addAction(R.drawable.icon_settings, "הגדרות", settingsPendingIntent);
         builder.setPriority(Notification.PRIORITY_LOW)
                 .setSound(null)
