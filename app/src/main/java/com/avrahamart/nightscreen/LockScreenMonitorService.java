@@ -35,24 +35,25 @@ public final class LockScreenMonitorService extends Service {
     static boolean isMonitoringAllowed(Context context) {
         SharedPreferences prefs = context.getApplicationContext()
                 .getSharedPreferences("settings", Context.MODE_PRIVATE);
-        boolean enabled = prefs.getBoolean("autoStartOnDeviceLock", false)
-                || prefs.getBoolean("autoStartOnWake", false)
-                || prefs.getBoolean("autoStartOnBoot", false)
-                || prefs.getBoolean("autoStartOnCharge", false);
+        boolean monitorLock = prefs.getBoolean("autoStartOnDeviceLock", false);
+        boolean monitorWake = prefs.getBoolean("autoStartOnWake", false);
+        boolean appHandlesCharging = prefs.getBoolean("autoStartOnCharge", false)
+                && !prefs.getBoolean("useAndroidDreamForCharging", true)
+                && !NightScreenApplication.hasNotificationAccess(context);
+
+        // Boot is handled by LockScreenBootReceiver and does not need a resident
+        // service. Android Dream or the notification-listener process owns charging
+        // in those modes; this service runs only for events it actually monitors.
+        boolean enabled = monitorLock || monitorWake || appHandlesCharging;
         if (!enabled) return false;
 
-        boolean overlayRequired = prefs.getBoolean("autoStartOnDeviceLock", false)
-                || prefs.getBoolean("autoStartOnWake", false)
-                || prefs.getBoolean("autoStartOnBoot", false)
-                || (prefs.getBoolean("autoStartOnCharge", false)
-                    && !prefs.getBoolean("useAndroidDreamForCharging", true));
-        return !overlayRequired || Build.VERSION.SDK_INT < 29
+        return Build.VERSION.SDK_INT < 29
                 || Settings.canDrawOverlays(context.getApplicationContext());
     }
 
     /**
-     * Starts the shared monitor service only when at least one independent
-     * automatic-start option is enabled and its own required permission exists.
+     * Starts the resident monitor only for lock, wake, or app-managed charging.
+     * Boot and Android Dream charging are handled by their own system components.
      */
     public static void sync(Context context) {
         Context appContext = context.getApplicationContext();

@@ -32,6 +32,7 @@ public final class LockScreenBootReceiver extends BroadcastReceiver {
         launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
                 | Intent.FLAG_ACTIVITY_CLEAR_TOP
                 | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        launch.putExtra(MainActivity.EXTRA_OPENED_BY_BOOT, true);
         try {
             context.startActivity(launch);
         } catch (Throwable ignored) {

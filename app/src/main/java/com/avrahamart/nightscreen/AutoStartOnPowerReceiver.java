@@ -58,11 +58,13 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
 
             if (prefs.getBoolean("autoStartOnWake", false)
                     && LockScreenMonitorService.isLockMonitoringActive()
+                    && !MainActivity.isMainActivityResumed()
                     && canLaunchFromBackground(context)) {
                 Intent launch = new Intent(context, MainActivity.class);
                 launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
                         | Intent.FLAG_ACTIVITY_CLEAR_TOP
                         | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                launch.putExtra(MainActivity.EXTRA_OPENED_BY_WAKE, true);
                 try {
                     context.startActivity(launch);
                 } catch (Throwable ignored) {

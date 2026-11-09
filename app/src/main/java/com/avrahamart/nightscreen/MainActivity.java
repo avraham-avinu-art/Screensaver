@@ -73,6 +73,10 @@ public class MainActivity extends Activity {
             "com.avrahamart.nightscreen.EXTRA_OPENED_BY_CHARGER";
     public static final String EXTRA_OPENED_BY_DEVICE_LOCK =
             "com.avrahamart.nightscreen.EXTRA_OPENED_BY_DEVICE_LOCK";
+    public static final String EXTRA_OPENED_BY_WAKE =
+            "com.avrahamart.nightscreen.EXTRA_OPENED_BY_WAKE";
+    public static final String EXTRA_OPENED_BY_BOOT =
+            "com.avrahamart.nightscreen.EXTRA_OPENED_BY_BOOT";
     public static final String ACTION_FINISH_FROM_TILE =
             "com.screensaver.action.FINISH_FROM_TILE";
     private static volatile boolean mainActivityResumed = false;
@@ -365,7 +369,9 @@ public class MainActivity extends Activity {
             return;
         }
         if (intent != null && (intent.getBooleanExtra(EXTRA_OPENED_BY_CHARGER, false)
-                || intent.getBooleanExtra(EXTRA_OPENED_BY_DEVICE_LOCK, false))) {
+                || intent.getBooleanExtra(EXTRA_OPENED_BY_DEVICE_LOCK, false)
+                || intent.getBooleanExtra(EXTRA_OPENED_BY_WAKE, false)
+                || intent.getBooleanExtra(EXTRA_OPENED_BY_BOOT, false))) {
             applyChargingLaunchFlags(intent);
             applyDeviceLockLaunchFlags(intent);
             applyPreventLockWhileActivePreference();
@@ -414,16 +420,11 @@ public class MainActivity extends Activity {
         if (!getBool("continueOnLockScreen", false)) {
             lockScreenContinuationArmed = false;
         }
-        // Showing above Keyguard is controlled exclusively by the explicit
-        // "continue on lock screen" setting. Neither the lock-prevention policy
-        // nor the event that launched the Activity may override an opt-out.
-        // An explicit auto-start caused by the device-lock event is an
-        // independent feature and must work even when post-timeout continuation
-        // is disabled. Only continuation after a later screen-off is gated by
-        // the "continue on lock screen" preference.
-        boolean showAboveExistingKeyguard = openedByDeviceLock
-                || (getBool("continueOnLockScreen", false)
-                    && lockScreenContinuationArmed);
+        // Every activation path obeys the same explicit lock-screen policy.
+        // An automatic start may open the Activity, but it must not keep the
+        // screensaver visible over Keyguard unless continuation is enabled.
+        boolean showAboveExistingKeyguard = getBool("continueOnLockScreen", false)
+                && (openedByDeviceLock || lockScreenContinuationArmed);
 
         if (Build.VERSION.SDK_INT >= 27) {
             setShowWhenLocked(showAboveExistingKeyguard);
