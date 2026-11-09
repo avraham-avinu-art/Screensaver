@@ -100,6 +100,7 @@ private LinearLayout clockDateCard;
     private static final int CATEGORY_ACTIVITY = 2;
     private static final int CATEGORY_APPEARANCE = 3;
     private static final int CATEGORY_PLAYER = 4;
+    private static final int CATEGORY_ADVANCED = 5;
     private final int dateTextColor = Color.rgb(220, 220, 220);
 
     @Override
@@ -281,6 +282,9 @@ screenTitle.setText("הגדרות");
         addDashboardButton("נגן מדיה",
                 "הצגת והתאמת נגן המערכת",
                 "music-note", CATEGORY_PLAYER);
+        addDashboardButton("הגדרות מתקדמות",
+                "כלים מתקדמים, חיסכון בסוללה ואבחון",
+                "tune", CATEGORY_ADVANCED);
 
         addDashboardNavigation();
         // Do not leave an extra gap below the final item at the bottom of the screen.
@@ -422,6 +426,9 @@ screenTitle.setText("הגדרות");
             case CATEGORY_PLAYER:
                 buildPlayerSettings();
                 break;
+            case CATEGORY_ADVANCED:
+                buildAdvancedSettings();
+                break;
             default:
                 buildDashboard();
                 return;
@@ -464,9 +471,18 @@ screenTitle.setText("הגדרות");
         addSpinner(content, "תבנית התאריך הלועזי",
                 currentGregorianDateSamples(gregorianDateFormats),
                 gregorianDateFormats, "gregorianDateFormat");
+        addSegmentedChoices(content, "תצוגת שעה",
+                new String[]{"לפי המכשיר", "24 שעות", "12 שעות"},
+                new String[]{"system", "24", "12"}, "timeFormat");
         addDiscreteSlider(content, "גודל",
                 new String[]{"קטן", "בינוני", "רגיל", "גדול", "ענק"},
                 new String[]{"60", "72", "84", "96", "108"}, "clockDateSize");
+        addDiscreteSlider(content, "גודל התאריך הלועזי",
+                new String[]{"לפי השעון", "18%", "22%", "26%", "30%"},
+                new String[]{"-1", "18", "22", "26", "30"}, "gregorianDateScale");
+        addDiscreteSlider(content, "גודל התאריך העברי",
+                new String[]{"לפי השעון", "18%", "22%", "26%", "30%"},
+                new String[]{"-1", "18", "22", "26", "30"}, "hebrewDateScale");
         addDiscreteSlider(content, "עובי הגופן",
                 new String[]{"דק", "רגיל", "מודגש", "עבה"},
                 new String[]{"-1", "0", "1", "2"}, "fontWeight");
@@ -603,6 +619,10 @@ screenTitle.setText("הגדרות");
                 new String[]{"off", "on", "start"}, "playerDisplayMode");
         addCheck(content, "פרטי האמן", "showDetails", getBool("showDetails", true));
         addCheck(content, "זמני השיר ופקדי הנגן", "showProgress", true);
+        addSegmentedChoices(content, "משך הצגת פקדי הנגן",
+                new String[]{"תמיד", "3 שניות", "5 שניות", "10 שניות", "15 שניות", "30 שניות"},
+                new String[]{"0", "3", "5", "10", "15", "30"},
+                "playerControlsTimeout");
         addDiscreteSlider(content, "גודל הנגן",
                 new String[]{"קטן", "בינוני", "גדול", "ענק"},
                 new String[]{"14", "17", "20", "23"}, "playerSize");
@@ -621,9 +641,81 @@ screenTitle.setText("הגדרות");
                 new String[]{"0", "10", "20"}, "frameRadius");
     }
 
+    private void buildAdvancedSettings() {
+        addCheck(content, "הגנה אוטומטית בסוללה חלשה או בחימום",
+                "batteryProtectionEnabled", false);
+        addDiscreteSlider(content, "סף סוללה להפעלת ההגנה",
+                new String[]{"10%", "15%", "20%", "25%", "30%"},
+                new String[]{"10", "15", "20", "25", "30"},
+                "batteryProtectionThreshold");
+
+        LinearLayout diagnosticsCard = addCard(content, "אבחון ומידע על המכשיר");
+        String batterySummary = "לא זמין";
+        try {
+            Intent battery = registerReceiver(null,
+                    new android.content.IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+            if (battery != null) {
+                int level = battery.getIntExtra(android.os.BatteryManager.EXTRA_LEVEL, -1);
+                int scale = battery.getIntExtra(android.os.BatteryManager.EXTRA_SCALE, -1);
+                if (level >= 0 && scale > 0) {
+                    batterySummary = Math.max(0, Math.min(100,
+                            Math.round(level * 100f / scale))) + "%";
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        String thermalSummary = "לא נתמך בגרסת Android זו";
+        if (Build.VERSION.SDK_INT >= 29) {
+            try {
+                android.os.PowerManager power =
+                        (android.os.PowerManager) getSystemService(POWER_SERVICE);
+                if (power != null) {
+                    int status = power.getCurrentThermalStatus();
+                    switch (status) {
+                        case android.os.PowerManager.THERMAL_STATUS_NONE:
+                        case android.os.PowerManager.THERMAL_STATUS_LIGHT:
+                            thermalSummary = "תקין";
+                            break;
+                        case android.os.PowerManager.THERMAL_STATUS_MODERATE:
+                            thermalSummary = "חימום בינוני";
+                            break;
+                        case android.os.PowerManager.THERMAL_STATUS_SEVERE:
+                            thermalSummary = "חימום גבוה";
+                            break;
+                        case android.os.PowerManager.THERMAL_STATUS_CRITICAL:
+                        case android.os.PowerManager.THERMAL_STATUS_EMERGENCY:
+                        case android.os.PowerManager.THERMAL_STATUS_SHUTDOWN:
+                            thermalSummary = "חימום קריטי";
+                            break;
+                        default:
+                            thermalSummary = "לא ידוע";
+                            break;
+                    }
+                }
+            } catch (Throwable ignored) {
+            }
+        }
+        String report = "גרסת Android: " + Build.VERSION.RELEASE
+                + " (API " + Build.VERSION.SDK_INT + ")\n"
+                + "רמת סוללה: " + batterySummary + "\n"
+                + "מצב חום: " + thermalSummary + "\n"
+                + "גישה להתראות: " + (hasNotificationAccess() ? "פעילה" : "לא פעילה") + "\n"
+                + "הצגה מעל אפליקציות: "
+                + (Build.VERSION.SDK_INT < 23 || Settings.canDrawOverlays(this)
+                        ? "פעילה" : "לא פעילה");
+        TextView diagnosticText = textView(report, 14, MUTED);
+        diagnosticText.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        diagnosticText.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
+        diagnosticText.setTextDirection(View.TEXT_DIRECTION_RTL);
+        diagnosticText.setLineSpacing(dp(4), 1f);
+        diagnosticText.setIncludeFontPadding(false);
+        diagnosticsCard.addView(diagnosticText, new LinearLayout.LayoutParams(-1, -2));
+    }
+
     private String settingsGroupTitleFor(String key) {
         switch (currentCategory) {
             case CATEGORY_CLOCK_DATE:
+                if ("timeFormat".equals(key)) return "תצוגת השעה";
                 if ("showHebrew".equals(key) || "showGregorian".equals(key)
                         || "hebrewDateFormat".equals(key) || "gregorianDateFormat".equals(key)) {
                     return "הצגת תאריכים";
@@ -651,6 +743,10 @@ screenTitle.setText("הגדרות");
                     return "מסגרת לנגן";
                 }
                 return "הצגת הנגן";
+            case CATEGORY_ADVANCED:
+                if ("batteryProtectionEnabled".equals(key)
+                        || "batteryProtectionThreshold".equals(key)) return "הגנה על המכשיר";
+                return "אבחון ומידע טכני";
             default:
                 return "הגדרות";
         }
@@ -828,6 +924,12 @@ screenTitle.setText("הגדרות");
         if ("showPlayerOnlyAtStart".equals(key)) return "הצגת הנגן רק בתחילת כל שיר";
         if ("showDetails".equals(key)) return "כשמופיע בפרטי השיר את שם האמן, הצגת שם האמן מעל שם השיר";
         if ("showProgress".equals(key)) return "הצגת נגן מלא, כולל זמני השיר סרגל התקדמות ולחצני שליטה בנגן";
+        if ("playerControlsTimeout".equals(key)) return "הצגת סרגל ההתקדמות ופקדי הנגן לזמן מוגדר לאחר תחילת שיר חדש; פרטי השיר יישארו מוצגים";
+        if ("timeFormat".equals(key)) return "בחירת תצוגת 12 או 24 שעות, או שימוש בהגדרת המכשיר";
+        if ("gregorianDateScale".equals(key)) return "התאמת גודל התאריך הלועזי בנפרד מגודל השעון";
+        if ("hebrewDateScale".equals(key)) return "התאמת גודל התאריך העברי בנפרד מגודל השעון";
+        if ("batteryProtectionEnabled".equals(key)) return "הפחתת בהירות המסך באופן אוטומטי כאשר הסוללה חלשה או כשהמכשיר מתחמם";
+        if ("batteryProtectionThreshold".equals(key)) return "מתחת לאחוז שנבחר תופעל הפחתת בהירות, כל עוד המכשיר אינו בטעינה";
         if ("playerSize".equals(key)) return "בחירת גודל התצוגה של הנגן";
         if ("playerPosition".equals(key)) return "בחירת מיקום הצגת הנגן במסך";
         if ("frameEnabled".equals(key)) return "כשההגדרה הצגת הנגן פועלת, הצגת הנגן מעוצב בחלונית עם מסגרת";
@@ -1633,6 +1735,8 @@ screenTitle.setText("הגדרות");
                     || "screenBackgroundColor".equals(key)) {
                 editor.putInt(key, colorValue(value));
             } else if ("fontWeight".equals(key) || "clockDateSize".equals(key)
+                    || "gregorianDateScale".equals(key) || "hebrewDateScale".equals(key)
+                    || "batteryProtectionThreshold".equals(key)
                     || "playerSize".equals(key) || "frameWidth".equals(key)
                     || "frameRadius".equals(key) || "screenBrightness".equals(key)) {
                 editor.putInt(key, Integer.parseInt(value));
@@ -1979,6 +2083,8 @@ screenTitle.setText("הגדרות");
             }
             return -1;
         } else if ("fontWeight".equals(key) || "clockDateSize".equals(key)
+                || "gregorianDateScale".equals(key) || "hebrewDateScale".equals(key)
+                || "batteryProtectionThreshold".equals(key)
                 || "playerSize".equals(key) || "frameWidth".equals(key)
                 || "frameRadius".equals(key) || "screenBrightness".equals(key)) {
             int fallback = "clockDateSize".equals(key) ? 84
