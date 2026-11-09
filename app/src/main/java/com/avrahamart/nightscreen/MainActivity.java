@@ -220,7 +220,7 @@ public class MainActivity extends Activity {
     private final Runnable hidePlayerControlsIntroWindowRunnable = () -> {
         playerControlsIntroWindowVisible = false;
         playerControlsIntroWindowDeadlineElapsedRealtime = 0L;
-        if (mediaController != null) renderMediaMirror();
+        refreshPlayerControlsAfterIntro();
         refreshMediaHolderPosition();
     };
 
@@ -1303,7 +1303,7 @@ public class MainActivity extends Activity {
         int effectiveClockSize = effectiveClockDateSize(fontFamily, clockDateSize);
         boolean analogClock = "analog".equals(getString("clockDisplayMode", "digital"));
         int analogClockDiameter = Math.max(dp(96),
-                Math.round(dp(effectiveClockSize * 1.30f)));
+                dp(Math.round(effectiveClockSize * 1.30f)));
         if (analogClockView != null) {
             analogClockView.setDialStyle(getString("clockDialStyle", "classic"));
             analogClockView.setColors(color, getScreenBackgroundColor());
@@ -3074,6 +3074,10 @@ public class MainActivity extends Activity {
     }
 
     
+    private void refreshPlayerControlsAfterIntro() {
+        if (mediaController != null) renderMediaMirror();
+    }
+
     private boolean arePlayerControlsVisible() {
         String mode = getString("playerControlsDisplayMode", "on");
         if ("off".equals(mode)) return false;
