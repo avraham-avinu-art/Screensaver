@@ -471,6 +471,9 @@ screenTitle.setText("הגדרות");
         addSpinner(content, "תבנית התאריך הלועזי",
                 currentGregorianDateSamples(gregorianDateFormats),
                 gregorianDateFormats, "gregorianDateFormat");
+        addSegmentedChoices(content, "סגנון השעון",
+                new String[]{"דיגיטלי", "אנלוגי", "דיגיטלי מפוצל"},
+                new String[]{"digital", "analog", "split"}, "clockStyle");
         addSegmentedChoices(content, "תצוגת שעה",
                 new String[]{"לפי המכשיר", "24 שעות", "12 שעות"},
                 new String[]{"system", "24", "12"}, "timeFormat");
@@ -493,6 +496,10 @@ screenTitle.setText("הגדרות");
                 new String[]{"0%", "10%", "20%", "30%", "40%", "50%", "60%", "70%", "80%", "90%"},
                 new String[]{"0", "10", "20", "30", "40", "50", "60", "70", "80", "90"},
                 "clockCustomVerticalPosition");
+        addDiscreteSlider(content, "הזזה אופקית",
+                new String[]{"20%-", "15%-", "10%-", "5%-", "מרכז", "5%+", "10%+", "15%+", "20%+"},
+                new String[]{"-20", "-15", "-10", "-5", "0", "5", "10", "15", "20"},
+                "clockHorizontalOffset");
     }
 
 
@@ -642,6 +649,10 @@ screenTitle.setText("הגדרות");
                 new String[]{"0%", "10%", "20%", "30%", "40%", "50%", "60%", "70%", "80%", "90%"},
                 new String[]{"0", "10", "20", "30", "40", "50", "60", "70", "80", "90"},
                 "playerCustomVerticalPosition");
+        addDiscreteSlider(content, "הזזה אופקית של הנגן",
+                new String[]{"20%-", "15%-", "10%-", "5%-", "מרכז", "5%+", "10%+", "15%+", "20%+"},
+                new String[]{"-20", "-15", "-10", "-5", "0", "5", "10", "15", "20"},
+                "playerHorizontalOffset");
         addCheck(content, "הצגת עטיפת האלבום", "showAlbumArt", true);
         addCheck(content, "הצג מסגרת", "frameEnabled", false);
         addColorChoices(content, "צבע מסגרת",
@@ -955,6 +966,9 @@ screenTitle.setText("הגדרות");
         if ("showProgress".equals(key)) return "הצגת נגן מלא, כולל זמני השיר סרגל התקדמות ולחצני שליטה בנגן";
         if ("playerControlsTimeout".equals(key)) return "הצגת סרגל ההתקדמות ופקדי הנגן לזמן מוגדר לאחר תחילת שיר חדש; פרטי השיר יישארו מוצגים";
         if ("clockCustomVerticalPosition".equals(key)) return "בחירת הגובה של מרכז השעון והתאריך ביחס לגובה המסך";
+        if ("clockHorizontalOffset".equals(key)) return "הזזת כל תצוגת השעון והתאריך ימינה או שמאלה";
+        if ("playerHorizontalOffset".equals(key)) return "הזזת הנגן ימינה או שמאלה";
+        if ("clockStyle".equals(key)) return "בחירת שעון ספרתי רגיל, מחוגים או ספרות מפוצלות";
         if ("playerCustomVerticalPosition".equals(key)) return "בחירת הגובה של מרכז הנגן ביחס לגובה המסך";
         if ("backgroundStyle".equals(key)) return "בחירת אופן הצגת צבע הרקע";
         if ("dynamicAlbumBackgroundEnabled".equals(key)) return "התאמת גווני הרקע לצבעים המרכזיים שבעטיפת האלבום בזמן נגינה";
@@ -1774,6 +1788,8 @@ screenTitle.setText("הגדרות");
             } else if ("fontWeight".equals(key) || "clockDateSize".equals(key)
                     || "gregorianDateScale".equals(key) || "hebrewDateScale".equals(key)
                     || "clockCustomVerticalPosition".equals(key)
+                    || "clockHorizontalOffset".equals(key)
+                    || "playerHorizontalOffset".equals(key)
                     || "playerCustomVerticalPosition".equals(key)
                     || "batteryProtectionThreshold".equals(key)
                     || "playerControlsTimeout".equals(key)
@@ -2126,6 +2142,8 @@ screenTitle.setText("הגדרות");
         } else if ("fontWeight".equals(key) || "clockDateSize".equals(key)
                 || "gregorianDateScale".equals(key) || "hebrewDateScale".equals(key)
                 || "clockCustomVerticalPosition".equals(key)
+                || "clockHorizontalOffset".equals(key)
+                || "playerHorizontalOffset".equals(key)
                 || "playerCustomVerticalPosition".equals(key)
                 || "batteryProtectionThreshold".equals(key)
                 || "playerControlsTimeout".equals(key)
