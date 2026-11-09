@@ -1700,7 +1700,7 @@ public class MainActivity extends Activity {
         return hour >= start || hour < end;
     }
 
-    private void applyScreenAppearance()    private void applyScreenAppearance() {
+    private void applyScreenAppearance() {
         int backgroundColor = getScreenBackgroundColor();
         Drawable screenBackground = createScreenBackgroundDrawable();
         if (stageView != null) {
