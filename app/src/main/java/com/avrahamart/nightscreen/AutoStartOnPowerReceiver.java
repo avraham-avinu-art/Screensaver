@@ -100,7 +100,6 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
 
     private void launchOnDeviceLockIfStillLocked(Context context) {
         SharedPreferences prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE);
-        if (ScreenOffLaunchGuard.wasHandledRecently(context)) return;
         if (!LockScreenMonitorService.isLockMonitoringActive()) return;
         if (isMainActivityVisible(context)) return;
 
