@@ -171,8 +171,8 @@ public final class LockScreenMonitorService extends Service {
         // KeyMapper-style notification semantics: ongoing and silent, with an action
         // that opens the app; it is not tied to the settings Activity lifecycle.
         builder.setSmallIcon(R.drawable.ic_notification_transparent)
-                .setContentTitle("שומר מסך")
-                .setContentText("פעיל")
+                .setContentTitle("הפעלה אוטומטית בנעילת המכשיר")
+                .setContentText("שירות ההפעלה האוטומטית פעיל.")
                 .setContentIntent(contentIntent)
                 .setOngoing(true)
                 .setOnlyAlertOnce(true)
