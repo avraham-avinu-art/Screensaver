@@ -32,22 +32,29 @@ public final class PermissionDependencySync {
         boolean oldChargeStartEnabled = prefs.getBoolean("autoStartOnCharge", false);
         boolean disableChargeStart = oldChargeStartEnabled
                 && !useAndroidDreamForCharging && overlayRequired;
+        boolean disableBootStart =
+                prefs.getBoolean("autoStartOnBoot", false) && overlayRequired;
+        boolean disableWakeStart =
+                prefs.getBoolean("autoStartOnWake", false) && overlayRequired;
         boolean disablePlayer =
                 prefs.getBoolean("showPlayer", false) && !notificationAccess;
 
-        if (!disableLockStart && !disableChargeStart && !disablePlayer) return "";
+        if (!disableLockStart && !disableChargeStart && !disableBootStart
+                && !disableWakeStart && !disablePlayer) return "";
 
         SharedPreferences.Editor editor = prefs.edit();
         if (disableLockStart) editor.putBoolean("autoStartOnDeviceLock", false)
                 .putBoolean("autoStartOnLockOverlayPermissionPending", false);
         if (disableChargeStart) editor.putBoolean("autoStartOnCharge", false)
                 .putBoolean("autoStartOverlayPermissionPending", false);
+        if (disableBootStart) editor.putBoolean("autoStartOnBoot", false);
+        if (disableWakeStart) editor.putBoolean("autoStartOnWake", false);
         if (disablePlayer) editor.putBoolean("showPlayer", false)
                 .putBoolean("showPlayerPermissionPending", false);
         editor.apply();
 
-        if (disableLockStart) LockScreenMonitorService.sync(context);
-        if (disableLockStart || disableChargeStart) {
+        if (disableLockStart || disableWakeStart) LockScreenMonitorService.sync(context);
+        if (disableLockStart || disableChargeStart || disableWakeStart) {
             NightScreenApplication.syncChargerReceiver(context);
         }
 
@@ -57,6 +64,12 @@ public final class PermissionDependencySync {
         }
         if (disableChargeStart && !useAndroidDreamForCharging) {
             messages.add("ההפעלה האוטומטית בטעינה כובתה מפני שהרשאת ההצגה מעל אפליקציות אחרות בוטלה.");
+        }
+        if (disableBootStart) {
+            messages.add("ההפעלה האוטומטית בהפעלת המכשיר כובתה מפני שהרשאת ההצגה מעל אפליקציות אחרות בוטלה.");
+        }
+        if (disableWakeStart) {
+            messages.add("ההפעלה האוטומטית בהתעוררות כובתה מפני שהרשאת ההצגה מעל אפליקציות אחרות בוטלה.");
         }
         if (disablePlayer) {
             messages.add("הצגת הנגן כובתה מפני שהרשאת הגישה להתראות בוטלה.");

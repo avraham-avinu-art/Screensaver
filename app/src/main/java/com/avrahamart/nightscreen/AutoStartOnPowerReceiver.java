@@ -29,6 +29,23 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
         }
 
         SharedPreferences prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE);
+        if (Intent.ACTION_SCREEN_ON.equals(action)
+                && prefs.getBoolean("autoStartOnWake", false)
+                && LockScreenMonitorService.isLockMonitoringActive()
+                && canLaunchFromBackground(context)
+                && !isMainActivityVisible(context)) {
+            Intent launch = new Intent(context, MainActivity.class);
+            launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                    | Intent.FLAG_ACTIVITY_CLEAR_TOP
+                    | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            try {
+                context.startActivity(launch);
+            } catch (Throwable ignored) {
+                // Respect device-specific background-launch restrictions.
+            }
+            return;
+        }
+
         if (Intent.ACTION_POWER_CONNECTED.equals(action)) {
             if (prefs.getBoolean("useAndroidDreamForCharging", true)
                     || !prefs.getBoolean("autoStartOnCharge", false)) return;

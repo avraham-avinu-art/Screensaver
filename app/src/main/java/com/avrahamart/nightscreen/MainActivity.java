@@ -1118,8 +1118,6 @@ public class MainActivity extends Activity {
             e.putInt("clockDateSize", migratedClockSize);
             e.putBoolean("clockSizePresetsV5Applied", true);
         }
-        e.remove("autoStartOnBoot");
-        e.remove("autoStartOnWake");
         e.commit();
 
         // Upgrade the existing five presets to the requested 60/72/84/96/108sp scale.

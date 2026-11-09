@@ -86,6 +86,8 @@ private LinearLayout clockDateCard;
     private Switch showPlayerToggle;
     private Switch autoStartOnChargeToggle;
     private Switch autoStartOnDeviceLockToggle;
+    private Switch autoStartOnBootToggle;
+    private Switch autoStartOnWakeToggle;
     private TextView activityCapabilityNotice;
     private View activityHelpHeaderButton;
     private LinearLayout screenLockAdminCard;
@@ -597,6 +599,8 @@ screenTitle.setText("הגדרות");
         addCheck(content, "מניעת נעילה בזמן פעילות", "preventLockWhileActive", false);
         addCheck(content, "המשך הצגה במסך נעילה", "continueOnLockScreen", false);
         addCheck(content, "הפעלה אוטומטית בנעילה", "autoStartOnDeviceLock", false);
+        addCheck(content, "הפעלה אוטומטית בהדלקה", "autoStartOnBoot", false);
+        addCheck(content, "הפעלה אוטומטית בהתעוררות", "autoStartOnWake", false);
         addCheck(content, "הפעלה אוטומטית בטעינה ובעגינה", "autoStartOnCharge", false);
         addCheck(content, "ללא כיבוי בטעינה", "noShutdownWhileCharging", false);
         addSegmentedChoices(content, "תצוגת סוללה בטעינה",
@@ -816,7 +820,8 @@ screenTitle.setText("הגדרות");
                         || "continueOnLockScreen".equals(key)) {
                     return "הגדרת זמני הפעילות";
                 }
-                if ("autoStartOnDeviceLock".equals(key) || "autoStartOnCharge".equals(key)) {
+                if ("autoStartOnDeviceLock".equals(key) || "autoStartOnBoot".equals(key)
+                        || "autoStartOnWake".equals(key) || "autoStartOnCharge".equals(key)) {
                     return "הפעלות אוטומטיות";
                 }
                 return "שומר מסך במצב טעינה";
@@ -1005,6 +1010,8 @@ screenTitle.setText("הגדרות");
         if ("preventLockWhileActive".equals(key)) return "מניעת נעילת המכשיר למשך כל זמן הפעילות שמוגדר לשומר מסך";
         if ("continueOnLockScreen".equals(key)) return "השארת השומר מסך על מסך הנעילה גם לאחר כיבוי המסך בסיום הפעילות";
         if ("autoStartOnDeviceLock".equals(key)) return "הפעלת שומר מסך באופן אוטומטי בעת נעילת המכשיר";
+        if ("autoStartOnBoot".equals(key)) return "הפעלת שומר מסך באופן אוטומטי לאחר הפעלת המכשיר";
+        if ("autoStartOnWake".equals(key)) return "הפעלת השומר מסך באופן אוטומטי כשהמכשיר מתעורר ממצב שינה";
         if ("noShutdownWhileCharging".equals(key)) return "השארת השומר מסך פועל כל עוד המכשיר מחובר לטעינה";
         if ("screenBackgroundColor".equals(key)) return "בחירת צבע הרקע של שומר המסך";
         if ("screenBrightness".equals(key)) return "התאמת בהירות התצוגה של שומר המסך";
@@ -1099,7 +1106,12 @@ screenTitle.setText("הגדרות");
                 + "• ההגדרה מפעילה את שומר מסך אוטומטית כאשר המכשיר ננעל, גם בנעילה יזומה וגם בנעילה אוטומטית, גם אם שומר מסך לא היה פעיל קודם.\n"
                 + "• כשההגדרה כבויה - נעילת המכשיר לבדה לא מפעילה את שומר מסך.\n"
                 + "• לצורך ההפעלה האוטומטית בנעילה, האפליקציה מציגה התראה קבועה ושקטה שאינה מופיעה במסך הנעילה.\n\n"
-                + "הרשאות שמשפיעות על התנהגות האפליקציה\n"
+                + "הפעלה אוטומטית בהדלקה\n"
+                + "• כשההגדרה פעילה, שומר מסך נפתח אוטומטית לאחר אתחול מלא של המכשיר, לאחר ש-Android מאפשר להפעיל את האפליקציה.\n"
+                + "• כשההגדרה כבויה, אתחול המכשיר אינו מפעיל את שומר מסך.\n\n"
+                + "הפעלה אוטומטית בהתעוררות\n"
+                + "• כשההגדרה פעילה, שומר מסך נפתח כשהמסך נדלק מחדש לאחר שהיה כבוי.\n"
+                + "• כשההגדרה כבויה, הדלקת המסך אינה מפעילה את שומר מסך.\n\n"                + "הרשאות שמשפיעות על התנהגות האפליקציה\n"
                 + "• הצגה מעל אפליקציות אחרות - נדרשת להפעלה אוטומטית ברקע בחלק מגרסאות Android. אם ההרשאה נשללת, ההגדרות התלויות בה יכובו אוטומטית.\n"
                 + "• גישה להתראות - נדרשת להצגת נגן המדיה. אם ההרשאה נשללת, הצגת הנגן תכובה אוטומטית.\n"
                 + "• הרשאת מנהל מכשיר - מאפשרת לאפליקציה לבקש נעילה מיידית בסיום זמן פעילות מוגדר. היא אינה נדרשת להצגת שומר מסך עצמו ואינה מבטיחה כיבוי פיזי של התצוגה בכל סוגי המכשירים.";
@@ -1197,6 +1209,8 @@ screenTitle.setText("הגדרות");
                     || line.equals("מניעת נעילה בזמן פעילות")
                     || line.equals("המשך הצגה במסך הנעילה")
                     || line.equals("הפעלה אוטומטית בנעילה")
+                    || line.equals("הפעלה אוטומטית בהדלקה")
+                    || line.equals("הפעלה אוטומטית בהתעוררות")
                     || line.equals("הרשאות שמשפיעות על התנהגות האפליקציה");
 
             if (sectionHeading) {
@@ -1299,6 +1313,8 @@ screenTitle.setText("הגדרות");
         if ("showPlayer".equals(key)) showPlayerToggle = toggle;
         if ("autoStartOnCharge".equals(key)) autoStartOnChargeToggle = toggle;
         if ("autoStartOnDeviceLock".equals(key)) autoStartOnDeviceLockToggle = toggle;
+        if ("autoStartOnBoot".equals(key)) autoStartOnBootToggle = toggle;
+        if ("autoStartOnWake".equals(key)) autoStartOnWakeToggle = toggle;
         toggle.setChecked(getBool(key, defaultValue));
         if (Build.VERSION.SDK_INT >= 21) {
             toggle.setThumbTintList(new ColorStateList(
@@ -1380,6 +1396,21 @@ screenTitle.setText("הגדרות");
                 LockScreenMonitorService.sync(this);
                 NightScreenApplication.syncChargerReceiver(this);
                 updateOverlayPermissionCardVisibility();
+            } else if ("autoStartOnBoot".equals(key) || "autoStartOnWake".equals(key)) {
+                if (checked && Build.VERSION.SDK_INT >= 29
+                        && !Settings.canDrawOverlays(this)) {
+                    AppToast.makeText(this,
+                            "כדי לאפשר הפעלה אוטומטית לאחר אתחול או התעוררות, יש לאפשר לשומר מסך הצגה מעל אפליקציות אחרות.",
+                            Toast.LENGTH_LONG).show();
+                    if (!openOverlayPermissionSettings()) {
+                        prefs.edit().putBoolean(key, false).apply();
+                        toggle.setChecked(false);
+                    }
+                }
+                if ("autoStartOnWake".equals(key)) {
+                    LockScreenMonitorService.sync(this);
+                    NightScreenApplication.syncChargerReceiver(this);
+                }
             } else if ("showPlayer".equals(key)) {
                 if (checked && !hasNotificationAccess()) {
                     prefs.edit().putBoolean("showPlayerPermissionPending", true).apply();
@@ -1967,6 +1998,12 @@ screenTitle.setText("הגדרות");
         if (autoStartOnDeviceLockToggle != null) {
             autoStartOnDeviceLockToggle.setChecked(getBool("autoStartOnDeviceLock", false));
         }
+        if (autoStartOnBootToggle != null) {
+            autoStartOnBootToggle.setChecked(getBool("autoStartOnBoot", false));
+        }
+        if (autoStartOnWakeToggle != null) {
+            autoStartOnWakeToggle.setChecked(getBool("autoStartOnWake", false));
+        }
     }
 
     private void requestPlayerNotificationAccessIfNeeded() {
@@ -2113,6 +2150,8 @@ screenTitle.setText("הגדרות");
         if ("preventLockWhileActive".equals(key)) return "power-off";
         if ("autoStartOnCharge".equals(key)) return "usb";
         if ("autoStartOnDeviceLock".equals(key)) return "lock-play";
+        if ("autoStartOnBoot".equals(key)) return "power";
+        if ("autoStartOnWake".equals(key)) return "screen-wake";
         if ("continueOnLockScreen".equals(key)) return "shield";
         if ("noShutdownWhileCharging".equals(key)) return "phone-charging";
         if ("screenBackgroundColor".equals(key)) return "palette";
@@ -2530,7 +2569,9 @@ screenTitle.setText("הגדרות");
         boolean granted = Settings.canDrawOverlays(this);
         boolean autoStartEnabled = (getBool("autoStartOnCharge", false)
                 && !getBool("useAndroidDreamForCharging", true))
-                || getBool("autoStartOnDeviceLock", false);
+                || getBool("autoStartOnDeviceLock", false)
+                || getBool("autoStartOnBoot", false)
+                || getBool("autoStartOnWake", false);
         overlayPermissionStatus.setText(granted
                 ? (autoStartEnabled
                     ? "ההרשאה פעילה — ההפעלה האוטומטית זמינה."
