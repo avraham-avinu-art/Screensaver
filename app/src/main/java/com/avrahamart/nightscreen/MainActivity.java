@@ -641,7 +641,70 @@ public class MainActivity extends Activity {
         if (stage == null) return;
         try {
             int h = stage.getHeight();
-            if (h <= 0) return;
+            int w = stage.getWidth();
+            if (h <= 0 || w <= 0) return;
+
+            String layoutMode = getString("landscapeLayoutMode", "auto");
+            boolean landscapeSplit = w > h && !"vertical".equals(layoutMode)
+                    && ("auto".equals(layoutMode) || "horizontal".equals(layoutMode));
+            if (landscapeSplit) {
+                int halfWidth = Math.max(dp(180), w / 2);
+                FrameLayout.LayoutParams clockParams =
+                        (FrameLayout.LayoutParams) clockBlock.getLayoutParams();
+                clockParams.width = halfWidth;
+                clockParams.height = FrameLayout.LayoutParams.WRAP_CONTENT;
+                clockParams.gravity = Gravity.LEFT | Gravity.CENTER_VERTICAL;
+                clockParams.topMargin = 0;
+                clockParams.bottomMargin = 0;
+                clockBlock.setTranslationX(halfWidth * Math.max(-0.20f, Math.min(0.20f,
+                        getInt("clockHorizontalOffset", 0) / 100f)));
+                clockBlock.setLayoutParams(clockParams);
+
+                FrameLayout.LayoutParams mediaParams =
+                        (FrameLayout.LayoutParams) mediaHolder.getLayoutParams();
+                mediaParams.width = halfWidth;
+                mediaParams.height = FrameLayout.LayoutParams.WRAP_CONTENT;
+                mediaParams.gravity = Gravity.RIGHT | Gravity.CENTER_VERTICAL;
+                mediaParams.topMargin = 0;
+                mediaParams.bottomMargin = 0;
+                mediaHolder.setTranslationX(halfWidth * Math.max(-0.20f, Math.min(0.20f,
+                        getInt("playerHorizontalOffset", 0) / 100f)));
+                mediaHolder.setLayoutParams(mediaParams);
+
+                if (mediaMirror != null && mediaMirror.getLayoutParams() instanceof LinearLayout.LayoutParams) {
+                    LinearLayout.LayoutParams mirrorParams =
+                            (LinearLayout.LayoutParams) mediaMirror.getLayoutParams();
+                    mirrorParams.width = Math.max(dp(160), halfWidth - dp(18));
+                    mediaMirror.setLayoutParams(mirrorParams);
+                }
+                if (mediaSeekBar != null && mediaSeekBar.getLayoutParams() instanceof LinearLayout.LayoutParams) {
+                    LinearLayout.LayoutParams seekParams =
+                            (LinearLayout.LayoutParams) mediaSeekBar.getLayoutParams();
+                    float playerScale = Math.max(0.72f, Math.min(1.45f,
+                            getInt("playerSize", 17) / 17f));
+                    seekParams.width = Math.max(dp(70),
+                            Math.round((halfWidth - dp(125)) * playerScale));
+                    mediaSeekBar.setLayoutParams(seekParams);
+                }
+                return;
+            }
+
+            FrameLayout.LayoutParams restoreClockParams =
+                    (FrameLayout.LayoutParams) clockBlock.getLayoutParams();
+            restoreClockParams.width = -1;
+            restoreClockParams.height = FrameLayout.LayoutParams.WRAP_CONTENT;
+            clockBlock.setLayoutParams(restoreClockParams);
+            FrameLayout.LayoutParams restoreMediaParams =
+                    (FrameLayout.LayoutParams) mediaHolder.getLayoutParams();
+            restoreMediaParams.width = -1;
+            restoreMediaParams.height = FrameLayout.LayoutParams.WRAP_CONTENT;
+            mediaHolder.setLayoutParams(restoreMediaParams);
+            if (mediaMirror != null && mediaMirror.getLayoutParams() instanceof LinearLayout.LayoutParams) {
+                LinearLayout.LayoutParams mirrorParams =
+                        (LinearLayout.LayoutParams) mediaMirror.getLayoutParams();
+                mirrorParams.width = Math.min(dp(760), Math.max(dp(1), w - dp(20)));
+                mediaMirror.setLayoutParams(mirrorParams);
+            }
 
             String clockPos = getString("clockDatePosition", "top");
             String playerPos = getString("playerPosition", "bottom");
@@ -949,6 +1012,7 @@ public class MainActivity extends Activity {
         e.putInt("clockHorizontalOffset", getInt("clockHorizontalOffset", 0));
         e.putInt("playerHorizontalOffset", getInt("playerHorizontalOffset", 0));
         e.putString("clockStyle", getString("clockStyle", "digital"));
+        e.putString("landscapeLayoutMode", getString("landscapeLayoutMode", "auto"));
         e.putInt("nightModeStartHour", getInt("nightModeStartHour", 22));
         e.putInt("nightModeEndHour", getInt("nightModeEndHour", 7));
         e.putInt("batteryProtectionThreshold", getInt("batteryProtectionThreshold", 20));
