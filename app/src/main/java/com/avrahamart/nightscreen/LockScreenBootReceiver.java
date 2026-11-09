@@ -18,11 +18,12 @@ public final class LockScreenBootReceiver extends BroadcastReceiver {
 
         SharedPreferences prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE);
         boolean autoStartOnBoot = prefs.getBoolean("autoStartOnBoot", false);
-        boolean monitorNeeded = prefs.getBoolean("autoStartOnDeviceLock", false)
-                || prefs.getBoolean("autoStartOnWake", false)
-                || prefs.getBoolean("autoStartOnBoot", false)
-                || prefs.getBoolean("autoStartOnCharge", false);
-        if (monitorNeeded) LockScreenMonitorService.sync(context);
+        if (Intent.ACTION_BOOT_COMPLETED.equals(action)) {
+            // A reboot starts a new lock lifecycle; discard a latch from the
+            // previous boot so the next real lock event can be handled.
+            prefs.edit().putBoolean("deviceLockStartConsumed", false).apply();
+        }
+        LockScreenMonitorService.sync(context);
 
         if (!Intent.ACTION_BOOT_COMPLETED.equals(action) || !autoStartOnBoot) return;
         if (Build.VERSION.SDK_INT >= 29 && !Settings.canDrawOverlays(context)) return;

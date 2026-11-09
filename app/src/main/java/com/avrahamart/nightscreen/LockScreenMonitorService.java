@@ -32,18 +32,31 @@ public final class LockScreenMonitorService extends Service {
         return lockMonitoringActive;
     }
 
-    /**
-     * Starts monitoring only while the user has enabled automatic lock activation
-     * and the background-activity-launch permission prerequisite is satisfied.
-     */
-    public static void sync(Context context) {
-        Context appContext = context.getApplicationContext();
-        SharedPreferences prefs = appContext.getSharedPreferences("settings", Context.MODE_PRIVATE);
+    static boolean isMonitoringAllowed(Context context) {
+        SharedPreferences prefs = context.getApplicationContext()
+                .getSharedPreferences("settings", Context.MODE_PRIVATE);
         boolean enabled = prefs.getBoolean("autoStartOnDeviceLock", false)
                 || prefs.getBoolean("autoStartOnWake", false)
                 || prefs.getBoolean("autoStartOnBoot", false)
                 || prefs.getBoolean("autoStartOnCharge", false);
-        if (enabled && (Build.VERSION.SDK_INT < 29 || Settings.canDrawOverlays(appContext))) {
+        if (!enabled) return false;
+
+        boolean overlayRequired = prefs.getBoolean("autoStartOnDeviceLock", false)
+                || prefs.getBoolean("autoStartOnWake", false)
+                || prefs.getBoolean("autoStartOnBoot", false)
+                || (prefs.getBoolean("autoStartOnCharge", false)
+                    && !prefs.getBoolean("useAndroidDreamForCharging", true));
+        return !overlayRequired || Build.VERSION.SDK_INT < 29
+                || Settings.canDrawOverlays(context.getApplicationContext());
+    }
+
+    /**
+     * Starts the shared monitor service only when at least one independent
+     * automatic-start option is enabled and its own required permission exists.
+     */
+    public static void sync(Context context) {
+        Context appContext = context.getApplicationContext();
+        if (isMonitoringAllowed(appContext)) {
             Intent intent = new Intent(appContext, LockScreenMonitorService.class)
                     .putExtra(EXTRA_MONITOR_ENABLED, true);
             try {
@@ -119,13 +132,7 @@ public final class LockScreenMonitorService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         SharedPreferences prefs = getSharedPreferences("settings", MODE_PRIVATE);
-        boolean enabled = intent != null && intent.hasExtra(EXTRA_MONITOR_ENABLED)
-                ? intent.getBooleanExtra(EXTRA_MONITOR_ENABLED, false)
-                : (prefs.getBoolean("autoStartOnDeviceLock", false)
-                    || prefs.getBoolean("autoStartOnWake", false)
-                    || prefs.getBoolean("autoStartOnBoot", false)
-                    || prefs.getBoolean("autoStartOnCharge", false));
-        if (!enabled || (Build.VERSION.SDK_INT >= 29 && !Settings.canDrawOverlays(this))) {
+        if (!isMonitoringAllowed(this)) {
             lockMonitoringActive = false;
             stopSelf(startId);
             return START_NOT_STICKY;
@@ -221,12 +228,7 @@ public final class LockScreenMonitorService extends Service {
     }
 
     private void scheduleRestartIfEnabled() {
-        SharedPreferences prefs = getSharedPreferences("settings", MODE_PRIVATE);
-        if (!prefs.getBoolean("autoStartOnDeviceLock", false)
-                && !prefs.getBoolean("autoStartOnWake", false)
-                && !prefs.getBoolean("autoStartOnBoot", false)
-                && !prefs.getBoolean("autoStartOnCharge", false)) return;
-        if (Build.VERSION.SDK_INT >= 29 && !Settings.canDrawOverlays(this)) return;
+        if (!isMonitoringAllowed(this)) return;
 
         AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
         if (alarmManager == null) return;

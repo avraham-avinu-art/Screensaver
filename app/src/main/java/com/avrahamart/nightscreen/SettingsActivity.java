@@ -1397,7 +1397,10 @@ screenTitle.setText("הגדרות");
                     prefs.edit().putBoolean("autoStartOnLockOverlayPermissionPending", false).apply();
                 }
                 if (!checked) {
-                    prefs.edit().putBoolean("autoStartOnLockOverlayPermissionPending", false).apply();
+                    prefs.edit()
+                            .putBoolean("autoStartOnLockOverlayPermissionPending", false)
+                            .putBoolean("deviceLockStartConsumed", false)
+                            .apply();
                 }
                 LockScreenMonitorService.sync(this);
                 NightScreenApplication.syncChargerReceiver(this);

@@ -53,8 +53,8 @@ public final class PermissionDependencySync {
                 .putBoolean("showPlayerPermissionPending", false);
         editor.apply();
 
-        if (disableLockStart || disableWakeStart) LockScreenMonitorService.sync(context);
-        if (disableLockStart || disableChargeStart || disableWakeStart) {
+        if (disableLockStart || disableChargeStart || disableBootStart || disableWakeStart) {
+            LockScreenMonitorService.sync(context);
             NightScreenApplication.syncChargerReceiver(context);
         }
 

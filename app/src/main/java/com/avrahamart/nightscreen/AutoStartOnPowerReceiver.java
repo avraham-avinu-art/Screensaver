@@ -7,49 +7,75 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Build;
-import android.os.SystemClock;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.PowerManager;
+import android.os.SystemClock;
 import android.provider.Settings;
+
 import java.io.File;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 
+/**
+ * Handles independent automatic-start events. A screen-off event is only a
+ * trigger to inspect the real device-lock state; it is never treated as a lock
+ * by itself.
+ */
 public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
+    private static final long LOCK_STATE_WAIT_MS = 30_000L;
+    private static final long LOCK_STATE_POLL_MS = 250L;
+    private static final long LOCK_STATE_INITIAL_DELAY_MS = 350L;
+
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private Runnable pendingLockCheck;
+    private PowerManager.WakeLock pendingLockWakeLock;
+    private long lockCheckDeadlineElapsedRealtime;
+
     @Override
     public void onReceive(Context context, Intent intent) {
         if (intent == null || intent.getAction() == null) return;
         String action = intent.getAction();
+        SharedPreferences prefs =
+                context.getSharedPreferences("settings", Context.MODE_PRIVATE);
 
         if (Intent.ACTION_USER_PRESENT.equals(action)) {
             MainActivity.clearPausedByDeviceLockState();
-            // A new lock cycle may trigger once after the user unlocks the device.
-            context.getSharedPreferences("settings", Context.MODE_PRIVATE)
-                    .edit().putBoolean("deviceLockStartConsumed", false).apply();
+            cancelPendingLockCheck();
+            // Rearm only after Android reports that the user has actually unlocked.
+            prefs.edit().putBoolean("deviceLockStartConsumed", false).apply();
             return;
         }
 
-        SharedPreferences prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE);
-        if (Intent.ACTION_SCREEN_ON.equals(action)
-                && prefs.getBoolean("autoStartOnWake", false)
-                && LockScreenMonitorService.isLockMonitoringActive()
-                && canLaunchFromBackground(context)
-                && !isMainActivityVisible(context)) {
-            Intent launch = new Intent(context, MainActivity.class);
-            launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
-                    | Intent.FLAG_ACTIVITY_CLEAR_TOP
-                    | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-            try {
-                context.startActivity(launch);
-            } catch (Throwable ignored) {
-                // Respect device-specific background-launch restrictions.
+        if (Intent.ACTION_SCREEN_ON.equals(action)) {
+            // A pending lock delay is no longer relevant if the display woke while
+            // the device is still unlocked. If it is already locked, keep checking.
+            if (pendingLockCheck != null && !isDeviceLocked(context)) {
+                cancelPendingLockCheck();
+            }
+
+            if (prefs.getBoolean("autoStartOnWake", false)
+                    && LockScreenMonitorService.isLockMonitoringActive()
+                    && canLaunchFromBackground(context)
+                    && !isMainActivityVisible(context)) {
+                Intent launch = new Intent(context, MainActivity.class);
+                launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                        | Intent.FLAG_ACTIVITY_CLEAR_TOP
+                        | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                try {
+                    context.startActivity(launch);
+                } catch (Throwable ignored) {
+                    // Respect device-specific background-launch restrictions.
+                }
             }
             return;
         }
 
         if (Intent.ACTION_POWER_CONNECTED.equals(action)) {
+            // Android Dream is an alternative route. In that mode the system
+            // starts ScreensaverDreamService; this receiver must not start a
+            // second Activity for the same charging event.
             if (prefs.getBoolean("useAndroidDreamForCharging", true)
                     || !prefs.getBoolean("autoStartOnCharge", false)) return;
             if (!canLaunchFromBackground(context)) return;
@@ -73,64 +99,95 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
                 && LockScreenMonitorService.isLockMonitoringActive()
                 && !prefs.getBoolean("deviceLockStartConsumed", false)
                 && canLaunchFromBackground(context)) {
-            // SCREEN_OFF is only a cue to inspect the lock state, not a launch trigger.
-            // The delayed check below launches only if Android confirms the keyguard
-            // is actually locked; a display turning off without a device lock is ignored.
-            // Let Android finish applying the keyguard state before checking it.
-            PowerManager powerManager =
-                    (PowerManager) context.getSystemService(Context.POWER_SERVICE);
-            PowerManager.WakeLock wakeLock = null;
-            try {
-                if (powerManager != null) {
-                    wakeLock = powerManager.newWakeLock(
-                            PowerManager.PARTIAL_WAKE_LOCK,
-                            "NightScreen:LockStart");
-                    wakeLock.acquire(3_000L);
-                }
-            } catch (Throwable ignored) {
-                wakeLock = null;
-            }
-            final PowerManager.WakeLock heldWakeLock = wakeLock;
-            new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                try {
-                    launchOnDeviceLockIfStillLocked(context.getApplicationContext());
-                } finally {
-                    if (heldWakeLock != null) {
-                        try {
-                            if (heldWakeLock.isHeld()) heldWakeLock.release();
-                        } catch (Throwable ignored) {
-                        }
-                    }
-                }
-            }, 450L);
+            beginDeviceLockCheck(context.getApplicationContext());
         }
     }
 
-    private void launchOnDeviceLockIfStillLocked(Context context) {
-        SharedPreferences prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE);
-        // Other automatic-start options may keep the monitor service alive, but
-        // they must never activate the device-lock path.
+    private void beginDeviceLockCheck(Context appContext) {
+        if (pendingLockCheck != null) return;
+
+        SharedPreferences prefs = appContext.getSharedPreferences(
+                "settings", Context.MODE_PRIVATE);
         if (!prefs.getBoolean("autoStartOnDeviceLock", false)
                 || !LockScreenMonitorService.isLockMonitoringActive()
                 || prefs.getBoolean("deviceLockStartConsumed", false)) return;
 
-        PowerManager powerManager =
-                (PowerManager) context.getSystemService(Context.POWER_SERVICE);
-        if (powerManager != null && powerManager.isInteractive()) return;
+        KeyguardManager keyguardManager =
+                (KeyguardManager) appContext.getSystemService(Context.KEYGUARD_SERVICE);
+        // A swipe-only keyguard is not a device lock: Android considers the
+        // device unlocked because no authentication is required.
+        if (keyguardManager == null || !keyguardManager.isDeviceSecure()) return;
 
+        PowerManager powerManager =
+                (PowerManager) appContext.getSystemService(Context.POWER_SERVICE);
+        try {
+            if (powerManager != null) {
+                pendingLockWakeLock = powerManager.newWakeLock(
+                        PowerManager.PARTIAL_WAKE_LOCK,
+                        "NightScreen:DeviceLockCheck");
+                pendingLockWakeLock.acquire(LOCK_STATE_WAIT_MS + 2_000L);
+            }
+        } catch (Throwable ignored) {
+            pendingLockWakeLock = null;
+        }
+
+        lockCheckDeadlineElapsedRealtime =
+                SystemClock.elapsedRealtime() + LOCK_STATE_WAIT_MS;
+        pendingLockCheck = new Runnable() {
+            @Override
+            public void run() {
+                SharedPreferences currentPrefs = appContext.getSharedPreferences(
+                        "settings", Context.MODE_PRIVATE);
+                if (!currentPrefs.getBoolean("autoStartOnDeviceLock", false)
+                        || !LockScreenMonitorService.isLockMonitoringActive()
+                        || currentPrefs.getBoolean("deviceLockStartConsumed", false)
+                        || !canLaunchFromBackground(appContext)) {
+                    finishPendingLockCheck();
+                    return;
+                }
+
+                if (isDeviceLocked(appContext)) {
+                    launchOnDeviceLock(appContext);
+                    finishPendingLockCheck();
+                    return;
+                }
+
+                if (SystemClock.elapsedRealtime() >= lockCheckDeadlineElapsedRealtime) {
+                    finishPendingLockCheck();
+                    return;
+                }
+                mainHandler.postDelayed(this, LOCK_STATE_POLL_MS);
+            }
+        };
+        mainHandler.postDelayed(pendingLockCheck, LOCK_STATE_INITIAL_DELAY_MS);
+    }
+
+    private boolean isDeviceLocked(Context context) {
         KeyguardManager keyguardManager =
                 (KeyguardManager) context.getSystemService(Context.KEYGUARD_SERVICE);
-        if (keyguardManager == null || !keyguardManager.isKeyguardLocked()) return;
-        if (!canLaunchFromBackground(context)) return;
+        try {
+            return keyguardManager != null && keyguardManager.isDeviceLocked();
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
 
-        // Consume this lock transition once, even if the screensaver was already
-        // visible. Repeated SCREEN_OFF broadcasts while still locked must not
-        // launch it again; ACTION_USER_PRESENT rearms the next lock transition.
+    private void launchOnDeviceLock(Context context) {
+        SharedPreferences prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE);
+        if (!prefs.getBoolean("autoStartOnDeviceLock", false)
+                || !LockScreenMonitorService.isLockMonitoringActive()
+                || prefs.getBoolean("deviceLockStartConsumed", false)
+                || !isDeviceLocked(context)
+                || !canLaunchFromBackground(context)) return;
+
+        // Consume this actual locked-state transition once. Unlike the previous
+        // implementation, do not reject the launch merely because the app process
+        // is visible: MainActivity may be paused behind the lock screen and must
+        // receive this intent so it can display above Keyguard.
         synchronized (AutoStartOnPowerReceiver.class) {
             if (prefs.getBoolean("deviceLockStartConsumed", false)) return;
             if (!prefs.edit().putBoolean("deviceLockStartConsumed", true).commit()) return;
         }
-        if (isMainActivityVisible(context)) return;
 
         Intent launch = new Intent(context, MainActivity.class);
         launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
@@ -145,9 +202,27 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
         }
     }
 
+    void cancelPendingLockCheck() {
+        if (pendingLockCheck != null) {
+            mainHandler.removeCallbacks(pendingLockCheck);
+            pendingLockCheck = null;
+        }
+        if (pendingLockWakeLock != null) {
+            try {
+                if (pendingLockWakeLock.isHeld()) pendingLockWakeLock.release();
+            } catch (Throwable ignored) {
+            }
+            pendingLockWakeLock = null;
+        }
+    }
+
+    private void finishPendingLockCheck() {
+        cancelPendingLockCheck();
+    }
+
     private boolean claimPowerConnectedEvent(Context context) {
-        // A short cross-process file lock prevents two already-running monitor
-        // processes from launching the screensaver twice for one plug-in event.
+        // The receiver can exist in more than one app process. A short file lock
+        // prevents duplicate launches for the same plug-in event.
         synchronized (AutoStartOnPowerReceiver.class) {
             File guardFile = new File(
                     context.getNoBackupFilesDir(), "power_connected_guard.bin");
@@ -182,7 +257,6 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
             if (processes == null) return false;
             for (ActivityManager.RunningAppProcessInfo process : processes) {
                 if (context.getPackageName().equals(process.processName)) {
-                    // Treat a visible, resumed, or top-sleeping Activity as already present.
                     return process.importance
                             <= ActivityManager.RunningAppProcessInfo.IMPORTANCE_VISIBLE;
                 }
@@ -193,8 +267,6 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
     }
 
     private boolean canLaunchFromBackground(Context context) {
-        // Background activity starts on Android 10+ require the overlay permission
-        // for this app's Android 11 target-device workflow.
         return Build.VERSION.SDK_INT < 29 || Settings.canDrawOverlays(context);
     }
 }
