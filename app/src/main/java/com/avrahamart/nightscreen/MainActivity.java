@@ -836,8 +836,11 @@ public class MainActivity extends Activity {
         mediaArtwork = new ImageView(this);
         mediaArtwork.setScaleType(ImageView.ScaleType.CENTER_CROP);
         mediaArtwork.setVisibility(View.GONE);
-        mediaArtwork.setBackground(roundOutline(Color.rgb(22, 36, 52), dp(9),
-                Color.rgb(49, 70, 94)));
+        GradientDrawable artworkBackground = new GradientDrawable();
+        artworkBackground.setColor(Color.rgb(22, 36, 52));
+        artworkBackground.setCornerRadius(dp(9));
+        artworkBackground.setStroke(dp(1), Color.rgb(49, 70, 94));
+        mediaArtwork.setBackground(artworkBackground);
         if (Build.VERSION.SDK_INT >= 21) mediaArtwork.setClipToOutline(true);
         mediaArtwork.setOnClickListener(v -> openSourcePlayer());
         LinearLayout.LayoutParams artworkParams =
