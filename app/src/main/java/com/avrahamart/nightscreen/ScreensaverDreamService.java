@@ -101,12 +101,11 @@ public final class ScreensaverDreamService extends DreamService {
         applyTextSettings();
     }
 
+    
     private void applyTextSettings() {
         android.content.SharedPreferences p = prefs();
         int color = p.getInt("fontColor", Color.rgb(220, 220, 220));
         int clockSize = p.getInt("clockDateSize", 84);
-        int gregorianScale = p.getInt("gregorianDateScale", -1);
-        int hebrewScale = p.getInt("hebrewDateScale", -1);
         String family = p.getString("fontFamily", "sans-serif");
         Typeface face = Typeface.create("sans-serif", Typeface.NORMAL);
         if (family != null && family.startsWith("custom:")) {
@@ -118,8 +117,7 @@ public final class ScreensaverDreamService extends DreamService {
             face = Typeface.create(family, Typeface.NORMAL);
         }
         int weight = p.getInt("fontWeight", 0);
-        if (weight >= 2) face = Typeface.create(face, Typeface.BOLD);
-        else if (weight == 1) face = Typeface.create(face, Typeface.BOLD);
+        if (weight >= 1) face = Typeface.create(face, Typeface.BOLD);
         timeView.setTextColor(color);
         gregorianView.setTextColor(color);
         hebrewView.setTextColor(color);
@@ -127,10 +125,8 @@ public final class ScreensaverDreamService extends DreamService {
         gregorianView.setTypeface(face);
         hebrewView.setTypeface(face);
         timeView.setTextSize(clockSize);
-        gregorianView.setTextSize(gregorianScale > 0
-                ? clockSize * gregorianScale / 100f : clockSize * 0.26f);
-        hebrewView.setTextSize(hebrewScale > 0
-                ? clockSize * hebrewScale / 100f : clockSize * 0.26f);
+        gregorianView.setTextSize(clockSize * 0.26f);
+        hebrewView.setTextSize(clockSize * 0.26f);
         gregorianView.setVisibility(p.getBoolean("showGregorian", true) ? View.VISIBLE : View.GONE);
         hebrewView.setVisibility(p.getBoolean("showHebrew", true) ? View.VISIBLE : View.GONE);
     }
@@ -138,9 +134,7 @@ public final class ScreensaverDreamService extends DreamService {
     private void updateClock() {
         if (timeView == null) return;
         now.setTimeInMillis(System.currentTimeMillis());
-        String mode = prefs().getString("timeFormat", "system");
-        boolean use24 = "24".equals(mode) || ("system".equals(mode)
-                && android.text.format.DateFormat.is24HourFormat(this));
+        boolean use24 = "24".equals(prefs().getString("timeFormat", "24"));
         int hour = now.get(Calendar.HOUR_OF_DAY);
         if (use24) {
             timeView.setText(String.format(Locale.US, "%d:%02d",
@@ -192,10 +186,6 @@ public final class ScreensaverDreamService extends DreamService {
             top = 0;
         } else if ("middle".equals(position)) {
             top = Math.max(0, Math.round(height * 0.5f - blockHeight * 0.5f));
-        } else if ("custom".equals(position)) {
-            int percent = Math.max(0, Math.min(100,
-                    prefs().getInt("clockCustomVerticalPosition", 25)));
-            top = Math.max(0, Math.round(height * percent / 100f - blockHeight * 0.5f));
         } else {
             top = Math.max(0, Math.round(height * 0.25f - blockHeight * 0.5f));
         }
