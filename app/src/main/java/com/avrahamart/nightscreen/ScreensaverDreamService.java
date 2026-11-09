@@ -26,11 +26,12 @@ public final class ScreensaverDreamService extends DreamService {
     private TextView timeView;
     private TextView gregorianView;
     private TextView hebrewView;
+    private boolean dreaming = false;
     private FrameLayout root;
     private LinearLayout clockBlock;
     private final Runnable refreshRunnable = new Runnable() {
         @Override public void run() {
-            if (!isDreaming()) return;
+            if (!dreaming) return;
             updateClock();
             updatePosition();
             handler.postDelayed(this, 60_000L);
@@ -50,6 +51,7 @@ public final class ScreensaverDreamService extends DreamService {
     @Override
     public void onDreamingStarted() {
         super.onDreamingStarted();
+        dreaming = true;
         updateClock();
         updatePosition();
         handler.removeCallbacks(refreshRunnable);
@@ -58,12 +60,14 @@ public final class ScreensaverDreamService extends DreamService {
 
     @Override
     public void onDreamingStopped() {
+        dreaming = false;
         handler.removeCallbacks(refreshRunnable);
         super.onDreamingStopped();
     }
 
     @Override
     public void onDetachedFromWindow() {
+        dreaming = false;
         handler.removeCallbacks(refreshRunnable);
         super.onDetachedFromWindow();
     }
