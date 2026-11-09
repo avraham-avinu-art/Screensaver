@@ -32,6 +32,10 @@ public final class ScreensaverDreamService extends DreamService {
     private final Runnable refreshRunnable = new Runnable() {
         @Override public void run() {
             if (!dreaming) return;
+            if (!prefs().getBoolean("useAndroidDreamForCharging", false)) {
+                finish();
+                return;
+            }
             updateClock();
             updatePosition();
             handler.postDelayed(this, 60_000L);
@@ -41,6 +45,10 @@ public final class ScreensaverDreamService extends DreamService {
     @Override
     public void onAttachedToWindow() {
         super.onAttachedToWindow();
+        if (!prefs().getBoolean("useAndroidDreamForCharging", false)) {
+            finish();
+            return;
+        }
         setInteractive(false);
         setFullscreen(true);
         setScreenBright(false);
