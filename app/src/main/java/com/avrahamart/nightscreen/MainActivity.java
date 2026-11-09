@@ -3088,7 +3088,8 @@ public class MainActivity extends Activity {
             } else {
                 setProgressRowVisible(false);
             }
-            boolean controlsVisible = arePlayerControlsVisible();
+            boolean controlsVisible = getBool("showProgress", true)
+                    && arePlayerControlsVisible();
             if (mediaControlsHolder != null) {
                 mediaControlsHolder.setVisibility(controlsVisible ? View.VISIBLE : View.GONE);
             }
