@@ -42,6 +42,14 @@ public class AutoStartPolicyTest {
     }
 
     @Test
+    public void unrelatedEnabledSettingsNeverEnableAnotherEvent() {
+        assertFalse(enabled(AutoStartPolicy.ACTION_SCREEN_OFF, false, true, true, true, false));
+        assertFalse(enabled(AutoStartPolicy.ACTION_BOOT_COMPLETED, true, false, true, true, false));
+        assertFalse(enabled(AutoStartPolicy.ACTION_SCREEN_ON, true, true, false, true, false));
+        assertFalse(enabled(AutoStartPolicy.ACTION_POWER_CONNECTED, true, true, true, false, false));
+    }
+
+    @Test
     public void unknownActionCannotStartScreensaver() {
         assertNull(AutoStartPolicy.triggerForAction("android.intent.action.UNKNOWN"));
         assertFalse(enabled("android.intent.action.UNKNOWN", true, true, true, true, false));
