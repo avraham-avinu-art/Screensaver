@@ -3423,8 +3423,11 @@ public class MainActivity extends Activity {
             mediaArtwork.setVisibility(View.GONE);
             currentAlbumAccentColor = Color.rgb(33, 52, 75);
         } else {
+            mediaArtwork.animate().cancel();
+            mediaArtwork.setAlpha(0f);
             mediaArtwork.setImageBitmap(artwork);
             mediaArtwork.setVisibility(View.VISIBLE);
+            mediaArtwork.animate().alpha(1f).setDuration(280L).start();
             currentAlbumAccentColor = extractAlbumAccentColor(artwork);
         }
         if (getBool("dynamicAlbumBackgroundEnabled", false)) {
