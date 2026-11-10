@@ -15,6 +15,7 @@ final class MonitorSettingsSnapshot {
     final boolean useAndroidDreamForCharging, deviceLockStartConsumed, continueOnLockScreen;
     final boolean mainActivitySessionAlive, mainActivityResumed, mainActivityPausedByDeviceLock;
     final boolean mainActivityWaitingForScreenWake;
+    final boolean notificationDetached;
     final int mainActivitySessionPid;
 
     private MonitorSettingsSnapshot(Bundle b) {
@@ -29,6 +30,7 @@ final class MonitorSettingsSnapshot {
         mainActivityResumed = b.getBoolean("mainActivityResumed", false);
         mainActivityPausedByDeviceLock = b.getBoolean("mainActivityPausedByDeviceLock", false);
         mainActivityWaitingForScreenWake = b.getBoolean("mainActivityWaitingForScreenWake", false);
+        notificationDetached = b.getBoolean("monitorNotificationDetached", false);
         mainActivitySessionPid = b.getInt("mainActivitySessionPid", -1);
     }
 
@@ -73,6 +75,7 @@ final class MonitorSettingsSnapshot {
         b.putBoolean("mainActivityResumed", p.getBoolean("mainActivityResumed", false));
         b.putBoolean("mainActivityPausedByDeviceLock", p.getBoolean("mainActivityPausedByDeviceLock", false));
         b.putBoolean("mainActivityWaitingForScreenWake", p.getBoolean("mainActivityWaitingForScreenWake", false));
+        b.putBoolean("monitorNotificationDetached", p.getBoolean("monitorNotificationDetached", false));
         b.putInt("mainActivitySessionPid", p.getInt("mainActivitySessionPid", -1));
         return b;
     }
@@ -80,6 +83,22 @@ final class MonitorSettingsSnapshot {
     boolean needsMonitorService() {
         return AutoStartPolicy.needsMonitorService(
                 autoStartOnDeviceLock, autoStartOnBoot, autoStartOnWake, autoStartOnCharge);
+    }
+
+    static void setNotificationDetached(Context context, boolean detached) {
+        try {
+            Bundle extras = new Bundle();
+            extras.putBoolean("detached", detached);
+            Bundle result = context.getContentResolver().call(
+                    URI, MonitorSettingsProvider.METHOD_SET_NOTIFICATION_DETACHED, null, extras);
+            if (result == null || !result.getBoolean("saved", false)) {
+                android.util.Log.w("NightScreenAutoStart",
+                        "Unable to persist the monitor notification state.");
+            }
+        } catch (Throwable e) {
+            android.util.Log.e("NightScreenAutoStart",
+                    "Unable to persist the monitor notification state.", e);
+        }
     }
 
     static boolean claimDeviceLockStart(Context c) {
