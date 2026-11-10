@@ -75,13 +75,12 @@ public class MainActivity extends Activity {
             "com.avrahamart.nightscreen.EXTRA_OPENED_BY_DEVICE_LOCK";
     public static final String EXTRA_OPENED_BY_WAKE =
             "com.avrahamart.nightscreen.EXTRA_OPENED_BY_WAKE";
-    public static final String EXTRA_OPENED_BY_SCREEN_ON =
-            "com.avrahamart.nightscreen.EXTRA_OPENED_BY_SCREEN_ON";
     public static final String EXTRA_OPENED_BY_BOOT =
             "com.avrahamart.nightscreen.EXTRA_OPENED_BY_BOOT";
     public static final String ACTION_FINISH_FROM_TILE =
             "com.screensaver.action.FINISH_FROM_TILE";
     private static volatile boolean mainActivityResumed = false;
+    private static volatile boolean mainActivitySessionAlive = false;
     private static volatile boolean mainActivityPausedByDeviceLock = false;
 
     public static boolean isMainActivityResumed() {
@@ -320,6 +319,7 @@ public static boolean wasMainActivityPausedByDeviceLock() {
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
+        mainActivitySessionAlive = true;
         try {
             prefs = getSharedPreferences("settings", MODE_PRIVATE);
             initSettings();
@@ -371,7 +371,6 @@ public static boolean wasMainActivityPausedByDeviceLock() {
         if (intent != null && (intent.getBooleanExtra(EXTRA_OPENED_BY_CHARGER, false)
                 || intent.getBooleanExtra(EXTRA_OPENED_BY_DEVICE_LOCK, false)
                 || intent.getBooleanExtra(EXTRA_OPENED_BY_WAKE, false)
-                || intent.getBooleanExtra(EXTRA_OPENED_BY_SCREEN_ON, false)
                 || intent.getBooleanExtra(EXTRA_OPENED_BY_BOOT, false))) {
             waitingForScreenWakeAfterActivityEnd = false;
             lockScreenContinuationArmed = false;
@@ -401,9 +400,7 @@ public static boolean wasMainActivityPausedByDeviceLock() {
     }
 
     private void applyWakeLaunchFlags(Intent intent) {
-        if (intent == null
-                || (!intent.getBooleanExtra(EXTRA_OPENED_BY_WAKE, false)
-                    && !intent.getBooleanExtra(EXTRA_OPENED_BY_SCREEN_ON, false))) return;
+        if (intent == null || !intent.getBooleanExtra(EXTRA_OPENED_BY_WAKE, false)) return;
         if (Build.VERSION.SDK_INT >= 27) setTurnScreenOn(true);
         getWindow().addFlags(
                 android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
@@ -452,13 +449,11 @@ public static boolean wasMainActivityPausedByDeviceLock() {
                 && getIntent().getBooleanExtra(EXTRA_OPENED_BY_DEVICE_LOCK, false);
         boolean openedByDeepWake = getIntent() != null
                 && getIntent().getBooleanExtra(EXTRA_OPENED_BY_WAKE, false);
-        boolean openedByScreenOn = getIntent() != null
-                && getIntent().getBooleanExtra(EXTRA_OPENED_BY_SCREEN_ON, false);
         if (!getBool("continueOnLockScreen", false)) {
             lockScreenContinuationArmed = false;
         }
         boolean showAboveExistingKeyguard = !preventLock || openedByDeviceLock
-                || openedByDeepWake || openedByScreenOn || lockScreenContinuationArmed;
+                || openedByDeepWake || lockScreenContinuationArmed;
         if (Build.VERSION.SDK_INT >= 27) {
             setShowWhenLocked(showAboveExistingKeyguard);
         } else if (showAboveExistingKeyguard) {
@@ -567,6 +562,7 @@ public static boolean wasMainActivityPausedByDeviceLock() {
 
     @Override
     protected void onDestroy() {
+        mainActivitySessionAlive = false;
         handler.removeCallbacks(clockUpdateRunnable);
         handler.removeCallbacks(mediaSessionRefreshRunnable);
         handler.removeCallbacks(mediaProgressTicker);
