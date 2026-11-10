@@ -1416,8 +1416,8 @@ screenTitle.setText("הגדרות");
                 if (!checked) {
                     prefs.edit()
                             .putBoolean("autoStartOnLockOverlayPermissionPending", false)
-                            .putBoolean("deviceLockActivationConsumed", false)
                             .apply();
+                    MonitorSettingsSnapshot.resetDeviceLockActivation(this);
                 }
                 LockScreenMonitorService.sync(this);
                 updateOverlayPermissionCardVisibility();
@@ -2077,8 +2077,7 @@ screenTitle.setText("הגדרות");
         return "autoStartOnCharge".equals(key)
                 || "autoStartOnDeviceLock".equals(key)
                 || "autoStartOnBoot".equals(key)
-                || "autoStartOnWake".equals(key)
-;
+                || "autoStartOnWake".equals(key);
     }
 
     /**
@@ -2683,8 +2682,7 @@ screenTitle.setText("הגדרות");
                 && !getBool("useAndroidDreamForCharging", false))
                 || getBool("autoStartOnDeviceLock", false)
                 || getBool("autoStartOnBoot", false)
-                || getBool("autoStartOnWake", false)
-;
+                || getBool("autoStartOnWake", false);
         overlayPermissionStatus.setText(granted
                 ? (autoStartEnabled
                     ? "ההרשאה פעילה — ההפעלה האוטומטית זמינה."
