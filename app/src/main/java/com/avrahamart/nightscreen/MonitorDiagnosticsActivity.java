@@ -90,6 +90,7 @@ public final class MonitorDiagnosticsActivity extends Activity {
             MonitorDiagnostics.clear(this);
             MonitorDiagnostics.record(this, "===== USER STARTED NEW DIAGNOSTIC TEST =====");
             MonitorDiagnostics.recordNotificationState(this, "test start baseline");
+            MonitorDiagnostics.scheduleTestWindowProbes(this);
             refreshLog();
             Toast.makeText(this, "הרישום נוקה. אפשר להתחיל בבדיקה.", Toast.LENGTH_SHORT).show();
         });
