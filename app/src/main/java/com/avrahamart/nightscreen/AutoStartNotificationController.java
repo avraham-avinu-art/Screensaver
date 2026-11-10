@@ -27,10 +27,9 @@ public final class AutoStartNotificationController {
         Context app = context.getApplicationContext();
         MonitorSettingsSnapshot snapshot = MonitorSettingsSnapshot.read(app);
         if (snapshot == null) return;
-        boolean enabled = snapshot.autoStartOnDeviceLock
-                || snapshot.autoStartOnBoot
-                || snapshot.autoStartOnWake
-                || snapshot.autoStartOnCharge;
+        // This status notification belongs to the persistent lock/wake monitor.
+        // Charge and boot remain event-only routes, as in Build 575.
+        boolean enabled = snapshot.autoStartOnDeviceLock || snapshot.autoStartOnWake;
 
         NotificationManager manager =
                 (NotificationManager) app.getSystemService(Context.NOTIFICATION_SERVICE);
