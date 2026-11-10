@@ -237,8 +237,15 @@ public final class LockScreenMonitorService extends Service {
 
     @Override
     public void onTaskRemoved(Intent rootIntent) {
-        // This service runs in :lockmonitor and stopWithTask=false is declared
-        // in the manifest. Keep it in the foreground when the UI task is removed.
+        // The monitor is independent of the UI task. Some device builds may still
+        // tear down background processes after the recent-task card is dismissed.
+        // Schedule a single recovery check; the same notification ID is reused,
+        // and a live service simply refreshes its existing foreground notification.
+        if (isMonitoringAllowed(this)) {
+            scheduleRestartIfEnabled();
+        } else {
+            removeForegroundNotification();
+        }
         super.onTaskRemoved(rootIntent);
     }
 
