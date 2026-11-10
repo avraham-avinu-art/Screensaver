@@ -421,17 +421,7 @@ public static boolean wasMainActivityPausedByDeviceLock() {
                         | android.view.WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON);
     }
 
-    private boolean isDeviceLockedNow() {
-        try {
-            android.app.KeyguardManager keyguard =
-                    (android.app.KeyguardManager) getSystemService(KEYGUARD_SERVICE);
-            return keyguard != null && keyguard.isDeviceLocked();
-        } catch (Throwable ignored) {
-            return false;
-        }
-    }
-
-    /**
+        /**
      * The lock-start marker belongs to one locked cycle only. Remove it after
      * the user unlocks so later wake/charge/boot launches cannot inherit it.
      */
@@ -510,8 +500,6 @@ public static boolean wasMainActivityPausedByDeviceLock() {
             AppToast.makeText(this, disabledFeatures, Toast.LENGTH_LONG).show();
         }
         NightScreenApplication.syncChargerReceiver(this);
-        LockScreenMonitorService.sync(this);
-        AutoStartNotificationController.sync(this);
         applyPreventLockWhileActivePreference();
         try {
             if (settingsDialogOpen) {
@@ -1007,6 +995,16 @@ public static boolean wasMainActivityPausedByDeviceLock() {
         e.putInt("fontColor", getInt("fontColor", dateTextColor));
         e.putInt("screenBackgroundColor", getInt("screenBackgroundColor", Color.BLACK));
         e.putInt("screenBrightness", getInt("screenBrightness", -1));
+        e.remove("deviceLockStartConsumed")
+                .remove("mainActivitySessionAlive")
+                .remove("mainActivityResumed")
+                .remove("mainActivityPausedByDeviceLock")
+                .remove("mainActivityWaitingForScreenWake")
+                .remove("mainActivitySessionPid")
+                .remove("screenLockObservationKnown")
+                .remove("screenLockObserved")
+                .remove("monitorNotificationDetached")
+                .remove("chargeActivationMethodDefaultV1Applied");
         e.putInt("fontSize", getInt("fontSize", 17));
         e.putInt("clockDateSize", getInt("clockDateSize", 84));
         e.putInt("clockHorizontalOffset", getInt("clockHorizontalOffset", 0));
