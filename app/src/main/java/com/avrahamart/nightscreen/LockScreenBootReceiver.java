@@ -17,7 +17,7 @@ import android.util.Log;
 public final class LockScreenBootReceiver extends BroadcastReceiver {
     private static final String TAG = "NightScreenAutoStart";
     private static final String BOOT_NOTIFICATION_CHANNEL_ID =
-            "screensaver_boot_start_status_v1";
+            "screensaver_boot_start_status_v2";
     private static final int BOOT_NOTIFICATION_ID = 6723;
 
     @Override
@@ -64,8 +64,8 @@ public final class LockScreenBootReceiver extends BroadcastReceiver {
     }
 
     /**
-     * A low-importance notification gives a status-bar icon and a drawer entry
-     * without interrupting the user with sound, vibration, or a heads-up banner.
+     * A silent high-importance notification displays a heads-up banner and a
+     * drawer entry, without sound or vibration.
      */
     private void showBootStartedNotification(Context context) {
         if (Build.VERSION.SDK_INT >= 33
@@ -83,7 +83,7 @@ public final class LockScreenBootReceiver extends BroadcastReceiver {
             NotificationChannel channel = new NotificationChannel(
                     BOOT_NOTIFICATION_CHANNEL_ID,
                     "הפעלה אוטומטית לאחר אתחול",
-                    NotificationManager.IMPORTANCE_LOW);
+                    NotificationManager.IMPORTANCE_HIGH);
             channel.setDescription("הודעה שקטה לאחר הפעלה אוטומטית של שומר מסך.");
             channel.setShowBadge(false);
             channel.setLockscreenVisibility(Notification.VISIBILITY_SECRET);
@@ -116,9 +116,7 @@ public final class LockScreenBootReceiver extends BroadcastReceiver {
                 .setSound(null)
                 .setVibrate(new long[0])
                 .setDefaults(0);
-        if (Build.VERSION.SDK_INT < 26) {
-            builder.setPriority(Notification.PRIORITY_LOW);
-        }
+        builder.setPriority(Notification.PRIORITY_HIGH);
         manager.notify(BOOT_NOTIFICATION_ID, builder.build());
     }
 }
