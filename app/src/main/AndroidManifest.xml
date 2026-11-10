@@ -31,6 +31,11 @@
             android:exported="false"
             android:screenOrientation="unspecified" />
         <activity
+            android:name=".MonitorDiagnosticsActivity"
+            android:label="אבחון התראת הרקע"
+            android:exported="false"
+            android:screenOrientation="unspecified" />
+        <activity
             android:name=".GuideActivity"
             android:label="מדריך שימוש"
             android:exported="false"
