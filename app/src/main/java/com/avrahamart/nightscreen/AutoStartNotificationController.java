@@ -25,12 +25,12 @@ public final class AutoStartNotificationController {
 
     public static void sync(Context context) {
         Context app = context.getApplicationContext();
-        android.content.SharedPreferences prefs =
-                app.getSharedPreferences("settings", Context.MODE_PRIVATE);
-        boolean enabled = prefs.getBoolean("autoStartOnDeviceLock", false)
-                || prefs.getBoolean("autoStartOnBoot", false)
-                || prefs.getBoolean("autoStartOnWake", false)
-                || prefs.getBoolean("autoStartOnCharge", false);
+        MonitorSettingsSnapshot snapshot = MonitorSettingsSnapshot.read(app);
+        if (snapshot == null) return;
+        boolean enabled = snapshot.autoStartOnDeviceLock
+                || snapshot.autoStartOnBoot
+                || snapshot.autoStartOnWake
+                || snapshot.autoStartOnCharge;
 
         NotificationManager manager =
                 (NotificationManager) app.getSystemService(Context.NOTIFICATION_SERVICE);
