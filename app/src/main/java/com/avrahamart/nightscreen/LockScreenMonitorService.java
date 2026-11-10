@@ -208,7 +208,6 @@ public final class LockScreenMonitorService extends Service {
                 .setSound(null)
                 .setVibrate(new long[0])
                 .setDefaults(0);
-        if (Build.VERSION.SDK_INT >= 26) builder.setSilent(true);
         return builder.build();
     }
 
