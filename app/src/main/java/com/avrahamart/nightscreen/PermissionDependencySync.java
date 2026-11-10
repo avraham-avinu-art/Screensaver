@@ -51,6 +51,9 @@ public final class PermissionDependencySync {
         if (disablePlayer) editor.putBoolean("showPlayer", false)
                 .putBoolean("showPlayerPermissionPending", false);
         editor.apply();
+        if (disableLockStart) {
+            MonitorSettingsSnapshot.resetDeviceLockActivation(context);
+        }
 
         if (disableLockStart || disableWakeStart) {
             LockScreenMonitorService.sync(context);
