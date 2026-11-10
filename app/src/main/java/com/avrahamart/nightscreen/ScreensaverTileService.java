@@ -20,7 +20,7 @@ public final class ScreensaverTileService extends TileService {
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
                     | Intent.FLAG_ACTIVITY_CLEAR_TOP
                     | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-            if (MainActivity.isMainActivityResumed()) {
+            if (MainActivity.isMainActivitySessionAlive()) {
                 intent.setAction(MainActivity.ACTION_FINISH_FROM_TILE);
             }
             try {
