@@ -18,6 +18,5 @@ public final class ScreensaverNotificationActionReceiver extends BroadcastReceiv
                 .apply();
 
         LockScreenMonitorService.sync(context);
-        NightScreenApplication.syncChargerReceiver(context);
     }
 }
