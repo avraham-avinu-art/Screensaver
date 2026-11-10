@@ -2,6 +2,7 @@ package com.avrahamart.nightscreen;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.AppOpsManager;
 import android.app.NotificationManager;
 import android.app.admin.DevicePolicyManager;
 import android.content.ActivityNotFoundException;
@@ -18,6 +19,7 @@ import android.graphics.Path;
 import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.Icon;
 import android.text.style.StyleSpan;
 import android.text.style.RelativeSizeSpan;
 import android.text.style.ForegroundColorSpan;
@@ -26,6 +28,7 @@ import android.text.SpannableStringBuilder;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Process;
 import android.provider.Settings;
 import android.view.Gravity;
 import android.view.View;
@@ -50,9 +53,15 @@ import com.kosherjava.zmanim.hebrewcalendar.JewishDate;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Locale;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 public class SettingsActivity extends Activity {
     private static final int REQUEST_ENABLE_SCREEN_LOCK_ADMIN = 8142;
+    private static final int REQUEST_AUTO_START_NOTIFICATION_PERMISSION = 8143;
     private static final int SURFACE = Color.rgb(9, 19, 33);
     private static final int CARD_SURFACE = Color.rgb(20, 36, 56);
     private static final int CONTROL_SURFACE = Color.rgb(27, 47, 70);
@@ -80,6 +89,7 @@ private LinearLayout clockDateCard;
     private Switch autoStartOnDeviceLockToggle;
     private Switch autoStartOnBootToggle;
     private Switch autoStartOnWakeToggle;
+    private Switch autoStartOnScreenOnToggle;
     private TextView activityCapabilityNotice;
     private View activityHelpHeaderButton;
     private LinearLayout screenLockAdminCard;
@@ -88,6 +98,12 @@ private LinearLayout clockDateCard;
     private DevicePolicyManager devicePolicyManager;
     private ComponentName screenLockAdminComponent;
     private LinearLayout currentCard;
+
+
+
+
+
+
     private TextView screenTitle;
     private TextView screenSubtitle;
     private ScrollView settingsScroll;
@@ -100,6 +116,7 @@ private LinearLayout clockDateCard;
     private static final int CATEGORY_ACTIVITY = 2;
     private static final int CATEGORY_APPEARANCE = 3;
     private static final int CATEGORY_PLAYER = 4;
+    private static final int CATEGORY_ADVANCED = 5;
     private final int dateTextColor = Color.rgb(220, 220, 220);
 
     @Override
@@ -219,7 +236,7 @@ private LinearLayout clockDateCard;
     @Override
     protected void onResume() {
         super.onResume();
-        if (content != null) {
+if (content != null) {
             handlePlayerPermissionResult();
             handleChargerPermissionResult();
             handleLockStartPermissionResult();
@@ -230,7 +247,9 @@ private LinearLayout clockDateCard;
             }
             refreshPermissionDependentToggles();
             LockScreenMonitorService.sync(this);
+            AutoStartNotificationController.sync(this);
             NightScreenApplication.syncChargerReceiver(this);
+            ensureAutoStartNotificationPermission();
             updateDeviceCapabilityNotice();
         }
     }
@@ -281,6 +300,9 @@ screenTitle.setText("הגדרות");
         addDashboardButton("נגן מדיה",
                 "הצגת והתאמת נגן המערכת",
                 "music-note", CATEGORY_PLAYER);
+        addDashboardButton("הגדרות מתקדמות",
+                "כלים מתקדמים וחיסכון בסוללה",
+                "tune", CATEGORY_ADVANCED);
 
         addDashboardNavigation();
         // Do not leave an extra gap below the final item at the bottom of the screen.
@@ -409,6 +431,11 @@ screenTitle.setText("הגדרות");
         playerFrameCard = null;
         activityCapabilityNotice = null;
 
+
+
+
+
+
         switch (category) {
             case CATEGORY_CLOCK_DATE:
                 buildClockDateSettings();
@@ -421,6 +448,9 @@ screenTitle.setText("הגדרות");
                 break;
             case CATEGORY_PLAYER:
                 buildPlayerSettings();
+                break;
+            case CATEGORY_ADVANCED:
+                buildAdvancedSettings();
                 break;
             default:
                 buildDashboard();
@@ -448,14 +478,16 @@ screenTitle.setText("הגדרות");
         }
     }
 
+    
+
+    
+
+    
     private void buildClockDateSettings() {
         addCheck(content, "תאריך עברי", "showHebrew", true);
-        String[] hebrewDateFormats = {
-                "plain", "yearArticle", "monthBet", "monthBetYearArticle"
-        };
+        String[] hebrewDateFormats = {"plain", "yearArticle", "monthBet", "monthBetYearArticle"};
         addSpinner(content, "תבנית התאריך העברי",
-                currentHebrewDateSamples(),
-                hebrewDateFormats, "hebrewDateFormat");
+                currentHebrewDateSamples(), hebrewDateFormats, "hebrewDateFormat");
         addCheck(content, "תאריך לועזי", "showGregorian", true);
         String[] gregorianDateFormats = {
                 "dd.MM.yyyy", "dd.MM.yy", "dd/MM/yy",
@@ -464,6 +496,15 @@ screenTitle.setText("הגדרות");
         addSpinner(content, "תבנית התאריך הלועזי",
                 currentGregorianDateSamples(gregorianDateFormats),
                 gregorianDateFormats, "gregorianDateFormat");
+        addSegmentedChoices(content, "תצוגת שעה",
+                new String[]{"24 שעות", "12 שעות"},
+                new String[]{"24", "12"}, "timeFormat");
+        addSegmentedChoices(content, "סוג השעון",
+                new String[]{"דיגיטלי", "אנלוגי"},
+                new String[]{"digital", "analog"}, "clockDisplayMode");
+        addSegmentedChoices(content, "עיצוב לוח השעון",
+                new String[]{"קלאסי", "נקי", "ספרות"},
+                new String[]{"classic", "minimal", "numerals"}, "clockDialStyle");
         addDiscreteSlider(content, "גודל",
                 new String[]{"קטן", "בינוני", "רגיל", "גדול", "ענק"},
                 new String[]{"60", "72", "84", "96", "108"}, "clockDateSize");
@@ -473,9 +514,8 @@ screenTitle.setText("הגדרות");
         addSegmentedChoices(content, "מיקום",
                 new String[]{"בראש המסך", "ברבע העליון", "במרכז המסך"},
                 new String[]{"top", "upper", "middle"}, "clockDatePosition");
+        addLineSlider(content, "הזזה אופקית", "clockHorizontalOffset", -20, 20);
     }
-
-
 
     private String[] currentGregorianDateSamples(String[] patterns) {
         Calendar today = Calendar.getInstance();
@@ -565,11 +605,121 @@ screenTitle.setText("הגדרות");
         addCheck(content, "הפעלה אוטומטית בנעילה", "autoStartOnDeviceLock", false);
         addCheck(content, "הפעלה אוטומטית בהדלקה", "autoStartOnBoot", false);
         addCheck(content, "הפעלה אוטומטית בהתעוררות", "autoStartOnWake", false);
+        addCheck(content, "הפעלה אוטומטית בהדלקת מסך", "autoStartOnScreenOn", false);
         addCheck(content, "הפעלה אוטומטית בטעינה", "autoStartOnCharge", false);
         addCheck(content, "ללא כיבוי בטעינה", "noShutdownWhileCharging", false);
-        addCheck(content, "הצגת אחוז הסוללה", "showBatteryPercent", false);
+        addSegmentedChoices(content, "תצוגת סוללה בטעינה",
+                new String[]{"ללא", "אחוזים", "סמל", "סמל ואחוזים"},
+                new String[]{"off", "percent", "icon", "icon_percent"},
+                "chargingBatteryDisplayMode");
+        addCheck(content, "השהיה באפליקציות מוחרגות",
+                "pauseWhenExcludedAppActive", false);
+        if (currentSettingsGroup != null && currentSettingsGroup.getChildCount() > 1) {
+            View exclusionCard = currentSettingsGroup.getChildAt(
+                    currentSettingsGroup.getChildCount() - 1);
+            if (exclusionCard instanceof LinearLayout) {
+                addExcludedAppsPicker((LinearLayout) exclusionCard);
+            }
+        }
     }
 
+    private void addExcludedAppsPicker(LinearLayout parent) {
+        LinearLayout card = parent;
+        TextView description = textView(
+                "אפשר לבחור אפליקציות שבהן שומר מסך לא יופעל אוטומטית. נדרשת הרשאת נתוני שימוש של Android.",
+                14, MUTED);
+        description.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        description.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
+        description.setTextDirection(View.TEXT_DIRECTION_RTL);
+        description.setLineSpacing(dp(3), 1f);
+        card.addView(description, new LinearLayout.LayoutParams(-1, -2));
+        Button choose = makeActionButton("בחירת אפליקציות");
+        LinearLayout.LayoutParams buttonParams = new LinearLayout.LayoutParams(-1, dp(42));
+        buttonParams.topMargin = dp(8);
+        card.addView(choose, buttonParams);
+        choose.setOnClickListener(v -> {
+            if (!hasUsageAccess()) {
+                AppToast.makeText(this,
+                        "כדי לזהות אפליקציה פעילה, יש לאפשר לשומר מסך גישה לנתוני שימוש במסך הבא.",
+                        Toast.LENGTH_LONG).show();
+                try {
+                    startActivity(new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS));
+                } catch (Throwable ignored) {
+                    AppToast.makeText(this, "הגדרת נתוני שימוש אינה זמינה במכשיר זה.",
+                            Toast.LENGTH_LONG).show();
+                }
+                return;
+            }
+            showExcludedAppsDialog();
+        });
+    }
+
+    private boolean hasUsageAccess() {
+        try {
+            AppOpsManager manager = (AppOpsManager) getSystemService(APP_OPS_SERVICE);
+            if (manager == null) return false;
+            return manager.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS,
+                    Process.myUid(), getPackageName()) == AppOpsManager.MODE_ALLOWED;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    private void showExcludedAppsDialog() {
+        Intent launcher = new Intent(Intent.ACTION_MAIN);
+        launcher.addCategory(Intent.CATEGORY_LAUNCHER);
+        List<android.content.pm.ResolveInfo> resolved =
+                getPackageManager().queryIntentActivities(launcher, 0);
+        java.util.Map<String, CharSequence> labels = new java.util.TreeMap<>(
+                (left, right) -> {
+                    try {
+                        return getPackageManager().getApplicationLabel(
+                                getPackageManager().getApplicationInfo(left, 0)).toString()
+                                .compareToIgnoreCase(getPackageManager().getApplicationLabel(
+                                getPackageManager().getApplicationInfo(right, 0)).toString());
+                    } catch (Throwable ignored) {
+                        return left.compareToIgnoreCase(right);
+                    }
+                });
+        for (android.content.pm.ResolveInfo info : resolved) {
+            if (info.activityInfo == null) continue;
+            String packageName = info.activityInfo.packageName;
+            if (getPackageName().equals(packageName)) continue;
+            try {
+                CharSequence label = info.loadLabel(getPackageManager());
+                labels.put(packageName, label == null ? packageName : label);
+            } catch (Throwable ignored) {
+                labels.put(packageName, packageName);
+            }
+        }
+
+        List<String> packages = new ArrayList<>(labels.keySet());
+        List<String> names = new ArrayList<>();
+        boolean[] checked = new boolean[packages.size()];
+        Set<String> selected = new HashSet<>(
+                prefs.getStringSet("excludedForegroundPackages", Collections.emptySet()));
+        for (int i = 0; i < packages.size(); i++) {
+            names.add(String.valueOf(labels.get(packages.get(i))));
+            checked[i] = selected.contains(packages.get(i));
+        }
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setTitle("אפליקציות מוחרגות")
+                .setMultiChoiceItems(names.toArray(new String[0]), checked,
+                        (d, which, isChecked) -> checked[which] = isChecked)
+                .setNegativeButton("ביטול", null)
+                .setPositiveButton("שמירה", (d, which) -> {
+                    Set<String> updated = new HashSet<>();
+                    for (int i = 0; i < packages.size(); i++) {
+                        if (checked[i]) updated.add(packages.get(i));
+                    }
+                    prefs.edit().putStringSet("excludedForegroundPackages", updated).apply();
+                })
+                .create();
+        dialog.show();
+    }
+
+    
     private void buildAppearanceSettings() {
         addColorChoices(content, "צבע המסך",
                 new String[]{"שחור", "כחול", "כחול כהה", "טורקיז",
@@ -577,6 +727,9 @@ screenTitle.setText("הגדרות");
                 new String[]{"#000000", "#142438", "#091321", "#12313A",
                         "#252B33", "#20362E", "#193740", "#303943"},
                 "screenBackgroundColor");
+        addSegmentedChoices(content, "סגנון הרקע",
+                new String[]{"אחיד", "מעבר צבע", "זוהר עדין", "הצללה"},
+                new String[]{"solid", "gradient", "glow", "vignette"}, "backgroundStyle");
         addDiscreteSlider(content, "בהירות המסך",
                 new String[]{"לפי המכשיר", "25%", "50%", "75%", "100%"},
                 new String[]{"-1", "25", "50", "75", "100"}, "screenBrightness");
@@ -597,19 +750,25 @@ screenTitle.setText("הגדרות");
                 new String[]{"white", "blue", "silver", "gray", "light"}, "fontColor");
     }
 
+    
     private void buildPlayerSettings() {
-        addSegmentedChoices(content, "הצגת הנגן",
+        addSegmentedChoices(content, "הפעלת הנגן",
                 new String[]{"כבוי", "פועל", "פועל בתחילת שיר"},
                 new String[]{"off", "on", "start"}, "playerDisplayMode");
         addCheck(content, "פרטי האמן", "showDetails", getBool("showDetails", true));
-        addCheck(content, "זמני השיר ופקדי הנגן", "showProgress", true);
+        addSegmentedChoices(content, "הצגת שורת מיקום ופקדי הנגן",
+                new String[]{"כבוי", "פועל", "פועל בתחילת שיר"},
+                new String[]{"off", "on", "start"}, "playerControlsDisplayMode");
         addDiscreteSlider(content, "גודל הנגן",
                 new String[]{"קטן", "בינוני", "גדול", "ענק"},
                 new String[]{"14", "17", "20", "23"}, "playerSize");
         addSegmentedChoices(content, "מיקום הנגן",
                 new String[]{"ברבע התחתון", "בתחתית המסך"},
                 new String[]{"lower", "bottom"}, "playerPosition");
+        addLineSlider(content, "הזזה אופקית של הנגן", "playerHorizontalOffset", -20, 20);
         addCheck(content, "הצג מסגרת", "frameEnabled", false);
+        addCheck(content, "תמונת האלבום כרקע פנימי", "frameUseAlbumArt",
+                getBool("frameUseAlbumArt", true));
         addColorChoices(content, "צבע מסגרת",
                 new String[]{"לבן", "כחול עדין", "כסף", "אפור", "אפור בהיר"},
                 new String[]{"white", "blue", "silver", "gray", "light"}, "frameColor");
@@ -621,9 +780,40 @@ screenTitle.setText("הגדרות");
                 new String[]{"0", "10", "20"}, "frameRadius");
     }
 
+    
+    private void buildAdvancedSettings() {
+        if (!prefs.contains("batteryProtectionThreshold")) {
+            prefs.edit().putInt("batteryProtectionThreshold", 20).apply();
+        }
+        if ("system".equals(getString("timeFormat", "24"))) {
+            prefs.edit().putString("timeFormat", "24").apply();
+        }
+        addCheck(content, "מצב לילה אוטומטי", "nightModeEnabled", false);
+        String[] hourNames = new String[24];
+        String[] hourValues = new String[24];
+        for (int hour = 0; hour < 24; hour++) {
+            hourNames[hour] = String.format(Locale.US, "%02d:00", hour);
+            hourValues[hour] = String.valueOf(hour);
+        }
+        addSpinner(content, "שעת התחלת מצב לילה", hourNames, hourValues, "nightModeStartHour");
+        addSpinner(content, "שעת סיום מצב לילה", hourNames, hourValues, "nightModeEndHour");
+
+        addCheck(content, "הגנה אוטומטית כשהסוללה מתרוקנת",
+                "batteryProtectionEnabled", false);
+        addDiscreteSlider(content, "סף סוללה להפעלת ההגנה",
+                new String[]{"10%", "15%", "20%", "25%", "30%"},
+                new String[]{"10", "15", "20", "25", "30"},
+                "batteryProtectionThreshold");
+
+        addCheck(content, "הגדרת הפעלה אוטומטית בטעינה דרך הגדרות אנדרואיד",
+                "useAndroidDreamForCharging", getBool("useAndroidDreamForCharging", false));
+    }
+
     private String settingsGroupTitleFor(String key) {
         switch (currentCategory) {
             case CATEGORY_CLOCK_DATE:
+                if ("timeFormat".equals(key) || "clockDisplayMode".equals(key)
+                        || "clockDialStyle".equals(key)) return "תצוגת השעה";
                 if ("showHebrew".equals(key) || "showGregorian".equals(key)
                         || "hebrewDateFormat".equals(key) || "gregorianDateFormat".equals(key)) {
                     return "הצגת תאריכים";
@@ -636,21 +826,33 @@ screenTitle.setText("הגדרות");
                     return "הגדרת זמני הפעילות";
                 }
                 if ("autoStartOnDeviceLock".equals(key) || "autoStartOnBoot".equals(key)
-                        || "autoStartOnWake".equals(key) || "autoStartOnCharge".equals(key)) {
+                        || "autoStartOnWake".equals(key) || "autoStartOnScreenOn".equals(key)
+                        || "autoStartOnCharge".equals(key)) {
                     return "הפעלות אוטומטיות";
+                }
+                if ("pauseWhenExcludedAppActive".equals(key)) {
+                    return "השהיה באפליקציות מוחרגות";
                 }
                 return "שומר מסך במצב טעינה";
             case CATEGORY_APPEARANCE:
-                if ("screenBackgroundColor".equals(key) || "screenBrightness".equals(key)) {
+                        if ("screenBackgroundColor".equals(key) || "screenBrightness".equals(key)
+                        || "backgroundStyle".equals(key)) {
                     return "התאמת מראה המסך";
                 }
                 return "גופן וצבע הטקסט";
             case CATEGORY_PLAYER:
-                if ("frameEnabled".equals(key) || "frameColor".equals(key)
-                        || "frameWidth".equals(key) || "frameRadius".equals(key)) {
+                if ("frameEnabled".equals(key) || "frameUseAlbumArt".equals(key)
+                        || "frameColor".equals(key) || "frameWidth".equals(key)
+                        || "frameRadius".equals(key)) {
                     return "מסגרת לנגן";
                 }
                 return "הצגת הנגן";
+            case CATEGORY_ADVANCED:
+                if ("nightModeEnabled".equals(key) || "nightModeStartHour".equals(key)
+                        || "nightModeEndHour".equals(key)) return "מצב לילה";
+                if ("batteryProtectionEnabled".equals(key)
+                        || "batteryProtectionThreshold".equals(key)) return "הגנה על הסוללה";
+                return "הגדרות מתקדמות";
             default:
                 return "הגדרות";
         }
@@ -809,6 +1011,8 @@ screenTitle.setText("הגדרות");
         if ("hebrewDateFormat".equals(key)) return "בחירת תבנית התצוגה של התאריך העברי";
         if ("gregorianDateFormat".equals(key)) return "בחירת תבנית התצוגה של התאריך הלועזי";
         if ("clockDateSize".equals(key)) return "בחירת גודל התצוגה של השעון והתאריך";
+        if ("clockDisplayMode".equals(key)) return "בחירה בין תצוגת שעה דיגיטלית לבין שעון אנלוגי עם מחוגים";
+        if ("clockDialStyle".equals(key)) return "בחירת מראה לוח השעון האנלוגי וסימוני השעות";
         if ("fontWeight".equals(key)) return "בחירת עובי גופן השעון והתאריך";
         if ("clockDatePosition".equals(key)) return "בחירת מיקום הצגת השעון והתאריך במסך";
         if ("screenSaverDuration".equals(key)) return "בחירת משך זמן הצגת השומר מסך";
@@ -816,10 +1020,10 @@ screenTitle.setText("הגדרות");
         if ("continueOnLockScreen".equals(key)) return "השארת השומר מסך על מסך הנעילה גם לאחר כיבוי המסך בסיום הפעילות";
         if ("autoStartOnDeviceLock".equals(key)) return "הפעלת שומר מסך באופן אוטומטי בעת נעילת המכשיר";
         if ("autoStartOnBoot".equals(key)) return "הפעלת שומר מסך באופן אוטומטי לאחר הפעלת המכשיר";
-        if ("autoStartOnWake".equals(key)) return "הפעלת השומר מסך באופן אוטומטי כשהמכשיר מתעורר ממצב שינה";
+        if ("autoStartOnWake".equals(key)) return "הפעלת השומר מסך באופן אוטומטי לאחר יציאה משינה עמוקה של המכשיר";
+        if ("autoStartOnScreenOn".equals(key)) return "הפעלת השומר מסך בכל פעם שהמסך נדלק לאחר שהיה כבוי, גם מעל מסך הנעילה";
         if ("autoStartOnCharge".equals(key)) return "הפעלת השומר מסך אוטומטית בחיבור המכשיר לטעינה";
         if ("noShutdownWhileCharging".equals(key)) return "השארת השומר מסך פועל כל עוד המכשיר מחובר לטעינה";
-        if ("showBatteryPercent".equals(key)) return "הצגת אחוז הסוללה בזמן טעינה, גם ללא הפעלת ההגדרות הקודמות";
         if ("screenBackgroundColor".equals(key)) return "בחירת צבע הרקע של שומר המסך";
         if ("screenBrightness".equals(key)) return "התאמת בהירות התצוגה של שומר המסך";
         if ("fontFamily".equals(key)) return "בחירת סוג הגופן שיוצג במסך";
@@ -827,10 +1031,22 @@ screenTitle.setText("הגדרות");
         if ("playerDisplayMode".equals(key)) return "הצגת נגן המערכת בזמן שהוא פועל";
         if ("showPlayerOnlyAtStart".equals(key)) return "הצגת הנגן רק בתחילת כל שיר";
         if ("showDetails".equals(key)) return "כשמופיע בפרטי השיר את שם האמן, הצגת שם האמן מעל שם השיר";
-        if ("showProgress".equals(key)) return "הצגת נגן מלא, כולל זמני השיר סרגל התקדמות ולחצני שליטה בנגן";
+        if ("playerControlsDisplayMode".equals(key)) return "בחירת אופן הצגת שורת המיקום, זמני השיר ולחצני השליטה: תמיד, בתחילת כל שיר או כבוי";
+        if ("chargingBatteryDisplayMode".equals(key)) return "בחירת האופן שבו תוצג רמת הסוללה כל עוד המכשיר מחובר לטעינה";
+        if ("clockHorizontalOffset".equals(key)) return "הזזת כל תצוגת השעון והתאריך ימינה או שמאלה";
+        if ("playerHorizontalOffset".equals(key)) return "הזזת הנגן ימינה או שמאלה";
+        if ("backgroundStyle".equals(key)) return "בחירת אופן הצגת צבע הרקע";
+        if ("nightModeEnabled".equals(key)) return "הפחתת בהירות מסך השומר מסך בשעות שנבחרו, בלי לשנות את בהירות המכשיר";
+        if ("nightModeStartHour".equals(key)) return "השעה שבה מצב לילה אוטומטי מתחיל";
+        if ("nightModeEndHour".equals(key)) return "השעה שבה מצב לילה אוטומטי מסתיים";
+        if ("timeFormat".equals(key)) return "בחירת תצוגת שעה בת 12 או 24 שעות";
+        if ("batteryProtectionEnabled".equals(key)) return "הפחתת בהירות המסך באופן אוטומטי כשהסוללה יורדת מתחת לסף שנבחר";
+        if ("useAndroidDreamForCharging".equals(key)) return "קובע באיזה מסלול תפעל ההגדרה „הפעלה אוטומטית בטעינה ובעגינה”: שומר המסך של Android (ברירת מחדל) או הצגה מעל אפליקציות. במסלול Android יש לבחור את „שומר מסך” בהגדרות המערכת.";
+        if ("batteryProtectionThreshold".equals(key)) return "מתחת לאחוז שנבחר תופעל הפחתת בהירות, כל עוד המכשיר אינו בטעינה";
         if ("playerSize".equals(key)) return "בחירת גודל התצוגה של הנגן";
         if ("playerPosition".equals(key)) return "בחירת מיקום הצגת הנגן במסך";
-        if ("frameEnabled".equals(key)) return "כשההגדרה הצגת הנגן פועלת, הצגת הנגן מעוצב בחלונית עם מסגרת";
+        if ("frameEnabled".equals(key)) return "הצגת הנגן בתוך חלונית ממוסגרת";
+        if ("frameUseAlbumArt".equals(key)) return "הצגת תמונת האלבום כרקע פנימי בתוך מסגרת הנגן בלבד";
         if ("frameColor".equals(key)) return "בחירת צבע המסגרת סביב הנגן";
         if ("frameWidth".equals(key)) return "בחירת עובי קו המסגרת";
         if ("frameRadius".equals(key)) return "בחירת מידת עיגול פינות המסגרת";
@@ -906,8 +1122,7 @@ screenTitle.setText("הגדרות");
                 + "• כשההגדרה כבויה, אתחול המכשיר אינו מפעיל את שומר מסך.\n\n"
                 + "הפעלה אוטומטית בהתעוררות\n"
                 + "• כשההגדרה פעילה, שומר מסך נפתח כשהמסך נדלק מחדש לאחר שהיה כבוי.\n"
-                + "• כשההגדרה כבויה, הדלקת המסך אינה מפעילה את שומר מסך.\n\n"
-                + "הרשאות שמשפיעות על התנהגות האפליקציה\n"
+                + "• כשההגדרה כבויה, הדלקת המסך אינה מפעילה את שומר מסך.\n\n"                + "הרשאות שמשפיעות על התנהגות האפליקציה\n"
                 + "• הצגה מעל אפליקציות אחרות - נדרשת להפעלה אוטומטית ברקע בחלק מגרסאות Android. אם ההרשאה נשללת, ההגדרות התלויות בה יכובו אוטומטית.\n"
                 + "• גישה להתראות - נדרשת להצגת נגן המדיה. אם ההרשאה נשללת, הצגת הנגן תכובה אוטומטית.\n"
                 + "• הרשאת מנהל מכשיר - מאפשרת לאפליקציה לבקש נעילה מיידית בסיום זמן פעילות מוגדר. היא אינה נדרשת להצגת שומר מסך עצמו ואינה מבטיחה כיבוי פיזי של התצוגה בכל סוגי המכשירים.";
@@ -1005,8 +1220,8 @@ screenTitle.setText("הגדרות");
                     || line.equals("מניעת נעילה בזמן פעילות")
                     || line.equals("המשך הצגה במסך הנעילה")
                     || line.equals("הפעלה אוטומטית בנעילה")
-                    || line.equals("הפעלה אוטומטית בהפעלת המכשיר")
-                    || line.equals("הפעלה אוטומטית בהתעוררות ממצב שינה")
+                    || line.equals("הפעלה אוטומטית בהדלקה")
+                    || line.equals("הפעלה אוטומטית בהתעוררות")
                     || line.equals("הרשאות שמשפיעות על התנהגות האפליקציה");
 
             if (sectionHeading) {
@@ -1111,6 +1326,7 @@ screenTitle.setText("הגדרות");
         if ("autoStartOnDeviceLock".equals(key)) autoStartOnDeviceLockToggle = toggle;
         if ("autoStartOnBoot".equals(key)) autoStartOnBootToggle = toggle;
         if ("autoStartOnWake".equals(key)) autoStartOnWakeToggle = toggle;
+        if ("autoStartOnScreenOn".equals(key)) autoStartOnScreenOnToggle = toggle;
         toggle.setChecked(getBool(key, defaultValue));
         if (Build.VERSION.SDK_INT >= 21) {
             toggle.setThumbTintList(new ColorStateList(
@@ -1133,16 +1349,51 @@ screenTitle.setText("הגדרות");
         row.addView(toggle, 0, switchParams);
 
         toggle.setOnCheckedChangeListener((button, checked) -> {
+            boolean openingSystemSettingsForAutoStart = false;
             try {
                 prefs.edit().putBoolean(key, checked).apply();
-                if ("autoStartOnCharge".equals(key)) {
-                    NightScreenApplication.syncChargerReceiver(this);
-                }
+
             } catch (Throwable ignored) {
             }
-            if ("autoStartOnCharge".equals(key)) {
-                if (checked && Build.VERSION.SDK_INT >= 29
+            if ("useAndroidDreamForCharging".equals(key)) {
+                prefs.edit().putBoolean("autoStartOverlayPermissionPending", false).apply();
+                LockScreenMonitorService.sync(this);
+                if (checked) {
+                    openingSystemSettingsForAutoStart = getBool("autoStartOnCharge", false);
+                    try {
+                        startActivity(new Intent(Settings.ACTION_DREAM_SETTINGS));
+                    } catch (Throwable ignored) {
+                        prefs.edit().putBoolean(key, false).apply();
+                        toggle.setChecked(false);
+                        AppToast.makeText(this,
+                                "הגדרות שומר המסך של Android אינן זמינות במכשיר זה.",
+                                Toast.LENGTH_LONG).show();
+                    }
+                } else if (getBool("autoStartOnCharge", false)
+                        && Build.VERSION.SDK_INT >= 29
                         && !Settings.canDrawOverlays(this)) {
+                    openingSystemSettingsForAutoStart = true;
+                    prefs.edit().putBoolean("autoStartOverlayPermissionPending", true).apply();
+                    requestChargerOverlayPermission();
+                }
+            } else if ("autoStartOnCharge".equals(key)) {
+                if (checked && getBool("useAndroidDreamForCharging", false)) {
+                    openingSystemSettingsForAutoStart = true;
+                    AppToast.makeText(this,
+                            "כדי להפעיל שומר מסך בטעינה דרך Android, בחר במסך הבא את שומר מסך והגדר הפעלה בזמן טעינה.",
+                            Toast.LENGTH_LONG).show();
+                    try {
+                        startActivity(new Intent(Settings.ACTION_DREAM_SETTINGS));
+                    } catch (Throwable ignored) {
+                        AppToast.makeText(this,
+                                "לא ניתן לפתוח את הגדרות שומר המסך של Android. בחר שם את שומר מסך והגדר הפעלה בזמן טעינה.",
+                                Toast.LENGTH_LONG).show();
+                    }
+                }
+                if (checked && !getBool("useAndroidDreamForCharging", false)
+                        && Build.VERSION.SDK_INT >= 29
+                        && !Settings.canDrawOverlays(this)) {
+                    openingSystemSettingsForAutoStart = true;
                     prefs.edit().putBoolean("autoStartOverlayPermissionPending", true).apply();
                     requestChargerOverlayPermission();
                 } else {
@@ -1156,35 +1407,41 @@ screenTitle.setText("הגדרות");
                             .apply();
                 }
                 updateOverlayPermissionCardVisibility();
+                LockScreenMonitorService.sync(this);
             } else if ("autoStartOnDeviceLock".equals(key)) {
                 if (checked && Build.VERSION.SDK_INT >= 29
                         && !Settings.canDrawOverlays(this)) {
+                    openingSystemSettingsForAutoStart = true;
                     prefs.edit().putBoolean("autoStartOnLockOverlayPermissionPending", true).apply();
                     requestLockStartOverlayPermission();
                 } else {
                     prefs.edit().putBoolean("autoStartOnLockOverlayPermissionPending", false).apply();
                 }
                 if (!checked) {
-                    prefs.edit().putBoolean("autoStartOnLockOverlayPermissionPending", false).apply();
+                    prefs.edit()
+                            .putBoolean("autoStartOnLockOverlayPermissionPending", false)
+                            .putBoolean("deviceLockStartConsumed", false)
+                            .apply();
                 }
                 LockScreenMonitorService.sync(this);
-                NightScreenApplication.syncChargerReceiver(this);
                 updateOverlayPermissionCardVisibility();
-            } else if ("autoStartOnBoot".equals(key) || "autoStartOnWake".equals(key)) {
+            } else if ("autoStartOnBoot".equals(key) || "autoStartOnWake".equals(key)
+                    || "autoStartOnScreenOn".equals(key)) {
                 if (checked && Build.VERSION.SDK_INT >= 29
                         && !Settings.canDrawOverlays(this)) {
                     AppToast.makeText(this,
                             "כדי לאפשר הפעלה אוטומטית לאחר אתחול או התעוררות, יש לאפשר לשומר מסך הצגה מעל אפליקציות אחרות.",
                             Toast.LENGTH_LONG).show();
-                    if (!openOverlayPermissionSettings()) {
+                    if (openOverlayPermissionSettings()) {
+                        openingSystemSettingsForAutoStart = true;
+                    } else {
                         prefs.edit().putBoolean(key, false).apply();
                         toggle.setChecked(false);
                     }
                 }
-                if ("autoStartOnWake".equals(key)) {
-                    LockScreenMonitorService.sync(this);
-                    NightScreenApplication.syncChargerReceiver(this);
-                }
+                // Keep the same persistent notification for every enabled mode.
+                // Actual event subscriptions remain independently gated.
+                LockScreenMonitorService.sync(this);
             } else if ("showPlayer".equals(key)) {
                 if (checked && !hasNotificationAccess()) {
                     prefs.edit().putBoolean("showPlayerPermissionPending", true).apply();
@@ -1192,6 +1449,28 @@ screenTitle.setText("הגדרות");
                 } else {
                     prefs.edit().putBoolean("showPlayerPermissionPending", false).apply();
                 }
+            } else if ("pauseWhenExcludedAppActive".equals(key)
+                    && checked && !hasUsageAccess()) {
+                prefs.edit().putBoolean(key, false).apply();
+                toggle.setChecked(false);
+                AppToast.makeText(this,
+                        "כדי להפעיל החרגת אפליקציות, יש לאפשר תחילה הרשאת נתוני שימוש.",
+                        Toast.LENGTH_LONG).show();
+                try {
+                    startActivity(new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS));
+                } catch (Throwable ignored) {
+                }
+            }
+
+            AutoStartNotificationController.sync(this);
+            NightScreenApplication.syncChargerReceiver(this);
+
+            // Do not open two Android permission/settings screens at the same time.
+            // If an external settings screen was opened above, onResume() requests
+            // the notification permission after the user returns.
+            if (!openingSystemSettingsForAutoStart
+                    && (isAutoStartSetting(key) || "useAndroidDreamForCharging".equals(key))) {
+                ensureAutoStartNotificationPermission();
             }
         });
         row.setOnClickListener(v -> {
@@ -1201,6 +1480,80 @@ screenTitle.setText("הגדרות");
 
     // Use one consistent segmented selector for all discrete settings.
     // Existing values and ranges are intentionally preserved.
+
+    private void addLineSlider(LinearLayout parent, String label, String key,
+                               int minValue, int maxValue) {
+        LinearLayout card = addSettingCard(parent, label, key);
+
+        LinearLayout resetRow = new LinearLayout(this);
+        resetRow.setOrientation(LinearLayout.HORIZONTAL);
+        resetRow.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        resetRow.setGravity(Gravity.CENTER_VERTICAL);
+
+        TextView reset = textView("איפוס לברירת מחדל", 13, ON_SURFACE);
+        reset.setGravity(Gravity.CENTER);
+        reset.setIncludeFontPadding(false);
+        reset.setPadding(dp(12), dp(5), dp(12), dp(5));
+        reset.setBackground(roundOutline(CONTROL_SURFACE, dp(9), OUTLINE));
+        reset.setClickable(true);
+        reset.setFocusable(true);
+        reset.setContentDescription("איפוס " + label + " לברירת המחדל");
+        resetRow.addView(reset, new LinearLayout.LayoutParams(-2, dp(32)));
+        View resetSpacer = new View(this);
+        resetRow.addView(resetSpacer, new LinearLayout.LayoutParams(dp(8), dp(1)));
+        card.addView(resetRow, new LinearLayout.LayoutParams(-1, dp(34)));
+
+        SeekBar seekBar = new SeekBar(this);
+        seekBar.setMax(maxValue - minValue);
+        seekBar.setProgress(Math.max(0, Math.min(maxValue - minValue,
+                getInt(key, 0) - minValue)));
+        seekBar.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+        seekBar.setContentDescription(label);
+        seekBar.setMinimumHeight(dp(48));
+        seekBar.setPadding(dp(8), 0, dp(8), 0);
+        if (Build.VERSION.SDK_INT >= 21) {
+            seekBar.setProgressTintList(ColorStateList.valueOf(ACCENT));
+            seekBar.setThumbTintList(ColorStateList.valueOf(ON_SURFACE));
+            seekBar.setProgressBackgroundTintList(ColorStateList.valueOf(TRACK));
+        }
+        LinearLayout.LayoutParams seekParams = new LinearLayout.LayoutParams(-1, dp(52));
+        seekParams.leftMargin = dp(2);
+        seekParams.rightMargin = dp(2);
+        card.addView(seekBar, seekParams);
+
+        LinearLayout directions = new LinearLayout(this);
+        directions.setOrientation(LinearLayout.HORIZONTAL);
+        directions.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+        TextView left = textView("שמאלה", 12, MUTED);
+        TextView right = textView("ימינה", 12, MUTED);
+        left.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
+        right.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        directions.addView(left, new LinearLayout.LayoutParams(0, dp(22), 1f));
+        directions.addView(right, new LinearLayout.LayoutParams(0, dp(22), 1f));
+        card.addView(directions, new LinearLayout.LayoutParams(-1, dp(22)));
+
+        Runnable updateReset = () -> {
+            int value = seekBar.getProgress() + minValue;
+            reset.setAlpha(value == 0 ? 0.65f : 1f);
+        };
+        seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override public void onProgressChanged(SeekBar bar, int progress, boolean fromUser) {
+                int value = progress + minValue;
+                updateReset.run();
+                if (fromUser) prefs.edit().putInt(key, value).apply();
+            }
+            @Override public void onStartTrackingTouch(SeekBar bar) { }
+            @Override public void onStopTrackingTouch(SeekBar bar) { }
+        });
+        reset.setOnClickListener(v -> {
+            int defaultValue = Math.max(minValue, Math.min(maxValue, 0));
+            seekBar.setProgress(defaultValue - minValue);
+            prefs.edit().putInt(key, defaultValue).apply();
+            updateReset.run();
+        });
+        updateReset.run();
+    }
+
     private LinearLayout addDiscreteSlider(LinearLayout parent, String label,
                                             String[] names, String[] values, String key) {
         return addSegmentedChoices(parent, label, names, values, key);
@@ -1229,7 +1582,7 @@ screenTitle.setText("הגדרות");
         final int[] responsiveTextWidths = new int[names.length];
         final int[] responsiveExpandedWidths = new int[names.length];
         int initial = selectedIndex(key, values);
-        int optionTileHeight = 37;
+        int optionTileHeight = "clockDialStyle".equals(key) ? 88 : 37;
 
         for (int i = 0; i < names.length; i++) {
             final int index = i;
@@ -1256,7 +1609,25 @@ screenTitle.setText("הגדרות");
                 option.setAutoSizeTextTypeUniformWithConfiguration(
                         10, 14, 1, android.util.TypedValue.COMPLEX_UNIT_SP);
             }
-            tile.addView(option, new FrameLayout.LayoutParams(-1, -1));
+            if ("clockDialStyle".equals(key)) {
+                LinearLayout previewContent = new LinearLayout(this);
+                previewContent.setOrientation(LinearLayout.VERTICAL);
+                previewContent.setGravity(Gravity.CENTER);
+                previewContent.setPadding(0, dp(3), 0, dp(2));
+                AnalogClockView dialPreview = new AnalogClockView(this);
+                dialPreview.setTime(10, 10);
+                dialPreview.setColors(ON_SURFACE, CARD_SURFACE);
+                dialPreview.setDialStyle(values[i]);
+                previewContent.addView(dialPreview,
+                        new LinearLayout.LayoutParams(dp(56), dp(56)));
+                option.setGravity(Gravity.CENTER);
+                option.setTextSize(12);
+                previewContent.addView(option,
+                        new LinearLayout.LayoutParams(-1, dp(22)));
+                tile.addView(previewContent, new FrameLayout.LayoutParams(-1, -1));
+            } else {
+                tile.addView(option, new FrameLayout.LayoutParams(-1, -1));
+            }
             options[i] = option;
 
             tile.setContentDescription(label + ": " + names[i]);
@@ -1294,12 +1665,15 @@ screenTitle.setText("הגדרות");
             boolean mayExpandOnNarrowScreens =
                     (("screenBrightness".equals(key)
                             || "screenSaverDuration".equals(key)) && i == 0)
-                    || ("playerDisplayMode".equals(key) && i == 2);
+                    || (("playerDisplayMode".equals(key)
+                            || "playerControlsDisplayMode".equals(key)) && i == 2)
+                    || ("chargingBatteryDisplayMode".equals(key) && i == 3);
             if (mayExpandOnNarrowScreens) {
                 int textWidth = (int) Math.ceil(option.getPaint().measureText(names[i]));
                 responsiveTextWidths[i] = textWidth + dp(2);
-                int extraWidth = "playerDisplayMode".equals(key) && i == 2
-                        ? 16 : 8;
+                int extraWidth = (("playerDisplayMode".equals(key)
+                        || "playerControlsDisplayMode".equals(key)) && i == 2)
+                        ? 16 : ("chargingBatteryDisplayMode".equals(key) && i == 3 ? 18 : 8);
                 responsiveExpandedWidths[i] = textWidth + dp(extraWidth);
             }
 
@@ -1504,10 +1878,185 @@ screenTitle.setText("הגדרות");
             choiceRow.addView(item, new LinearLayout.LayoutParams(0, -2, 1f));
         }
 
+        LinearLayout customColorRow = new LinearLayout(this);
+        customColorRow.setOrientation(LinearLayout.HORIZONTAL);
+        customColorRow.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        customColorRow.setGravity(Gravity.CENTER_VERTICAL);
+        customColorRow.setPadding(dp(5), dp(7), dp(5), dp(2));
+        View customColorSwatch = new View(this);
+        customColorSwatch.setBackground(makeCustomColorDot(
+                getInt(key, "screenBackgroundColor".equals(key) ? Color.BLACK : Color.WHITE)));
+        customColorRow.addView(customColorSwatch,
+                new LinearLayout.LayoutParams(dp(28), dp(28)));
+        TextView customColorLabel = textView("בחירת צבע מותאם אישית", 14, ON_SURFACE);
+        customColorLabel.setGravity(Gravity.CENTER_VERTICAL);
+        LinearLayout.LayoutParams customLabelParams =
+                new LinearLayout.LayoutParams(-2, dp(32));
+        customLabelParams.rightMargin = dp(9);
+        customColorRow.addView(customColorLabel, customLabelParams);
+        customColorRow.setClickable(true);
+        customColorRow.setFocusable(true);
+        customColorRow.setOnClickListener(v -> showCustomColorDialog(key, customColorSwatch));
+        LinearLayout.LayoutParams customColorParams = new LinearLayout.LayoutParams(-1, -2);
+        customColorParams.topMargin = dp(5);
+        choices.addView(customColorRow, customColorParams);
+
         LinearLayout.LayoutParams choicesParams =
                 new LinearLayout.LayoutParams(-1, -2);
         choicesParams.topMargin = dp(9);
         card.addView(choices, choicesParams);
+    }
+
+    private GradientDrawable makeCustomColorDot(int color) {
+        GradientDrawable dot = new GradientDrawable();
+        dot.setShape(GradientDrawable.OVAL);
+        dot.setColor(color);
+        dot.setStroke(dp(1), Color.rgb(145, 170, 196));
+        return dot;
+    }
+
+    
+    private void showCustomColorDialog(String key, View preview) {
+        int current = getInt(key,
+                "screenBackgroundColor".equals(key) ? Color.BLACK : Color.WHITE);
+        final float[] hsv = new float[3];
+        Color.colorToHSV(current, hsv);
+
+        LinearLayout panel = new LinearLayout(this);
+        panel.setOrientation(LinearLayout.VERTICAL);
+        panel.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        panel.setPadding(dp(18), dp(16), dp(18), dp(14));
+        panel.setBackground(roundOutline(CARD_SURFACE, dp(18), CARD_OUTLINE));
+
+        TextView heading = textView("בחירת צבע מותאם אישית", 18, ON_SURFACE);
+        heading.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD));
+        heading.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        panel.addView(heading, new LinearLayout.LayoutParams(-1, dp(30)));
+
+        LinearLayout sampleRow = new LinearLayout(this);
+        sampleRow.setOrientation(LinearLayout.HORIZONTAL);
+        sampleRow.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        sampleRow.setGravity(Gravity.CENTER_VERTICAL);
+        TextView sampleHint = textView("כוון את המחוונים עד לקבלת הגוון הרצוי", 13, MUTED);
+        sampleHint.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        sampleRow.addView(sampleHint, new LinearLayout.LayoutParams(0, dp(42), 1f));
+        View colorPreview = new View(this);
+        LinearLayout.LayoutParams previewParams =
+                new LinearLayout.LayoutParams(dp(44), dp(44));
+        previewParams.leftMargin = dp(10);
+        colorPreview.setBackground(makeCustomColorDot(current));
+        sampleRow.addView(colorPreview, previewParams);
+        LinearLayout.LayoutParams sampleParams = new LinearLayout.LayoutParams(-1, dp(48));
+        sampleParams.topMargin = dp(5);
+        panel.addView(sampleRow, sampleParams);
+
+        View separator = new View(this);
+        separator.setBackgroundColor(CARD_OUTLINE);
+        LinearLayout.LayoutParams separatorParams =
+                new LinearLayout.LayoutParams(-1, dp(1));
+        separatorParams.topMargin = dp(8);
+        separatorParams.bottomMargin = dp(8);
+        panel.addView(separator, separatorParams);
+
+        String[] captions = {"גוון", "רוויה", "בהירות"};
+        int[] maxes = {359, 100, 100};
+
+        Runnable updateSwatch = () -> {
+            int selected = Color.HSVToColor(hsv);
+            colorPreview.setBackground(makeCustomColorDot(selected));
+        };
+
+        for (int i = 0; i < captions.length; i++) {
+            final int index = i;
+            LinearLayout control = new LinearLayout(this);
+            control.setOrientation(LinearLayout.VERTICAL);
+            control.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+
+            LinearLayout captionRow = new LinearLayout(this);
+            captionRow.setOrientation(LinearLayout.HORIZONTAL);
+            captionRow.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+            captionRow.setGravity(Gravity.CENTER_VERTICAL);
+            TextView caption = textView(captions[i], 14, ON_SURFACE);
+            captionRow.addView(caption, new LinearLayout.LayoutParams(0, dp(24), 1f));
+            TextView value = textView("", 13, ACCENT);
+            value.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
+            value.setTextDirection(View.TEXT_DIRECTION_LTR);
+            captionRow.addView(value, new LinearLayout.LayoutParams(-2, dp(24)));
+            control.addView(captionRow, new LinearLayout.LayoutParams(-1, dp(24)));
+
+            SeekBar bar = new SeekBar(this);
+            bar.setMax(maxes[i]);
+            bar.setProgress(Math.max(0, Math.min(maxes[i],
+                    Math.round(hsv[i] * (i == 0 ? 1f : 100f)))));
+            bar.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+            bar.setPadding(dp(4), 0, dp(4), 0);
+            if (Build.VERSION.SDK_INT >= 21) {
+                bar.setProgressTintList(ColorStateList.valueOf(ACCENT));
+                bar.setThumbTintList(ColorStateList.valueOf(ON_SURFACE));
+                bar.setProgressBackgroundTintList(ColorStateList.valueOf(TRACK));
+            }
+            value.setText(index == 0 ? bar.getProgress() + "°" : bar.getProgress() + "%");
+            bar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+                @Override public void onProgressChanged(SeekBar seek, int progress, boolean fromUser) {
+                    if (!fromUser) return;
+                    hsv[index] = index == 0 ? progress : progress / 100f;
+                    value.setText(index == 0 ? progress + "°" : progress + "%");
+                    updateSwatch.run();
+                }
+                @Override public void onStartTrackingTouch(SeekBar seek) { }
+                @Override public void onStopTrackingTouch(SeekBar seek) { }
+            });
+            control.addView(bar, new LinearLayout.LayoutParams(-1, dp(38)));
+            LinearLayout.LayoutParams controlParams =
+                    new LinearLayout.LayoutParams(-1, -2);
+            if (i > 0) controlParams.topMargin = dp(4);
+            panel.addView(control, controlParams);
+        }
+
+        LinearLayout actions = new LinearLayout(this);
+        actions.setOrientation(LinearLayout.HORIZONTAL);
+        actions.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        actions.setGravity(Gravity.CENTER_VERTICAL);
+        TextView save = textView("שמירה", 14, Color.rgb(7, 31, 49));
+        save.setGravity(Gravity.CENTER);
+        save.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD));
+        save.setBackground(roundOutline(ACCENT, dp(10), ACCENT));
+        save.setClickable(true);
+        save.setFocusable(true);
+        TextView cancel = textView("ביטול", 14, ON_SURFACE);
+        cancel.setGravity(Gravity.CENTER);
+        cancel.setBackground(roundOutline(CONTROL_SURFACE, dp(10), OUTLINE));
+        cancel.setClickable(true);
+        cancel.setFocusable(true);
+        LinearLayout.LayoutParams actionButtonParams =
+                new LinearLayout.LayoutParams(0, dp(42), 1f);
+        actions.addView(save, actionButtonParams);
+        LinearLayout.LayoutParams cancelParams =
+                new LinearLayout.LayoutParams(0, dp(42), 1f);
+        cancelParams.rightMargin = dp(9);
+        actions.addView(cancel, cancelParams);
+        LinearLayout.LayoutParams actionsParams =
+                new LinearLayout.LayoutParams(-1, dp(42));
+        actionsParams.topMargin = dp(12);
+        panel.addView(actions, actionsParams);
+
+        AlertDialog dialog = new AlertDialog.Builder(this).setView(panel).create();
+        save.setOnClickListener(v -> {
+            int selected = Color.HSVToColor(hsv);
+            persistOption(key, String.format(Locale.US, "#%08X", selected));
+            preview.setBackground(makeCustomColorDot(selected));
+            dialog.dismiss();
+        });
+        cancel.setOnClickListener(v -> dialog.dismiss());
+        dialog.show();
+        Window window = dialog.getWindow();
+        if (window != null) {
+            window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            int screenHeight = getResources().getDisplayMetrics().heightPixels;
+            window.setLayout(Math.min(dp(390),
+                    getResources().getDisplayMetrics().widthPixels - dp(36)),
+                    Math.min(dp(430), Math.max(dp(300), screenHeight - dp(100))));
+        }
     }
 
     private void refreshPermissionDependentToggles() {
@@ -1525,6 +2074,54 @@ screenTitle.setText("הגדרות");
         }
         if (autoStartOnWakeToggle != null) {
             autoStartOnWakeToggle.setChecked(getBool("autoStartOnWake", false));
+        }
+        if (autoStartOnScreenOnToggle != null) {
+            autoStartOnScreenOnToggle.setChecked(getBool("autoStartOnScreenOn", false));
+        }
+    }
+
+    private boolean isAutoStartSetting(String key) {
+        return "autoStartOnCharge".equals(key)
+                || "autoStartOnDeviceLock".equals(key)
+                || "autoStartOnBoot".equals(key)
+                || "autoStartOnWake".equals(key)
+                || "autoStartOnScreenOn".equals(key);
+    }
+
+    /**
+     * Android 13+ requires the runtime notification permission for the
+     * automatic-start notifications to appear in the drawer. The foreground
+     * service and the automatic launch itself remain independent of this permission.
+     */
+    private void ensureAutoStartNotificationPermission() {
+        if (Build.VERSION.SDK_INT < 33
+                || checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
+                    == android.content.pm.PackageManager.PERMISSION_GRANTED) return;
+        boolean anyAutoStartEnabled = getBool("autoStartOnDeviceLock", false)
+                || getBool("autoStartOnBoot", false)
+                || getBool("autoStartOnWake", false)
+                || getBool("autoStartOnScreenOn", false)
+                || getBool("autoStartOnCharge", false);
+        if (!anyAutoStartEnabled
+                || prefs.getBoolean("autoStartNotificationPermissionAsked", false)) return;
+
+        prefs.edit().putBoolean("autoStartNotificationPermissionAsked", true).apply();
+        requestPermissions(
+                new String[]{android.Manifest.permission.POST_NOTIFICATIONS},
+                REQUEST_AUTO_START_NOTIFICATION_PERMISSION);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                                           int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode != REQUEST_AUTO_START_NOTIFICATION_PERMISSION) return;
+        LockScreenMonitorService.sync(this);
+        if (grantResults.length == 0
+                || grantResults[0] != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            AppToast.makeText(this,
+                    "ההפעלה האוטומטית יכולה לפעול, אך ההתראה המתמשכת לא תופיע במגירת ההתראות ללא הרשאת התראות.",
+                    Toast.LENGTH_LONG).show();
         }
     }
 
@@ -1563,7 +2160,8 @@ screenTitle.setText("הגדרות");
     }
 
     private void requestChargerOverlayPermission() {
-        if (Build.VERSION.SDK_INT < 29 || Settings.canDrawOverlays(this)) return;
+        if (getBool("useAndroidDreamForCharging", false)
+                || Build.VERSION.SDK_INT < 29 || Settings.canDrawOverlays(this)) return;
 
         AppToast.makeText(this,
                 "כדי לאפשר הפעלה אוטומטית בטעינה, בחר במסך הבא את \"שומר מסך\" ואפשר \"הצגה מעל אפליקציות אחרות\".",
@@ -1579,10 +2177,12 @@ screenTitle.setText("הגדרות");
         if (!prefs.getBoolean("autoStartOverlayPermissionPending", false)) return;
 
         prefs.edit().putBoolean("autoStartOverlayPermissionPending", false).apply();
-        if (Settings.canDrawOverlays(this)) return;
+        if (Settings.canDrawOverlays(this)
+                || getBool("useAndroidDreamForCharging", false)) return;
 
         prefs.edit().putBoolean("autoStartOnCharge", false).apply();
-        if (autoStartOnChargeToggle != null && autoStartOnChargeToggle.isChecked()) {
+        LockScreenMonitorService.sync(this);
+                if (autoStartOnChargeToggle != null && autoStartOnChargeToggle.isChecked()) {
             autoStartOnChargeToggle.setChecked(false);
         }
         AppToast.makeText(this,
@@ -1633,6 +2233,10 @@ screenTitle.setText("הגדרות");
                     || "screenBackgroundColor".equals(key)) {
                 editor.putInt(key, colorValue(value));
             } else if ("fontWeight".equals(key) || "clockDateSize".equals(key)
+                    || "clockHorizontalOffset".equals(key)
+                    || "playerHorizontalOffset".equals(key)
+                    || "batteryProtectionThreshold".equals(key)
+                    || "nightModeStartHour".equals(key) || "nightModeEndHour".equals(key)
                     || "playerSize".equals(key) || "frameWidth".equals(key)
                     || "frameRadius".equals(key) || "screenBrightness".equals(key)) {
                 editor.putInt(key, Integer.parseInt(value));
@@ -1640,6 +2244,7 @@ screenTitle.setText("הגדרות");
                 editor.putString(key, value);
             }
             editor.apply();
+
         } catch (Throwable ignored) {
         }
     }
@@ -1669,17 +2274,19 @@ screenTitle.setText("הגדרות");
         if ("autoStartOnWake".equals(key)) return "screen-wake";
         if ("continueOnLockScreen".equals(key)) return "shield";
         if ("noShutdownWhileCharging".equals(key)) return "phone-charging";
-        if ("showBatteryPercent".equals(key)) return "battery-medium";
         if ("screenBackgroundColor".equals(key)) return "palette";
         if ("screenBrightness".equals(key)) return "sun-dim";
         if ("fontColor".equals(key)) return "paint-roller";
         if ("fontWeight".equals(key)) return "bold";
         if ("fontFamily".equals(key)) return "font-family";
         if ("clockDateSize".equals(key)) return "clock-size";
+        if ("clockDisplayMode".equals(key)) return "clock";
+        if ("clockDialStyle".equals(key)) return "clock-dial";
         if ("clockDatePosition".equals(key)) return "position-arrows";
         if ("showPlayerOnlyAtStart".equals(key)) return "circle-play";
         if ("showDetails".equals(key)) return "artist";
-        if ("showProgress".equals(key)) return "progress-time-digital";
+        if ("playerControlsDisplayMode".equals(key)) return "progress-time-digital";
+        if ("chargingBatteryDisplayMode".equals(key)) return "battery-medium";
         if ("playerSize".equals(key)) return "player-size-resize";
         if ("playerPosition".equals(key)) return "panel-bottom";
         if ("frameEnabled".equals(key)) return "frame-dashed";
@@ -1782,6 +2389,8 @@ screenTitle.setText("הגדרות");
                         ? (TextView) convertView : new TextView(SettingsActivity.this);
                 view.setText(names[position]);
                 styleSpinnerText(view, true, false);
+                if ("fontFamily".equals(key)) {
+                }
                 return view;
             }
 
@@ -1791,6 +2400,8 @@ screenTitle.setText("הגדרות");
                 TextView view = new TextView(SettingsActivity.this);
                 view.setText(names[position]);
                 styleDropdownOptionText(view, position == selectedIndex(key, values));
+                if ("fontFamily".equals(key)) {
+                }
                 view.setLayoutParams(new android.widget.AbsListView.LayoutParams(-1, dp(39)));
                 return view;
             }
@@ -1855,6 +2466,8 @@ screenTitle.setText("הגדרות");
             @Override public void onNothingSelected(AdapterView<?> parent) {}
         });
     }
+
+    
 
     private void styleSpinnerText(TextView view, boolean selected, boolean selectedOption) {
         view.setTextColor(Color.rgb(7, 31, 49));
@@ -1979,6 +2592,10 @@ screenTitle.setText("הגדרות");
             }
             return -1;
         } else if ("fontWeight".equals(key) || "clockDateSize".equals(key)
+                || "clockHorizontalOffset".equals(key)
+                || "playerHorizontalOffset".equals(key)
+                || "batteryProtectionThreshold".equals(key)
+                || "nightModeStartHour".equals(key) || "nightModeEndHour".equals(key)
                 || "playerSize".equals(key) || "frameWidth".equals(key)
                 || "frameRadius".equals(key) || "screenBrightness".equals(key)) {
             int fallback = "clockDateSize".equals(key) ? 84
@@ -2070,10 +2687,12 @@ screenTitle.setText("הגדרות");
                 || overlayPermissionButton == null) return;
 
         boolean granted = Settings.canDrawOverlays(this);
-        boolean autoStartEnabled = getBool("autoStartOnCharge", false)
+        boolean autoStartEnabled = (getBool("autoStartOnCharge", false)
+                && !getBool("useAndroidDreamForCharging", false))
                 || getBool("autoStartOnDeviceLock", false)
                 || getBool("autoStartOnBoot", false)
-                || getBool("autoStartOnWake", false);
+                || getBool("autoStartOnWake", false)
+                || getBool("autoStartOnScreenOn", false);
         overlayPermissionStatus.setText(granted
                 ? (autoStartEnabled
                     ? "ההרשאה פעילה — ההפעלה האוטומטית זמינה."
