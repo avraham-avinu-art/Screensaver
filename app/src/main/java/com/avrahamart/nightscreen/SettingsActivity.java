@@ -1456,7 +1456,7 @@ screenTitle.setText("הגדרות");
                 }
             }
 
-            AutoStartNotificationController.sync(this);
+            
             NightScreenApplication.syncChargerReceiver(this);
 
             // Do not open two Android permission/settings screens at the same time.
