@@ -21,6 +21,10 @@ public final class LockScreenMonitorService extends Service {
     // Versioned channel ID: a new ID makes Android apply the current silent,
     // minimum-importance and lockscreen-hidden defaults instead of retaining v4 settings.
     private static final String CHANNEL_ID = "screensaver_lock_monitor_v5";
+    static final String ACTION_SYNC_REQUEST =
+            "com.avrahamart.nightscreen.action.MONITOR_SYNC";
+    static final String ACTION_ALARM_RESTART =
+            "com.avrahamart.nightscreen.action.MONITOR_ALARM_RESTART";
     private static final int NOTIFICATION_ID = 6721;
     private static final int RESTART_PENDING_INTENT_ID = 6722;
     private static final long RESTART_DELAY_MS = 2_000L;
@@ -59,6 +63,17 @@ public final class LockScreenMonitorService extends Service {
         Context appContext = context.getApplicationContext();
         if (isMonitoringAllowed(appContext)) {
             Intent intent = new Intent(appContext, LockScreenMonitorService.class);
+            intent.setAction(ACTION_SYNC_REQUEST);
+            String caller = "unknown";
+            StackTraceElement[] stack = Thread.currentThread().getStackTrace();
+            for (StackTraceElement frame : stack) {
+                if (frame.getClassName().startsWith("com.avrahamart.nightscreen.")
+                        && !frame.getClassName().equals(LockScreenMonitorService.class.getName())) {
+                    caller = frame.getClassName() + "#" + frame.getMethodName();
+                    break;
+                }
+            }
+            MonitorDiagnostics.record(appContext, "service sync start requested; caller=" + caller);
             try {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     appContext.startForegroundService(intent);
@@ -146,7 +161,8 @@ public final class LockScreenMonitorService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         MonitorDiagnostics.record(this, "onStartCommand; startId=" + startId + ", action="
-                + (intent == null ? "null" : intent.getAction()));
+                + (intent == null ? "null" : intent.getAction())
+                + ", startSource=" + (intent == null ? "null" : intent.getAction()));
         if (!isMonitoringAllowed(this)) {
             MonitorDiagnostics.record(this, "monitoring not allowed; stopping service");
             lockMonitoringActive = false;
@@ -185,6 +201,7 @@ public final class LockScreenMonitorService extends Service {
             }
             lockMonitoringActive = true;
             MonitorDiagnostics.record(this, "startForeground succeeded; notificationId=" + NOTIFICATION_ID);
+            MonitorDiagnostics.recordNotificationState(this, "immediately after startForeground");
         } catch (Throwable ex) {
             Log.e(TAG, "startForeground failed", ex);
             MonitorDiagnostics.record(this, "startForeground failed: " + ex);
@@ -251,6 +268,7 @@ public final class LockScreenMonitorService extends Service {
     public void onTaskRemoved(Intent rootIntent) {
         MonitorDiagnostics.record(this, "onTaskRemoved; monitoringAllowed=" + isMonitoringAllowed(this)
                 + ", foregroundActive=" + lockMonitoringActive);
+        MonitorDiagnostics.recordNotificationState(this, "onTaskRemoved entry");
         // The monitor is independent of the UI task. Some device builds may still
         // tear down background processes after the recent-task card is dismissed.
         // Schedule a single recovery check; the same notification ID is reused,
@@ -266,6 +284,7 @@ public final class LockScreenMonitorService extends Service {
     @Override
     public void onDestroy() {
         MonitorDiagnostics.record(this, "onDestroy; monitoringAllowed=" + isMonitoringAllowed(this));
+        MonitorDiagnostics.recordNotificationState(this, "onDestroy entry");
         lockMonitoringActive = false;
         if (!isMonitoringAllowed(this)) {
             removeForegroundNotification();
@@ -341,6 +360,7 @@ public final class LockScreenMonitorService extends Service {
         if (alarmManager != null && restartIntent != null) {
             try {
                 alarmManager.cancel(restartIntent);
+                MonitorDiagnostics.record(this, "restart alarm cancelled by service start");
             } catch (Throwable ignored) {
             }
         }
