@@ -63,7 +63,7 @@ public final class AutoStartNotificationController {
         Notification.Builder builder = Build.VERSION.SDK_INT >= 26
                 ? new Notification.Builder(app, CHANNEL_ID)
                 : new Notification.Builder(app);
-        builder.setSmallIcon(R.drawable.ic_notification_transparent)
+        builder.setSmallIcon(R.drawable.ic_qs_screensaver)
                 .setContentTitle("שומר מסך")
                 .setContentText("ההפעלה האוטומטית פעילה")
                 .setContentIntent(contentIntent)
