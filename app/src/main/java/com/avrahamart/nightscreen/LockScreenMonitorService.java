@@ -18,9 +18,9 @@ import android.provider.Settings;
 
 public final class LockScreenMonitorService extends Service {
     private static final String TAG = "ScreensaverMonitor";
-    // Versioned channel ID: a new ID makes Android apply the current silent,
-    // minimum-importance and lockscreen-hidden defaults instead of retaining v4 settings.
-    private static final String CHANNEL_ID = "screensaver_lock_monitor_v5";
+    // Versioned channel ID: v6 moves the ongoing foreground-service notification
+    // from MIN to LOW importance so it remains visible in the notification shade.
+    private static final String CHANNEL_ID = "screensaver_lock_monitor_v6";
     static final String ACTION_SYNC_REQUEST =
             "com.avrahamart.nightscreen.action.MONITOR_SYNC";
     static final String ACTION_ALARM_RESTART =
@@ -240,7 +240,7 @@ public final class LockScreenMonitorService extends Service {
                 (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         if (manager == null) return;
         NotificationChannel channel = new NotificationChannel(
-                CHANNEL_ID, "הפעלה אוטומטית של שומר מסך", NotificationManager.IMPORTANCE_MIN);
+                CHANNEL_ID, "הפעלה אוטומטית של שומר מסך", NotificationManager.IMPORTANCE_LOW);
         channel.setDescription("התראה מתמשכת לשירות ההפעלה האוטומטית בנעילת המכשיר");
         channel.setShowBadge(false);
         channel.setLockscreenVisibility(Notification.VISIBILITY_SECRET);
@@ -275,7 +275,8 @@ public final class LockScreenMonitorService extends Service {
                 .setShowWhen(false)
                 .setCategory(Notification.CATEGORY_SERVICE)
                 .setVisibility(Notification.VISIBILITY_SECRET);
-        builder.setPriority(Notification.PRIORITY_MIN)
+        // Match IMPORTANCE_LOW on channel-less Android versions (API 25 and below).
+        builder.setPriority(Notification.PRIORITY_LOW)
                 .setSound(null)
                 .setVibrate(new long[0])
                 .setDefaults(0);
