@@ -59,11 +59,16 @@
             </intent-filter>
         </receiver>
 
-        <!-- Keep the monitor in the default app process.
-             Its event receiver reads the same SharedPreferences instance as
-             SettingsActivity; SharedPreferences is not cross-process safe. -->
+        <provider
+            android:name=".MonitorSettingsProvider"
+            android:authorities="com.avrahamart.nightscreen.monitorstate"
+            android:exported="false" />
+
+        <!-- The foreground monitor stays independent of the UI task. Settings
+             are read through the provider in the main app process. -->
         <service
             android:name=".LockScreenMonitorService"
+            android:process=":lockmonitor"
             android:label="שומר מסך"
             android:exported="false"
             android:stopWithTask="false"

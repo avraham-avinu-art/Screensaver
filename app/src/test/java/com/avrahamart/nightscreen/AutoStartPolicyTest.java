@@ -69,6 +69,13 @@ public class AutoStartPolicyTest {
     }
 
     @Test
+    public void existingActivitySessionPreventsDuplicateAutomaticLaunch() {
+        assertFalse(AutoStartPolicy.shouldLaunchNewSession(true, true));
+        assertTrue(AutoStartPolicy.shouldLaunchNewSession(true, false));
+        assertFalse(AutoStartPolicy.shouldLaunchNewSession(false, true));
+    }
+
+    @Test
     public void activeScreensaverShowsAboveKeyguardWithoutContinuationSwitch() {
         assertTrue(AutoStartPolicy.shouldShowWhenLocked(true, false, false));
     }

@@ -327,6 +327,12 @@ public class MainActivity extends Activity {
         mainActivitySessionAlive = true;
         try {
             prefs = getSharedPreferences("settings", MODE_PRIVATE);
+            prefs.edit()
+                    .putBoolean("mainActivitySessionAlive", true)
+                    .putBoolean("mainActivityResumed", false)
+                    .putBoolean("mainActivityPausedByDeviceLock", false)
+                    .putInt("mainActivitySessionPid", android.os.Process.myPid())
+                    .apply();
             initSettings();
             LockScreenMonitorService.sync(this);
             getWindow().setFlags(
@@ -496,9 +502,13 @@ public class MainActivity extends Activity {
     protected void onResume() {
         super.onResume();
         mainActivityResumed = true;
-        getSharedPreferences("settings", MODE_PRIVATE).edit()
-                .putBoolean("mainActivityResumed", true).apply();
         mainActivityPausedByDeviceLock = false;
+        getSharedPreferences("settings", MODE_PRIVATE).edit()
+                .putBoolean("mainActivitySessionAlive", true)
+                .putBoolean("mainActivityResumed", true)
+                .putBoolean("mainActivityPausedByDeviceLock", false)
+                .putInt("mainActivitySessionPid", android.os.Process.myPid())
+                .apply();
         if (shouldPauseForExcludedForegroundApp()) {
             mainActivityResumed = false;
             finish();
@@ -561,7 +571,11 @@ public class MainActivity extends Activity {
                 keyguardManager != null && keyguardManager.isKeyguardLocked();
         mainActivityResumed = false;
         getSharedPreferences("settings", MODE_PRIVATE).edit()
-                .putBoolean("mainActivityResumed", false).apply();
+                .putBoolean("mainActivitySessionAlive", true)
+                .putBoolean("mainActivityResumed", false)
+                .putBoolean("mainActivityPausedByDeviceLock", mainActivityPausedByDeviceLock)
+                .putInt("mainActivitySessionPid", android.os.Process.myPid())
+                .apply();
         stopClockUpdates();
         handler.removeCallbacks(mediaSessionRefreshRunnable);
         stopMediaProgressTicker();
@@ -580,6 +594,12 @@ public class MainActivity extends Activity {
     @Override
     protected void onDestroy() {
         mainActivitySessionAlive = false;
+        getSharedPreferences("settings", MODE_PRIVATE).edit()
+                .putBoolean("mainActivitySessionAlive", false)
+                .putBoolean("mainActivityResumed", false)
+                .putBoolean("mainActivityPausedByDeviceLock", false)
+                .remove("mainActivitySessionPid")
+                .apply();
         handler.removeCallbacks(clockUpdateRunnable);
         handler.removeCallbacks(mediaSessionRefreshRunnable);
         handler.removeCallbacks(mediaProgressTicker);

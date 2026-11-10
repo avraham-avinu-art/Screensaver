@@ -9,7 +9,6 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.SharedPreferences;
 import android.content.pm.ServiceInfo;
 import android.os.Build;
 import android.os.IBinder;
@@ -23,7 +22,6 @@ public final class LockScreenMonitorService extends Service {
     private static final int NOTIFICATION_ID = 6721;
     private static final int RESTART_PENDING_INTENT_ID = 6722;
     private static final long RESTART_DELAY_MS = 2_000L;
-    static final String EXTRA_MONITOR_ENABLED = "com.avrahamart.nightscreen.EXTRA_MONITOR_ENABLED";
     private static volatile boolean lockMonitoringActive = false;
     private boolean receiverRegistered = false;
     private AutoStartOnPowerReceiver lockReceiver;
@@ -33,14 +31,8 @@ public final class LockScreenMonitorService extends Service {
     }
 
     static boolean isMonitoringAllowed(Context context) {
-        SharedPreferences prefs = context.getApplicationContext()
-                .getSharedPreferences("settings", Context.MODE_PRIVATE);
-        boolean enabled = AutoStartPolicy.needsMonitorService(
-                prefs.getBoolean("autoStartOnDeviceLock", false),
-                prefs.getBoolean("autoStartOnWake", false),
-                prefs.getBoolean("autoStartOnCharge", false),
-                prefs.getBoolean("useAndroidDreamForCharging", true));
-        if (!enabled) return false;
+        MonitorSettingsSnapshot state = MonitorSettingsSnapshot.read(context.getApplicationContext());
+        if (state == null || !state.needsMonitorService()) return false;
 
         return Build.VERSION.SDK_INT < 29
                 || Settings.canDrawOverlays(context.getApplicationContext());
@@ -53,8 +45,7 @@ public final class LockScreenMonitorService extends Service {
     public static void sync(Context context) {
         Context appContext = context.getApplicationContext();
         if (isMonitoringAllowed(appContext)) {
-            Intent intent = new Intent(appContext, LockScreenMonitorService.class)
-                    .putExtra(EXTRA_MONITOR_ENABLED, true);
+            Intent intent = new Intent(appContext, LockScreenMonitorService.class);
             try {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     appContext.startForegroundService(intent);
@@ -91,28 +82,23 @@ public final class LockScreenMonitorService extends Service {
 
         lockReceiver = new AutoStartOnPowerReceiver();
         IntentFilter filter = new IntentFilter();
-        SharedPreferences prefs = getSharedPreferences("settings", MODE_PRIVATE);
-        if (AutoStartPolicy.isEnabledForAction(
-                Intent.ACTION_SCREEN_OFF,
-                prefs.getBoolean("autoStartOnDeviceLock", false),
+        MonitorSettingsSnapshot state = MonitorSettingsSnapshot.read(this);
+        if (state != null && AutoStartPolicy.isEnabledForAction(
+                Intent.ACTION_SCREEN_OFF, state.autoStartOnDeviceLock,
                 false, false, false, false)) {
             filter.addAction(Intent.ACTION_SCREEN_OFF);
             filter.addAction(Intent.ACTION_USER_PRESENT);
         }
-        if (AutoStartPolicy.isEnabledForAction(
-                Intent.ACTION_SCREEN_ON,
-                false, false,
-                prefs.getBoolean("autoStartOnWake", false),
-                false, false)) {
+        if (state != null && AutoStartPolicy.isEnabledForAction(
+                Intent.ACTION_SCREEN_ON, false, false,
+                state.autoStartOnWake, false, false)) {
             filter.addAction(Intent.ACTION_SCREEN_ON);
         }
         // This service is the only app-managed charging listener. Android Dream
         // owns that event when the system screensaver route is selected.
-        if (AutoStartPolicy.isEnabledForAction(
-                Intent.ACTION_POWER_CONNECTED,
-                false, false, false,
-                prefs.getBoolean("autoStartOnCharge", false),
-                prefs.getBoolean("useAndroidDreamForCharging", true))) {
+        if (state != null && AutoStartPolicy.isEnabledForAction(
+                Intent.ACTION_POWER_CONNECTED, false, false, false,
+                state.autoStartOnCharge, state.useAndroidDreamForCharging)) {
             filter.addAction(Intent.ACTION_POWER_CONNECTED);
         }
         if (filter.countActions() == 0) {
@@ -135,7 +121,6 @@ public final class LockScreenMonitorService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        SharedPreferences prefs = getSharedPreferences("settings", MODE_PRIVATE);
         if (!isMonitoringAllowed(this)) {
             lockMonitoringActive = false;
             stopSelf(startId);
@@ -145,12 +130,13 @@ public final class LockScreenMonitorService extends Service {
         // If the service was restarted after the user unlocked the phone, clear
         // a stale one-per-lock-cycle latch. Do not clear it while the device is
         // actually locked.
-        if (prefs.getBoolean("autoStartOnDeviceLock", false)) {
+        MonitorSettingsSnapshot state = MonitorSettingsSnapshot.read(this);
+        if (state != null && state.autoStartOnDeviceLock) {
             try {
                 android.app.KeyguardManager keyguard =
                         (android.app.KeyguardManager) getSystemService(KEYGUARD_SERVICE);
                 if (keyguard != null && !keyguard.isDeviceLocked()) {
-                    prefs.edit().putBoolean("deviceLockStartConsumed", false).apply();
+                    MonitorSettingsSnapshot.resetDeviceLockStart(this);
                 }
             } catch (Throwable ignored) {
             }
