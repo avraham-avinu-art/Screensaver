@@ -17,6 +17,9 @@ public final class LockScreenBootReceiver extends BroadcastReceiver {
                 && !Intent.ACTION_MY_PACKAGE_REPLACED.equals(action)) return;
 
         SharedPreferences prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE);
+        prefs.edit().putBoolean("deviceLockActivationConsumed", false)
+                .remove("deepSleepScreenOffElapsed")
+                .remove("deepSleepScreenOffUptime").apply();
         boolean autoStartOnBoot = prefs.getBoolean("autoStartOnBoot", false);
         boolean monitorNeeded = prefs.getBoolean("autoStartOnDeviceLock", false)
                 || prefs.getBoolean("autoStartOnWake", false)
