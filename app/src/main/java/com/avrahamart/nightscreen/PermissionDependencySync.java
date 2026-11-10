@@ -33,6 +33,8 @@ public final class PermissionDependencySync {
                 prefs.getBoolean("autoStartOnBoot", false) && overlayRequired;
         boolean disableWakeStart =
                 prefs.getBoolean("autoStartOnWake", false) && overlayRequired;
+        boolean disableScreenOnStart =
+                prefs.getBoolean("autoStartOnScreenOn", false) && overlayRequired;
         boolean disablePlayer =
                 prefs.getBoolean("showPlayer", false) && !notificationAccess;
 
@@ -46,12 +48,15 @@ public final class PermissionDependencySync {
                 .putBoolean("autoStartOverlayPermissionPending", false);
         if (disableBootStart) editor.putBoolean("autoStartOnBoot", false);
         if (disableWakeStart) editor.putBoolean("autoStartOnWake", false);
+        if (disableScreenOnStart) editor.putBoolean("autoStartOnScreenOn", false);
         if (disablePlayer) editor.putBoolean("showPlayer", false)
                 .putBoolean("showPlayerPermissionPending", false);
         editor.apply();
 
-        if (disableLockStart || disableWakeStart) LockScreenMonitorService.sync(context);
-        if (disableLockStart || disableChargeStart || disableWakeStart) {
+        if (disableLockStart || disableWakeStart || disableScreenOnStart) {
+            LockScreenMonitorService.sync(context);
+        }
+        if (disableLockStart || disableChargeStart || disableWakeStart || disableScreenOnStart) {
             NightScreenApplication.syncChargerReceiver(context);
         }
 
@@ -67,6 +72,9 @@ public final class PermissionDependencySync {
         }
         if (disableWakeStart) {
             messages.add("ההפעלה האוטומטית בהתעוררות כובתה מפני שהרשאת ההצגה מעל אפליקציות אחרות בוטלה.");
+        }
+        if (disableScreenOnStart) {
+            messages.add("ההפעלה האוטומטית בהדלקת מסך כובתה מפני שהרשאת ההצגה מעל אפליקציות אחרות בוטלה.");
         }
         if (disablePlayer) {
             messages.add("הצגת הנגן כובתה מפני שהרשאת הגישה להתראות בוטלה.");
