@@ -18,7 +18,7 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 
 public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
-    private static final long DEEP_SLEEP_MIN_MS = 1_000L;
+    private static final long DEEP_SLEEP_MIN_MS = 5_000L;
 
     @Override
     public void onReceive(Context context, Intent intent) {
