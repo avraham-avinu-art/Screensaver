@@ -18,36 +18,35 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 
 public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
+    private static final long DEEP_SLEEP_MIN_MS = 1_000L;
+
     @Override
     public void onReceive(Context context, Intent intent) {
         if (intent == null || intent.getAction() == null) return;
         String action = intent.getAction();
 
+        SharedPreferences prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE);
         if (Intent.ACTION_USER_PRESENT.equals(action)) {
+            prefs.edit().putBoolean("deviceLockActivationConsumed", false)
+                    .remove("deepSleepScreenOffElapsed").remove("deepSleepScreenOffUptime").apply();
             MainActivity.clearPausedByDeviceLockState();
             return;
         }
 
-        SharedPreferences prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE);
-        if (Intent.ACTION_SCREEN_ON.equals(action)
-                && prefs.getBoolean("autoStartOnWake", false)
-                && LockScreenMonitorService.isLockMonitoringActive()
-                && canLaunchFromBackground(context)
-                && !isMainActivityVisible(context)) {
-            Intent launch = new Intent(context, MainActivity.class);
-            launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
-                    | Intent.FLAG_ACTIVITY_CLEAR_TOP
-                    | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-            try {
-                context.startActivity(launch);
-            } catch (Throwable ignored) {
-                // Respect device-specific background-launch restrictions.
-            }
+        if (Intent.ACTION_SCREEN_ON.equals(action)) {
+            handleScreenOn(context, prefs);
             return;
+        }
+        if (Intent.ACTION_SCREEN_OFF.equals(action)) {
+            prefs.edit()
+                    .putLong("deepSleepScreenOffElapsed", SystemClock.elapsedRealtime())
+                    .putLong("deepSleepScreenOffUptime", SystemClock.uptimeMillis())
+                    .apply();
         }
 
         if (Intent.ACTION_POWER_CONNECTED.equals(action)) {
-            if (!prefs.getBoolean("autoStartOnCharge", false)) return;
+            if (!prefs.getBoolean("autoStartOnCharge", false)
+                    || prefs.getBoolean("useAndroidDreamForCharging", false)) return;
             if (!canLaunchFromBackground(context)) return;
             if (!claimPowerConnectedEvent(context)) return;
 
@@ -65,6 +64,7 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
         }
 
         if (Intent.ACTION_SCREEN_OFF.equals(action)
+                && prefs.getBoolean("autoStartOnDeviceLock", false)
                 && LockScreenMonitorService.isLockMonitoringActive()
                 && canLaunchFromBackground(context)) {
             // Let Android finish applying the keyguard state before checking it.
@@ -100,7 +100,7 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
     private void launchOnDeviceLockIfStillLocked(Context context) {
         SharedPreferences prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE);
         if (!LockScreenMonitorService.isLockMonitoringActive()) return;
-        if (isMainActivityVisible(context)) return;
+        if (prefs.getBoolean("deviceLockActivationConsumed", false)) return;
 
         PowerManager powerManager =
                 (PowerManager) context.getSystemService(Context.POWER_SERVICE);
@@ -118,8 +118,43 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
         launch.putExtra(MainActivity.EXTRA_OPENED_BY_DEVICE_LOCK, true);
         try {
             context.startActivity(launch);
+            // Consume this lock cycle only after Android accepted the launch request.
+            prefs.edit().putBoolean("deviceLockActivationConsumed", true).apply();
         } catch (Throwable ignored) {
             // Background activity launch restrictions vary by Android build.
+        }
+    }
+
+    private void handleScreenOn(Context context, SharedPreferences prefs) {
+        long offElapsed = prefs.getLong("deepSleepScreenOffElapsed", -1L);
+        long offUptime = prefs.getLong("deepSleepScreenOffUptime", -1L);
+        long nowElapsed = SystemClock.elapsedRealtime();
+        long nowUptime = SystemClock.uptimeMillis();
+        boolean deepSleep = offElapsed >= 0L && offUptime >= 0L
+                && nowElapsed >= offElapsed && nowUptime >= offUptime
+                && (nowElapsed - offElapsed) - (nowUptime - offUptime) >= DEEP_SLEEP_MIN_MS;
+        prefs.edit().remove("deepSleepScreenOffElapsed")
+                .remove("deepSleepScreenOffUptime").apply();
+
+        boolean everyScreenOn = prefs.getBoolean("autoStartOnScreenOn", false);
+        boolean afterDeepSleep = prefs.getBoolean("autoStartOnWake", false) && deepSleep;
+        if ((!everyScreenOn && !afterDeepSleep)
+                || !LockScreenMonitorService.isLockMonitoringActive()
+                || !canLaunchFromBackground(context)) return;
+
+        Intent launch = new Intent(context, MainActivity.class);
+        launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                | Intent.FLAG_ACTIVITY_CLEAR_TOP
+                | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        if (everyScreenOn) {
+            launch.putExtra(MainActivity.EXTRA_OPENED_BY_SCREEN_ON, true);
+        } else {
+            launch.putExtra(MainActivity.EXTRA_OPENED_BY_WAKE, true);
+        }
+        try {
+            context.startActivity(launch);
+        } catch (Throwable ignored) {
+            // Respect device-specific background-launch restrictions.
         }
     }
 
