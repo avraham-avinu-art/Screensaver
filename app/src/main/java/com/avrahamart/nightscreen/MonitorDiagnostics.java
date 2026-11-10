@@ -31,6 +31,7 @@ final class MonitorDiagnostics {
     private static final String ACTION_TASK_REMOVED_PROBE =
             "com.avrahamart.nightscreen.action.TASK_REMOVED_DIAGNOSTIC_PROBE";
     private static final int TASK_REMOVED_PROBE_REQUEST_BASE = 6730;
+    private static final int TEST_WINDOW_PROBE_REQUEST_BASE = 6800;
 
     private MonitorDiagnostics() { }
 
@@ -97,6 +98,53 @@ final class MonitorDiagnostics {
         }
     }
 
+    /**
+     * Schedules a bounded series of snapshots from the moment the user starts
+     * a diagnostic test. Unlike onTaskRemoved probes, these do not depend on
+     * the service callback being delivered promptly.
+     */
+    static void scheduleTestWindowProbes(Context context) {
+        if (context == null) return;
+        AlarmManager alarmManager = (AlarmManager)
+                context.getSystemService(Context.ALARM_SERVICE);
+        if (alarmManager == null) {
+            record(context, "test-window probes not scheduled: AlarmManager unavailable");
+            return;
+        }
+        long scheduledAt = SystemClock.elapsedRealtime();
+        long[] delays = new long[]{
+                5_000L, 10_000L, 15_000L, 20_000L,
+                30_000L, 45_000L, 60_000L, 90_000L, 120_000L
+        };
+        for (int i = 0; i < delays.length; i++) {
+            long delay = delays[i];
+            String checkpoint = "test-window +" + (delay / 1000L) + "s";
+            Intent intent = new Intent(context, MonitorDiagnosticsProbeReceiver.class);
+            intent.setAction(ACTION_TASK_REMOVED_PROBE);
+            intent.putExtra("checkpoint", checkpoint);
+            intent.putExtra("scheduledAtElapsedRealtime", scheduledAt);
+            intent.putExtra("delayMs", delay);
+            int flags = PendingIntent.FLAG_UPDATE_CURRENT;
+            if (Build.VERSION.SDK_INT >= 23) flags |= PendingIntent.FLAG_IMMUTABLE;
+            try {
+                PendingIntent pendingIntent = PendingIntent.getBroadcast(
+                        context, TEST_WINDOW_PROBE_REQUEST_BASE + i, intent, flags);
+                long triggerAt = scheduledAt + delay;
+                if (Build.VERSION.SDK_INT >= 23) {
+                    alarmManager.setAndAllowWhileIdle(
+                            AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerAt, pendingIntent);
+                } else {
+                    alarmManager.set(AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerAt, pendingIntent);
+                }
+                record(context, "test-window probe scheduled; checkpoint=" + checkpoint
+                        + ", triggerElapsedRealtime=" + triggerAt);
+            } catch (Throwable error) {
+                record(context, "test-window probe scheduling failed; checkpoint="
+                        + checkpoint + ", error=" + error);
+            }
+        }
+    }
+
     /** Records Android's observable notification state, not merely a successful startForeground call. */
     static void recordNotificationState(Context context, String checkpoint) {
         if (context == null) return;
@@ -104,6 +152,7 @@ final class MonitorDiagnostics {
         boolean channelExists = false;
         int channelImportance = -1;
         boolean notificationPresent = false;
+        boolean notificationListenerAccess = NightScreenApplication.hasNotificationAccess(context);
         String notificationDetails = "unavailable";
         try {
             NotificationManager manager = (NotificationManager)
@@ -159,6 +208,7 @@ final class MonitorDiagnostics {
                 + appNotificationsEnabled + ", channelExists=" + channelExists
                 + ", channelImportance=" + channelImportance
                 + ", notificationPresent=" + notificationPresent
+                + ", notificationListenerAccess=" + notificationListenerAccess
                 + ", notificationDetails={" + notificationDetails + "}"
                 + ", lockmonitorProcess={" + processState + "}");
     }
