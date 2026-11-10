@@ -17,10 +17,8 @@ import android.os.SystemClock;
 import android.provider.Settings;
 
 public final class LockScreenMonitorService extends Service {
-    // Internal foreground-service channel; the user-facing persistent notification
-    // is posted separately by AutoStartNotificationController.
-    private static final String CHANNEL_ID = "screensaver_lock_monitor_v4";
-    private static final int NOTIFICATION_ID = 6721;
+    // The foreground service and NotificationController share one notification.
+    private static final int NOTIFICATION_ID = AutoStartNotificationController.NOTIFICATION_ID;
     private static final int RESTART_PENDING_INTENT_ID = 6722;
     private static final long RESTART_DELAY_MS = 2_000L;
     static final String EXTRA_MONITOR_ENABLED = "com.avrahamart.nightscreen.EXTRA_MONITOR_ENABLED";
@@ -65,7 +63,7 @@ public final class LockScreenMonitorService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        createNotificationChannel();
+        AutoStartNotificationController.createChannel(this);
         updateLockReceiverRegistration();
     }
 
@@ -141,45 +139,8 @@ public final class LockScreenMonitorService extends Service {
         return START_STICKY;
     }
 
-    private void createNotificationChannel() {
-        if (Build.VERSION.SDK_INT < 26) return;
-        NotificationManager manager =
-                (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        if (manager == null) return;
-        NotificationChannel channel = new NotificationChannel(
-                CHANNEL_ID, "שירות ניטור פנימי", NotificationManager.IMPORTANCE_MIN);
-        channel.setDescription("התראה מתמשכת לשירות ההפעלה האוטומטית בנעילת המכשיר");
-        channel.setShowBadge(false);
-        channel.setLockscreenVisibility(Notification.VISIBILITY_SECRET);
-        channel.enableLights(false);
-        channel.enableVibration(false);
-        channel.setSound(null, null);
-        if (Build.VERSION.SDK_INT >= 29) channel.setAllowBubbles(false);
-        manager.createNotificationChannel(channel);
-    }
-
     private Notification buildQuietNotification() {
-        Notification.Builder builder = Build.VERSION.SDK_INT >= 26
-                ? new Notification.Builder(this, CHANNEL_ID)
-                : new Notification.Builder(this);
-        // This is only the Android-required technical foreground-service entry.
-        // The separate normal notification is the visible, user-facing one and
-        // opens the overlay-permission settings page.
-        builder.setSmallIcon(R.drawable.ic_notification_transparent)
-                .setContentTitle("שירות ניטור פנימי")
-                .setContentText("פעיל")
-                .setOngoing(true)
-                .setOnlyAlertOnce(true)
-                .setShowWhen(false)
-                .setCategory(Notification.CATEGORY_SERVICE)
-                .setVisibility(Notification.VISIBILITY_SECRET);
-        builder.setPriority(Notification.PRIORITY_MIN)
-                .setSound(null)
-                .setVibrate(new long[0])
-                .setDefaults(0);
-        Notification notification = builder.build();
-        notification.flags |= Notification.FLAG_NO_CLEAR;
-        return notification;
+        return AutoStartNotificationController.buildNotification(this);
     }
 
     @Override
