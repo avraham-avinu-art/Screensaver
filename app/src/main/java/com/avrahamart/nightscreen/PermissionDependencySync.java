@@ -28,7 +28,9 @@ public final class PermissionDependencySync {
         boolean disableLockStart =
                 prefs.getBoolean("autoStartOnDeviceLock", false) && overlayRequired;
         boolean disableChargeStart =
-                prefs.getBoolean("autoStartOnCharge", false) && overlayRequired;
+                prefs.getBoolean("autoStartOnCharge", false)
+                        && !prefs.getBoolean("useAndroidDreamForCharging", false)
+                        && overlayRequired;
         boolean disableBootStart =
                 prefs.getBoolean("autoStartOnBoot", false) && overlayRequired;
         boolean disableWakeStart =
