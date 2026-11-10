@@ -181,7 +181,6 @@ public final class LockScreenMonitorService extends Service {
         // If the service was restarted after the user unlocked the phone, clear
         // a stale one-per-lock-cycle latch. Do not clear it while the device is
         // actually locked.
-        MonitorSettingsSnapshot state = MonitorSettingsSnapshot.read(this);
         if (state != null && state.autoStartOnDeviceLock) {
             try {
                 android.app.KeyguardManager keyguard =
