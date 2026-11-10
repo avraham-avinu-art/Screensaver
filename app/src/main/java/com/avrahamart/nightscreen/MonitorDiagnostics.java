@@ -3,8 +3,12 @@ package com.avrahamart.nightscreen;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.ActivityManager;
+import android.app.AlarmManager;
+import android.app.PendingIntent;
 import android.content.Context;
+import android.content.Intent;
 import android.os.Build;
+import android.os.SystemClock;
 import android.util.Log;
 
 import java.io.File;
@@ -24,6 +28,9 @@ final class MonitorDiagnostics {
     private static final int MAX_BYTES = 128 * 1024;
     private static final int MONITOR_NOTIFICATION_ID = 6721;
     private static final String MONITOR_CHANNEL_ID = "screensaver_lock_monitor_v5";
+    private static final String ACTION_TASK_REMOVED_PROBE =
+            "com.avrahamart.nightscreen.action.TASK_REMOVED_DIAGNOSTIC_PROBE";
+    private static final int TASK_REMOVED_PROBE_REQUEST_BASE = 6730;
 
     private MonitorDiagnostics() { }
 
@@ -47,6 +54,46 @@ final class MonitorDiagnostics {
             }
         } catch (Throwable error) {
             Log.e(TAG, "Unable to persist diagnostic event", error);
+        }
+    }
+
+    /**
+     * Schedules independent checkpoints after the task is swiped away. These alarms
+     * target a separate receiver in the app process, so they can still record the
+     * notification state if the :lockmonitor process has been killed.
+     */
+    static void scheduleTaskRemovedProbes(Context context) {
+        if (context == null) return;
+        AlarmManager alarmManager = (AlarmManager)
+                context.getSystemService(Context.ALARM_SERVICE);
+        if (alarmManager == null) {
+            record(context, "task-removal diagnostic probes not scheduled: AlarmManager unavailable");
+            return;
+        }
+        long scheduledAt = SystemClock.elapsedRealtime();
+        long[] delays = new long[]{1_000L, 4_000L, 8_000L};
+        for (int i = 0; i < delays.length; i++) {
+            long delay = delays[i];
+            String checkpoint = "after task removal +" + delay + "ms";
+            Intent intent = new Intent(context, MonitorDiagnosticsProbeReceiver.class);
+            intent.setAction(ACTION_TASK_REMOVED_PROBE);
+            intent.putExtra("checkpoint", checkpoint);
+            intent.putExtra("scheduledAtElapsedRealtime", scheduledAt);
+            intent.putExtra("delayMs", delay);
+            int flags = PendingIntent.FLAG_UPDATE_CURRENT;
+            if (Build.VERSION.SDK_INT >= 23) flags |= PendingIntent.FLAG_IMMUTABLE;
+            try {
+                PendingIntent pendingIntent = PendingIntent.getBroadcast(
+                        context, TASK_REMOVED_PROBE_REQUEST_BASE + i, intent, flags);
+                long triggerAt = scheduledAt + delay;
+                alarmManager.set(AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                        triggerAt, pendingIntent);
+                record(context, "task-removal diagnostic probe scheduled; checkpoint="
+                        + checkpoint + ", triggerElapsedRealtime=" + triggerAt);
+            } catch (Throwable error) {
+                record(context, "task-removal diagnostic probe scheduling failed; checkpoint="
+                        + checkpoint + ", error=" + error);
+            }
         }
     }
 
@@ -85,14 +132,16 @@ final class MonitorDiagnostics {
                     + ":" + error.getMessage();
         }
 
-        String processState = "unknown";
+        String processState = "not-listed";
         try {
             ActivityManager am = (ActivityManager)
                     context.getSystemService(Context.ACTIVITY_SERVICE);
             if (am != null) {
                 List<ActivityManager.RunningAppProcessInfo> processes =
                         am.getRunningAppProcesses();
-                if (processes != null) {
+                if (processes == null) {
+                    processState = "process-list-null";
+                } else {
                     for (ActivityManager.RunningAppProcessInfo process : processes) {
                         if ((context.getPackageName() + ":lockmonitor").equals(process.processName)) {
                             processState = "running; pid=" + process.pid
