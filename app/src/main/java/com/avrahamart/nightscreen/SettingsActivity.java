@@ -89,7 +89,6 @@ private LinearLayout clockDateCard;
     private Switch autoStartOnDeviceLockToggle;
     private Switch autoStartOnBootToggle;
     private Switch autoStartOnWakeToggle;
-    private Switch autoStartOnScreenOnToggle;
     private TextView activityCapabilityNotice;
     private View activityHelpHeaderButton;
     private LinearLayout screenLockAdminCard;
@@ -605,7 +604,6 @@ screenTitle.setText("הגדרות");
         addCheck(content, "הפעלה אוטומטית בנעילה", "autoStartOnDeviceLock", false);
         addCheck(content, "הפעלה אוטומטית בהדלקה", "autoStartOnBoot", false);
         addCheck(content, "הפעלה אוטומטית בהתעוררות", "autoStartOnWake", false);
-        addCheck(content, "הפעלה אוטומטית בהדלקת מסך", "autoStartOnScreenOn", false);
         addCheck(content, "הפעלה אוטומטית בטעינה", "autoStartOnCharge", false);
         addCheck(content, "ללא כיבוי בטעינה", "noShutdownWhileCharging", false);
         addSegmentedChoices(content, "תצוגת סוללה בטעינה",
@@ -826,7 +824,7 @@ screenTitle.setText("הגדרות");
                     return "הגדרת זמני הפעילות";
                 }
                 if ("autoStartOnDeviceLock".equals(key) || "autoStartOnBoot".equals(key)
-                        || "autoStartOnWake".equals(key) || "autoStartOnScreenOn".equals(key)
+                        || "autoStartOnWake".equals(key)
                         || "autoStartOnCharge".equals(key)) {
                     return "הפעלות אוטומטיות";
                 }
@@ -1021,7 +1019,6 @@ screenTitle.setText("הגדרות");
         if ("autoStartOnDeviceLock".equals(key)) return "הפעלת שומר מסך באופן אוטומטי בעת נעילת המכשיר";
         if ("autoStartOnBoot".equals(key)) return "הפעלת שומר מסך באופן אוטומטי לאחר הפעלת המכשיר";
         if ("autoStartOnWake".equals(key)) return "הפעלת השומר מסך באופן אוטומטי לאחר יציאה משינה עמוקה של המכשיר";
-        if ("autoStartOnScreenOn".equals(key)) return "הפעלת השומר מסך בכל פעם שהמסך נדלק לאחר שהיה כבוי, גם מעל מסך הנעילה";
         if ("autoStartOnCharge".equals(key)) return "הפעלת השומר מסך אוטומטית בחיבור המכשיר לטעינה";
         if ("noShutdownWhileCharging".equals(key)) return "השארת השומר מסך פועל כל עוד המכשיר מחובר לטעינה";
         if ("screenBackgroundColor".equals(key)) return "בחירת צבע הרקע של שומר המסך";
@@ -1426,7 +1423,7 @@ screenTitle.setText("הגדרות");
                 LockScreenMonitorService.sync(this);
                 updateOverlayPermissionCardVisibility();
             } else if ("autoStartOnBoot".equals(key) || "autoStartOnWake".equals(key)
-                    || "autoStartOnScreenOn".equals(key)) {
+                   ) {
                 if (checked && Build.VERSION.SDK_INT >= 29
                         && !Settings.canDrawOverlays(this)) {
                     AppToast.makeText(this,
@@ -2075,9 +2072,6 @@ screenTitle.setText("הגדרות");
         if (autoStartOnWakeToggle != null) {
             autoStartOnWakeToggle.setChecked(getBool("autoStartOnWake", false));
         }
-        if (autoStartOnScreenOnToggle != null) {
-            autoStartOnScreenOnToggle.setChecked(getBool("autoStartOnScreenOn", false));
-        }
     }
 
     private boolean isAutoStartSetting(String key) {
@@ -2100,7 +2094,6 @@ screenTitle.setText("הגדרות");
         boolean anyAutoStartEnabled = getBool("autoStartOnDeviceLock", false)
                 || getBool("autoStartOnBoot", false)
                 || getBool("autoStartOnWake", false)
-                || getBool("autoStartOnScreenOn", false)
                 || getBool("autoStartOnCharge", false);
         if (!anyAutoStartEnabled
                 || prefs.getBoolean("autoStartNotificationPermissionAsked", false)) return;
@@ -2692,7 +2685,7 @@ screenTitle.setText("הגדרות");
                 || getBool("autoStartOnDeviceLock", false)
                 || getBool("autoStartOnBoot", false)
                 || getBool("autoStartOnWake", false)
-                || getBool("autoStartOnScreenOn", false);
+;
         overlayPermissionStatus.setText(granted
                 ? (autoStartEnabled
                     ? "ההרשאה פעילה — ההפעלה האוטומטית זמינה."
