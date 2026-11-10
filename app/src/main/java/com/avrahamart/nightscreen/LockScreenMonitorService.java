@@ -53,27 +53,36 @@ public final class LockScreenMonitorService extends Service {
     static void restoreForegroundNotification(Context context) {
         Context appContext = context.getApplicationContext();
         boolean monitoringAllowed = isMonitoringAllowed(appContext);
-        MonitorDiagnostics.record(appContext, "sync requested; monitoringAllowed=" + monitoringAllowed);
+        MonitorDiagnostics.record(appContext, "foreground notification restore check; monitoringAllowed="
+                + monitoringAllowed + ", caller=" + describeCaller());
         if (monitoringAllowed) {
             MonitorSettingsSnapshot.setNotificationDetached(appContext, false);
         }
     }
 
+    private static String describeCaller() {
+        StackTraceElement[] stack = Thread.currentThread().getStackTrace();
+        for (StackTraceElement frame : stack) {
+            String className = frame.getClassName();
+            if (className.startsWith("com.avrahamart.nightscreen.")
+                    && !className.equals(LockScreenMonitorService.class.getName())) {
+                return className + "#" + frame.getMethodName();
+            }
+        }
+        return "unknown";
+    }
+
     public static void sync(Context context) {
         Context appContext = context.getApplicationContext();
-        if (isMonitoringAllowed(appContext)) {
+        boolean monitoringAllowed = isMonitoringAllowed(appContext);
+        String caller = describeCaller();
+        MonitorDiagnostics.record(appContext, "service sync invoked; monitoringAllowed="
+                + monitoringAllowed + ", caller=" + caller);
+        if (monitoringAllowed) {
             Intent intent = new Intent(appContext, LockScreenMonitorService.class);
             intent.setAction(ACTION_SYNC_REQUEST);
-            String caller = "unknown";
-            StackTraceElement[] stack = Thread.currentThread().getStackTrace();
-            for (StackTraceElement frame : stack) {
-                if (frame.getClassName().startsWith("com.avrahamart.nightscreen.")
-                        && !frame.getClassName().equals(LockScreenMonitorService.class.getName())) {
-                    caller = frame.getClassName() + "#" + frame.getMethodName();
-                    break;
-                }
-            }
-            MonitorDiagnostics.record(appContext, "service sync start requested; caller=" + caller);
+            MonitorDiagnostics.record(appContext, "service start request dispatched; source=APP_SYNC"
+                    + ", caller=" + caller);
             try {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     appContext.startForegroundService(intent);
@@ -160,9 +169,21 @@ public final class LockScreenMonitorService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        MonitorDiagnostics.record(this, "onStartCommand; startId=" + startId + ", action="
-                + (intent == null ? "null" : intent.getAction())
-                + ", startSource=" + (intent == null ? "null" : intent.getAction()));
+        String action = intent == null ? null : intent.getAction();
+        String startSource;
+        if (intent == null) {
+            startSource = "ANDROID_STICKY_RESTART_OR_NULL_INTENT";
+        } else if (ACTION_ALARM_RESTART.equals(action)) {
+            startSource = "ALARM_MANAGER_RECEIVER";
+        } else if (ACTION_SYNC_REQUEST.equals(action)) {
+            startSource = "APP_SYNC";
+        } else {
+            startSource = "OTHER_EXPLICIT_OR_LEGACY_START";
+        }
+        MonitorDiagnostics.record(this, "onStartCommand; startId=" + startId
+                + ", startSource=" + startSource + ", action=" + action
+                + ", flags=" + flags
+                + ", elapsedRealtime=" + SystemClock.elapsedRealtime());
         if (!isMonitoringAllowed(this)) {
             MonitorDiagnostics.record(this, "monitoring not allowed; stopping service");
             lockMonitoringActive = false;
@@ -267,8 +288,12 @@ public final class LockScreenMonitorService extends Service {
     @Override
     public void onTaskRemoved(Intent rootIntent) {
         MonitorDiagnostics.record(this, "onTaskRemoved; monitoringAllowed=" + isMonitoringAllowed(this)
-                + ", foregroundActive=" + lockMonitoringActive);
+                + ", foregroundActive=" + lockMonitoringActive
+                + ", rootIntentAction=" + (rootIntent == null ? "null" : rootIntent.getAction())
+                + ", rootIntentComponent=" + (rootIntent == null ? "null" : rootIntent.getComponent())
+                + ", elapsedRealtime=" + SystemClock.elapsedRealtime());
         MonitorDiagnostics.recordNotificationState(this, "onTaskRemoved entry");
+        MonitorDiagnostics.scheduleTaskRemovedProbes(this);
         // The monitor is independent of the UI task. Some device builds may still
         // tear down background processes after the recent-task card is dismissed.
         // Schedule a single recovery check; the same notification ID is reused,
@@ -283,7 +308,8 @@ public final class LockScreenMonitorService extends Service {
 
     @Override
     public void onDestroy() {
-        MonitorDiagnostics.record(this, "onDestroy; monitoringAllowed=" + isMonitoringAllowed(this));
+        MonitorDiagnostics.record(this, "onDestroy; monitoringAllowed=" + isMonitoringAllowed(this)
+                + ", elapsedRealtime=" + SystemClock.elapsedRealtime());
         MonitorDiagnostics.recordNotificationState(this, "onDestroy entry");
         lockMonitoringActive = false;
         if (!isMonitoringAllowed(this)) {
@@ -347,7 +373,9 @@ public final class LockScreenMonitorService extends Service {
                 alarmManager.set(
                         AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerAt, restartIntent);
             }
-            MonitorDiagnostics.record(this, "restart alarm scheduled; delayMs=" + RESTART_DELAY_MS);
+            MonitorDiagnostics.record(this, "restart alarm scheduled; delayMs=" + RESTART_DELAY_MS
+                        + ", triggerElapsedRealtime=" + triggerAt
+                        + ", alarmType=ELAPSED_REALTIME_WAKEUP");
         } catch (Throwable error) {
             Log.e(TAG, "restart alarm scheduling failed", error);
             MonitorDiagnostics.record(this, "restart alarm scheduling failed: " + error);
