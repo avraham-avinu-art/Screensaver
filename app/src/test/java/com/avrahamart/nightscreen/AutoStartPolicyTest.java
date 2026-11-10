@@ -69,10 +69,11 @@ public class AutoStartPolicyTest {
     }
 
     @Test
-    public void existingActivitySessionPreventsDuplicateAutomaticLaunch() {
-        assertFalse(AutoStartPolicy.shouldLaunchNewSession(true, true));
-        assertTrue(AutoStartPolicy.shouldLaunchNewSession(true, false));
-        assertFalse(AutoStartPolicy.shouldLaunchNewSession(false, true));
+    public void waitingContinuationIsNotAnActiveActivitySession() {
+        assertTrue(AutoStartPolicy.isExistingActivitySession(true, false, true));
+        assertFalse(AutoStartPolicy.isExistingActivitySession(true, true, true));
+        assertFalse(AutoStartPolicy.isExistingActivitySession(true, false, false));
+        assertFalse(AutoStartPolicy.isExistingActivitySession(false, false, true));
     }
 
     @Test
@@ -88,12 +89,12 @@ public class AutoStartPolicyTest {
     }
 
     @Test
-    public void bootOnlyAndAndroidDreamOnlyDoNotNeedMonitorService() {
-        assertFalse(AutoStartPolicy.needsMonitorService(false, false, false, true));
-        assertFalse(AutoStartPolicy.needsMonitorService(false, false, true, true));
-        assertTrue(AutoStartPolicy.needsMonitorService(true, false, false, true));
-        assertTrue(AutoStartPolicy.needsMonitorService(false, true, false, true));
+    public void anyOneAutostartModeKeepsThePersistentNotificationService() {
+        assertFalse(AutoStartPolicy.needsMonitorService(false, false, false, false));
+        assertTrue(AutoStartPolicy.needsMonitorService(true, false, false, false));
+        assertTrue(AutoStartPolicy.needsMonitorService(false, true, false, false));
         assertTrue(AutoStartPolicy.needsMonitorService(false, false, true, false));
+        assertTrue(AutoStartPolicy.needsMonitorService(false, false, false, true));
     }
 
     private boolean enabled(String action, boolean lock, boolean boot,

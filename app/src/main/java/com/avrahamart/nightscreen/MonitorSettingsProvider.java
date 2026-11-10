@@ -23,6 +23,7 @@ public final class MonitorSettingsProvider extends ContentProvider {
         if (METHOD_READ.equals(method)) {
             Bundle b = new Bundle();
             b.putBoolean("autoStartOnDeviceLock", p.getBoolean("autoStartOnDeviceLock", false));
+            b.putBoolean("autoStartOnBoot", p.getBoolean("autoStartOnBoot", false));
             b.putBoolean("autoStartOnWake", p.getBoolean("autoStartOnWake", false));
             b.putBoolean("autoStartOnCharge", p.getBoolean("autoStartOnCharge", false));
             b.putBoolean("useAndroidDreamForCharging", p.getBoolean("useAndroidDreamForCharging", true));
@@ -30,6 +31,8 @@ public final class MonitorSettingsProvider extends ContentProvider {
             b.putBoolean("mainActivitySessionAlive", p.getBoolean("mainActivitySessionAlive", false));
             b.putBoolean("mainActivityResumed", p.getBoolean("mainActivityResumed", false));
             b.putBoolean("mainActivityPausedByDeviceLock", p.getBoolean("mainActivityPausedByDeviceLock", false));
+            b.putBoolean("mainActivityWaitingForScreenWake", p.getBoolean("mainActivityWaitingForScreenWake", false));
+            b.putBoolean("continueOnLockScreen", p.getBoolean("continueOnLockScreen", false));
             b.putInt("mainActivitySessionPid", p.getInt("mainActivitySessionPid", -1));
             return b;
         }
@@ -45,7 +48,10 @@ public final class MonitorSettingsProvider extends ContentProvider {
         if (METHOD_RESET_LOCK.equals(method)) {
             synchronized (LOCK_MUTEX) {
                 Bundle b = new Bundle();
-                b.putBoolean("saved", p.edit().putBoolean("deviceLockStartConsumed", false).commit());
+                b.putBoolean("saved", p.edit()
+                        .putBoolean("deviceLockStartConsumed", false)
+                        .putBoolean("mainActivityPausedByDeviceLock", false)
+                        .commit());
                 return b;
             }
         }

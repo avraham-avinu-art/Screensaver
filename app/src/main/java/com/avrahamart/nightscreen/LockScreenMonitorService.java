@@ -33,14 +33,16 @@ public final class LockScreenMonitorService extends Service {
     static boolean isMonitoringAllowed(Context context) {
         MonitorSettingsSnapshot state = MonitorSettingsSnapshot.read(context.getApplicationContext());
         if (state == null || !state.needsMonitorService()) return false;
-
-        return Build.VERSION.SDK_INT < 29
+        boolean overlayRequired = state.autoStartOnDeviceLock || state.autoStartOnBoot
+                || state.autoStartOnWake
+                || (state.autoStartOnCharge && !state.useAndroidDreamForCharging);
+        return !overlayRequired || Build.VERSION.SDK_INT < 29
                 || Settings.canDrawOverlays(context.getApplicationContext());
     }
 
     /**
-     * Starts the resident monitor only for lock, wake, or app-managed charging.
-     * Boot and Android Dream charging are handled by their own system components.
+     * Keeps one foreground monitor/notification alive while any auto-start mode
+     * is enabled. Dynamic receiver subscriptions remain independently gated.
      */
     public static void sync(Context context) {
         Context appContext = context.getApplicationContext();

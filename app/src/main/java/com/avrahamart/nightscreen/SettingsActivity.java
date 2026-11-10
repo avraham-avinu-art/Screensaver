@@ -1431,10 +1431,9 @@ screenTitle.setText("הגדרות");
                         toggle.setChecked(false);
                     }
                 }
-                // Boot is handled by BOOT_COMPLETED; only wake needs a monitor.
-                if ("autoStartOnWake".equals(key)) {
-                    LockScreenMonitorService.sync(this);
-                }
+                // Keep the same persistent notification for every enabled mode.
+                // Actual event subscriptions remain independently gated.
+                LockScreenMonitorService.sync(this);
             } else if ("showPlayer".equals(key)) {
                 if (checked && !hasNotificationAccess()) {
                     prefs.edit().putBoolean("showPlayerPermissionPending", true).apply();
@@ -2086,8 +2085,7 @@ screenTitle.setText("הגדרות");
         boolean anyAutoStartEnabled = getBool("autoStartOnDeviceLock", false)
                 || getBool("autoStartOnBoot", false)
                 || getBool("autoStartOnWake", false)
-                || (getBool("autoStartOnCharge", false)
-                    && !getBool("useAndroidDreamForCharging", true));
+                || getBool("autoStartOnCharge", false);
         if (!anyAutoStartEnabled
                 || prefs.getBoolean("autoStartNotificationPermissionAsked", false)) return;
 

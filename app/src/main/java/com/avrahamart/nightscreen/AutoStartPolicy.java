@@ -45,16 +45,16 @@ final class AutoStartPolicy {
         }
     }
 
-    static boolean needsMonitorService(
-            boolean autoStartOnDeviceLock,
-            boolean autoStartOnWake,
-            boolean autoStartOnCharge,
-            boolean useAndroidDreamForCharging) {
-        // BOOT_COMPLETED has a dedicated manifest receiver. Android Dream owns
-        // charging when selected, so neither needs the persistent monitor.
-        return autoStartOnDeviceLock
-                || autoStartOnWake
-                || (autoStartOnCharge && !useAndroidDreamForCharging);
+    static boolean needsMonitorService(boolean lock, boolean boot,
+            boolean wake, boolean charge) {
+        // The same quiet, ongoing notification stays while any one mode is enabled.
+        // The listener subscriptions remain isolated by their own setting.
+        return lock || boot || wake || charge;
+    }
+
+    static boolean isExistingActivitySession(
+            boolean sessionAlive, boolean waitingForScreenWake, boolean activityVisible) {
+        return sessionAlive && !waitingForScreenWake && activityVisible;
     }
 
     /**

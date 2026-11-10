@@ -327,10 +327,13 @@ public class MainActivity extends Activity {
         mainActivitySessionAlive = true;
         try {
             prefs = getSharedPreferences("settings", MODE_PRIVATE);
+            waitingForScreenWakeAfterActivityEnd = false;
+            lockScreenContinuationArmed = false;
             prefs.edit()
                     .putBoolean("mainActivitySessionAlive", true)
                     .putBoolean("mainActivityResumed", false)
                     .putBoolean("mainActivityPausedByDeviceLock", false)
+                    .putBoolean("mainActivityWaitingForScreenWake", false)
                     .putInt("mainActivitySessionPid", android.os.Process.myPid())
                     .apply();
             initSettings();
@@ -382,6 +385,13 @@ public class MainActivity extends Activity {
                 || intent.getBooleanExtra(EXTRA_OPENED_BY_DEVICE_LOCK, false)
                 || intent.getBooleanExtra(EXTRA_OPENED_BY_WAKE, false)
                 || intent.getBooleanExtra(EXTRA_OPENED_BY_BOOT, false))) {
+            waitingForScreenWakeAfterActivityEnd = false;
+            lockScreenContinuationArmed = false;
+            getSharedPreferences("settings", MODE_PRIVATE).edit()
+                    .putBoolean("mainActivitySessionAlive", true)
+                    .putBoolean("mainActivityWaitingForScreenWake", false)
+                    .putInt("mainActivitySessionPid", android.os.Process.myPid())
+                    .apply();
             applyChargingLaunchFlags(intent);
             applyDeviceLockLaunchFlags(intent);
             applyPreventLockWhileActivePreference();
@@ -507,6 +517,7 @@ public class MainActivity extends Activity {
                 .putBoolean("mainActivitySessionAlive", true)
                 .putBoolean("mainActivityResumed", true)
                 .putBoolean("mainActivityPausedByDeviceLock", false)
+                .putBoolean("mainActivityWaitingForScreenWake", waitingForScreenWakeAfterActivityEnd)
                 .putInt("mainActivitySessionPid", android.os.Process.myPid())
                 .apply();
         if (shouldPauseForExcludedForegroundApp()) {
@@ -567,15 +578,27 @@ public class MainActivity extends Activity {
     protected void onPause() {
         android.app.KeyguardManager keyguardManager =
                 (android.app.KeyguardManager) getSystemService(KEYGUARD_SERVICE);
-        mainActivityPausedByDeviceLock =
-                keyguardManager != null && keyguardManager.isKeyguardLocked();
         mainActivityResumed = false;
-        getSharedPreferences("settings", MODE_PRIVATE).edit()
-                .putBoolean("mainActivitySessionAlive", true)
-                .putBoolean("mainActivityResumed", false)
-                .putBoolean("mainActivityPausedByDeviceLock", mainActivityPausedByDeviceLock)
-                .putInt("mainActivitySessionPid", android.os.Process.myPid())
-                .apply();
+        if (isFinishing()) {
+            mainActivityPausedByDeviceLock = false;
+            getSharedPreferences("settings", MODE_PRIVATE).edit()
+                    .putBoolean("mainActivitySessionAlive", false)
+                    .putBoolean("mainActivityResumed", false)
+                    .putBoolean("mainActivityPausedByDeviceLock", false)
+                    .putBoolean("mainActivityWaitingForScreenWake", false)
+                    .remove("mainActivitySessionPid")
+                    .apply();
+        } else {
+            mainActivityPausedByDeviceLock =
+                    keyguardManager != null && keyguardManager.isKeyguardLocked();
+            getSharedPreferences("settings", MODE_PRIVATE).edit()
+                    .putBoolean("mainActivitySessionAlive", true)
+                    .putBoolean("mainActivityResumed", false)
+                    .putBoolean("mainActivityPausedByDeviceLock", mainActivityPausedByDeviceLock)
+                    .putBoolean("mainActivityWaitingForScreenWake", waitingForScreenWakeAfterActivityEnd)
+                    .putInt("mainActivitySessionPid", android.os.Process.myPid())
+                    .apply();
+        }
         stopClockUpdates();
         handler.removeCallbacks(mediaSessionRefreshRunnable);
         stopMediaProgressTicker();
@@ -594,10 +617,12 @@ public class MainActivity extends Activity {
     @Override
     protected void onDestroy() {
         mainActivitySessionAlive = false;
+        waitingForScreenWakeAfterActivityEnd = false;
         getSharedPreferences("settings", MODE_PRIVATE).edit()
                 .putBoolean("mainActivitySessionAlive", false)
                 .putBoolean("mainActivityResumed", false)
                 .putBoolean("mainActivityPausedByDeviceLock", false)
+                .putBoolean("mainActivityWaitingForScreenWake", false)
                 .remove("mainActivitySessionPid")
                 .apply();
         handler.removeCallbacks(clockUpdateRunnable);
@@ -2181,6 +2206,8 @@ public class MainActivity extends Activity {
             // A longer system timeout alone never extends a one/five-minute selection.
             waitingForScreenWakeAfterActivityEnd = true;
             lockScreenContinuationArmed = true;
+            getSharedPreferences("settings", MODE_PRIVATE).edit()
+                    .putBoolean("mainActivityWaitingForScreenWake", true).apply();
             applyPreventLockWhileActivePreference();
             if (adminActive) {
                 try {
@@ -2302,11 +2329,15 @@ public class MainActivity extends Activity {
         if (!getBool("continueOnLockScreen", false)) {
             waitingForScreenWakeAfterActivityEnd = false;
             lockScreenContinuationArmed = false;
+            getSharedPreferences("settings", MODE_PRIVATE).edit()
+                    .putBoolean("mainActivityWaitingForScreenWake", false).apply();
             applyPreventLockWhileActivePreference();
             finishAffinity();
             return;
         }
         waitingForScreenWakeAfterActivityEnd = false;
+        getSharedPreferences("settings", MODE_PRIVATE).edit()
+                .putBoolean("mainActivityWaitingForScreenWake", false).apply();
         lockScreenContinuationArmed = getBool("continueOnLockScreen", false);
         applyPreventLockWhileActivePreference();
 
@@ -2335,6 +2366,8 @@ public class MainActivity extends Activity {
                 // In device mode Android's own timeout ends the visible cycle.
                 // The next wake starts a new cycle only when continuation is enabled.
                 waitingForScreenWakeAfterActivityEnd = true;
+                getSharedPreferences("settings", MODE_PRIVATE).edit()
+                        .putBoolean("mainActivityWaitingForScreenWake", true).apply();
             }
         } else if (systemManagedDuration) {
             handler.post(this::finishAffinity);
