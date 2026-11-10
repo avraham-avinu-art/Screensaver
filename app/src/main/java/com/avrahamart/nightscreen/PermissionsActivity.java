@@ -118,6 +118,7 @@ public class PermissionsActivity extends Activity {
         addOverlayPermissionCard(cards);
         addUsageAccessPermissionCard(cards);
         addDeviceAdminPermissionCard(cards);
+        addMonitorDiagnosticsCard(cards);
 
         scroll.addView(cards, new ScrollView.LayoutParams(-1, -2));
         root.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1f));
@@ -280,6 +281,13 @@ public class PermissionsActivity extends Activity {
         button.setEnabled(true);
         button.setOnClickListener(listener);
         return button;
+    }
+
+    private void addMonitorDiagnosticsCard(LinearLayout parent) {
+        LinearLayout card = makeCard(parent, "אבחון התראת הרקע",
+                "איסוף נתונים פנימי על הפעלת שירות הרקע, הסרת האפליקציה מהאחרונים וניסיון חידוש ההתראה. אין צורך במחשב או ב־ADB.");
+        addPermissionButton(card, "פתיחת נתוני האבחון", v ->
+                startActivity(new Intent(this, MonitorDiagnosticsActivity.class)));
     }
 
     private void updatePermissionStatuses() {
