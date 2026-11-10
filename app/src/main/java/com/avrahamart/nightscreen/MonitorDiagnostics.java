@@ -27,7 +27,7 @@ final class MonitorDiagnostics {
     private static final String FILE_NAME = "monitor_diagnostics.log";
     private static final int MAX_BYTES = 128 * 1024;
     private static final int MONITOR_NOTIFICATION_ID = 6721;
-    private static final String MONITOR_CHANNEL_ID = "screensaver_lock_monitor_v5";
+    private static final String MONITOR_CHANNEL_ID = "screensaver_lock_monitor_v6";
     private static final String ACTION_TASK_REMOVED_PROBE =
             "com.avrahamart.nightscreen.action.TASK_REMOVED_DIAGNOSTIC_PROBE";
     private static final int TASK_REMOVED_PROBE_REQUEST_BASE = 6730;
