@@ -65,6 +65,7 @@ public final class LockScreenMonitorService extends Service {
                 }
             } catch (Throwable error) {
                 Log.e(TAG, "sync: startForegroundService/startService rejected", error);
+                MonitorDiagnostics.record(appContext, "sync rejected: " + error);
             }
         } else {
             try {
@@ -86,7 +87,7 @@ public final class LockScreenMonitorService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        Log.i(TAG, "onCreate; pid=" + android.os.Process.myPid());
+        MonitorDiagnostics.record(this, "service onCreate");
         createNotificationChannel();
         updateLockReceiverRegistration();
     }
@@ -142,10 +143,10 @@ public final class LockScreenMonitorService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        Log.i(TAG, "onStartCommand; startId=" + startId + ", action="
+        MonitorDiagnostics.record(this, "onStartCommand; startId=" + startId + ", action="
                 + (intent == null ? "null" : intent.getAction()));
         if (!isMonitoringAllowed(this)) {
-            Log.w(TAG, "monitoring is not allowed; stopping service");
+            MonitorDiagnostics.record(this, "monitoring not allowed; stopping service");
             lockMonitoringActive = false;
             stopSelf(startId);
             return START_NOT_STICKY;
@@ -181,9 +182,10 @@ public final class LockScreenMonitorService extends Service {
                 startForeground(NOTIFICATION_ID, notification);
             }
             lockMonitoringActive = true;
-            Log.i(TAG, "startForeground succeeded; notificationId=" + NOTIFICATION_ID);
+            MonitorDiagnostics.record(this, "startForeground succeeded; notificationId=" + NOTIFICATION_ID);
         } catch (Throwable ex) {
             Log.e(TAG, "startForeground failed", ex);
+            MonitorDiagnostics.record(this, "startForeground failed: " + ex);
             lockMonitoringActive = false;
             stopSelf(startId);
             return START_NOT_STICKY;
@@ -245,7 +247,7 @@ public final class LockScreenMonitorService extends Service {
 
     @Override
     public void onTaskRemoved(Intent rootIntent) {
-        Log.w(TAG, "onTaskRemoved; monitoringAllowed=" + isMonitoringAllowed(this)
+        MonitorDiagnostics.record(this, "onTaskRemoved; monitoringAllowed=" + isMonitoringAllowed(this)
                 + ", foregroundActive=" + lockMonitoringActive);
         // The monitor is independent of the UI task. Some device builds may still
         // tear down background processes after the recent-task card is dismissed.
@@ -261,7 +263,7 @@ public final class LockScreenMonitorService extends Service {
 
     @Override
     public void onDestroy() {
-        Log.w(TAG, "onDestroy; monitoringAllowed=" + isMonitoringAllowed(this));
+        MonitorDiagnostics.record(this, "onDestroy; monitoringAllowed=" + isMonitoringAllowed(this));
         lockMonitoringActive = false;
         if (!isMonitoringAllowed(this)) {
             removeForegroundNotification();
@@ -301,7 +303,7 @@ public final class LockScreenMonitorService extends Service {
 
     private void scheduleRestartIfEnabled() {
         if (!isMonitoringAllowed(this)) {
-            Log.i(TAG, "scheduleRestart skipped: monitoring disabled");
+            MonitorDiagnostics.record(this, "scheduleRestart skipped: monitoring disabled");
             return;
         }
 
@@ -318,9 +320,10 @@ public final class LockScreenMonitorService extends Service {
                 alarmManager.set(
                         AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerAt, restartIntent);
             }
-            Log.i(TAG, "restart alarm scheduled; delayMs=" + RESTART_DELAY_MS);
+            MonitorDiagnostics.record(this, "restart alarm scheduled; delayMs=" + RESTART_DELAY_MS);
         } catch (Throwable error) {
             Log.e(TAG, "restart alarm scheduling failed", error);
+            MonitorDiagnostics.record(this, "restart alarm scheduling failed: " + error);
         }
     }
 
