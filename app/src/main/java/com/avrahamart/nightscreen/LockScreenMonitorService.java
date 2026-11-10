@@ -16,9 +16,9 @@ import android.os.SystemClock;
 import android.provider.Settings;
 
 public final class LockScreenMonitorService extends Service {
-    // Keep the channel ID so Android preserves existing user notification settings.
-    // Newly created channels default to hiding this service notification on the lockscreen.
-    private static final String CHANNEL_ID = "screensaver_lock_monitor_v4";
+    // Versioned channel ID: a new ID makes Android apply the current silent,
+    // minimum-importance and lockscreen-hidden defaults instead of retaining v4 settings.
+    private static final String CHANNEL_ID = "screensaver_lock_monitor_v5";
     private static final int NOTIFICATION_ID = 6721;
     private static final int RESTART_PENDING_INTENT_ID = 6722;
     private static final long RESTART_DELAY_MS = 2_000L;
