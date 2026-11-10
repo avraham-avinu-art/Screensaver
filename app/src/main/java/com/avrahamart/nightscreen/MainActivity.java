@@ -616,6 +616,11 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        if (isFinishing()) {
+            // Keep the single ongoing monitor notification visible independently
+            // of this Activity, including when the user exits with finishAffinity().
+            LockScreenMonitorService.preserveNotificationAfterActivityClose(this);
+        }
         mainActivitySessionAlive = false;
         waitingForScreenWakeAfterActivityEnd = false;
         getSharedPreferences("settings", MODE_PRIVATE).edit()
