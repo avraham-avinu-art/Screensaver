@@ -86,7 +86,7 @@ public final class AutoStartNotificationController {
                 CHANNEL_ID, "הפעלה אוטומטית", NotificationManager.IMPORTANCE_MIN);
         channel.setDescription("התראה מתמשכת עבור הגדרות ההפעלה האוטומטית של שומר מסך");
         channel.setShowBadge(false);
-        channel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
+        channel.setLockscreenVisibility(Notification.VISIBILITY_SECRET);
         channel.enableLights(false);
         channel.enableVibration(false);
         channel.setSound(null, null);
