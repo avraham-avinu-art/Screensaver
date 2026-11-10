@@ -337,6 +337,7 @@ public class MainActivity extends Activity {
                     .putInt("mainActivitySessionPid", android.os.Process.myPid())
                     .apply();
             initSettings();
+            LockScreenMonitorService.restoreForegroundNotification(this);
             LockScreenMonitorService.sync(this);
             getWindow().setFlags(
                     android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN,
@@ -530,9 +531,9 @@ public class MainActivity extends Activity {
         if (!disabledFeatures.isEmpty()) {
             AppToast.makeText(this, disabledFeatures, Toast.LENGTH_LONG).show();
         }
+        LockScreenMonitorService.restoreForegroundNotification(this);
         LockScreenMonitorService.sync(this);
-        applyPreventLockWhileActivePreference();
-        try {
+        applyPreventLockWhileActivePreference();        try {
             if (settingsDialogOpen) {
                 String activeDuration = getString("screenSaverDuration", "0");
                 boolean durationWasChanged = lastScheduledDurationValue != null
