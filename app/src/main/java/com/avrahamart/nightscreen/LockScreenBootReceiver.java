@@ -22,8 +22,7 @@ public final class LockScreenBootReceiver extends BroadcastReceiver {
                 .remove("deepSleepScreenOffUptime").apply();
         boolean autoStartOnBoot = prefs.getBoolean("autoStartOnBoot", false);
         boolean monitorNeeded = prefs.getBoolean("autoStartOnDeviceLock", false)
-                || prefs.getBoolean("autoStartOnWake", false)
-                || prefs.getBoolean("autoStartOnScreenOn", false);
+                || prefs.getBoolean("autoStartOnWake", false);
         AutoStartNotificationController.sync(context);
         if (monitorNeeded) LockScreenMonitorService.sync(context);
 
