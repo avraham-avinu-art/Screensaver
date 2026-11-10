@@ -49,7 +49,7 @@ public final class ScreensaverTileService extends TileService {
         if (tile == null) return;
         tile.setLabel("שומר מסך");
         tile.setContentDescription("הפעלה או סיום של שומר המסך");
-        tile.setState(MainActivity.isMainActivityResumed()
+        tile.setState(MainActivity.isMainActivitySessionAlive()
                 ? Tile.STATE_ACTIVE : Tile.STATE_INACTIVE);
         tile.updateTile();
     }
