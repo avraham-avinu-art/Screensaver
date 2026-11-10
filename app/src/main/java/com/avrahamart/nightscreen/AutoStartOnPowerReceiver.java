@@ -42,7 +42,7 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
             prefs.edit()
                     .putLong("deepSleepScreenOffElapsed", SystemClock.elapsedRealtime())
                     .putLong("deepSleepScreenOffUptime", SystemClock.uptimeMillis())
-                    .apply();
+                    .commit();
         }
 
         MonitorSettingsSnapshot settings = MonitorSettingsSnapshot.read(context);
@@ -68,6 +68,7 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
 
         if (Intent.ACTION_SCREEN_OFF.equals(action)
                 && settings.autoStartOnDeviceLock
+                && !settings.deviceLockActivationConsumed
                 && LockScreenMonitorService.isLockMonitoringActive()
                 && canLaunchFromBackground(context)) {
             // Let Android finish applying the keyguard state before checking it.
@@ -144,6 +145,7 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
         boolean afterDeepSleep = settings != null && settings.autoStartOnWake && deepSleep;
         if (!afterDeepSleep
                 || !LockScreenMonitorService.isLockMonitoringActive()
+                || isMainActivityVisible(context)
                 || !canLaunchFromBackground(context)) return;
 
         Intent launch = new Intent(context, MainActivity.class);
