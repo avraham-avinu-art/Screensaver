@@ -89,6 +89,11 @@
             android:exported="false" />
 
         <receiver
+            android:name=".MonitorDiagnosticsProbeReceiver"
+            android:enabled="true"
+            android:exported="false" />
+
+        <receiver
             android:name=".ScreensaverNotificationActionReceiver"
             android:enabled="true"
             android:exported="false" />
