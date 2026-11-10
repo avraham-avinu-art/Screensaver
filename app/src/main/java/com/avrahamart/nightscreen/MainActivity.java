@@ -337,8 +337,9 @@ public class MainActivity extends Activity {
                     .putInt("mainActivitySessionPid", android.os.Process.myPid())
                     .apply();
             initSettings();
-            LockScreenMonitorService.restoreForegroundNotification(this);
-            LockScreenMonitorService.sync(this);
+            MonitorDiagnostics.record(this, "MainActivity onCreate; processPid="
+                    + android.os.Process.myPid()
+                    + ", launchAction=" + (getIntent() == null ? "null" : getIntent().getAction()));
             getWindow().setFlags(
                     android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN,
                     android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN);
@@ -512,6 +513,9 @@ public class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        MonitorDiagnostics.record(this, "MainActivity onResume; processPid="
+                + android.os.Process.myPid()
+                + ", launchAction=" + (getIntent() == null ? "null" : getIntent().getAction()));
         mainActivityResumed = true;
         mainActivityPausedByDeviceLock = false;
         getSharedPreferences("settings", MODE_PRIVATE).edit()
