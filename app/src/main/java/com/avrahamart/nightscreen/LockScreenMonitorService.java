@@ -17,9 +17,9 @@ import android.os.SystemClock;
 import android.provider.Settings;
 
 public final class LockScreenMonitorService extends Service {
-    // Keep the channel ID so Android preserves existing user notification settings.
-    // Newly created channels default to hiding this service notification on the lockscreen.
-    private static final String CHANNEL_ID = "screensaver_lock_monitor_v3";
+    // Internal foreground-service channel; the user-facing persistent notification
+    // is posted separately by AutoStartNotificationController.
+    private static final String CHANNEL_ID = "screensaver_lock_monitor_v4";
     private static final int NOTIFICATION_ID = 6721;
     private static final int RESTART_PENDING_INTENT_ID = 6722;
     private static final long RESTART_DELAY_MS = 2_000L;
@@ -150,7 +150,7 @@ public final class LockScreenMonitorService extends Service {
                 (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         if (manager == null) return;
         NotificationChannel channel = new NotificationChannel(
-                CHANNEL_ID, "הפעלה אוטומטית של שומר מסך", NotificationManager.IMPORTANCE_LOW);
+                CHANNEL_ID, "שירות ניטור פנימי", NotificationManager.IMPORTANCE_MIN);
         channel.setDescription("התראה מתמשכת לשירות ההפעלה האוטומטית בנעילת המכשיר");
         channel.setShowBadge(false);
         channel.setLockscreenVisibility(Notification.VISIBILITY_SECRET);
@@ -165,27 +165,18 @@ public final class LockScreenMonitorService extends Service {
         Notification.Builder builder = Build.VERSION.SDK_INT >= 26
                 ? new Notification.Builder(this, CHANNEL_ID)
                 : new Notification.Builder(this);
-        Intent launchIntent = new Intent(this, MainActivity.class);
-        launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
-                | Intent.FLAG_ACTIVITY_CLEAR_TOP
-                | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        int pendingFlags = PendingIntent.FLAG_UPDATE_CURRENT;
-        if (Build.VERSION.SDK_INT >= 23) pendingFlags |= PendingIntent.FLAG_IMMUTABLE;
-        PendingIntent contentIntent = PendingIntent.getActivity(
-                this, NOTIFICATION_ID, launchIntent, pendingFlags);
-
-        // KeyMapper-style notification semantics: ongoing and silent, with an action
-        // that opens the app; it is not tied to the settings Activity lifecycle.
+        // This is only the Android-required technical foreground-service entry.
+        // The separate normal notification is the visible, user-facing one and
+        // opens the overlay-permission settings page.
         builder.setSmallIcon(R.drawable.ic_notification_transparent)
-                .setContentTitle("הפעלה אוטומטית של שומר מסך")
-                .setContentText("השירות פועל ברקע לפי הגדרות ההפעלה האוטומטית.")
-                .setContentIntent(contentIntent)
+                .setContentTitle("שירות ניטור פנימי")
+                .setContentText("פעיל")
                 .setOngoing(true)
                 .setOnlyAlertOnce(true)
                 .setShowWhen(false)
                 .setCategory(Notification.CATEGORY_SERVICE)
                 .setVisibility(Notification.VISIBILITY_SECRET);
-        builder.setPriority(Notification.PRIORITY_LOW)
+        builder.setPriority(Notification.PRIORITY_MIN)
                 .setSound(null)
                 .setVibrate(new long[0])
                 .setDefaults(0);
