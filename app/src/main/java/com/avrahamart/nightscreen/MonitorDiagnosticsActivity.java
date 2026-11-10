@@ -50,7 +50,7 @@ public final class MonitorDiagnosticsActivity extends Activity {
         root.addView(title, new LinearLayout.LayoutParams(-1, dp(42)));
 
         TextView instructions = textView(
-                "כדי לבדוק את התקלה: נקה את הרישום, חזור למסך הראשי וודא שההתראה מופיעה. הסר את שומר מסך ממסך האפליקציות האחרונות, המתן כ־10 שניות, פתח שוב את האפליקציה וחזור לכאן. לאחר מכן העתק את נתוני האבחון ושלח אותם.",
+                "כדי לבדוק: לחץ על נקה רישום והתחל בדיקה, חזור מיד למסך הראשי והסר את שומר מסך ממסך האפליקציות האחרונות. אל תפתח את האפליקציה שוב במשך 20 שניות לפחות. נאספות דגימות אוטומטיות עד שתי דקות מרגע הלחיצה, גם אם Android מעכב את אירוע הסרת המשימה. לאחר מכן פתח שוב את האפליקציה והעתק את נתוני האבחון.",
                 15, MUTED);
         instructions.setGravity(Gravity.CENTER);
         instructions.setLineSpacing(dp(3), 1f);
