@@ -57,7 +57,6 @@ public final class LockScreenMonitorService extends Service {
             } catch (Throwable ignored) {
             }
         }
-        AutoStartNotificationController.sync(appContext);
     }
 
     @Override
