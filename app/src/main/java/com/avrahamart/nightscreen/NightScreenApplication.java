@@ -1,29 +1,16 @@
 package com.avrahamart.nightscreen;
 
-import android.app.Application;
 import android.app.NotificationManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.os.Build;
 import android.provider.Settings;
 
-/**
- * Application helpers. Automatic-start receivers are intentionally not
- * registered here: LockScreenMonitorService owns the only dynamic receiver.
- */
-public final class NightScreenApplication extends Application {
+/** Helpers for checking system-managed notification access. */
+public final class NightScreenApplication extends android.app.Application {
     @Override
     public void onCreate() {
         super.onCreate();
-    }
-
-    /**
-     * Compatibility method retained for existing settings call sites.
-     * Re-evaluates the single monitor service instead of creating another
-     * process-specific charger receiver.
-     */
-    public static void syncChargerReceiver(Context context) {
-        LockScreenMonitorService.sync(context);
     }
 
     static boolean hasNotificationAccess(Context context) {
