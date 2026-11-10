@@ -5,6 +5,9 @@ import android.app.ActivityOptions;
 import android.app.PendingIntent;
 import android.animation.ObjectAnimator;
 import android.app.NotificationManager;
+import android.app.AppOpsManager;
+import android.app.usage.UsageEvents;
+import android.app.usage.UsageStatsManager;
 import android.app.admin.DevicePolicyManager;
 import android.content.SharedPreferences;
 import android.content.BroadcastReceiver;
@@ -55,6 +58,9 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.Collections;
 
 public class MainActivity extends Activity {
     private static final long PLAYER_START_WINDOW_MS = 6_000L;
@@ -67,6 +73,14 @@ public class MainActivity extends Activity {
             "com.avrahamart.nightscreen.EXTRA_OPENED_BY_CHARGER";
     public static final String EXTRA_OPENED_BY_DEVICE_LOCK =
             "com.avrahamart.nightscreen.EXTRA_OPENED_BY_DEVICE_LOCK";
+    public static final String EXTRA_OPENED_BY_WAKE =
+            "com.avrahamart.nightscreen.EXTRA_OPENED_BY_WAKE";
+    public static final String EXTRA_OPENED_BY_SCREEN_ON =
+            "com.avrahamart.nightscreen.EXTRA_OPENED_BY_SCREEN_ON";
+    public static final String EXTRA_OPENED_BY_BOOT =
+            "com.avrahamart.nightscreen.EXTRA_OPENED_BY_BOOT";
+    public static final String ACTION_FINISH_FROM_TILE =
+            "com.screensaver.action.FINISH_FROM_TILE";
     private static volatile boolean mainActivityResumed = false;
     private static volatile boolean mainActivityPausedByDeviceLock = false;
 
@@ -74,7 +88,7 @@ public class MainActivity extends Activity {
         return mainActivityResumed;
     }
 
-    public static boolean wasMainActivityPausedByDeviceLock() {
+public static boolean wasMainActivityPausedByDeviceLock() {
         return mainActivityPausedByDeviceLock;
     }
 
@@ -95,7 +109,6 @@ public class MainActivity extends Activity {
     private ContentObserver screenOffTimeoutObserver;
     private boolean screenOffTimeoutObserverRegistered = false;
     private boolean openedByCharger = false;
-    private boolean openedByDeviceLock = false;
     private boolean bottomSwipeCandidate = false;
     private boolean bottomSwipeDragging = false;
     private boolean bottomSwipeDismissAnimating = false;
@@ -111,14 +124,19 @@ public class MainActivity extends Activity {
         @Override public void onReceive(Context context, Intent intent) {
             if (intent == null || intent.getAction() == null) return;
             String action = intent.getAction();
+            if (Intent.ACTION_USER_PRESENT.equals(action)) {
+                mainActivityPausedByDeviceLock = false;
+                clearInitialDeviceLockLaunchOverride();
+                return;
+            }
             if (Intent.ACTION_POWER_CONNECTED.equals(action)
                     || Intent.ACTION_POWER_DISCONNECTED.equals(action)) {
-                updateBatteryPercentView();
+                updateChargingBatteryDisplay();
                 if (getBool("noShutdownWhileCharging", false)) {
                     scheduleAutoOff(true);
                 }
             } else if (Intent.ACTION_BATTERY_CHANGED.equals(action)) {
-                updateBatteryPercentView();
+                updateChargingBatteryDisplay();
             } else if (Intent.ACTION_TIME_TICK.equals(action)
                     || Intent.ACTION_TIME_CHANGED.equals(action)
                     || Intent.ACTION_DATE_CHANGED.equals(action)
@@ -137,7 +155,6 @@ public class MainActivity extends Activity {
                 scheduleNextClockUpdate();
             } else if (Intent.ACTION_SCREEN_OFF.equals(action)) {
                 lastScreenOffElapsedRealtime = SystemClock.elapsedRealtime();
-                recordLockScreenCapabilityAtScreenOff();
                 learnScreenTimeoutBehaviorFromScreenOff();
                 handleScreenOffForLockScreenContinuation();
             } else if (Intent.ACTION_SCREEN_ON.equals(action)) {
@@ -166,13 +183,16 @@ public class MainActivity extends Activity {
             new SimpleDateFormat("dd.MM.yyyy", Locale.US);
 
     private TextView timeText;
+    private AnalogClockView analogClockView;
+    private BatteryChargeIndicatorView chargingBatteryView;
+
     private TextView gregorianText;
     private TextView hebrewText;
     private final int dateTextColor = Color.rgb(220, 220, 220);
     private SharedPreferences prefs;
     private ImageView settingsButton;
     private FrameLayout settingsButtonHitArea;
-    private TextView batteryPercentText;
+
     private final Runnable hideSettingsButtonRunnable = () -> {
         if (settingsButtonHitArea != null) settingsButtonHitArea.setVisibility(View.GONE);
         else if (settingsButton != null) settingsButton.setVisibility(View.GONE);
@@ -198,6 +218,16 @@ public class MainActivity extends Activity {
     private long currentMediaDurationMs = 0L;
     private boolean lastPlaybackWasActive = false;
     private boolean lastPlayerIntroOnlySetting = false;
+    private String lastPlayerControlsDisplayMode = "on";
+    private boolean playerControlsIntroWindowVisible = false;
+    private long playerControlsIntroWindowDeadlineElapsedRealtime = 0L;
+    private final Runnable hidePlayerControlsIntroWindowRunnable = () -> {
+        playerControlsIntroWindowVisible = false;
+        playerControlsIntroWindowDeadlineElapsedRealtime = 0L;
+        refreshPlayerControlsAfterIntro();
+        refreshMediaHolderPosition();
+    };
+
     private boolean playerIntroWindowVisible = false;
     private long playerIntroWindowDeadlineElapsedRealtime = 0L;
     private final Runnable hidePlayerIntroWindowRunnable = () -> {
@@ -210,7 +240,9 @@ public class MainActivity extends Activity {
     private LinearLayout mediaSetup;
     private LinearLayout mediaMirror;
     private TextView mediaTitle;
+    private Bitmap currentAlbumArt;
     private ImageView mediaPlayPause;
+    private FrameLayout mediaControlsHolder;
     private ImageView mediaPrev;
     private ImageView mediaNext;
 
@@ -243,7 +275,7 @@ public class MainActivity extends Activity {
     private final Runnable hideProgressRowAfterMetadataChange = () -> {
         progressHidePending = false;
         if (mediaProgressRow == null) return;
-        if (!getBool("showProgress", true) || getCurrentMediaDuration() <= 0L) {
+        if (!arePlayerControlsVisible() || getCurrentMediaDuration() <= 0L) {
             setProgressRowVisible(false);
         } else {
             setProgressRowVisible(true);
@@ -254,6 +286,7 @@ public class MainActivity extends Activity {
         @Override public void run() {
             if (!mainActivityResumed || isFinishing()) return;
             updateClock();
+            applyScreenAppearance();
             scheduleNextClockUpdate();
         }
     };
@@ -298,6 +331,7 @@ public class MainActivity extends Activity {
                     android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
             applyChargingLaunchFlags(getIntent());
             applyDeviceLockLaunchFlags(getIntent());
+            applyWakeLaunchFlags(getIntent());
             applyPreventLockWhileActivePreference();
             hideSystemUi();
             buildUi();
@@ -330,10 +364,20 @@ public class MainActivity extends Activity {
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         setIntent(intent);
+        if (intent != null && ACTION_FINISH_FROM_TILE.equals(intent.getAction())) {
+            finish();
+            return;
+        }
         if (intent != null && (intent.getBooleanExtra(EXTRA_OPENED_BY_CHARGER, false)
-                || intent.getBooleanExtra(EXTRA_OPENED_BY_DEVICE_LOCK, false))) {
+                || intent.getBooleanExtra(EXTRA_OPENED_BY_DEVICE_LOCK, false)
+                || intent.getBooleanExtra(EXTRA_OPENED_BY_WAKE, false)
+                || intent.getBooleanExtra(EXTRA_OPENED_BY_SCREEN_ON, false)
+                || intent.getBooleanExtra(EXTRA_OPENED_BY_BOOT, false))) {
+            waitingForScreenWakeAfterActivityEnd = false;
+            lockScreenContinuationArmed = false;
             applyChargingLaunchFlags(intent);
             applyDeviceLockLaunchFlags(intent);
+            applyWakeLaunchFlags(intent);
             applyPreventLockWhileActivePreference();
             hideSystemUi();
             scheduleAutoOff(true);
@@ -356,10 +400,19 @@ public class MainActivity extends Activity {
                         | android.view.WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON);
     }
 
+    private void applyWakeLaunchFlags(Intent intent) {
+        if (intent == null
+                || (!intent.getBooleanExtra(EXTRA_OPENED_BY_WAKE, false)
+                    && !intent.getBooleanExtra(EXTRA_OPENED_BY_SCREEN_ON, false))) return;
+        if (Build.VERSION.SDK_INT >= 27) setTurnScreenOn(true);
+        getWindow().addFlags(
+                android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
+                        | android.view.WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON);
+    }
+
     private void applyDeviceLockLaunchFlags(Intent intent) {
         if (intent == null
                 || !intent.getBooleanExtra(EXTRA_OPENED_BY_DEVICE_LOCK, false)) return;
-        openedByDeviceLock = true;
         if (Build.VERSION.SDK_INT >= 27) {
             setTurnScreenOn(true);
         }
@@ -368,21 +421,54 @@ public class MainActivity extends Activity {
                         | android.view.WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON);
     }
 
+    private boolean isDeviceLockedNow() {
+        try {
+            android.app.KeyguardManager keyguard =
+                    (android.app.KeyguardManager) getSystemService(KEYGUARD_SERVICE);
+            return keyguard != null && keyguard.isDeviceLocked();
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
     /**
-     * When prevention is enabled, Android must not activate the keyguard over
-     * the active screensaver. An activation explicitly triggered by a device
-     * lock remains allowed to appear above the already-active keyguard.
+     * The lock-start marker belongs to one locked cycle only. Remove it after
+     * the user unlocks so later wake/charge/boot launches cannot inherit it.
+     */
+    private void clearInitialDeviceLockLaunchOverride() {
+        Intent current = getIntent();
+        if (current == null
+                || !current.getBooleanExtra(EXTRA_OPENED_BY_DEVICE_LOCK, false)) return;
+
+        Intent updated = new Intent(current);
+        updated.removeExtra(EXTRA_OPENED_BY_DEVICE_LOCK);
+        setIntent(updated);
+
+        if (Build.VERSION.SDK_INT >= 27) setTurnScreenOn(false);
+        getWindow().clearFlags(
+                android.view.WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON);
+        applyPreventLockWhileActivePreference();
+    }
+
+    /**
+     * Lock-screen visibility while the selected activity session is active is
+     * normal screensaver behavior and does not depend on the continuation switch.
+     * That switch is consulted only after the selected duration ended and the
+     * Activity is waiting for the next screen wake.
      */
     private void applyPreventLockWhileActivePreference() {
         boolean preventLock = LockBehaviorPreferences.isPreventionEnabled(this);
-        boolean openedByDeviceLock =
-                getIntent().getBooleanExtra(EXTRA_OPENED_BY_DEVICE_LOCK, false);
+        boolean openedByDeviceLock = getIntent() != null
+                && getIntent().getBooleanExtra(EXTRA_OPENED_BY_DEVICE_LOCK, false);
+        boolean openedByDeepWake = getIntent() != null
+                && getIntent().getBooleanExtra(EXTRA_OPENED_BY_WAKE, false);
+        boolean openedByScreenOn = getIntent() != null
+                && getIntent().getBooleanExtra(EXTRA_OPENED_BY_SCREEN_ON, false);
         if (!getBool("continueOnLockScreen", false)) {
             lockScreenContinuationArmed = false;
         }
-        boolean showAboveExistingKeyguard =
-                !preventLock || openedByDeviceLock || lockScreenContinuationArmed;
-
+        boolean showAboveExistingKeyguard = !preventLock || openedByDeviceLock
+                || openedByDeepWake || openedByScreenOn || lockScreenContinuationArmed;
         if (Build.VERSION.SDK_INT >= 27) {
             setShowWhenLocked(showAboveExistingKeyguard);
         } else if (showAboveExistingKeyguard) {
@@ -392,7 +478,6 @@ public class MainActivity extends Activity {
             getWindow().clearFlags(
                     android.view.WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED);
         }
-
         if (preventLock) {
             getWindow().clearFlags(
                     android.view.WindowManager.LayoutParams.FLAG_ALLOW_LOCK_WHILE_SCREEN_ON);
@@ -414,12 +499,19 @@ public class MainActivity extends Activity {
         super.onResume();
         mainActivityResumed = true;
         mainActivityPausedByDeviceLock = false;
+        if (shouldPauseForExcludedForegroundApp()) {
+            mainActivityResumed = false;
+            finish();
+            return;
+        }
         String disabledFeatures =
                 PermissionDependencySync.disableFeaturesWithoutPermissions(this);
         if (!disabledFeatures.isEmpty()) {
             AppToast.makeText(this, disabledFeatures, Toast.LENGTH_LONG).show();
         }
         NightScreenApplication.syncChargerReceiver(this);
+        LockScreenMonitorService.sync(this);
+        AutoStartNotificationController.sync(this);
         applyPreventLockWhileActivePreference();
         try {
             if (settingsDialogOpen) {
@@ -546,13 +638,18 @@ public class MainActivity extends Activity {
         clockBlock.setOrientation(LinearLayout.VERTICAL);
         clockBlock.setGravity(Gravity.CENTER_HORIZONTAL);
 
+        int initialClockSize = getInt("clockDateSize", 96);
+        int initialClockHeight = Math.max(dp(62), dp(initialClockSize));
         timeText = clockDateTextView("--:--", getInt("clockDateSize", 96), Color.rgb(247, 247, 247));
         timeText.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
         timeText.setGravity(Gravity.CENTER);
         timeText.setIncludeFontPadding(false);
-        int initialClockSize = getInt("clockDateSize", 96);
-        int initialClockHeight = Math.max(dp(62), dp(initialClockSize));
         clockBlock.addView(timeText, new LinearLayout.LayoutParams(-1, initialClockHeight));
+
+        analogClockView = new AnalogClockView(this);
+        analogClockView.setVisibility(View.GONE);
+        clockBlock.addView(analogClockView,
+                new LinearLayout.LayoutParams(dp(120), dp(120)));
 
         gregorianText = clockDateTextView("", 22, dateTextColor);
         gregorianText.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
@@ -573,6 +670,13 @@ public class MainActivity extends Activity {
         hebrewText.setIncludeFontPadding(false);
         clockBlock.addView(hebrewText, new LinearLayout.LayoutParams(-1, initialDateHeight));
 
+        chargingBatteryView = new BatteryChargeIndicatorView(this);
+        chargingBatteryView.setVisibility(View.GONE);
+        LinearLayout.LayoutParams chargingBatteryParams =
+                new LinearLayout.LayoutParams(-2, dp(28));
+        chargingBatteryParams.topMargin = dp(5);
+        clockBlock.addView(chargingBatteryView, chargingBatteryParams);
+
         int initialClockBlockHeight = initialClockHeight + initialDateHeight * 2
                 + dp(dateClockGapDp(initialClockSize)) + dp(2);
         stage.addView(clockBlock, new FrameLayout.LayoutParams(-1, initialClockBlockHeight, Gravity.TOP | Gravity.CENTER_HORIZONTAL));
@@ -586,20 +690,6 @@ public class MainActivity extends Activity {
         // Notification permission guidance now lives only in Settings.
         buildSystemMediaMirror(mediaHolder);
 
-        batteryPercentText = textView("", 15, Color.rgb(156, 178, 203));
-        batteryPercentText.setTypeface(Typeface.create("sans-serif-thin", Typeface.NORMAL));
-        batteryPercentText.setTextSize(12);
-        batteryPercentText.setBackground(new BatteryOutlineDrawable());
-        batteryPercentText.setGravity(Gravity.CENTER);
-        batteryPercentText.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-        batteryPercentText.setTextDirection(View.TEXT_DIRECTION_LTR);
-        batteryPercentText.setIncludeFontPadding(false);
-        batteryPercentText.setVisibility(View.GONE);
-        FrameLayout.LayoutParams batteryPercentParams = new FrameLayout.LayoutParams(
-                dp(54), dp(30), Gravity.TOP | Gravity.RIGHT);
-        batteryPercentParams.rightMargin = dp(14);
-        batteryPercentParams.topMargin = dp(17);
-        stage.addView(batteryPercentText, batteryPercentParams);
 
         stage.post(() -> {
             applySettings();
@@ -612,7 +702,35 @@ public class MainActivity extends Activity {
         if (stage == null) return;
         try {
             int h = stage.getHeight();
-            if (h <= 0) return;
+            int w = stage.getWidth();
+            if (h <= 0 || w <= 0) return;
+
+            FrameLayout.LayoutParams restoreClockParams =
+                    (FrameLayout.LayoutParams) clockBlock.getLayoutParams();
+            restoreClockParams.width = -1;
+            restoreClockParams.height = FrameLayout.LayoutParams.WRAP_CONTENT;
+            clockBlock.setLayoutParams(restoreClockParams);
+            mediaProgressBaseWidth = Math.max(dp(120),
+                    Math.round(getResources().getDisplayMetrics().widthPixels * 0.36f));
+            FrameLayout.LayoutParams restoreMediaParams =
+                    (FrameLayout.LayoutParams) mediaHolder.getLayoutParams();
+            restoreMediaParams.width = -1;
+            restoreMediaParams.height = FrameLayout.LayoutParams.WRAP_CONTENT;
+            mediaHolder.setLayoutParams(restoreMediaParams);
+            if (mediaMirror != null && mediaMirror.getLayoutParams() instanceof LinearLayout.LayoutParams) {
+                LinearLayout.LayoutParams mirrorParams =
+                        (LinearLayout.LayoutParams) mediaMirror.getLayoutParams();
+                mirrorParams.width = Math.min(dp(760), Math.max(dp(1), w - dp(20)));
+                mediaMirror.setLayoutParams(mirrorParams);
+            }
+            if (mediaSeekBar != null && mediaSeekBar.getLayoutParams() instanceof LinearLayout.LayoutParams) {
+                LinearLayout.LayoutParams seekParams =
+                        (LinearLayout.LayoutParams) mediaSeekBar.getLayoutParams();
+                float playerScale = Math.max(0.72f, Math.min(1.45f,
+                        getInt("playerSize", 17) / 17f));
+                seekParams.width = Math.max(dp(80), Math.round(mediaProgressBaseWidth * playerScale));
+                mediaSeekBar.setLayoutParams(seekParams);
+            }
 
             String clockPos = getString("clockDatePosition", "top");
             String playerPos = getString("playerPosition", "bottom");
@@ -620,7 +738,14 @@ public class MainActivity extends Activity {
             FrameLayout.LayoutParams cp = (FrameLayout.LayoutParams) clockBlock.getLayoutParams();
             int blockHeight = Math.max(0, clockBlock.getMeasuredHeight());
             int clockLineHeight = blockHeight;
-            if (timeText != null) {
+            if (analogClockView != null && analogClockView.getVisibility() == View.VISIBLE) {
+                ViewGroup.LayoutParams analogParams = analogClockView.getLayoutParams();
+                if (analogParams != null && analogParams.height > 0) {
+                    clockLineHeight = analogParams.height;
+                } else if (analogClockView.getMeasuredHeight() > 0) {
+                    clockLineHeight = analogClockView.getMeasuredHeight();
+                }
+            } else if (timeText != null) {
                 // Prefer the final row height calculated from the selected font and size;
                 // this remains accurate even when the surrounding date rows are taller.
                 ViewGroup.LayoutParams timeParams = timeText.getLayoutParams();
@@ -631,6 +756,9 @@ public class MainActivity extends Activity {
                 }
             }
             cp.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
+            clockBlock.setTranslationX(stage.getWidth()
+                    * Math.max(-0.20f, Math.min(0.20f,
+                    getInt("clockHorizontalOffset", 0) / 100f)));
             if ("upper".equals(clockPos)) {
                 // Place the center of the clock line at exactly one quarter of the
                 // screen height, independent of the clock/date block's total height.
@@ -644,6 +772,9 @@ public class MainActivity extends Activity {
             clockBlock.setLayoutParams(cp);
 
             FrameLayout.LayoutParams mp = (FrameLayout.LayoutParams) mediaHolder.getLayoutParams();
+            mediaHolder.setTranslationX(stage.getWidth()
+                    * Math.max(-0.20f, Math.min(0.20f,
+                    getInt("playerHorizontalOffset", 0) / 100f)));
             if ("bottom".equals(playerPos)) {
                 // Let FrameLayout anchor the entire holder to the real bottom.
                 // This avoids the first-layout race where measured height is still stale
@@ -655,8 +786,7 @@ public class MainActivity extends Activity {
             } else {
                 mp.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
                 int mediaH = Math.max(0, mediaHolder.getMeasuredHeight());
-                // "Lower quarter" is positioned 20% above the bottom edge,
-                // while "bottom" remains anchored to the very bottom edge.
+                // "Lower quarter" is positioned 20% above the bottom edge.
                 mp.topMargin = Math.max(0, Math.round((h * 0.65f) - mediaH / 2f));
                 mp.bottomMargin = 0;
                 mp.height = FrameLayout.LayoutParams.WRAP_CONTENT;
@@ -720,7 +850,7 @@ public class MainActivity extends Activity {
         mediaMirror.setOrientation(LinearLayout.VERTICAL);
         mediaMirror.setGravity(Gravity.TOP | Gravity.CENTER_HORIZONTAL);
         mediaMirror.setPadding(0, 0, 0, 0);
-        mediaMirror.setBackgroundColor(getScreenBackgroundColor());
+        mediaMirror.setBackgroundColor(Color.TRANSPARENT);
         mediaMirror.setVisibility(View.GONE);
 
         // The reference player is intentionally clean: the position row is
@@ -820,6 +950,7 @@ public class MainActivity extends Activity {
         mediaMirror.addView(mediaProgressRow, progressParams);
 
         FrameLayout controls = new FrameLayout(this);
+        mediaControlsHolder = controls;
         controls.setPadding(0, 0, 0, 0);
         controls.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
 
@@ -878,6 +1009,30 @@ public class MainActivity extends Activity {
         e.putInt("screenBrightness", getInt("screenBrightness", -1));
         e.putInt("fontSize", getInt("fontSize", 17));
         e.putInt("clockDateSize", getInt("clockDateSize", 84));
+        e.putInt("clockHorizontalOffset", getInt("clockHorizontalOffset", 0));
+        e.putInt("playerHorizontalOffset", getInt("playerHorizontalOffset", 0));
+        e.putInt("nightModeStartHour", getInt("nightModeStartHour", 22));
+        e.putInt("nightModeEndHour", getInt("nightModeEndHour", 7));
+        e.putInt("batteryProtectionThreshold", getInt("batteryProtectionThreshold", 20));
+        String selectedTimeFormat = getString("timeFormat", "24");
+        if (!"12".equals(selectedTimeFormat) && !"24".equals(selectedTimeFormat)) {
+            selectedTimeFormat = "24";
+        }
+        e.putString("timeFormat", selectedTimeFormat);
+        e.putString("backgroundStyle", getString("backgroundStyle", "solid"));
+        e.putString("clockDatePosition", getString("clockDatePosition", "upper"));
+        e.putString("clockDisplayMode", getString("clockDisplayMode", "digital"));
+        e.putString("clockDialStyle", getString("clockDialStyle", "classic"));
+        e.putString("playerPosition", getString("playerPosition", "bottom"));
+        e.putString("chargingBatteryDisplayMode",
+                getString("chargingBatteryDisplayMode", "off"));
+        e.putBoolean("nightModeEnabled", getBool("nightModeEnabled", false));
+        e.putBoolean("batteryProtectionEnabled", getBool("batteryProtectionEnabled", false));
+        boolean useAndroidDreamForCharging = getBool("useAndroidDreamForCharging", false);
+        e.putBoolean("useAndroidDreamForCharging", useAndroidDreamForCharging);
+        e.putBoolean("frameUseAlbumArt",
+                getBool("frameUseAlbumArt", getBool("showAlbumArt", true)));
+        e.remove("showAlbumArt");
         e.putInt("playerSize", getInt("playerSize", 17));
         e.putInt("fontWeight", getInt("fontWeight", 0));
         String savedFontFamily = getString("fontFamily", "sans-serif");
@@ -910,13 +1065,16 @@ public class MainActivity extends Activity {
         }
         e.putBoolean("showPlayer", showPlayerSetting);
         e.putBoolean("showDetails", getBool("showDetails", true));
-        e.putBoolean("showProgress", getBool("showProgress", true));
+        if (!prefs.contains("playerControlsDisplayMode")) {
+            e.putString("playerControlsDisplayMode",
+                    getBool("showProgress", true) ? "on" : "off");
+        }
+        e.remove("showProgress");
         lastTitle = getString("lastTitle", lastTitle);
         lastArtist = getString("lastArtist", lastArtist);
 
         if (!getBool("referenceLayoutV3Applied", false)) {
             e.putBoolean("showDetails", getBool("showDetails", true));
-            e.putBoolean("showProgress", true);
             e.putBoolean("frameEnabled", false);
             e.putBoolean("referenceLayoutV3Applied", true);
         } else if (!getBool("referenceLayoutV2Applied", false)) {
@@ -931,10 +1089,11 @@ public class MainActivity extends Activity {
         e.putInt("buttonColor", getInt("buttonColor", Color.rgb(45,45,45)));
         e.putInt("buttonBorderColor", getInt("buttonBorderColor", Color.rgb(110,110,110)));
         e.putString("screenSaverDuration", getString("screenSaverDuration", "device"));
+        // Keep the existing charge auto-start setting for both activation routes.
         e.putBoolean("autoStartOnCharge", getBool("autoStartOnCharge", false));
         e.putBoolean("noShutdownWhileCharging",
                 getBool("noShutdownWhileCharging", false));
-        e.putBoolean("showBatteryPercent", getBool("showBatteryPercent", false));
+        e.remove("showBatteryPercent");
         if (!getBool("chargingOptionsSplitV1Applied", false)) {
             // Migrate the old activity-time choice once to the dedicated charging switch.
             if ("charging".equals(getString("screenSaverDuration", "device"))) {
@@ -1184,6 +1343,21 @@ public class MainActivity extends Activity {
         timeText.setFontFeatureSettings(fontFeatures);
 
         int effectiveClockSize = effectiveClockDateSize(fontFamily, clockDateSize);
+        boolean analogClock = "analog".equals(getString("clockDisplayMode", "digital"));
+        int analogClockDiameter = Math.max(dp(96),
+                dp(Math.round(effectiveClockSize * 1.30f)));
+        if (analogClockView != null) {
+            analogClockView.setDialStyle(getString("clockDialStyle", "classic"));
+            analogClockView.setColors(color, getScreenBackgroundColor());
+            analogClockView.setVisibility(analogClock ? View.VISIBLE : View.GONE);
+            ViewGroup.LayoutParams analogParams = analogClockView.getLayoutParams();
+            if (analogParams != null) {
+                analogParams.width = analogClock ? analogClockDiameter : 0;
+                analogParams.height = analogClock ? analogClockDiameter : 0;
+                analogClockView.setLayoutParams(analogParams);
+            }
+        }
+        if (timeText != null) timeText.setVisibility(analogClock ? View.GONE : View.VISIBLE);
         float dateSize = dateTextSizeForClockPreset(effectiveClockSize);
         float clockDisplaySize = effectiveClockSize;
         gregorianText.setTextSize(dateSize);
@@ -1205,8 +1379,9 @@ public class MainActivity extends Activity {
         // taller than its digits, even when both rows share the same nominal font size.
         // Use complete font metrics for the clock row, not only painted glyph bounds.
         // Centering and clipping can occur when this row is shorter than the font metrics.
-        int clockH = Math.max(dp(62), measuredLineHeight(
-                timeText, "0123456789:00", 2, effectiveClockSize));
+        int clockH = analogClock ? analogClockDiameter
+                : Math.max(dp(62), measuredLineHeight(
+                        timeText, "0123456789:00", 2, effectiveClockSize));
         int gregorianH = Math.max(dateRowHeightForClockPreset(effectiveClockSize),
                 measuredLineHeight(gregorianText, "יום ה׳ · 22.10.2026", 0, 24));
         int hebrewH = Math.max(dateRowHeightForClockPreset(effectiveClockSize),
@@ -1222,10 +1397,11 @@ public class MainActivity extends Activity {
         int gregorianTopMargin = 0;
         int hebrewTopMargin = 0;
         if (showGregorian) {
-            gregorianTopMargin = visualGapMarginPx(
-                    timeText, clockH, "0123456789:00",
-                    gregorianText, gregorianH, "יום ה׳ · 22.10.2026",
-                    clockToDateGapPx);
+            gregorianTopMargin = analogClock ? clockToDateGapPx
+                    : visualGapMarginPx(
+                            timeText, clockH, "0123456789:00",
+                            gregorianText, gregorianH, "יום ה׳ · 22.10.2026",
+                            clockToDateGapPx);
         }
         if (showHebrew) {
             if (showGregorian) {
@@ -1233,6 +1409,8 @@ public class MainActivity extends Activity {
                         gregorianText, gregorianH, "יום ה׳ · 22.10.2026",
                         hebrewText, hebrewH, "כ״ט בתשרי תשפ״ז אבגדהוזחטיכלמנסעפצקרשת",
                         dateToDateGapPx);
+            } else if (analogClock) {
+                hebrewTopMargin = clockToDateGapPx;
             } else {
                 hebrewTopMargin = visualGapMarginPx(
                         timeText, clockH, "0123456789:00",
@@ -1242,7 +1420,7 @@ public class MainActivity extends Activity {
         }
 
         LinearLayout.LayoutParams tp = (LinearLayout.LayoutParams) timeText.getLayoutParams();
-        tp.height = clockH;
+        tp.height = analogClock ? 0 : clockH;
         timeText.setLayoutParams(tp);
         LinearLayout.LayoutParams gp = (LinearLayout.LayoutParams) gregorianText.getLayoutParams();
         gp.height = gregorianH;
@@ -1257,11 +1435,16 @@ public class MainActivity extends Activity {
         if (clockParent instanceof LinearLayout) {
             LinearLayout cb = (LinearLayout) clockParent;
             FrameLayout.LayoutParams cp = (FrameLayout.LayoutParams) cb.getLayoutParams();
+            updateChargingBatteryDisplay();
             int dateRowsHeight = (showGregorian ? gregorianH : 0)
                     + (showHebrew ? hebrewH : 0);
             int visibleMargins = (showGregorian ? gregorianTopMargin : 0)
                     + (showHebrew ? hebrewTopMargin : 0);
+            int batteryRowHeight = chargingBatteryView != null
+                    && chargingBatteryView.getVisibility() == View.VISIBLE ? dp(28) : 0;
+            int batteryRowMargin = batteryRowHeight > 0 ? dp(5) : 0;
             cp.height = clockH + dateRowsHeight + visibleMargins
+                    + batteryRowHeight + batteryRowMargin
                     + (visibleDates > 0 ? dp(2) : 0);
             cb.setLayoutParams(cp);
             cb.requestLayout();
@@ -1401,7 +1584,7 @@ public class MainActivity extends Activity {
                 updateScreenPositions(stageView, clockBlockView, mediaHolderView);
             }
         }
-        updateBatteryPercentView();
+        updateClock();
     }
 
     private int dateClockGapDp(int clockSize) {
@@ -1528,122 +1711,246 @@ public class MainActivity extends Activity {
         view.invalidate();
     }
 
-    private final class BatteryOutlineDrawable extends Drawable {
-        private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        private final float density = getResources().getDisplayMetrics().density;
-
-        @Override public void draw(Canvas canvas) {
-            android.graphics.Rect bounds = getBounds();
-            float left = bounds.left + 2f * density;
-            float top = bounds.top + 4f * density;
-            float right = bounds.right - 7f * density;
-            float bottom = bounds.bottom - 4f * density;
-            paint.setColor(Color.rgb(156, 178, 203));
-            paint.setStyle(Paint.Style.STROKE);
-            paint.setStrokeWidth(1.15f * density);
-            canvas.drawRoundRect(left, top, right, bottom, 3f * density, 3f * density, paint);
-            paint.setStyle(Paint.Style.FILL);
-            float capLeft = right + 1f * density;
-            float capTop = bounds.top + bounds.height() * 0.37f;
-            float capBottom = bounds.top + bounds.height() * 0.63f;
-            canvas.drawRoundRect(capLeft, capTop, bounds.right - 1f * density,
-                    capBottom, 1f * density, 1f * density, paint);
-        }
-
-        @Override public void setAlpha(int alpha) { paint.setAlpha(alpha); invalidateSelf(); }
-        @Override public void setColorFilter(android.graphics.ColorFilter filter) {
-            paint.setColorFilter(filter); invalidateSelf();
-        }
-        @Override public int getOpacity() { return android.graphics.PixelFormat.TRANSLUCENT; }
-    }
-
-    private void updateBatteryPercentView() {
-        if (batteryPercentText == null) return;
-        if (!getBool("showBatteryPercent", false) || !isDeviceCharging()) {
-            batteryPercentText.setVisibility(View.GONE);
-            return;
-        }
+    private boolean isBatteryProtectionNeeded() {
+        int threshold = Math.max(1, Math.min(50,
+                getInt("batteryProtectionThreshold", 20)));
         try {
             Intent battery = registerReceiver(null,
                     new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
-            if (battery == null) {
-                batteryPercentText.setVisibility(View.GONE);
-                return;
-            }
+            if (battery == null) return false;
             int level = battery.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
             int scale = battery.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
-            if (level < 0 || scale <= 0) {
-                batteryPercentText.setVisibility(View.GONE);
-                return;
-            }
-            int percent = Math.max(0, Math.min(100, Math.round(level * 100f / scale)));
-            batteryPercentText.setText(percent + "%");
-            batteryPercentText.setVisibility(View.VISIBLE);
+            int plugged = battery.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0);
+            if (level < 0 || scale <= 0 || plugged != 0) return false;
+            int percent = Math.max(0, Math.min(100,
+                    Math.round(level * 100f / scale)));
+            return percent <= threshold;
         } catch (Throwable ignored) {
-            batteryPercentText.setVisibility(View.GONE);
+            return false;
         }
     }
 
+    
     private int getScreenBackgroundColor() {
         return getInt("screenBackgroundColor", Color.BLACK);
     }
 
+    
+    private boolean usesLayeredBackground() {
+        return !"solid".equals(getString("backgroundStyle", "solid"));
+    }
+
+    
+    private int mixColor(int from, int to, float amount) {
+        float f = Math.max(0f, Math.min(1f, amount));
+        return Color.rgb(
+                Math.round(Color.red(from) * (1f - f) + Color.red(to) * f),
+                Math.round(Color.green(from) * (1f - f) + Color.green(to) * f),
+                Math.round(Color.blue(from) * (1f - f) + Color.blue(to) * f));
+    }
+
+    private Drawable createScreenBackgroundDrawable() {
+        int base = getScreenBackgroundColor();
+        String style = getString("backgroundStyle", "solid");
+        if ("solid".equals(style)) {
+            return new android.graphics.drawable.ColorDrawable(base);
+        }
+        if ("gradient".equals(style)) {
+            return new GradientDrawable(GradientDrawable.Orientation.TL_BR,
+                    new int[]{
+                            mixColor(base, Color.rgb(47, 89, 132), 0.52f),
+                            mixColor(base, Color.rgb(20, 36, 56), 0.30f),
+                            mixColor(base, Color.rgb(5, 12, 22), 0.68f)
+                    });
+        }
+        if ("glow".equals(style)) {
+            GradientDrawable glow = new GradientDrawable(
+                    GradientDrawable.Orientation.TOP_BOTTOM,
+                    new int[]{
+                            mixColor(base, Color.rgb(52, 112, 169), 0.78f),
+                            mixColor(base, Color.rgb(25, 56, 88), 0.44f),
+                            base
+                    });
+            glow.setGradientType(GradientDrawable.RADIAL_GRADIENT);
+            glow.setGradientRadius(dp(Math.max(250, Math.round(Math.max(
+                    getResources().getDisplayMetrics().widthPixels,
+                    getResources().getDisplayMetrics().heightPixels) * 0.78f))));
+            glow.setGradientCenter(0.5f, 0.42f);
+            return glow;
+        }
+        if ("vignette".equals(style)) {
+            GradientDrawable vignette = new GradientDrawable(
+                    GradientDrawable.Orientation.TL_BR,
+                    new int[]{
+                            base,
+                            mixColor(base, Color.BLACK, 0.62f),
+                            Color.BLACK
+                    });
+            vignette.setGradientType(GradientDrawable.RADIAL_GRADIENT);
+            vignette.setGradientRadius(dp(Math.max(250, Math.round(Math.max(
+                    getResources().getDisplayMetrics().widthPixels,
+                    getResources().getDisplayMetrics().heightPixels) * 0.66f))));
+            vignette.setGradientCenter(0.5f, 0.45f);
+            return vignette;
+        }
+        return new android.graphics.drawable.ColorDrawable(base);
+    }
+
+    private boolean isAutomaticNightModeActive() {
+        if (!getBool("nightModeEnabled", false)) return false;
+        int start = Math.max(0, Math.min(23, getInt("nightModeStartHour", 22)));
+        int end = Math.max(0, Math.min(23, getInt("nightModeEndHour", 7)));
+        if (start == end) return false;
+        Calendar current = Calendar.getInstance();
+        int hour = current.get(Calendar.HOUR_OF_DAY);
+        if (start < end) return hour >= start && hour < end;
+        return hour >= start || hour < end;
+    }
+
     private void applyScreenAppearance() {
         int backgroundColor = getScreenBackgroundColor();
+        Drawable screenBackground = createScreenBackgroundDrawable();
         if (stageView != null) {
-            stageView.setBackgroundColor(backgroundColor);
+            stageView.setBackground(screenBackground);
             if (stageView.getParent() instanceof View) {
-                ((View) stageView.getParent()).setBackgroundColor(backgroundColor);
+                ((View) stageView.getParent()).setBackground(createScreenBackgroundDrawable());
             }
         }
-        getWindow().getDecorView().setBackgroundColor(backgroundColor);
+        getWindow().getDecorView().setBackground(createScreenBackgroundDrawable());
 
         // -1 means follow the device's brightness setting. A percentage applies
         // only to this Activity and does not modify the user's system setting.
         int brightnessPercent = getInt("screenBrightness", -1);
-        android.view.WindowManager.LayoutParams attributes = getWindow().getAttributes();
-        attributes.screenBrightness = brightnessPercent < 0
-                ? android.view.WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+        float requestedBrightness = brightnessPercent < 0 ? -1f
                 : Math.max(0.01f, Math.min(1.0f, brightnessPercent / 100.0f));
+        float brightnessCap = 1f;
+        if (getBool("batteryProtectionEnabled", false) && isBatteryProtectionNeeded()) {
+            brightnessCap = Math.min(brightnessCap, 0.25f);
+        }
+        if (isAutomaticNightModeActive()) {
+            brightnessCap = Math.min(brightnessCap, 0.20f);
+        }
+        if (brightnessCap < 1f) {
+            // These caps affect only this Activity window, never system-wide brightness.
+            requestedBrightness = requestedBrightness < 0f
+                    ? brightnessCap : Math.min(requestedBrightness, brightnessCap);
+        }
+        android.view.WindowManager.LayoutParams attributes = getWindow().getAttributes();
+        attributes.screenBrightness = requestedBrightness < 0f
+                ? android.view.WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+                : requestedBrightness;
         getWindow().setAttributes(attributes);
+    }
+
+    
+    private static final class CenterCropBitmapDrawable
+            extends android.graphics.drawable.Drawable {
+        private final android.graphics.Bitmap bitmap;
+        private final android.graphics.BitmapShader shader;
+        private final android.graphics.Paint paint =
+                new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG
+                        | android.graphics.Paint.FILTER_BITMAP_FLAG);
+        private final android.graphics.Matrix matrix = new android.graphics.Matrix();
+
+        CenterCropBitmapDrawable(android.graphics.Bitmap bitmap) {
+            this.bitmap = bitmap;
+            shader = new android.graphics.BitmapShader(bitmap,
+                    android.graphics.Shader.TileMode.CLAMP,
+                    android.graphics.Shader.TileMode.CLAMP);
+            paint.setShader(shader);
+        }
+
+        @Override
+        protected void onBoundsChange(android.graphics.Rect bounds) {
+            if (bitmap == null || bounds.width() <= 0 || bounds.height() <= 0) return;
+            float scale = Math.max(
+                    bounds.width() / (float) bitmap.getWidth(),
+                    bounds.height() / (float) bitmap.getHeight());
+            float scaledWidth = bitmap.getWidth() * scale;
+            float scaledHeight = bitmap.getHeight() * scale;
+            float dx = bounds.left + (bounds.width() - scaledWidth) * 0.5f;
+            float dy = bounds.top + (bounds.height() - scaledHeight) * 0.5f;
+            matrix.setScale(scale, scale);
+            matrix.postTranslate(dx, dy);
+            shader.setLocalMatrix(matrix);
+        }
+
+        @Override
+        public void draw(android.graphics.Canvas canvas) {
+            android.graphics.Rect bounds = getBounds();
+            if (bounds.width() > 0 && bounds.height() > 0) {
+                canvas.drawRect(bounds, paint);
+            }
+        }
+
+        @Override
+        public void setAlpha(int alpha) {
+            paint.setAlpha(Math.max(0, Math.min(255, alpha)));
+            invalidateSelf();
+        }
+
+        @Override
+        public void setColorFilter(android.graphics.ColorFilter colorFilter) {
+            paint.setColorFilter(colorFilter);
+            invalidateSelf();
+        }
+
+        @Override
+        public int getOpacity() {
+            return android.graphics.PixelFormat.TRANSLUCENT;
+        }
     }
 
     private void applyMediaFrame(boolean hasActiveSong) {
         if (mediaMirror == null) return;
         boolean enabled = getBool("frameEnabled", false) && hasActiveSong;
         if (!enabled) {
-            mediaMirror.setBackgroundColor(getScreenBackgroundColor());
+            mediaMirror.setBackgroundColor(Color.TRANSPARENT);
             mediaMirror.setPadding(0, 0, 0, 0);
+            if (Build.VERSION.SDK_INT >= 21) mediaMirror.setClipToOutline(false);
             return;
         }
-
         try {
             int radius = Math.max(0, getInt("frameRadius", 10));
             int selectedWidth = Math.max(1, Math.min(3, getInt("frameWidth", 1)));
             int frameColor = getInt("frameColor", Color.WHITE);
-
-            // Settings cards use a 1dp outline. Keep the thin player frame
-            // exactly at that base thickness, and reduce the other two levels
-            // from 2/3dp to 1.25/1.5dp so they remain distinct but lighter.
             float strokeWidthDp = selectedWidth == 1 ? 1.0f
                     : selectedWidth == 2 ? 1.25f : 1.5f;
             int strokeWidthPx = Math.max(1, Math.round(
                     strokeWidthDp * getResources().getDisplayMetrics().density));
-
-            // Keep the same settings-card surface, with one clean outline.
-            GradientDrawable background = new GradientDrawable();
-            background.setColor(Color.rgb(20, 36, 56));
-            background.setCornerRadius(dp(radius));
-            background.setStroke(strokeWidthPx, frameColor);
-            mediaMirror.setBackground(background);
-
-            // Keep the text and controls inside the card outline.
+            GradientDrawable base = new GradientDrawable();
+            base.setColor(Color.rgb(20, 36, 56));
+            base.setCornerRadius(dp(radius));
+            GradientDrawable border = new GradientDrawable();
+            border.setColor(Color.TRANSPARENT);
+            border.setCornerRadius(dp(radius));
+            border.setStroke(strokeWidthPx, frameColor);
+            boolean useAlbumArt = getBool("frameUseAlbumArt", true)
+                    && currentAlbumArt != null && !currentAlbumArt.isRecycled();
+            if (useAlbumArt) {
+                // Draw album art as a center-cropped shader inside the already measured
+                // frame bounds. The source bitmap never affects the frame dimensions.
+                CenterCropBitmapDrawable artworkLayer =
+                        new CenterCropBitmapDrawable(currentAlbumArt);
+                artworkLayer.setAlpha(185);
+                GradientDrawable textScrim = new GradientDrawable();
+                textScrim.setColor(Color.argb(126, 9, 19, 33));
+                textScrim.setCornerRadius(dp(radius));
+                mediaMirror.setBackground(new android.graphics.drawable.LayerDrawable(
+                        new android.graphics.drawable.Drawable[]{
+                                base, artworkLayer, textScrim, border
+                        }));
+            } else {
+                mediaMirror.setBackground(new android.graphics.drawable.LayerDrawable(
+                        new android.graphics.drawable.Drawable[]{base, border}));
+            }
+            if (Build.VERSION.SDK_INT >= 21) mediaMirror.setClipToOutline(true);
             int inset = Math.max(dp(5), strokeWidthPx + dp(3));
             mediaMirror.setPadding(inset, inset, inset, inset);
         } catch (Throwable ignored) {
-            // A frame drawing problem must never make the media player disappear.
-            mediaMirror.setBackgroundColor(getScreenBackgroundColor());
+            mediaMirror.setBackgroundColor(Color.TRANSPARENT);
             mediaMirror.setPadding(0, 0, 0, 0);
+            if (Build.VERSION.SDK_INT >= 21) mediaMirror.setClipToOutline(false);
         }
     }
 
@@ -1998,26 +2305,7 @@ public class MainActivity extends Activity {
         }
     }
 
-    private void recordLockScreenCapabilityAtScreenOff() {
-        // Do not infer a missing keyguard while this app is configured to prevent it.
-        if (LockBehaviorPreferences.isPreventionEnabled(this)) return;
-
-        // ACTION_SCREEN_OFF may arrive before the keyguard transition finishes.
-        // Sample after the transition, and only if the display is still off.
-        handler.postDelayed(() -> {
-            if (isScreenInteractive()) return;
-            try {
-                android.app.KeyguardManager keyguard =
-                        (android.app.KeyguardManager) getSystemService(KEYGUARD_SERVICE);
-                if (keyguard == null) return;
-                getSharedPreferences("settings", MODE_PRIVATE).edit()
-                        .putBoolean("screenLockObservationKnown", true)
-                        .putBoolean("screenLockObserved", keyguard.isKeyguardLocked())
-                        .apply();
-            } catch (Throwable ignored) {
-            }
-        }, 500L);
-    }
+    
 
     private boolean isDeviceCharging() {
         try {
@@ -2042,6 +2330,7 @@ public class MainActivity extends Activity {
         filter.addAction(Intent.ACTION_BATTERY_CHANGED);
         filter.addAction(Intent.ACTION_SCREEN_ON);
         filter.addAction(Intent.ACTION_SCREEN_OFF);
+        filter.addAction(Intent.ACTION_USER_PRESENT);
         filter.addAction(Intent.ACTION_TIME_TICK);
         filter.addAction(Intent.ACTION_TIME_CHANGED);
         filter.addAction(Intent.ACTION_DATE_CHANGED);
@@ -2295,14 +2584,84 @@ public class MainActivity extends Activity {
         return sessions.get(0);
     }
 
+    private void updateChargingBatteryDisplay() {
+        if (chargingBatteryView == null || prefs == null) return;
+        int previousVisibility = chargingBatteryView.getVisibility();
+        String mode = getString("chargingBatteryDisplayMode", "off");
+        if ("off".equals(mode)) {
+            chargingBatteryView.setBatteryState("off", 0, false,
+                    getInt("fontColor", dateTextColor));
+            return;
+        }
+        int percent = 0;
+        boolean pluggedIn = false;
+        try {
+            Intent battery = registerReceiver(null,
+                    new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+            if (battery != null) {
+                int level = battery.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
+                int scale = battery.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
+                if (level >= 0 && scale > 0) {
+                    percent = Math.max(0, Math.min(100,
+                            Math.round(level * 100f / scale)));
+                }
+                int plugged = battery.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0);
+                int status = battery.getIntExtra(BatteryManager.EXTRA_STATUS,
+                        BatteryManager.BATTERY_STATUS_UNKNOWN);
+                pluggedIn = plugged != 0
+                        || status == BatteryManager.BATTERY_STATUS_CHARGING;
+            }
+        } catch (Throwable ignored) {
+        }
+        chargingBatteryView.setBatteryState(mode, percent, pluggedIn,
+                getInt("fontColor", dateTextColor));
+        if (previousVisibility != chargingBatteryView.getVisibility()) {
+            updateClockBlockHeightForChargingIndicator();
+        }
+    }
+
+    private void updateClockBlockHeightForChargingIndicator() {
+        if (clockBlockView == null || timeText == null) return;
+        int totalHeight = 0;
+        for (int i = 0; i < clockBlockView.getChildCount(); i++) {
+            View child = clockBlockView.getChildAt(i);
+            if (child.getVisibility() == View.GONE) continue;
+            ViewGroup.LayoutParams rawParams = child.getLayoutParams();
+            int childHeight = child.getMeasuredHeight();
+            int topMargin = 0;
+            int bottomMargin = 0;
+            if (rawParams instanceof LinearLayout.LayoutParams) {
+                LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) rawParams;
+                if (params.height >= 0) childHeight = params.height;
+                topMargin = params.topMargin;
+                bottomMargin = params.bottomMargin;
+            } else if (rawParams != null && rawParams.height >= 0) {
+                childHeight = rawParams.height;
+            }
+            totalHeight += Math.max(0, childHeight) + topMargin + bottomMargin;
+        }
+        if (totalHeight <= 0) return;
+        FrameLayout.LayoutParams blockParams =
+                (FrameLayout.LayoutParams) clockBlockView.getLayoutParams();
+        if (blockParams != null && blockParams.height != totalHeight) {
+            blockParams.height = totalHeight;
+            clockBlockView.setLayoutParams(blockParams);
+            clockBlockView.post(() -> updateScreenPositions(
+                    stageView, clockBlockView, mediaHolderView));
+        }
+    }
+
     private void updateClock() {
         if (timeText == null || gregorianText == null || hebrewText == null) return;
         now.setTimeInMillis(System.currentTimeMillis());
-
         String formattedTime = numericTime();
         if (!formattedTime.contentEquals(timeText.getText())) {
             timeText.setText(formattedTime);
         }
+        if (analogClockView != null) {
+            analogClockView.setTime(now.get(Calendar.HOUR_OF_DAY), now.get(Calendar.MINUTE));
+        }
+        updateChargingBatteryDisplay();
 
         String formattedGregorianDate = hebrewWeekday() + " "
                 + formattedGregorianDateValue();
@@ -2374,9 +2733,16 @@ public class MainActivity extends Activity {
     }
 
     private String numericTime() {
-        return String.format(Locale.US, "%d:%02d",
-                now.get(Calendar.HOUR_OF_DAY),
-                now.get(Calendar.MINUTE));
+        boolean use24Hour = "24".equals(getString("timeFormat", "24"));
+        int hourOfDay = now.get(Calendar.HOUR_OF_DAY);
+        int minute = now.get(Calendar.MINUTE);
+        if (use24Hour) {
+            return String.format(Locale.US, "%d:%02d", hourOfDay, minute);
+        }
+        int hour = hourOfDay % 12;
+        if (hour == 0) hour = 12;
+        String period = hourOfDay < 12 ? " לפנה״צ" : " אחה״צ";
+        return String.format(Locale.US, "%d:%02d", hour, minute) + period;
     }
 
     private String hebrewWeekday() {
@@ -2653,13 +3019,15 @@ public class MainActivity extends Activity {
             title = removeFileExtension(title);
             String previousTitle = mediaTitle.getText() == null
                     ? "" : mediaTitle.getText().toString();
-            if (!title.equals(previousTitle)) {
+            boolean titleChanged = !title.equals(previousTitle);
+            if (titleChanged) {
                 stopTitleMarquee();
                 mediaTitle.setText(title);
                 mediaTitle.post(() -> updateTitleMarqueeIfNeeded());
             }
             mediaTitle.setVisibility(View.VISIBLE);
             lastTitle = title;
+            updateAlbumArtwork(metadata);
             String artist = metadata == null ? "" : metadata.getString(MediaMetadata.METADATA_KEY_ARTIST);
             artist = artist == null ? "" : artist.trim();
             if (artist.equalsIgnoreCase("unknown artist") ||
@@ -2714,8 +3082,8 @@ public class MainActivity extends Activity {
             if (artistChanged && showDetails && !lastArtist.isEmpty()) {
                 mediaDetails.post(() -> updateArtistMarqueeIfNeeded());
             }
-            boolean showProgressSetting = getBool("showProgress", true);
-            if (!showProgressSetting) {
+            boolean controlsVisible = arePlayerControlsVisible();
+            if (!controlsVisible) {
                 // With the progress row disabled, no periodic progress work is needed.
                 stopMediaProgressTicker();
                 handler.removeCallbacks(hideProgressRowAfterMetadataChange);
@@ -2735,7 +3103,11 @@ public class MainActivity extends Activity {
             } else {
                 setProgressRowVisible(false);
             }
-            mediaPlayPause.setVisibility(View.VISIBLE);
+            controlsVisible = arePlayerControlsVisible();
+            if (mediaControlsHolder != null) {
+                mediaControlsHolder.setVisibility(controlsVisible ? View.VISIBLE : View.GONE);
+            }
+            mediaPlayPause.setVisibility(controlsVisible ? View.VISIBLE : View.GONE);
                 boolean isPlaying = playback == PlaybackState.STATE_PLAYING;
             mediaPlayPause.setImageResource(
                     isPlaying ? R.drawable.media_pause : R.drawable.media_play);
@@ -2745,24 +3117,33 @@ public class MainActivity extends Activity {
 
             long actions = state.getActions();
 
-            if ((actions & PlaybackState.ACTION_SKIP_TO_PREVIOUS) != 0L) {
+            if (!controlsVisible) {
                 handler.removeCallbacks(hidePreviousButtonIfStillUnsupported);
-                previousButtonHidePending = false;
-                mediaPrev.setVisibility(View.VISIBLE);
-            } else if (mediaPrev.getVisibility() == View.VISIBLE && !previousButtonHidePending) {
-                // Some players briefly clear action flags while changing tracks.
-                previousButtonHidePending = true;
-                handler.postDelayed(hidePreviousButtonIfStillUnsupported, 1500L);
-            }
-
-            if ((actions & PlaybackState.ACTION_SKIP_TO_NEXT) != 0L) {
                 handler.removeCallbacks(hideNextButtonIfStillUnsupported);
+                previousButtonHidePending = false;
                 nextButtonHidePending = false;
-                mediaNext.setVisibility(View.VISIBLE);
-            } else if (mediaNext.getVisibility() == View.VISIBLE && !nextButtonHidePending) {
-                // Avoid a one-frame disappearance during a track hand-off.
-                nextButtonHidePending = true;
-                handler.postDelayed(hideNextButtonIfStillUnsupported, 1500L);
+                mediaPrev.setVisibility(View.GONE);
+                mediaNext.setVisibility(View.GONE);
+            } else {
+                if ((actions & PlaybackState.ACTION_SKIP_TO_PREVIOUS) != 0L) {
+                    handler.removeCallbacks(hidePreviousButtonIfStillUnsupported);
+                    previousButtonHidePending = false;
+                    mediaPrev.setVisibility(View.VISIBLE);
+                } else if (mediaPrev.getVisibility() == View.VISIBLE && !previousButtonHidePending) {
+                    // Some players briefly clear action flags while changing tracks.
+                    previousButtonHidePending = true;
+                    handler.postDelayed(hidePreviousButtonIfStillUnsupported, 1500L);
+                }
+
+                if ((actions & PlaybackState.ACTION_SKIP_TO_NEXT) != 0L) {
+                    handler.removeCallbacks(hideNextButtonIfStillUnsupported);
+                    nextButtonHidePending = false;
+                    mediaNext.setVisibility(View.VISIBLE);
+                } else if (mediaNext.getVisibility() == View.VISIBLE && !nextButtonHidePending) {
+                    // Avoid a one-frame disappearance during a track hand-off.
+                    nextButtonHidePending = true;
+                    handler.postDelayed(hideNextButtonIfStillUnsupported, 1500L);
+                }
             }
 
             applyMediaFrame(true);
@@ -2773,6 +3154,32 @@ public class MainActivity extends Activity {
             hideMediaMirror();
         }
     }
+
+    
+    private void refreshPlayerControlsAfterIntro() {
+        if (mediaController != null) renderMediaMirror();
+    }
+
+    private boolean arePlayerControlsVisible() {
+        String mode = getString("playerControlsDisplayMode", "on");
+        if ("off".equals(mode)) return false;
+        if (!"start".equals(mode)) return true;
+        return playerControlsIntroWindowVisible
+                && SystemClock.elapsedRealtime()
+                < playerControlsIntroWindowDeadlineElapsedRealtime;
+    }
+
+    private void startPlayerControlsIntroWindow(long durationMs) {
+        if (!"start".equals(getString("playerControlsDisplayMode", "on"))) return;
+        long delay = Math.max(1L, durationMs);
+        playerControlsIntroWindowVisible = true;
+        playerControlsIntroWindowDeadlineElapsedRealtime =
+                SystemClock.elapsedRealtime() + delay;
+        handler.removeCallbacks(hidePlayerControlsIntroWindowRunnable);
+        handler.postDelayed(hidePlayerControlsIntroWindowRunnable, delay);
+    }
+
+    
 
     private void observeTrackForPlayerIntro(String trackIdentity,
                                             boolean playbackActive,
@@ -2787,6 +3194,9 @@ public class MainActivity extends Activity {
         boolean playbackJustStarted = playbackActive && !lastPlaybackWasActive;
         boolean introOnly = getBool("showPlayerOnlyAtStart", false);
         boolean introOnlyJustEnabled = introOnly && !lastPlayerIntroOnlySetting;
+        String controlsMode = getString("playerControlsDisplayMode", "on");
+        boolean controlsModeJustEnabled = "start".equals(controlsMode)
+                && !"start".equals(lastPlayerControlsDisplayMode);
 
         if (!introOnly) {
             handler.removeCallbacks(hidePlayerIntroWindowRunnable);
@@ -2803,10 +3213,28 @@ public class MainActivity extends Activity {
             startPlayerIntroWindow(PLAYER_START_WINDOW_MS - Math.max(0L, positionMs));
         }
 
+        if (!"start".equals(controlsMode)) {
+            handler.removeCallbacks(hidePlayerControlsIntroWindowRunnable);
+            playerControlsIntroWindowVisible = !"off".equals(controlsMode);
+            playerControlsIntroWindowDeadlineElapsedRealtime = 0L;
+        } else if (playbackActive
+                && (trackChanged || repeatedOrRestartedTrack
+                || firstObservedTrack || playbackJustStarted || controlsModeJustEnabled)) {
+            if (positionMs < PLAYER_START_WINDOW_MS) {
+                startPlayerControlsIntroWindow(
+                        PLAYER_START_WINDOW_MS - Math.max(0L, positionMs));
+            } else {
+                handler.removeCallbacks(hidePlayerControlsIntroWindowRunnable);
+                playerControlsIntroWindowVisible = false;
+                playerControlsIntroWindowDeadlineElapsedRealtime = 0L;
+            }
+        }
+
         lastObservedTrackIdentity = trackIdentity;
         lastObservedTrackPositionMs = positionMs;
         lastPlaybackWasActive = playbackActive;
         lastPlayerIntroOnlySetting = introOnly;
+        lastPlayerControlsDisplayMode = controlsMode;
     }
 
     private void startPlayerIntroWindow(long durationMs) {
@@ -2837,7 +3265,7 @@ public class MainActivity extends Activity {
             stopTitleMarquee();
             stopArtistMarquee();
             stopMediaProgressTicker();
-        } else if (getBool("showProgress", true)) {
+        } else if (arePlayerControlsVisible()) {
             scheduleMediaProgressTicker();
         } else {
             stopMediaProgressTicker();
@@ -2846,7 +3274,7 @@ public class MainActivity extends Activity {
 
     private boolean isMediaProgressPollingEnabled() {
         if (!mainActivityResumed || !getBool("showPlayer", false)
-                || !getBool("showProgress", true)
+                || !arePlayerControlsVisible()
                 || mediaMirror == null || mediaMirror.getVisibility() != View.VISIBLE
                 || mediaController == null) return false;
         try {
@@ -2886,7 +3314,7 @@ public class MainActivity extends Activity {
         if (state == null || mediaCurrentText == null
                 || mediaTotalText == null || mediaSeekBar == null) return;
         duration = Math.max(0L, duration);
-        if (duration <= 0L || !getBool("showProgress", true)) {
+        if (duration <= 0L || !arePlayerControlsVisible()) {
             setProgressRowVisible(false);
             return;
         }
@@ -2941,6 +3369,61 @@ public class MainActivity extends Activity {
         if (mediaTotalText != null) mediaTotalText.setVisibility(visibility);
     }
 
+    private boolean shouldPauseForExcludedForegroundApp() {
+        if (!getBool("pauseWhenExcludedAppActive", false)) return false;
+        Set<String> excluded = new HashSet<>(prefs.getStringSet(
+                "excludedForegroundPackages", Collections.emptySet()));
+        if (excluded.isEmpty()) return false;
+        try {
+            AppOpsManager appOps = (AppOpsManager) getSystemService(APP_OPS_SERVICE);
+            if (appOps == null || appOps.checkOpNoThrow(
+                    AppOpsManager.OPSTR_GET_USAGE_STATS,
+                    android.os.Process.myUid(), getPackageName()) != AppOpsManager.MODE_ALLOWED) {
+                return false;
+            }
+            UsageStatsManager usage =
+                    (UsageStatsManager) getSystemService(USAGE_STATS_SERVICE);
+            if (usage == null) return false;
+            long nowMs = System.currentTimeMillis();
+            UsageEvents events = usage.queryEvents(nowMs - 24L * 60L * 60L * 1000L, nowMs);
+            if (events == null) return false;
+            UsageEvents.Event event = new UsageEvents.Event();
+            String lastTopPackage = null;
+            long lastTopEventTime = 0L;
+            boolean lastTopStillActive = false;
+            while (events.hasNextEvent()) {
+                events.getNextEvent(event);
+                int type = event.getEventType();
+                String packageName = event.getPackageName();
+                if (packageName == null || packageName.equals(getPackageName())) continue;
+                boolean foregroundEvent = type == UsageEvents.Event.MOVE_TO_FOREGROUND
+                        || (Build.VERSION.SDK_INT >= 29
+                        && type == UsageEvents.Event.ACTIVITY_RESUMED);
+                boolean backgroundEvent = type == UsageEvents.Event.MOVE_TO_BACKGROUND
+                        || (Build.VERSION.SDK_INT >= 29
+                        && (type == UsageEvents.Event.ACTIVITY_PAUSED
+                        || type == UsageEvents.Event.ACTIVITY_STOPPED));
+                if (foregroundEvent) {
+                    lastTopPackage = packageName;
+                    lastTopEventTime = event.getTimeStamp();
+                    lastTopStillActive = true;
+                } else if (backgroundEvent && packageName.equals(lastTopPackage)) {
+                    long eventAge = Math.max(0L, nowMs - event.getTimeStamp());
+                    // A pause in the last few seconds can be caused by this very
+                    // screensaver Activity opening over the previously visible app.
+                    lastTopStillActive = eventAge <= 3_000L;
+                    lastTopEventTime = event.getTimeStamp();
+                    if (!lastTopStillActive) lastTopPackage = null;
+                }
+            }
+            return lastTopStillActive && lastTopPackage != null
+                    && excluded.contains(lastTopPackage)
+                    && nowMs - lastTopEventTime <= 10_000L;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
     private boolean hasNotificationAccess() {
         ComponentName component = new ComponentName(
                 this, SystemMediaNotificationListener.class);
@@ -2983,11 +3466,40 @@ public class MainActivity extends Activity {
         }
     }
 
+    private void updateAlbumArtwork(MediaMetadata metadata) {
+        Bitmap artwork = null;
+        if (metadata != null) {
+            try { artwork = metadata.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART); }
+            catch (Throwable ignored) {}
+            if (artwork == null) {
+                try { artwork = metadata.getBitmap(MediaMetadata.METADATA_KEY_ART); }
+                catch (Throwable ignored) {}
+            }
+            if (artwork == null) {
+                try { artwork = metadata.getBitmap(MediaMetadata.METADATA_KEY_DISPLAY_ICON); }
+                catch (Throwable ignored) {}
+            }
+        }
+        currentAlbumArt = artwork != null && !artwork.isRecycled() ? artwork : null;
+        if (mediaMirror != null) {
+            boolean active = mediaController != null && hasUsableMediaSession(mediaController);
+            applyMediaFrame(active);
+        }
+    }
+
     private void hideMediaMirror() {
         stopMediaProgressTicker();
-        if (mediaMirror != null) {
-            mediaMirror.setVisibility(View.GONE);
-        }
+        handler.removeCallbacks(hidePlayerIntroWindowRunnable);
+        handler.removeCallbacks(hidePlayerControlsIntroWindowRunnable);
+        playerIntroWindowVisible = false;
+        playerIntroWindowDeadlineElapsedRealtime = 0L;
+        playerControlsIntroWindowVisible = false;
+        playerControlsIntroWindowDeadlineElapsedRealtime = 0L;
+        lastObservedTrackIdentity = null;
+        lastObservedTrackPositionMs = -1L;
+        lastPlaybackWasActive = false;
+        currentAlbumArt = null;
+        if (mediaMirror != null) mediaMirror.setVisibility(View.GONE);
         stopTitleMarquee();
         stopArtistMarquee();
     }
@@ -3226,6 +3738,8 @@ public class MainActivity extends Activity {
         return view;
     }
 
+    
+
     private final class ClockDateTextView extends TextView {
         private float edgeErosionPx;
 
@@ -3308,6 +3822,10 @@ public class MainActivity extends Activity {
     private int dp(int value) {
         return Math.round(
                 value * getResources().getDisplayMetrics().density);
+    }
+
+    private float dpFloat(float value) {
+        return value * getResources().getDisplayMetrics().density;
     }
 
     private void hideSystemUi() {
