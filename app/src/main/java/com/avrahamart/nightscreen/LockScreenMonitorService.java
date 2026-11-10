@@ -18,7 +18,7 @@ import android.provider.Settings;
 public final class LockScreenMonitorService extends Service {
     // Keep the channel ID so Android preserves existing user notification settings.
     // Newly created channels default to hiding this service notification on the lockscreen.
-    private static final String CHANNEL_ID = "screensaver_lock_monitor_v3";
+    private static final String CHANNEL_ID = "screensaver_lock_monitor_v4";
     private static final int NOTIFICATION_ID = 6721;
     private static final int RESTART_PENDING_INTENT_ID = 6722;
     private static final long RESTART_DELAY_MS = 2_000L;
@@ -169,7 +169,7 @@ public final class LockScreenMonitorService extends Service {
                 (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         if (manager == null) return;
         NotificationChannel channel = new NotificationChannel(
-                CHANNEL_ID, "הפעלה אוטומטית של שומר מסך", NotificationManager.IMPORTANCE_LOW);
+                CHANNEL_ID, "הפעלה אוטומטית של שומר מסך", NotificationManager.IMPORTANCE_MIN);
         channel.setDescription("התראה מתמשכת לשירות ההפעלה האוטומטית בנעילת המכשיר");
         channel.setShowBadge(false);
         channel.setLockscreenVisibility(Notification.VISIBILITY_SECRET);
@@ -204,17 +204,20 @@ public final class LockScreenMonitorService extends Service {
                 .setShowWhen(false)
                 .setCategory(Notification.CATEGORY_SERVICE)
                 .setVisibility(Notification.VISIBILITY_SECRET);
-        builder.setPriority(Notification.PRIORITY_LOW)
+        builder.setPriority(Notification.PRIORITY_MIN)
                 .setSound(null)
                 .setVibrate(new long[0])
                 .setDefaults(0);
+        if (Build.VERSION.SDK_INT >= 26) builder.setSilent(true);
         return builder.build();
     }
 
     @Override
     public void onTaskRemoved(Intent rootIntent) {
-        // The foreground service normally survives task removal. Schedule one
-        // recovery start as a fallback for devices that terminate it with the task.
+        // KeyMapper keeps its ongoing notification in NotificationManager rather than
+        // tying it to an Activity. Detach this same notification from foreground-service
+        // ownership before the task is removed, so Android does not remove it with the task.
+        detachNotificationIfStillEnabled();
         scheduleRestartIfEnabled();
         super.onTaskRemoved(rootIntent);
     }
@@ -222,6 +225,13 @@ public final class LockScreenMonitorService extends Service {
     @Override
     public void onDestroy() {
         lockMonitoringActive = false;
+        // Keep the ongoing notification if automatic start is still enabled. When the
+        // user disables every mode, remove it instead of leaving a stale notification.
+        if (isMonitoringAllowed(this)) {
+            detachNotificationIfStillEnabled();
+        } else {
+            removeForegroundNotification();
+        }
         // Do not schedule a restart when the user explicitly turns the feature off.
         scheduleRestartIfEnabled();
         if (receiverRegistered && lockReceiver != null) {
@@ -232,6 +242,30 @@ public final class LockScreenMonitorService extends Service {
             }
         }
         super.onDestroy();
+    }
+
+    private void detachNotificationIfStillEnabled() {
+        if (!isMonitoringAllowed(this)) return;
+        try {
+            if (Build.VERSION.SDK_INT >= 24) {
+                stopForeground(STOP_FOREGROUND_DETACH);
+            } else {
+                // Before API 24, stopForeground(false) leaves the notification posted.
+                stopForeground(false);
+            }
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private void removeForegroundNotification() {
+        try {
+            if (Build.VERSION.SDK_INT >= 24) {
+                stopForeground(STOP_FOREGROUND_REMOVE);
+            } else {
+                stopForeground(true);
+            }
+        } catch (Throwable ignored) {
+        }
     }
 
     private void scheduleRestartIfEnabled() {
