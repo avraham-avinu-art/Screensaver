@@ -11,14 +11,13 @@ import android.os.Build;
 import android.provider.Settings;
 
 /**
- * Application-level notification for the user's automatic-start choices.
- *
- * This is deliberately a normal NotificationManager notification, not the
- * foreground-service notification and not tied to any Activity lifecycle.
+ * Application-level controller for the single persistent automatic-start
+ * notification. The monitor foreground service uses the very same notification
+ * ID and payload, so Android never displays a duplicate technical notification.
  */
 public final class AutoStartNotificationController {
-    private static final String CHANNEL_ID = "screensaver_auto_start_status";
-    private static final int NOTIFICATION_ID = 6723;
+    static final String CHANNEL_ID = "screensaver_auto_start_status";
+    static final int NOTIFICATION_ID = 6723;
 
     private AutoStartNotificationController() {
     }
@@ -27,29 +26,33 @@ public final class AutoStartNotificationController {
         Context app = context.getApplicationContext();
         MonitorSettingsSnapshot snapshot = MonitorSettingsSnapshot.read(app);
         if (snapshot == null) return;
-        // This status notification belongs to the persistent lock/wake monitor.
-        // Charge and boot remain event-only routes, as in Build 575.
+
         boolean enabled = snapshot.autoStartOnDeviceLock || snapshot.autoStartOnWake;
+        if (Build.VERSION.SDK_INT >= 29 && !Settings.canDrawOverlays(app)) {
+            enabled = false;
+        }
 
         NotificationManager manager =
                 (NotificationManager) app.getSystemService(Context.NOTIFICATION_SERVICE);
         if (manager == null) return;
 
-        if (!enabled) {
+        if (!enabled || (Build.VERSION.SDK_INT >= 33
+                && app.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
+                    != android.content.pm.PackageManager.PERMISSION_GRANTED)) {
             manager.cancel(NOTIFICATION_ID);
             return;
         }
 
-        if (Build.VERSION.SDK_INT >= 33
-                && app.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
-                    != android.content.pm.PackageManager.PERMISSION_GRANTED) {
-            return;
-        }
+        manager.notify(NOTIFICATION_ID, buildNotification(app));
+    }
 
-        createChannel(manager);
+    static Notification buildNotification(Context context) {
+        Context app = context.getApplicationContext();
+        NotificationManager manager =
+                (NotificationManager) app.getSystemService(Context.NOTIFICATION_SERVICE);
+        if (manager != null) createChannel(manager);
+
         Intent settings = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION);
-        // Keep the package-scoped destination on Android 11+ as well. This is the
-        // same explicit destination used by the tested Key Mapper notification flow.
         settings.setData(Uri.parse("package:" + app.getPackageName()));
         settings.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
                 | Intent.FLAG_ACTIVITY_CLEAR_TOP);
@@ -77,7 +80,13 @@ public final class AutoStartNotificationController {
 
         Notification notification = builder.build();
         notification.flags |= Notification.FLAG_ONGOING_EVENT | Notification.FLAG_NO_CLEAR;
-        manager.notify(NOTIFICATION_ID, notification);
+        return notification;
+    }
+
+    static void createChannel(Context context) {
+        NotificationManager manager =
+                (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+        if (manager != null) createChannel(manager);
     }
 
     private static void createChannel(NotificationManager manager) {
