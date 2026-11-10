@@ -12,6 +12,11 @@
         android:label="שומר מסך" android:icon="@drawable/ic_launcher"
         android:theme="@style/AppTheme"
         android:supportsRtl="true">
+        <provider
+            android:name=".MonitorSettingsProvider"
+            android:authorities="com.avrahamart.nightscreen.monitorstate"
+            android:exported="false" />
+
         <activity
             android:name=".SettingsActivity"
             android:label="הגדרות"
