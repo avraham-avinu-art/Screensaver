@@ -17,7 +17,6 @@ public final class NightScreenApplication extends Application {
     public void onCreate() {
         super.onCreate();
         updateChargerReceiverRegistration();
-        AutoStartNotificationController.sync(this);
     }
 
     /**
