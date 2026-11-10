@@ -46,6 +46,13 @@ public final class LockScreenMonitorService extends Service {
      * Keeps one foreground monitor/notification alive while any auto-start mode
      * is enabled. Dynamic receiver subscriptions remain independently gated.
      */
+    static void restoreForegroundNotification(Context context) {
+        Context appContext = context.getApplicationContext();
+        if (isMonitoringAllowed(appContext)) {
+            MonitorSettingsSnapshot.setNotificationDetached(appContext, false);
+        }
+    }
+
     public static void sync(Context context) {
         Context appContext = context.getApplicationContext();
         if (isMonitoringAllowed(appContext)) {
@@ -64,6 +71,15 @@ public final class LockScreenMonitorService extends Service {
                 appContext.stopService(new Intent(appContext, LockScreenMonitorService.class));
             } catch (Throwable ignored) {
             }
+            // The service may already have been destroyed while its detached
+            // notification is still posted. Explicitly remove that standalone entry.
+            try {
+                NotificationManager manager = (NotificationManager)
+                        appContext.getSystemService(Context.NOTIFICATION_SERVICE);
+                if (manager != null) manager.cancel(NOTIFICATION_ID);
+            } catch (Throwable ignored) {
+            }
+            MonitorSettingsSnapshot.setNotificationDetached(appContext, false);
         }
     }
 
@@ -75,6 +91,9 @@ public final class LockScreenMonitorService extends Service {
     static void preserveNotificationAfterActivityClose(Context context) {
         Context appContext = context.getApplicationContext();
         if (!isMonitoringAllowed(appContext)) return;
+        // Keep the persisted detached state so a sticky service restart does not
+        // attach the notification to the foreground service again.
+        MonitorSettingsSnapshot.setNotificationDetached(appContext, true);
         Intent intent = new Intent(appContext, LockScreenMonitorService.class);
         intent.setAction(ACTION_PRESERVE_NOTIFICATION);
         try {
@@ -155,6 +174,9 @@ public final class LockScreenMonitorService extends Service {
 
         boolean preserveAsIndependentNotification = intent != null
                 && ACTION_PRESERVE_NOTIFICATION.equals(intent.getAction());
+        MonitorSettingsSnapshot state = MonitorSettingsSnapshot.read(this);
+        preserveAsIndependentNotification = preserveAsIndependentNotification
+                || (state != null && state.notificationDetached);
 
         // If the service was restarted after the user unlocked the phone, clear
         // a stale one-per-lock-cycle latch. Do not clear it while the device is
@@ -280,6 +302,7 @@ public final class LockScreenMonitorService extends Service {
 
     private void detachAndRepostOngoingNotification() {
         if (!isMonitoringAllowed(this)) return;
+        MonitorSettingsSnapshot.setNotificationDetached(this, true);
         Notification notification = buildQuietNotification();
         try {
             if (Build.VERSION.SDK_INT >= 24) {
@@ -305,6 +328,7 @@ public final class LockScreenMonitorService extends Service {
     }
 
     private void removeForegroundNotification() {
+        MonitorSettingsSnapshot.setNotificationDetached(this, false);
         try {
             if (Build.VERSION.SDK_INT >= 24) {
                 stopForeground(STOP_FOREGROUND_REMOVE);
