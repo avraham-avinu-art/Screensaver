@@ -87,7 +87,11 @@ public class MainActivity extends Activity {
         return mainActivityResumed;
     }
 
-public static boolean wasMainActivityPausedByDeviceLock() {
+    public static boolean isMainActivitySessionAlive() {
+        return mainActivitySessionAlive;
+    }
+
+    public static boolean wasMainActivityPausedByDeviceLock() {
         return mainActivityPausedByDeviceLock;
     }
 
