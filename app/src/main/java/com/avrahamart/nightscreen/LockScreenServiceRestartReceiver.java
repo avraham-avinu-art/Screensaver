@@ -10,7 +10,7 @@ public final class LockScreenServiceRestartReceiver extends BroadcastReceiver {
     private static final String TAG = "ScreensaverMonitor";
     @Override
     public void onReceive(Context context, Intent intent) {
-        Log.i(TAG, "restart alarm received; action="
+        MonitorDiagnostics.record(context, "restart alarm received; action="
                 + (intent == null ? "null" : intent.getAction()));
         // Use the same feature and permission policy as normal service startup.
         // This includes boot-only and charging-only configurations.
