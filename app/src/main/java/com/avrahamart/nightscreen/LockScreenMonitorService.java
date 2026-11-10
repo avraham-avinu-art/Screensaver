@@ -13,9 +13,11 @@ import android.content.pm.ServiceInfo;
 import android.os.Build;
 import android.os.IBinder;
 import android.os.SystemClock;
+import android.util.Log;
 import android.provider.Settings;
 
 public final class LockScreenMonitorService extends Service {
+    private static final String TAG = "ScreensaverMonitor";
     // Versioned channel ID: a new ID makes Android apply the current silent,
     // minimum-importance and lockscreen-hidden defaults instead of retaining v4 settings.
     private static final String CHANNEL_ID = "screensaver_lock_monitor_v5";
@@ -61,8 +63,8 @@ public final class LockScreenMonitorService extends Service {
                 } else {
                     appContext.startService(intent);
                 }
-            } catch (Throwable ignored) {
-                // Android may block background service starts on some system versions.
+            } catch (Throwable error) {
+                Log.e(TAG, "sync: startForegroundService/startService rejected", error);
             }
         } else {
             try {
@@ -84,6 +86,7 @@ public final class LockScreenMonitorService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
+        Log.i(TAG, "onCreate; pid=" + android.os.Process.myPid());
         createNotificationChannel();
         updateLockReceiverRegistration();
     }
@@ -139,7 +142,10 @@ public final class LockScreenMonitorService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        Log.i(TAG, "onStartCommand; startId=" + startId + ", action="
+                + (intent == null ? "null" : intent.getAction()));
         if (!isMonitoringAllowed(this)) {
+            Log.w(TAG, "monitoring is not allowed; stopping service");
             lockMonitoringActive = false;
             stopSelf(startId);
             return START_NOT_STICKY;
@@ -175,7 +181,9 @@ public final class LockScreenMonitorService extends Service {
                 startForeground(NOTIFICATION_ID, notification);
             }
             lockMonitoringActive = true;
+            Log.i(TAG, "startForeground succeeded; notificationId=" + NOTIFICATION_ID);
         } catch (Throwable ex) {
+            Log.e(TAG, "startForeground failed", ex);
             lockMonitoringActive = false;
             stopSelf(startId);
             return START_NOT_STICKY;
@@ -237,6 +245,8 @@ public final class LockScreenMonitorService extends Service {
 
     @Override
     public void onTaskRemoved(Intent rootIntent) {
+        Log.w(TAG, "onTaskRemoved; monitoringAllowed=" + isMonitoringAllowed(this)
+                + ", foregroundActive=" + lockMonitoringActive);
         // The monitor is independent of the UI task. Some device builds may still
         // tear down background processes after the recent-task card is dismissed.
         // Schedule a single recovery check; the same notification ID is reused,
@@ -251,6 +261,7 @@ public final class LockScreenMonitorService extends Service {
 
     @Override
     public void onDestroy() {
+        Log.w(TAG, "onDestroy; monitoringAllowed=" + isMonitoringAllowed(this));
         lockMonitoringActive = false;
         if (!isMonitoringAllowed(this)) {
             removeForegroundNotification();
@@ -289,7 +300,10 @@ public final class LockScreenMonitorService extends Service {
     }
 
     private void scheduleRestartIfEnabled() {
-        if (!isMonitoringAllowed(this)) return;
+        if (!isMonitoringAllowed(this)) {
+            Log.i(TAG, "scheduleRestart skipped: monitoring disabled");
+            return;
+        }
 
         AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
         if (alarmManager == null) return;
@@ -304,7 +318,9 @@ public final class LockScreenMonitorService extends Service {
                 alarmManager.set(
                         AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerAt, restartIntent);
             }
-        } catch (Throwable ignored) {
+            Log.i(TAG, "restart alarm scheduled; delayMs=" + RESTART_DELAY_MS);
+        } catch (Throwable error) {
+            Log.e(TAG, "restart alarm scheduling failed", error);
         }
     }
 
