@@ -5,6 +5,8 @@ import android.util.Log;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileInputStream;
+import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -45,8 +47,13 @@ final class MonitorDiagnostics {
         try {
             File file = new File(context.getFilesDir(), FILE_NAME);
             if (!file.exists()) return "";
-            byte[] bytes = java.nio.file.Files.readAllBytes(file.toPath());
-            return new String(bytes, StandardCharsets.UTF_8);
+            try (FileInputStream input = new FileInputStream(file);
+                 ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+                byte[] buffer = new byte[4096];
+                int count;
+                while ((count = input.read(buffer)) != -1) output.write(buffer, 0, count);
+                return new String(output.toByteArray(), StandardCharsets.UTF_8);
+            }
         } catch (Throwable error) {
             Log.e(TAG, "Unable to read diagnostic log", error);
             return "לא ניתן לקרוא את נתוני האבחון: " + error;
