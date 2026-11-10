@@ -213,10 +213,9 @@ public final class LockScreenMonitorService extends Service {
 
     @Override
     public void onTaskRemoved(Intent rootIntent) {
-        // KeyMapper keeps its ongoing notification in NotificationManager rather than
-        // tying it to an Activity. Detach this same notification from foreground-service
-        // ownership before the task is removed, so Android does not remove it with the task.
-        detachNotificationIfStillEnabled();
+        // The monitor must remain a foreground service after the Activity task is removed.
+        // Do not call stopForeground(): that would demote the monitor and make it easier
+        // for Android to terminate it while its dynamic event receiver is still required.
         scheduleRestartIfEnabled();
         super.onTaskRemoved(rootIntent);
     }
@@ -224,11 +223,10 @@ public final class LockScreenMonitorService extends Service {
     @Override
     public void onDestroy() {
         lockMonitoringActive = false;
-        // Keep the ongoing notification if automatic start is still enabled. When the
-        // user disables every mode, remove it instead of leaving a stale notification.
-        if (isMonitoringAllowed(this)) {
-            detachNotificationIfStillEnabled();
-        } else {
+        // Do not detach the notification while monitoring is enabled. The notification
+        // remains coupled to the foreground monitor for as long as the service is alive.
+        // When every automatic-start mode is disabled, remove any remaining FGS notice.
+        if (!isMonitoringAllowed(this)) {
             removeForegroundNotification();
         }
         // Do not schedule a restart when the user explicitly turns the feature off.
@@ -241,19 +239,6 @@ public final class LockScreenMonitorService extends Service {
             }
         }
         super.onDestroy();
-    }
-
-    private void detachNotificationIfStillEnabled() {
-        if (!isMonitoringAllowed(this)) return;
-        try {
-            if (Build.VERSION.SDK_INT >= 24) {
-                stopForeground(STOP_FOREGROUND_DETACH);
-            } else {
-                // Before API 24, stopForeground(false) leaves the notification posted.
-                stopForeground(false);
-            }
-        } catch (Throwable ignored) {
-        }
     }
 
     private void removeForegroundNotification() {
