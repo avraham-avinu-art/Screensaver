@@ -19,6 +19,8 @@ public final class LockScreenMonitorService extends Service {
     // Keep the channel ID so Android preserves existing user notification settings.
     // Newly created channels default to hiding this service notification on the lockscreen.
     private static final String CHANNEL_ID = "screensaver_lock_monitor_v4";
+    private static final String ACTION_PRESERVE_NOTIFICATION =
+            "com.avrahamart.nightscreen.action.PRESERVE_MONITOR_NOTIFICATION";
     private static final int NOTIFICATION_ID = 6721;
     private static final int RESTART_PENDING_INTENT_ID = 6722;
     private static final long RESTART_DELAY_MS = 2_000L;
@@ -62,6 +64,28 @@ public final class LockScreenMonitorService extends Service {
                 appContext.stopService(new Intent(appContext, LockScreenMonitorService.class));
             } catch (Throwable ignored) {
             }
+        }
+    }
+
+    /**
+     * Converts the monitor notification into a normal ongoing notification when
+     * the screensaver Activity is finished. The same notification ID is retained,
+     * so the user never sees a duplicate entry in the notification drawer.
+     */
+    static void preserveNotificationAfterActivityClose(Context context) {
+        Context appContext = context.getApplicationContext();
+        if (!isMonitoringAllowed(appContext)) return;
+        Intent intent = new Intent(appContext, LockScreenMonitorService.class);
+        intent.setAction(ACTION_PRESERVE_NOTIFICATION);
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                appContext.startForegroundService(intent);
+            } else {
+                appContext.startService(intent);
+            }
+        } catch (Throwable e) {
+            android.util.Log.e("NightScreenAutoStart",
+                    "Unable to preserve the monitor notification after Activity close.", e);
         }
     }
 
@@ -129,6 +153,9 @@ public final class LockScreenMonitorService extends Service {
             return START_NOT_STICKY;
         }
 
+        boolean preserveAsIndependentNotification = intent != null
+                && ACTION_PRESERVE_NOTIFICATION.equals(intent.getAction());
+
         // If the service was restarted after the user unlocked the phone, clear
         // a stale one-per-lock-cycle latch. Do not clear it while the device is
         // actually locked.
@@ -159,6 +186,10 @@ public final class LockScreenMonitorService extends Service {
             lockMonitoringActive = false;
             stopSelf(startId);
             return START_NOT_STICKY;
+        }
+
+        if (preserveAsIndependentNotification) {
+            detachAndRepostOngoingNotification();
         }
         return START_STICKY;
     }
@@ -213,23 +244,29 @@ public final class LockScreenMonitorService extends Service {
 
     @Override
     public void onTaskRemoved(Intent rootIntent) {
-        // The monitor must remain a foreground service after the Activity task is removed.
-        // Do not call stopForeground(): that would demote the monitor and make it easier
-        // for Android to terminate it while its dynamic event receiver is still required.
-        scheduleRestartIfEnabled();
+        // Detach the ongoing notification before Android removes the app task.
+        // The same notification is immediately reposted as a normal NotificationManager
+        // notification, independent of the Activity and service lifecycle.
+        if (isMonitoringAllowed(this)) {
+            detachAndRepostOngoingNotification();
+        }
+        // Do not schedule an immediate restart here: that would reattach this same
+        // notification to the foreground service a moment after detaching it.
         super.onTaskRemoved(rootIntent);
     }
 
     @Override
     public void onDestroy() {
         lockMonitoringActive = false;
-        // Do not detach the notification while monitoring is enabled. The notification
-        // remains coupled to the foreground monitor for as long as the service is alive.
-        // When every automatic-start mode is disabled, remove any remaining FGS notice.
-        if (!isMonitoringAllowed(this)) {
+        if (isMonitoringAllowed(this)) {
+            // Android may destroy the demoted service under background memory pressure.
+            // Detach/repost first; the ongoing notification then survives service teardown.
+            detachAndRepostOngoingNotification();
+        } else {
             removeForegroundNotification();
         }
-        // Do not schedule a restart when the user explicitly turns the feature off.
+        // Restart only if automatic-start is still enabled. A detached notification with
+        // this same ID remains in NotificationManager across the service restart.
         scheduleRestartIfEnabled();
         if (receiverRegistered && lockReceiver != null) {
             lockReceiver.cancelPendingLockCheck();
@@ -239,6 +276,32 @@ public final class LockScreenMonitorService extends Service {
             }
         }
         super.onDestroy();
+    }
+
+    private void detachAndRepostOngoingNotification() {
+        if (!isMonitoringAllowed(this)) return;
+        Notification notification = buildQuietNotification();
+        try {
+            if (Build.VERSION.SDK_INT >= 24) {
+                stopForeground(STOP_FOREGROUND_DETACH);
+            } else {
+                stopForeground(false);
+            }
+        } catch (Throwable e) {
+            android.util.Log.w("NightScreenAutoStart",
+                    "Unable to detach the monitor notification from the service.", e);
+        }
+
+        // Post the exact same notification as an independent ongoing notification.
+        // Reusing NOTIFICATION_ID replaces the FGS entry; it does not create a second row.
+        try {
+            NotificationManager manager = (NotificationManager)
+                    getSystemService(Context.NOTIFICATION_SERVICE);
+            if (manager != null) manager.notify(NOTIFICATION_ID, notification);
+        } catch (Throwable e) {
+            android.util.Log.e("NightScreenAutoStart",
+                    "Unable to repost the independent monitor notification.", e);
+        }
     }
 
     private void removeForegroundNotification() {
