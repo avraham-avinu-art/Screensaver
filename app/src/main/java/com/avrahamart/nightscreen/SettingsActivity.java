@@ -1421,8 +1421,7 @@ screenTitle.setText("הגדרות");
                 }
                 LockScreenMonitorService.sync(this);
                 updateOverlayPermissionCardVisibility();
-            } else if ("autoStartOnBoot".equals(key) || "autoStartOnWake".equals(key)
-                   ) {
+            } else if ("autoStartOnBoot".equals(key) || "autoStartOnWake".equals(key)) {
                 if (checked && Build.VERSION.SDK_INT >= 29
                         && !Settings.canDrawOverlays(this)) {
                     AppToast.makeText(this,
