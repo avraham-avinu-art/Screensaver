@@ -16,7 +16,7 @@ import android.provider.Settings;
  * This class deliberately never posts a standalone notification.
  */
 public final class AutoStartNotificationController {
-    static final String CHANNEL_ID = "screensaver_auto_start_status";
+    static final String CHANNEL_ID = "screensaver_lock_monitor_v3";
     static final int NOTIFICATION_ID = 6723;
 
     private AutoStartNotificationController() {
@@ -49,7 +49,7 @@ public final class AutoStartNotificationController {
                 .setOnlyAlertOnce(true)
                 .setShowWhen(false)
                 .setVisibility(Notification.VISIBILITY_SECRET)
-                .setPriority(Notification.PRIORITY_MIN)
+                .setPriority(Notification.PRIORITY_LOW)
                 .setSound(null)
                 .setVibrate(new long[0])
                 .setDefaults(0);
@@ -68,8 +68,8 @@ public final class AutoStartNotificationController {
     private static void createChannel(NotificationManager manager) {
         if (Build.VERSION.SDK_INT < 26) return;
         NotificationChannel channel = new NotificationChannel(
-                CHANNEL_ID, "הפעלה אוטומטית", NotificationManager.IMPORTANCE_MIN);
-        channel.setDescription("התראה מתמשכת עבור הגדרות ההפעלה האוטומטית של שומר מסך");
+                CHANNEL_ID, "הפעלה אוטומטית של שומר מסך", NotificationManager.IMPORTANCE_LOW);
+        channel.setDescription("התראה מתמשכת לשירות ההפעלה האוטומטית בנעילת המכשיר");
         channel.setShowBadge(false);
         channel.setLockscreenVisibility(Notification.VISIBILITY_SECRET);
         channel.enableLights(false);
