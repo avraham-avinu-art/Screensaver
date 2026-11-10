@@ -57,6 +57,17 @@ final class AutoStartPolicy {
                 || (autoStartOnCharge && !useAndroidDreamForCharging);
     }
 
+    /**
+     * Prevent SCREEN_OFF/SCREEN_ON triggers from recreating an already-running
+     * screensaver session. The continuation preference is intentionally absent:
+     * it governs only the existing session after its selected duration ends.
+     */
+    static boolean shouldLaunchNewSession(
+            boolean triggerEnabled,
+            boolean sessionAlreadyRunning) {
+        return triggerEnabled && !sessionAlreadyRunning;
+    }
+
     static boolean shouldShowWhenLocked(
             boolean activeSession,
             boolean continueOnLockScreen,

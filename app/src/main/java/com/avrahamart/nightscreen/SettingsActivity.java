@@ -2076,14 +2076,15 @@ screenTitle.setText("הגדרות");
 
     /**
      * Android 13+ requires the runtime notification permission for the
-     * persistent automatic-start service notification to appear in the drawer.
-     * The foreground service itself remains independent of this permission.
+     * automatic-start notifications to appear in the drawer. The foreground
+     * service and the automatic launch itself remain independent of this permission.
      */
     private void ensureAutoStartNotificationPermission() {
         if (Build.VERSION.SDK_INT < 33
                 || checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
                     == android.content.pm.PackageManager.PERMISSION_GRANTED) return;
         boolean anyAutoStartEnabled = getBool("autoStartOnDeviceLock", false)
+                || getBool("autoStartOnBoot", false)
                 || getBool("autoStartOnWake", false)
                 || (getBool("autoStartOnCharge", false)
                     && !getBool("useAndroidDreamForCharging", true));

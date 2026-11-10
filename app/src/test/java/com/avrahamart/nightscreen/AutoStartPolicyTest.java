@@ -56,6 +56,19 @@ public class AutoStartPolicyTest {
     }
 
     @Test
+    public void lockAndWakeDoNotRecreateAnExistingScreensaverSession() {
+        assertFalse(AutoStartPolicy.shouldLaunchNewSession(true, true));
+        assertTrue(AutoStartPolicy.shouldLaunchNewSession(true, false));
+        assertFalse(AutoStartPolicy.shouldLaunchNewSession(false, false));
+    }
+
+    @Test
+    public void newAutomaticStartsAreIndependentOfPostTimeoutContinuation() {
+        // The continuation switch is deliberately not part of the new-session gate.
+        assertTrue(AutoStartPolicy.shouldLaunchNewSession(true, false));
+    }
+
+    @Test
     public void activeScreensaverShowsAboveKeyguardWithoutContinuationSwitch() {
         assertTrue(AutoStartPolicy.shouldShowWhenLocked(true, false, false));
     }

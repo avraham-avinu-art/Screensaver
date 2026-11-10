@@ -69,6 +69,7 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
 
         if (!LockScreenMonitorService.isLockMonitoringActive()
                 || prefs.getBoolean("deviceLockStartConsumed", false)
+                || hasScreensaverSessionInLockCycle(context)
                 || !canLaunchFromBackground(context)) return;
 
         beginDeviceLockCheck(context.getApplicationContext());
@@ -87,7 +88,7 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
                 false, false)) return;
 
         if (!LockScreenMonitorService.isLockMonitoringActive()
-                || isMainActivityActivelyResumed(context)
+                || hasScreensaverSessionInLockCycle(context)
                 || !canLaunchFromBackground(context)) return;
 
         AutoStartActivityLauncher.launch(context, AutoStartPolicy.Trigger.DEVICE_WAKE);
@@ -116,7 +117,8 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
                 appContext.getSharedPreferences("settings", Context.MODE_PRIVATE);
         if (!prefs.getBoolean("autoStartOnDeviceLock", false)
                 || !LockScreenMonitorService.isLockMonitoringActive()
-                || prefs.getBoolean("deviceLockStartConsumed", false)) return;
+                || prefs.getBoolean("deviceLockStartConsumed", false)
+                || hasScreensaverSessionInLockCycle(appContext)) return;
 
         KeyguardManager keyguard =
                 (KeyguardManager) appContext.getSystemService(Context.KEYGUARD_SERVICE);
@@ -145,6 +147,7 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
                 if (!current.getBoolean("autoStartOnDeviceLock", false)
                         || !LockScreenMonitorService.isLockMonitoringActive()
                         || current.getBoolean("deviceLockStartConsumed", false)
+                        || hasScreensaverSessionInLockCycle(appContext)
                         || !canLaunchFromBackground(appContext)) {
                     finishPendingLockCheck();
                     return;
@@ -193,6 +196,7 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
         if (!prefs.getBoolean("autoStartOnDeviceLock", false)
                 || !LockScreenMonitorService.isLockMonitoringActive()
                 || prefs.getBoolean("deviceLockStartConsumed", false)
+                || hasScreensaverSessionInLockCycle(context)
                 || !isDeviceLocked(context)
                 || !canLaunchFromBackground(context)) return;
 
@@ -249,6 +253,19 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
                 return true;
             }
         }
+    }
+
+    /**
+     * True only when the current MainActivity session is the session associated
+     * with this lock/wake cycle: either visible, or paused because Keyguard took
+     * over. An Activity merely sitting behind another app is not enough to block
+     * an explicitly configured automatic start.
+     */
+    private boolean hasScreensaverSessionInLockCycle(Context context) {
+        if (!MainActivity.isMainActivitySessionAlive()) return false;
+        return MainActivity.isMainActivityResumed()
+                || MainActivity.wasMainActivityPausedByDeviceLock()
+                || isMainActivityActivelyResumed(context);
     }
 
     private boolean isMainActivityActivelyResumed(Context context) {
