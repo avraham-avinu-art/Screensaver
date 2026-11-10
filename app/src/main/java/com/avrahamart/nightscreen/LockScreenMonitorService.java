@@ -48,7 +48,9 @@ public final class LockScreenMonitorService extends Service {
      */
     static void restoreForegroundNotification(Context context) {
         Context appContext = context.getApplicationContext();
-        if (isMonitoringAllowed(appContext)) {
+        boolean monitoringAllowed = isMonitoringAllowed(appContext);
+        MonitorDiagnostics.record(appContext, "sync requested; monitoringAllowed=" + monitoringAllowed);
+        if (monitoringAllowed) {
             MonitorSettingsSnapshot.setNotificationDetached(appContext, false);
         }
     }
@@ -308,9 +310,15 @@ public final class LockScreenMonitorService extends Service {
         }
 
         AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
-        if (alarmManager == null) return;
+        if (alarmManager == null) {
+            MonitorDiagnostics.record(this, "restart alarm not scheduled: AlarmManager unavailable");
+            return;
+        }
         PendingIntent restartIntent = restartPendingIntent();
-        if (restartIntent == null) return;
+        if (restartIntent == null) {
+            MonitorDiagnostics.record(this, "restart alarm not scheduled: PendingIntent unavailable");
+            return;
+        }
         try {
             long triggerAt = SystemClock.elapsedRealtime() + RESTART_DELAY_MS;
             if (Build.VERSION.SDK_INT >= 23) {
