@@ -88,6 +88,8 @@ public final class MonitorDiagnosticsActivity extends Activity {
         root.addView(clear, clearParams);
         clear.setOnClickListener(v -> {
             MonitorDiagnostics.clear(this);
+            MonitorDiagnostics.record(this, "===== USER STARTED NEW DIAGNOSTIC TEST =====");
+            MonitorDiagnostics.recordNotificationState(this, "test start baseline");
             refreshLog();
             Toast.makeText(this, "הרישום נוקה. אפשר להתחיל בבדיקה.", Toast.LENGTH_SHORT).show();
         });
@@ -99,6 +101,9 @@ public final class MonitorDiagnosticsActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        MonitorDiagnostics.record(this, "diagnostics screen opened/resumed; appProcessPid="
+                + android.os.Process.myPid());
+        MonitorDiagnostics.recordNotificationState(this, "diagnostics screen opened");
         refreshLog();
     }
 
