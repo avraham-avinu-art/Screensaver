@@ -990,6 +990,8 @@ public class MainActivity extends Activity {
 
         // Detect a clean installation before writing any defaults to preferences.
         boolean freshInstall = prefs.getAll().isEmpty();
+        boolean legacyDreamDefaultWasApplied =
+                getBool("chargeActivationMethodDefaultV1Applied", false);
         SharedPreferences.Editor e = prefs.edit();
 
         e.putInt("fontColor", getInt("fontColor", dateTextColor));
@@ -1027,6 +1029,9 @@ public class MainActivity extends Activity {
         e.putBoolean("nightModeEnabled", getBool("nightModeEnabled", false));
         e.putBoolean("batteryProtectionEnabled", getBool("batteryProtectionEnabled", false));
         boolean useAndroidDreamForCharging = getBool("useAndroidDreamForCharging", false);
+        // The post-575 migration forced Android Dream on for existing installs.
+        // Restore the Build 575 direct charger route once; a user may opt into Dream later.
+        if (legacyDreamDefaultWasApplied) useAndroidDreamForCharging = false;
         e.putBoolean("useAndroidDreamForCharging", useAndroidDreamForCharging);
         e.putBoolean("frameUseAlbumArt",
                 getBool("frameUseAlbumArt", getBool("showAlbumArt", true)));
