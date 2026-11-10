@@ -1323,7 +1323,6 @@ screenTitle.setText("הגדרות");
         if ("autoStartOnDeviceLock".equals(key)) autoStartOnDeviceLockToggle = toggle;
         if ("autoStartOnBoot".equals(key)) autoStartOnBootToggle = toggle;
         if ("autoStartOnWake".equals(key)) autoStartOnWakeToggle = toggle;
-        if ("autoStartOnScreenOn".equals(key)) autoStartOnScreenOnToggle = toggle;
         toggle.setChecked(getBool(key, defaultValue));
         if (Build.VERSION.SDK_INT >= 21) {
             toggle.setThumbTintList(new ColorStateList(
@@ -2079,7 +2078,7 @@ screenTitle.setText("הגדרות");
                 || "autoStartOnDeviceLock".equals(key)
                 || "autoStartOnBoot".equals(key)
                 || "autoStartOnWake".equals(key)
-                || "autoStartOnScreenOn".equals(key);
+;
     }
 
     /**
