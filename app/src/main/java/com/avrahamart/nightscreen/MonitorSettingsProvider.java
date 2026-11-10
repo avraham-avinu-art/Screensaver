@@ -12,6 +12,7 @@ public final class MonitorSettingsProvider extends ContentProvider {
     static final String METHOD_READ = "readMonitorState";
     static final String METHOD_CLAIM_LOCK = "claimDeviceLockStart";
     static final String METHOD_RESET_LOCK = "resetDeviceLockStart";
+    static final String METHOD_SET_NOTIFICATION_DETACHED = "setMonitorNotificationDetached";
     private static final Object LOCK_MUTEX = new Object();
 
     @Override public boolean onCreate() { return true; }
@@ -26,6 +27,7 @@ public final class MonitorSettingsProvider extends ContentProvider {
             b.putBoolean("autoStartOnBoot", p.getBoolean("autoStartOnBoot", false));
             b.putBoolean("autoStartOnWake", p.getBoolean("autoStartOnWake", false));
             b.putBoolean("autoStartOnCharge", p.getBoolean("autoStartOnCharge", false));
+            b.putBoolean("monitorNotificationDetached", p.getBoolean("monitorNotificationDetached", false));
             b.putBoolean("useAndroidDreamForCharging", p.getBoolean("useAndroidDreamForCharging", true));
             b.putBoolean("deviceLockStartConsumed", p.getBoolean("deviceLockStartConsumed", false));
             b.putBoolean("mainActivitySessionAlive", p.getBoolean("mainActivitySessionAlive", false));
@@ -34,6 +36,14 @@ public final class MonitorSettingsProvider extends ContentProvider {
             b.putBoolean("mainActivityWaitingForScreenWake", p.getBoolean("mainActivityWaitingForScreenWake", false));
             b.putBoolean("continueOnLockScreen", p.getBoolean("continueOnLockScreen", false));
             b.putInt("mainActivitySessionPid", p.getInt("mainActivitySessionPid", -1));
+            return b;
+        }
+        if (METHOD_SET_NOTIFICATION_DETACHED.equals(method)) {
+            boolean detached = extras != null && extras.getBoolean("detached", false);
+            Bundle b = new Bundle();
+            b.putBoolean("saved", p.edit()
+                    .putBoolean("monitorNotificationDetached", detached)
+                    .commit());
             return b;
         }
         if (METHOD_CLAIM_LOCK.equals(method)) {
