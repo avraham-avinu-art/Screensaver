@@ -246,7 +246,6 @@ if (content != null) {
             }
             refreshPermissionDependentToggles();
             LockScreenMonitorService.sync(this);
-            AutoStartNotificationController.sync(this);
             NightScreenApplication.syncChargerReceiver(this);
             ensureAutoStartNotificationPermission();
             updateDeviceCapabilityNotice();
