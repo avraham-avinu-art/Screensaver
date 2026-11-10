@@ -11,39 +11,15 @@ import android.os.Build;
 import android.provider.Settings;
 
 /**
- * Application-level controller for the single persistent automatic-start
- * notification. The monitor foreground service uses the very same notification
- * ID and payload, so Android never displays a duplicate technical notification.
+ * Builds the single persistent notification owned exclusively by
+ * LockScreenMonitorService while that service is running in the foreground.
+ * This class deliberately never posts a standalone notification.
  */
 public final class AutoStartNotificationController {
     static final String CHANNEL_ID = "screensaver_auto_start_status";
     static final int NOTIFICATION_ID = 6723;
 
     private AutoStartNotificationController() {
-    }
-
-    public static void sync(Context context) {
-        Context app = context.getApplicationContext();
-        MonitorSettingsSnapshot snapshot = MonitorSettingsSnapshot.read(app);
-        if (snapshot == null) return;
-
-        boolean enabled = snapshot.autoStartOnDeviceLock || snapshot.autoStartOnWake;
-        if (Build.VERSION.SDK_INT >= 29 && !Settings.canDrawOverlays(app)) {
-            enabled = false;
-        }
-
-        NotificationManager manager =
-                (NotificationManager) app.getSystemService(Context.NOTIFICATION_SERVICE);
-        if (manager == null) return;
-
-        if (!enabled || (Build.VERSION.SDK_INT >= 33
-                && app.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
-                    != android.content.pm.PackageManager.PERMISSION_GRANTED)) {
-            manager.cancel(NOTIFICATION_ID);
-            return;
-        }
-
-        manager.notify(NOTIFICATION_ID, buildNotification(app));
     }
 
     static Notification buildNotification(Context context) {
