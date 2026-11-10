@@ -142,7 +142,8 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
                 .remove("deepSleepScreenOffUptime").apply();
 
         MonitorSettingsSnapshot settings = MonitorSettingsSnapshot.read(context);
-        boolean afterDeepSleep = settings != null && settings.autoStartOnWake && deepSleep;
+        boolean afterDeepSleep = settings != null && settings.autoStartOnWake
+                && deepSleep && !settings.deviceLockActivationConsumed;
         if (!afterDeepSleep
                 || !LockScreenMonitorService.isLockMonitoringActive()
                 || isMainActivityVisible(context)
