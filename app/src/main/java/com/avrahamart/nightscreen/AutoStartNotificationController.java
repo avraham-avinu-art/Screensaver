@@ -30,7 +30,6 @@ public final class AutoStartNotificationController {
         boolean enabled = prefs.getBoolean("autoStartOnDeviceLock", false)
                 || prefs.getBoolean("autoStartOnBoot", false)
                 || prefs.getBoolean("autoStartOnWake", false)
-                || prefs.getBoolean("autoStartOnScreenOn", false)
                 || prefs.getBoolean("autoStartOnCharge", false);
 
         NotificationManager manager =
@@ -71,7 +70,7 @@ public final class AutoStartNotificationController {
                 .setOngoing(true)
                 .setOnlyAlertOnce(true)
                 .setShowWhen(false)
-                .setVisibility(Notification.VISIBILITY_PUBLIC)
+                .setVisibility(Notification.VISIBILITY_SECRET)
                 .setPriority(Notification.PRIORITY_MIN)
                 .setSound(null)
                 .setVibrate(new long[0])
