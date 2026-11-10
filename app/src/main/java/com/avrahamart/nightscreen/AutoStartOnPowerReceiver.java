@@ -18,7 +18,7 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 
 public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
-    private static final long DEEP_SLEEP_MIN_MS = 5_000L;
+    private static final long DEEP_SLEEP_MIN_MS = 1_000L;
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -136,9 +136,8 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
         prefs.edit().remove("deepSleepScreenOffElapsed")
                 .remove("deepSleepScreenOffUptime").apply();
 
-        boolean everyScreenOn = prefs.getBoolean("autoStartOnScreenOn", false);
         boolean afterDeepSleep = prefs.getBoolean("autoStartOnWake", false) && deepSleep;
-        if ((!everyScreenOn && !afterDeepSleep)
+        if (!afterDeepSleep
                 || !LockScreenMonitorService.isLockMonitoringActive()
                 || !canLaunchFromBackground(context)) return;
 
@@ -146,11 +145,7 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
         launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
                 | Intent.FLAG_ACTIVITY_CLEAR_TOP
                 | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        if (everyScreenOn) {
-            launch.putExtra(MainActivity.EXTRA_OPENED_BY_SCREEN_ON, true);
-        } else {
-            launch.putExtra(MainActivity.EXTRA_OPENED_BY_WAKE, true);
-        }
+        launch.putExtra(MainActivity.EXTRA_OPENED_BY_WAKE, true);
         try {
             context.startActivity(launch);
         } catch (Throwable ignored) {
