@@ -38,9 +38,9 @@ public final class LockScreenMonitorService extends Service {
      */
     public static void sync(Context context) {
         Context appContext = context.getApplicationContext();
-        SharedPreferences prefs = appContext.getSharedPreferences("settings", Context.MODE_PRIVATE);
-        boolean enabled = prefs.getBoolean("autoStartOnDeviceLock", false)
-                || prefs.getBoolean("autoStartOnWake", false);
+        MonitorSettingsSnapshot snapshot = MonitorSettingsSnapshot.read(appContext);
+        boolean enabled = snapshot != null
+                && (snapshot.autoStartOnDeviceLock || snapshot.autoStartOnWake);
         if (enabled && (Build.VERSION.SDK_INT < 29 || Settings.canDrawOverlays(appContext))) {
             Intent intent = new Intent(appContext, LockScreenMonitorService.class)
                     .putExtra(EXTRA_MONITOR_ENABLED, true);
@@ -80,9 +80,9 @@ public final class LockScreenMonitorService extends Service {
 
         lockReceiver = new AutoStartOnPowerReceiver();
         IntentFilter filter = new IntentFilter();
-        SharedPreferences prefs = getSharedPreferences("settings", MODE_PRIVATE);
-        boolean lockStart = prefs.getBoolean("autoStartOnDeviceLock", false);
-        boolean wakeStart = prefs.getBoolean("autoStartOnWake", false);
+        MonitorSettingsSnapshot snapshot = MonitorSettingsSnapshot.read(this);
+        boolean lockStart = snapshot != null && snapshot.autoStartOnDeviceLock;
+        boolean wakeStart = snapshot != null && snapshot.autoStartOnWake;
         if (lockStart) filter.addAction(Intent.ACTION_USER_PRESENT);
         if (lockStart || wakeStart) {
             // Screen-off is also the reference point used to distinguish deep sleep
@@ -111,11 +111,11 @@ public final class LockScreenMonitorService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        SharedPreferences prefs = getSharedPreferences("settings", MODE_PRIVATE);
+        MonitorSettingsSnapshot snapshot = MonitorSettingsSnapshot.read(this);
         boolean enabled = intent != null && intent.hasExtra(EXTRA_MONITOR_ENABLED)
                 ? intent.getBooleanExtra(EXTRA_MONITOR_ENABLED, false)
-                : (prefs.getBoolean("autoStartOnDeviceLock", false)
-                    || prefs.getBoolean("autoStartOnWake", false));
+                : snapshot != null
+                    && (snapshot.autoStartOnDeviceLock || snapshot.autoStartOnWake);
         if (!enabled || (Build.VERSION.SDK_INT >= 29 && !Settings.canDrawOverlays(this))) {
             lockMonitoringActive = false;
             stopSelf(startId);
@@ -205,9 +205,9 @@ public final class LockScreenMonitorService extends Service {
     }
 
     private void scheduleRestartIfEnabled() {
-        SharedPreferences prefs = getSharedPreferences("settings", MODE_PRIVATE);
-        if (!prefs.getBoolean("autoStartOnDeviceLock", false)
-                && !prefs.getBoolean("autoStartOnWake", false)) return;
+        MonitorSettingsSnapshot snapshot = MonitorSettingsSnapshot.read(this);
+        if (snapshot == null
+                || (!snapshot.autoStartOnDeviceLock && !snapshot.autoStartOnWake)) return;
         if (Build.VERSION.SDK_INT >= 29 && !Settings.canDrawOverlays(this)) return;
 
         AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
