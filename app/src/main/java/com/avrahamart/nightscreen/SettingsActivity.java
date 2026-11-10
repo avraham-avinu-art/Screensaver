@@ -235,6 +235,8 @@ private LinearLayout clockDateCard;
     @Override
     protected void onResume() {
         super.onResume();
+        MonitorDiagnostics.record(this, "SettingsActivity onResume; processPid="
+                + android.os.Process.myPid());
         if (content != null) {
             handlePlayerPermissionResult();
             handleChargerPermissionResult();
