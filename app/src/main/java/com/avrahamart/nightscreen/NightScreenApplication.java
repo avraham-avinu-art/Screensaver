@@ -62,7 +62,8 @@ public final class NightScreenApplication extends Application {
                 getSharedPreferences("settings", MODE_PRIVATE);
         boolean chargingEnabled = prefs.getBoolean("autoStartOnCharge", false);
         boolean lockMonitorEnabled = prefs.getBoolean("autoStartOnDeviceLock", false)
-                || prefs.getBoolean("autoStartOnWake", false);
+                || prefs.getBoolean("autoStartOnWake", false)
+                || prefs.getBoolean("autoStartOnScreenOn", false);
 
         // The system-bound notification-listener process remains alive while
         // notification access is granted, without pinning the screensaver UI.
