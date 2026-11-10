@@ -336,6 +336,14 @@ public final class LockScreenMonitorService extends Service {
             }
         } catch (Throwable ignored) {
         }
+        // If the notification was already detached, stopForeground(REMOVE) no
+        // longer owns it. Cancel by ID as well when all automatic-start modes stop.
+        try {
+            NotificationManager manager = (NotificationManager)
+                    getSystemService(Context.NOTIFICATION_SERVICE);
+            if (manager != null) manager.cancel(NOTIFICATION_ID);
+        } catch (Throwable ignored) {
+        }
     }
 
     private void scheduleRestartIfEnabled() {
