@@ -58,11 +58,10 @@ public final class NightScreenApplication extends Application {
         String processName = currentProcessName();
         String packageName = getPackageName();
         boolean notificationAccess = hasNotificationAccess(this);
-        android.content.SharedPreferences prefs =
-                getSharedPreferences("settings", MODE_PRIVATE);
-        boolean chargingEnabled = prefs.getBoolean("autoStartOnCharge", false);
-        boolean lockMonitorEnabled = prefs.getBoolean("autoStartOnDeviceLock", false)
-                || prefs.getBoolean("autoStartOnWake", false);
+        MonitorSettingsSnapshot snapshot = MonitorSettingsSnapshot.read(this);
+        boolean chargingEnabled = snapshot != null && snapshot.autoStartOnCharge;
+        boolean lockMonitorEnabled = snapshot != null
+                && (snapshot.autoStartOnDeviceLock || snapshot.autoStartOnWake);
 
         // The system-bound notification-listener process remains alive while
         // notification access is granted, without pinning the screensaver UI.
