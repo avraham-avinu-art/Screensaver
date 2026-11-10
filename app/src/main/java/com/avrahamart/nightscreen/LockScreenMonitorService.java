@@ -40,7 +40,8 @@ public final class LockScreenMonitorService extends Service {
         Context appContext = context.getApplicationContext();
         SharedPreferences prefs = appContext.getSharedPreferences("settings", Context.MODE_PRIVATE);
         boolean enabled = prefs.getBoolean("autoStartOnDeviceLock", false)
-                || prefs.getBoolean("autoStartOnWake", false);
+                || prefs.getBoolean("autoStartOnWake", false)
+                || prefs.getBoolean("autoStartOnScreenOn", false);
         if (enabled && (Build.VERSION.SDK_INT < 29 || Settings.canDrawOverlays(appContext))) {
             Intent intent = new Intent(appContext, LockScreenMonitorService.class)
                     .putExtra(EXTRA_MONITOR_ENABLED, true);
@@ -59,6 +60,7 @@ public final class LockScreenMonitorService extends Service {
             } catch (Throwable ignored) {
             }
         }
+        AutoStartNotificationController.sync(appContext);
     }
 
     @Override
@@ -80,13 +82,16 @@ public final class LockScreenMonitorService extends Service {
         lockReceiver = new AutoStartOnPowerReceiver();
         IntentFilter filter = new IntentFilter();
         SharedPreferences prefs = getSharedPreferences("settings", MODE_PRIVATE);
-        if (prefs.getBoolean("autoStartOnDeviceLock", false)) {
+        boolean lockStart = prefs.getBoolean("autoStartOnDeviceLock", false);
+        boolean wakeStart = prefs.getBoolean("autoStartOnWake", false);
+        boolean screenOnStart = prefs.getBoolean("autoStartOnScreenOn", false);
+        if (lockStart) filter.addAction(Intent.ACTION_USER_PRESENT);
+        if (lockStart || wakeStart || screenOnStart) {
+            // Screen-off is also the reference point used to distinguish deep sleep
+            // from a display-only off/on cycle.
             filter.addAction(Intent.ACTION_SCREEN_OFF);
-            filter.addAction(Intent.ACTION_USER_PRESENT);
         }
-        if (prefs.getBoolean("autoStartOnWake", false)) {
-            filter.addAction(Intent.ACTION_SCREEN_ON);
-        }
+        if (wakeStart || screenOnStart) filter.addAction(Intent.ACTION_SCREEN_ON);
         // NotificationListenerService owns charger detection whenever its
         // permission is granted; otherwise the lock-monitor process is the
         // persistent fallback when automatic activation on lock is enabled.
@@ -112,7 +117,8 @@ public final class LockScreenMonitorService extends Service {
         boolean enabled = intent != null && intent.hasExtra(EXTRA_MONITOR_ENABLED)
                 ? intent.getBooleanExtra(EXTRA_MONITOR_ENABLED, false)
                 : (prefs.getBoolean("autoStartOnDeviceLock", false)
-                    || prefs.getBoolean("autoStartOnWake", false));
+                    || prefs.getBoolean("autoStartOnWake", false)
+                    || prefs.getBoolean("autoStartOnScreenOn", false));
         if (!enabled || (Build.VERSION.SDK_INT >= 29 && !Settings.canDrawOverlays(this))) {
             lockMonitoringActive = false;
             stopSelf(startId);
@@ -183,7 +189,9 @@ public final class LockScreenMonitorService extends Service {
                 .setSound(null)
                 .setVibrate(new long[0])
                 .setDefaults(0);
-        return builder.build();
+        Notification notification = builder.build();
+        notification.flags |= Notification.FLAG_NO_CLEAR;
+        return notification;
     }
 
     @Override
@@ -211,7 +219,8 @@ public final class LockScreenMonitorService extends Service {
     private void scheduleRestartIfEnabled() {
         SharedPreferences prefs = getSharedPreferences("settings", MODE_PRIVATE);
         if (!prefs.getBoolean("autoStartOnDeviceLock", false)
-                && !prefs.getBoolean("autoStartOnWake", false)) return;
+                && !prefs.getBoolean("autoStartOnWake", false)
+                && !prefs.getBoolean("autoStartOnScreenOn", false)) return;
         if (Build.VERSION.SDK_INT >= 29 && !Settings.canDrawOverlays(this)) return;
 
         AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
