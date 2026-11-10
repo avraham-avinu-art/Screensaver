@@ -27,8 +27,9 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
 
         SharedPreferences prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE);
         if (Intent.ACTION_USER_PRESENT.equals(action)) {
-            prefs.edit().putBoolean("deviceLockActivationConsumed", false)
-                    .remove("deepSleepScreenOffElapsed").remove("deepSleepScreenOffUptime").apply();
+            MonitorSettingsSnapshot.resetDeviceLockActivation(context);
+            prefs.edit().remove("deepSleepScreenOffElapsed")
+                    .remove("deepSleepScreenOffUptime").apply();
             MainActivity.clearPausedByDeviceLockState();
             return;
         }
@@ -44,9 +45,11 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
                     .apply();
         }
 
+        MonitorSettingsSnapshot settings = MonitorSettingsSnapshot.read(context);
+        if (settings == null) return;
+
         if (Intent.ACTION_POWER_CONNECTED.equals(action)) {
-            if (!prefs.getBoolean("autoStartOnCharge", false)
-                    || prefs.getBoolean("useAndroidDreamForCharging", false)) return;
+            if (!settings.autoStartOnCharge || settings.useAndroidDreamForCharging) return;
             if (!canLaunchFromBackground(context)) return;
             if (!claimPowerConnectedEvent(context)) return;
 
@@ -64,7 +67,7 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
         }
 
         if (Intent.ACTION_SCREEN_OFF.equals(action)
-                && prefs.getBoolean("autoStartOnDeviceLock", false)
+                && settings.autoStartOnDeviceLock
                 && LockScreenMonitorService.isLockMonitoringActive()
                 && canLaunchFromBackground(context)) {
             // Let Android finish applying the keyguard state before checking it.
@@ -98,9 +101,10 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
     }
 
     private void launchOnDeviceLockIfStillLocked(Context context) {
-        SharedPreferences prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE);
-        if (!LockScreenMonitorService.isLockMonitoringActive()) return;
-        if (prefs.getBoolean("deviceLockActivationConsumed", false)) return;
+        MonitorSettingsSnapshot settings = MonitorSettingsSnapshot.read(context);
+        if (!LockScreenMonitorService.isLockMonitoringActive()
+                || settings == null || !settings.autoStartOnDeviceLock
+                || settings.deviceLockActivationConsumed) return;
 
         PowerManager powerManager =
                 (PowerManager) context.getSystemService(Context.POWER_SERVICE);
@@ -111,6 +115,7 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
         if (keyguardManager == null || !keyguardManager.isKeyguardLocked()) return;
         if (!canLaunchFromBackground(context)) return;
 
+        if (!MonitorSettingsSnapshot.claimDeviceLockActivation(context)) return;
         Intent launch = new Intent(context, MainActivity.class);
         launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
                 | Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -118,9 +123,8 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
         launch.putExtra(MainActivity.EXTRA_OPENED_BY_DEVICE_LOCK, true);
         try {
             context.startActivity(launch);
-            // Consume this lock cycle only after Android accepted the launch request.
-            prefs.edit().putBoolean("deviceLockActivationConsumed", true).apply();
         } catch (Throwable ignored) {
+            MonitorSettingsSnapshot.resetDeviceLockActivation(context);
             // Background activity launch restrictions vary by Android build.
         }
     }
@@ -136,7 +140,8 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
         prefs.edit().remove("deepSleepScreenOffElapsed")
                 .remove("deepSleepScreenOffUptime").apply();
 
-        boolean afterDeepSleep = prefs.getBoolean("autoStartOnWake", false) && deepSleep;
+        MonitorSettingsSnapshot settings = MonitorSettingsSnapshot.read(context);
+        boolean afterDeepSleep = settings != null && settings.autoStartOnWake && deepSleep;
         if (!afterDeepSleep
                 || !LockScreenMonitorService.isLockMonitoringActive()
                 || !canLaunchFromBackground(context)) return;
