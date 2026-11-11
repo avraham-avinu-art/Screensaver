@@ -148,8 +148,8 @@ public final class LockScreenMonitorService extends Service {
 
         cancelScheduledRestart();
 
-        // Persisted user settings are authoritative, including for delayed recovery
-        // PendingIntents created before the user disabled automatic monitoring.
+        // Re-read persisted settings for every start, including delayed retries queued
+        // before the user disabled automatic monitoring; stale Intent extras are not trusted.
         MonitorSettingsSnapshot snapshot = MonitorSettingsSnapshot.read(this);
         boolean enabled = snapshot != null
                 && (snapshot.autoStartOnDeviceLock || snapshot.autoStartOnWake);
