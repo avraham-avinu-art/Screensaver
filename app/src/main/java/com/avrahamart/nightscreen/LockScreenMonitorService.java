@@ -28,7 +28,6 @@ public final class LockScreenMonitorService extends Service {
     private static volatile boolean lockMonitoringActive = false;
     private boolean receiverRegistered = false;
     private boolean restartScheduled = false;
-    // True only after the event receiver was successfully registered.
     private boolean monitorReady = false;
     private String receiverFilterSignature;
     private AutoStartOnPowerReceiver lockReceiver;
@@ -55,25 +54,16 @@ public final class LockScreenMonitorService extends Service {
                 } else {
                     appContext.startService(intent);
                 }
-                String message = "Monitor start request dispatched. lock="
-                        + snapshot.autoStartOnDeviceLock + ", wake=" + snapshot.autoStartOnWake;
-                Log.i(TAG, message);
-                MonitorDiagnostics.record(appContext, message);
-            } catch (RuntimeException error) {
-                String message = "Monitor start request rejected; exception="
-                        + error.getClass().getName() + ": " + error.getMessage()
-                        + ", sdk=" + Build.VERSION.SDK_INT
-                        + ", targetSdk=" + appContext.getApplicationInfo().targetSdkVersion;
-                Log.e(TAG, message, error);
-                MonitorDiagnostics.record(appContext, message);
+                Log.i(TAG, "Monitor start requested. lock="
+                        + snapshot.autoStartOnDeviceLock + ", wake=" + snapshot.autoStartOnWake);
+            } catch (Throwable error) {
+                Log.e(TAG, "Android rejected the monitor start request.", error);
             }
         } else {
-            String message = "Monitor not started. settingsAvailable=" + (snapshot != null)
+            Log.i(TAG, "Monitor not started. settingsAvailable=" + (snapshot != null)
                     + ", enabled=" + enabled
                     + ", overlayGranted="
-                    + (Build.VERSION.SDK_INT < 29 || Settings.canDrawOverlays(appContext));
-            Log.i(TAG, message);
-            MonitorDiagnostics.record(appContext, message);
+                    + (Build.VERSION.SDK_INT < 29 || Settings.canDrawOverlays(appContext)));
             cancelScheduledRestart(appContext);
             try {
                 appContext.stopService(new Intent(appContext, LockScreenMonitorService.class));
@@ -87,10 +77,7 @@ public final class LockScreenMonitorService extends Service {
     public void onCreate() {
         super.onCreate();
         AutoStartNotificationController.createChannel(this);
-        Log.i(TAG, "Monitor service created. pid=" + android.os.Process.myPid());
-        MonitorDiagnostics.record(this, "monitor service onCreate; pid="
-                + android.os.Process.myPid() + ", sdk=" + Build.VERSION.SDK_INT
-                + ", targetSdk=" + getApplicationInfo().targetSdkVersion);
+        Log.i(TAG, "Monitor service created.");
     }
 
     private void updateLockReceiverRegistration() {
@@ -102,15 +89,11 @@ public final class LockScreenMonitorService extends Service {
                 + ";wake=" + wakeStart
                 + ";notificationAccess=" + notificationAccess;
 
-        // sync() may be called repeatedly from Activity onResume and permission
-        // callbacks. Keep the existing registration when its event set is unchanged:
-        // unregister/register here would create a gap in which SCREEN_OFF could be lost.
+        // Repeated sync requests are normal when activities resume. Do not
+        // unregister/re-register an unchanged filter: that creates a gap in
+        // which SCREEN_OFF or SCREEN_ON can be missed.
         if (receiverRegistered && lockReceiver != null
                 && filterSignature.equals(receiverFilterSignature)) {
-            monitorReady = true;
-            lockMonitoringActive = true;
-            MonitorDiagnostics.record(this, "Monitor event receiver unchanged; keeping registration. "
-                    + filterSignature);
             return;
         }
 
@@ -120,8 +103,7 @@ public final class LockScreenMonitorService extends Service {
             try {
                 unregisterReceiver(lockReceiver);
             } catch (RuntimeException error) {
-                MonitorDiagnostics.record(this, "Previous monitor receiver unregister failed; exception="
-                        + error.getClass().getName() + ": " + error.getMessage());
+                Log.w(TAG, "Previous monitor receiver could not be unregistered cleanly.", error);
             }
             receiverRegistered = false;
             receiverFilterSignature = null;
@@ -148,32 +130,22 @@ public final class LockScreenMonitorService extends Service {
             }
             receiverRegistered = true;
             receiverFilterSignature = filterSignature;
-            String message = "Monitor event receiver registered. lock=" + lockStart
+            Log.i(TAG, "Monitor event receiver registered. lock=" + lockStart
                     + ", wake=" + wakeStart
-                    + ", notificationAccess=" + notificationAccess
-                    + ", actions=" + filter.countActions();
-            Log.i(TAG, message);
-            MonitorDiagnostics.record(this, message);
+                    + ", notificationAccess=" + notificationAccess);
         } catch (RuntimeException error) {
             lockReceiver = null;
             receiverRegistered = false;
             receiverFilterSignature = null;
-            String message = "Failed to register monitor event receiver; exception="
-                    + error.getClass().getName() + ": " + error.getMessage()
-                    + ", sdk=" + Build.VERSION.SDK_INT;
-            Log.e(TAG, message, error);
-            MonitorDiagnostics.record(this, message);
+            Log.e(TAG, "Failed to register the monitor event receiver.", error);
         }
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         String action = intent == null ? null : intent.getAction();
-        String startMessage = "onStartCommand received. intentNull=" + (intent == null)
-                + ", action=" + action + ", flags=" + flags + ", startId=" + startId
-                + ", pid=" + android.os.Process.myPid();
-        Log.i(TAG, startMessage);
-        MonitorDiagnostics.record(this, startMessage);
+        Log.i(TAG, "onStartCommand received. intentNull=" + (intent == null)
+                + ", action=" + action + ", startId=" + startId);
 
         // Promote immediately. This is deliberately before receiver registration
         // or other setup, as required for startForegroundService callers.
@@ -182,32 +154,19 @@ public final class LockScreenMonitorService extends Service {
             if (Build.VERSION.SDK_INT >= 34) {
                 startForeground(NOTIFICATION_ID, notification,
                         ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
+            } else if (Build.VERSION.SDK_INT >= 29) {
+                startForeground(NOTIFICATION_ID, notification, 0);
             } else {
-                // The specialUse type was introduced in API 34. On earlier
-                // releases use the two-argument overload and the manifest's
-                // legacy-compatible foreground-service declaration.
                 startForeground(NOTIFICATION_ID, notification);
             }
-            MonitorDiagnostics.record(this, "startForeground succeeded; notificationId="
-                    + NOTIFICATION_ID + ", fgsType="
-                    + (Build.VERSION.SDK_INT >= 34 ? "specialUse" : "manifest/default"));
-            MonitorDiagnostics.recordNotificationState(this, "immediately after startForeground");
-        } catch (RuntimeException error) {
+        } catch (Throwable error) {
             lockMonitoringActive = false;
-            monitorReady = false;
-            String message = "startForeground failed; exception=" + error.getClass().getName()
-                    + ": " + error.getMessage() + ", sdk=" + Build.VERSION.SDK_INT
-                    + ", targetSdk=" + getApplicationInfo().targetSdkVersion
-                    + ", notificationPermissionEnabled=" + notificationsEnabled();
-            Log.e(TAG, message, error);
-            MonitorDiagnostics.record(this, message);
-            MonitorDiagnostics.recordNotificationState(this, "startForeground failure");
+            Log.e(TAG, "startForeground failed; monitor cannot remain active.", error);
             stopSelf(startId);
             return START_NOT_STICKY;
         }
 
         cancelScheduledRestart();
-        MonitorDiagnostics.record(this, "pending recovery alarm cancelled at service start");
 
         // Persisted user settings are authoritative, including for delayed recovery
         // PendingIntents created before the user disabled automatic monitoring.
@@ -217,12 +176,8 @@ public final class LockScreenMonitorService extends Service {
         boolean overlayGranted = Build.VERSION.SDK_INT < 29 || Settings.canDrawOverlays(this);
         if (!enabled || !overlayGranted) {
             lockMonitoringActive = false;
-            String message = "Foreground service started but monitoring is disabled. enabled="
-                    + enabled + ", overlayGranted=" + overlayGranted;
-            Log.w(TAG, message);
-            MonitorDiagnostics.record(this, message);
-            monitorReady = false;
-            lockMonitoringActive = false;
+            Log.w(TAG, "Foreground service started but monitoring is disabled. enabled="
+                    + enabled + ", overlayGranted=" + overlayGranted);
             stopForeground(STOP_FOREGROUND_REMOVE);
             stopSelf(startId);
             return START_NOT_STICKY;
@@ -232,19 +187,12 @@ public final class LockScreenMonitorService extends Service {
         monitorReady = receiverRegistered;
         lockMonitoringActive = monitorReady;
         if (!monitorReady) {
-            String message = "Monitor startup failed: foreground notification is active, but "
-                    + "the lock/wake event receiver was not registered. Service will stop "
-                    + "instead of reporting a false active state.";
-            Log.e(TAG, message);
-            MonitorDiagnostics.record(this, message);
+            Log.e(TAG, "Monitor startup failed: foreground service started, but event receiver registration failed.");
             stopForeground(STOP_FOREGROUND_REMOVE);
             stopSelf(startId);
             return START_NOT_STICKY;
         }
-        String message = "Monitor is fully active. receiverRegistered=true, sticky restart enabled.";
-        Log.i(TAG, message);
-        MonitorDiagnostics.record(this, message);
-        MonitorDiagnostics.recordNotificationState(this, "monitor fully initialized");
+        Log.i(TAG, "Monitor is active. receiverRegistered=true, sticky restart enabled.");
         return START_STICKY;
     }
 
@@ -252,32 +200,10 @@ public final class LockScreenMonitorService extends Service {
         return AutoStartNotificationController.buildNotification(this);
     }
 
-    private boolean notificationsEnabled() {
-        try {
-            android.app.NotificationManager manager =
-                    (android.app.NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-            return manager != null && manager.areNotificationsEnabled();
-        } catch (RuntimeException error) {
-            MonitorDiagnostics.record(this, "Unable to query notification permission: "
-                    + error.getClass().getSimpleName() + ": " + error.getMessage());
-            return false;
-        }
-    }
-
     @Override
     public void onTaskRemoved(Intent rootIntent) {
-        String message = "onTaskRemoved received; monitorReady=" + monitorReady
-                + ", receiverRegistered=" + receiverRegistered
-                + ", pid=" + android.os.Process.myPid();
-        Log.w(TAG, message);
-        MonitorDiagnostics.record(this, message);
-        MonitorDiagnostics.recordNotificationState(this, "onTaskRemoved callback");
-        MonitorDiagnostics.scheduleTaskRemovedProbes(this);
-        if (monitorReady) {
-            scheduleRestartIfEnabled("task-removed");
-        } else {
-            MonitorDiagnostics.record(this, "Recovery not scheduled: monitor was not fully initialized.");
-        }
+        Log.w(TAG, "App task removed. Scheduling direct foreground-service recovery.");
+        scheduleRestartIfEnabled("task-removed");
         super.onTaskRemoved(rootIntent);
     }
 
@@ -286,16 +212,9 @@ public final class LockScreenMonitorService extends Service {
         boolean wasReady = monitorReady;
         monitorReady = false;
         lockMonitoringActive = false;
-        String message = "monitor service onDestroy; wasReady=" + wasReady
-                + ", receiverRegistered=" + receiverRegistered
-                + ", pid=" + android.os.Process.myPid();
-        Log.w(TAG, message);
-        MonitorDiagnostics.record(this, message);
-        MonitorDiagnostics.recordNotificationState(this, "monitor service onDestroy");
+        Log.w(TAG, "Monitor service destroyed. Checking whether monitoring is still requested.");
         if (wasReady) {
             scheduleRestartIfEnabled("service-destroyed");
-        } else {
-            MonitorDiagnostics.record(this, "No recovery retry scheduled after failed/incomplete startup.");
         }
         if (receiverRegistered && lockReceiver != null) {
             try {
@@ -304,15 +223,14 @@ public final class LockScreenMonitorService extends Service {
                 Log.w(TAG, "Monitor receiver cleanup failed.", error);
             }
             receiverRegistered = false;
+            receiverFilterSignature = null;
         }
         super.onDestroy();
     }
 
     private void scheduleRestartIfEnabled(String reason) {
         if (restartScheduled) {
-            String message = "Recovery alarm already scheduled; reason=" + reason;
-            Log.d(TAG, message);
-            MonitorDiagnostics.record(this, message);
+            Log.d(TAG, "Recovery alarm already scheduled; reason=" + reason);
             return;
         }
 
@@ -320,12 +238,10 @@ public final class LockScreenMonitorService extends Service {
         if (snapshot == null
                 || (!snapshot.autoStartOnDeviceLock && !snapshot.autoStartOnWake)) {
             Log.i(TAG, "No recovery scheduled because automatic monitoring is disabled.");
-            MonitorDiagnostics.record(this, "No recovery scheduled: persisted monitor settings are disabled.");
             return;
         }
         if (Build.VERSION.SDK_INT >= 29 && !Settings.canDrawOverlays(this)) {
             Log.w(TAG, "No recovery scheduled because overlay permission is missing.");
-            MonitorDiagnostics.record(this, "No recovery scheduled: overlay permission is missing.");
             return;
         }
 
@@ -351,16 +267,10 @@ public final class LockScreenMonitorService extends Service {
                         AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerAt, restartIntent);
             }
             restartScheduled = true;
-            String message = "Direct foreground-service recovery scheduled in "
-                    + RESTART_DELAY_MS + "ms; reason=" + reason
-                    + ", alarmType=ELAPSED_REALTIME_WAKEUP_SET_AND_ALLOW_WHILE_IDLE";
-            Log.i(TAG, message);
-            MonitorDiagnostics.record(this, message);
-        } catch (RuntimeException error) {
-            String message = "Failed to schedule foreground-service recovery; reason=" + reason
-                    + ", exception=" + error.getClass().getName() + ": " + error.getMessage();
-            Log.e(TAG, message, error);
-            MonitorDiagnostics.record(this, message);
+            Log.i(TAG, "Direct foreground-service recovery scheduled in "
+                    + RESTART_DELAY_MS + "ms; reason=" + reason);
+        } catch (Throwable error) {
+            Log.e(TAG, "Failed to schedule foreground-service recovery; reason=" + reason, error);
         }
     }
 
@@ -368,7 +278,6 @@ public final class LockScreenMonitorService extends Service {
         cancelScheduledRestart(this);
         restartScheduled = false;
         Log.d(TAG, "Pending monitor recovery alarm cancelled after service start.");
-        MonitorDiagnostics.record(this, "Pending monitor recovery alarm cancelled after service start.");
     }
 
     private static void cancelScheduledRestart(Context context) {
@@ -379,10 +288,8 @@ public final class LockScreenMonitorService extends Service {
         try {
             alarmManager.cancel(restartIntent);
             Log.i(TAG, "Pending monitor recovery alarm cancelled.");
-        } catch (RuntimeException error) {
+        } catch (Throwable error) {
             Log.e(TAG, "Unable to cancel pending monitor recovery alarm.", error);
-            MonitorDiagnostics.record(context, "Unable to cancel recovery alarm; exception="
-                    + error.getClass().getName() + ": " + error.getMessage());
         }
     }
 
@@ -406,10 +313,8 @@ public final class LockScreenMonitorService extends Service {
             }
             return PendingIntent.getService(
                     context, RESTART_PENDING_INTENT_ID, intent, pendingFlags);
-        } catch (RuntimeException error) {
+        } catch (Throwable error) {
             Log.e(TAG, "Unable to create direct foreground-service PendingIntent.", error);
-            MonitorDiagnostics.record(context, "Unable to create direct FGS PendingIntent; exception="
-                    + error.getClass().getName() + ": " + error.getMessage());
             return null;
         }
     }
