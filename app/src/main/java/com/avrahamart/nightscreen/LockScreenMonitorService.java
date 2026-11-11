@@ -62,6 +62,7 @@ public final class LockScreenMonitorService extends Service {
                     + ", enabled=" + enabled
                     + ", overlayGranted="
                     + (Build.VERSION.SDK_INT < 29 || Settings.canDrawOverlays(appContext)));
+            cancelScheduledRestart(appContext);
             try {
                 appContext.stopService(new Intent(appContext, LockScreenMonitorService.class));
             } catch (Throwable error) {
@@ -147,11 +148,11 @@ public final class LockScreenMonitorService extends Service {
 
         cancelScheduledRestart();
 
+        // Persisted user settings are authoritative, including for delayed recovery
+        // PendingIntents created before the user disabled automatic monitoring.
         MonitorSettingsSnapshot snapshot = MonitorSettingsSnapshot.read(this);
-        boolean enabled = intent != null && intent.hasExtra(EXTRA_MONITOR_ENABLED)
-                ? intent.getBooleanExtra(EXTRA_MONITOR_ENABLED, false)
-                : snapshot != null
-                    && (snapshot.autoStartOnDeviceLock || snapshot.autoStartOnWake);
+        boolean enabled = snapshot != null
+                && (snapshot.autoStartOnDeviceLock || snapshot.autoStartOnWake);
         boolean overlayGranted = Build.VERSION.SDK_INT < 29 || Settings.canDrawOverlays(this);
         if (!enabled || !overlayGranted) {
             lockMonitoringActive = false;
@@ -243,36 +244,49 @@ public final class LockScreenMonitorService extends Service {
     }
 
     private void cancelScheduledRestart() {
-        AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
-        PendingIntent restartIntent = restartPendingIntent();
-        if (alarmManager != null && restartIntent != null) {
-            try {
-                alarmManager.cancel(restartIntent);
-                restartScheduled = false;
-                Log.d(TAG, "Pending monitor recovery alarm cancelled after service start.");
-            } catch (Throwable error) {
-                Log.e(TAG, "Unable to cancel pending monitor recovery alarm.", error);
-            }
+        cancelScheduledRestart(this);
+        restartScheduled = false;
+        Log.d(TAG, "Pending monitor recovery alarm cancelled after service start.");
+    }
+
+    private void cancelScheduledRestart() {
+        cancelScheduledRestart(this);
+        restartScheduled = false;
+    }
+
+    private static void cancelScheduledRestart(Context context) {
+        AlarmManager alarmManager =
+                (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        PendingIntent restartIntent = restartPendingIntent(context);
+        if (alarmManager == null || restartIntent == null) return;
+        try {
+            alarmManager.cancel(restartIntent);
+            Log.i(TAG, "Pending monitor recovery alarm cancelled.");
+        } catch (Throwable error) {
+            Log.e(TAG, "Unable to cancel pending monitor recovery alarm.", error);
         }
     }
 
     /**
      * OwnTracks-style restart route: the system alarm starts this foreground
-     * service directly. It no longer has to launch a BroadcastReceiver first.
+     * service directly. Persisted settings are rechecked when it arrives.
      */
     private PendingIntent restartPendingIntent() {
-        Intent intent = new Intent(this, LockScreenMonitorService.class)
-                .setAction(ACTION_RESTART_AFTER_TASK_REMOVED)
-                .putExtra(EXTRA_MONITOR_ENABLED, true);
+        return restartPendingIntent(this);
+    }
+
+    private static PendingIntent restartPendingIntent(Context context) {
+        Intent intent = new Intent(context, LockScreenMonitorService.class)
+                .setAction(ACTION_RESTART_AFTER_TASK_REMOVED);
         int pendingFlags = PendingIntent.FLAG_UPDATE_CURRENT;
         if (Build.VERSION.SDK_INT >= 23) pendingFlags |= PendingIntent.FLAG_IMMUTABLE;
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 return PendingIntent.getForegroundService(
-                        this, RESTART_PENDING_INTENT_ID, intent, pendingFlags);
+                        context, RESTART_PENDING_INTENT_ID, intent, pendingFlags);
             }
             return PendingIntent.getService(
-                    this, RESTART_PENDING_INTENT_ID, intent, pendingFlags);
+                    context, RESTART_PENDING_INTENT_ID, intent, pendingFlags);
         } catch (Throwable error) {
             Log.e(TAG, "Unable to create direct foreground-service PendingIntent.", error);
             return null;
