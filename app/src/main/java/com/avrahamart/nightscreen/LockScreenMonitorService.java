@@ -211,6 +211,8 @@ public final class LockScreenMonitorService extends Service {
                 if (Build.VERSION.SDK_INT >= 34) {
                     startForeground(NOTIFICATION_ID, notification,
                             ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
+                } else if (Build.VERSION.SDK_INT >= 29) {
+                    startForeground(NOTIFICATION_ID, notification, 0);
                 } else {
                     startForeground(NOTIFICATION_ID, notification);
                 }
