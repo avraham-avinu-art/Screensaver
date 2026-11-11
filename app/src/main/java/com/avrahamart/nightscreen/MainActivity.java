@@ -478,6 +478,10 @@ public class MainActivity extends Activity {
     @Override
     protected void onStart() {
         super.onStart();
+        // Reconcile the independent foreground monitor whenever the screensaver
+        // Activity becomes visible again. The service preserves an unchanged
+        // receiver registration, so this repeated request does not interrupt monitoring.
+        LockScreenMonitorService.sync(this);
         registerDeviceStateReceiver();
         registerScreenOffTimeoutObserver();
     }
@@ -2183,7 +2187,7 @@ public class MainActivity extends Activity {
             } catch (Throwable ignored) {
             }
         }
-        finishAffinity();
+        finish();
     }
 
     private String screenTimeoutBehaviorPreferenceKey() {
@@ -2303,7 +2307,7 @@ public class MainActivity extends Activity {
                 waitingForScreenWakeAfterActivityEnd = true;
             }
         } else if (systemManagedDuration) {
-            handler.post(this::finishAffinity);
+            handler.post(this::finish);
         }
     }
 
@@ -2517,7 +2521,7 @@ public class MainActivity extends Activity {
         handler.removeCallbacks(screenOnReleaseRunnable);
 
         if (stageView == null || stageView.getHeight() <= 0) {
-            finishAffinity();
+            finish();
             return;
         }
 
@@ -2527,7 +2531,7 @@ public class MainActivity extends Activity {
                 .translationY(exitY)
                 .setDuration(190L)
                 .setInterpolator(new android.view.animation.AccelerateInterpolator())
-                .withEndAction(this::finishAffinity)
+                .withEndAction(this::finish)
                 .start();
     }
 

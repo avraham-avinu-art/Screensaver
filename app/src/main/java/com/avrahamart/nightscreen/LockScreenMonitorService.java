@@ -9,26 +9,45 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.ServiceInfo;
 import android.os.Build;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import android.os.SystemClock;
 import android.provider.Settings;
-import android.util.Log;
 
 public final class LockScreenMonitorService extends Service {
-    private static final String TAG = "NightScreenMonitor";
     private static final int NOTIFICATION_ID = AutoStartNotificationController.NOTIFICATION_ID;
     private static final int RESTART_PENDING_INTENT_ID = 6722;
-    // Match the recovery delay used by OwnTracks: give vendor task-cleanup time to finish.
     private static final long RESTART_DELAY_MS = 5_000L;
     private static final String ACTION_RESTART_AFTER_TASK_REMOVED =
             "com.avrahamart.nightscreen.ACTION_RESTART_MONITOR_AFTER_TASK_REMOVED";
+
     static final String EXTRA_MONITOR_ENABLED =
             "com.avrahamart.nightscreen.EXTRA_MONITOR_ENABLED";
 
+    private static final long[] RECONCILE_RETRY_DELAYS_MS = {
+            1_000L, 2_000L, 5_000L, 10_000L, 30_000L
+    };
+
     private static volatile boolean lockMonitoringActive = false;
+
+    private final Handler serviceHandler = new Handler(Looper.getMainLooper());
+    private final Runnable reconcileRetry = () -> {
+        retryScheduled = false;
+        if (!destroying && foregroundStarted) {
+            reconcileFromPersistedSettings();
+        }
+    };
+
     private boolean receiverRegistered = false;
+    private boolean foregroundStarted = false;
     private boolean restartScheduled = false;
+    private boolean retryScheduled = false;
     private boolean monitorReady = false;
+    private boolean destroying = false;
+    private boolean lastKnownMonitoringRequested = false;
+    private int retryAttempt = 0;
+    private int latestStartId = 0;
     private String receiverFilterSignature;
     private AutoStartOnPowerReceiver lockReceiver;
 
@@ -37,15 +56,22 @@ public final class LockScreenMonitorService extends Service {
     }
 
     /**
-     * Starts the monitor only while at least one supported automatic activation
-     * mode is enabled and its overlay-permission prerequisite is available.
+     * Reconciles the foreground service with the user's persisted opt-in.
+     * A failed settings read is unknown state, not an instruction to stop.
      */
     public static void sync(Context context) {
         Context appContext = context.getApplicationContext();
         MonitorSettingsSnapshot snapshot = MonitorSettingsSnapshot.read(appContext);
-        boolean enabled = snapshot != null
-                && (snapshot.autoStartOnDeviceLock || snapshot.autoStartOnWake);
-        if (enabled && (Build.VERSION.SDK_INT < 29 || Settings.canDrawOverlays(appContext))) {
+
+        // Never tear down a working service because a cross-process settings read
+        // failed temporarily. The started service will reconcile again itself.
+        if (snapshot == null) return;
+
+        boolean enabled = isMonitoringRequested(snapshot);
+        boolean overlayGranted = Build.VERSION.SDK_INT < 29
+                || Settings.canDrawOverlays(appContext);
+
+        if (enabled && overlayGranted) {
             Intent intent = new Intent(appContext, LockScreenMonitorService.class)
                     .putExtra(EXTRA_MONITOR_ENABLED, true);
             try {
@@ -54,103 +80,53 @@ public final class LockScreenMonitorService extends Service {
                 } else {
                     appContext.startService(intent);
                 }
-                Log.i(TAG, "Monitor start requested. lock="
-                        + snapshot.autoStartOnDeviceLock + ", wake=" + snapshot.autoStartOnWake);
-            } catch (Throwable error) {
-                Log.e(TAG, "Android rejected the monitor start request.", error);
+            } catch (Throwable ignored) {
+                // A later Activity, settings change, boot event, or sticky restart
+                // will reconcile again. Do not stop an existing service here.
             }
-        } else {
-            Log.i(TAG, "Monitor not started. settingsAvailable=" + (snapshot != null)
-                    + ", enabled=" + enabled
-                    + ", overlayGranted="
-                    + (Build.VERSION.SDK_INT < 29 || Settings.canDrawOverlays(appContext)));
-            cancelScheduledRestart(appContext);
-            try {
-                appContext.stopService(new Intent(appContext, LockScreenMonitorService.class));
-            } catch (Throwable error) {
-                Log.e(TAG, "Unable to stop the monitor after its settings were disabled.", error);
-            }
+            return;
         }
+
+        cancelScheduledRestart(appContext);
+        try {
+            appContext.stopService(new Intent(appContext, LockScreenMonitorService.class));
+        } catch (Throwable ignored) {
+            // The next successful reconciliation will apply the persisted state.
+        }
+    }
+
+    private static boolean isMonitoringRequested(MonitorSettingsSnapshot snapshot) {
+        return snapshot != null
+                && (snapshot.autoStartOnDeviceLock || snapshot.autoStartOnWake);
     }
 
     @Override
     public void onCreate() {
         super.onCreate();
         AutoStartNotificationController.createChannel(this);
-        Log.i(TAG, "Monitor service created.");
-    }
-
-    private void updateLockReceiverRegistration() {
-        MonitorSettingsSnapshot snapshot = MonitorSettingsSnapshot.read(this);
-        boolean lockStart = snapshot != null && snapshot.autoStartOnDeviceLock;
-        boolean wakeStart = snapshot != null && snapshot.autoStartOnWake;
-        boolean notificationAccess = NightScreenApplication.hasNotificationAccess(this);
-        String filterSignature = "lock=" + lockStart
-                + ";wake=" + wakeStart
-                + ";notificationAccess=" + notificationAccess;
-
-        // Repeated sync requests are normal when activities resume. Do not
-        // unregister/re-register an unchanged filter: that creates a gap in
-        // which SCREEN_OFF or SCREEN_ON can be missed.
-        if (receiverRegistered && lockReceiver != null
-                && filterSignature.equals(receiverFilterSignature)) {
-            return;
-        }
-
-        monitorReady = false;
-        lockMonitoringActive = false;
-        if (receiverRegistered && lockReceiver != null) {
-            try {
-                unregisterReceiver(lockReceiver);
-            } catch (RuntimeException error) {
-                Log.w(TAG, "Previous monitor receiver could not be unregistered cleanly.", error);
-            }
-            receiverRegistered = false;
-            receiverFilterSignature = null;
-        }
-
-        lockReceiver = new AutoStartOnPowerReceiver();
-        IntentFilter filter = new IntentFilter();
-        if (lockStart) filter.addAction(Intent.ACTION_USER_PRESENT);
-        if (lockStart || wakeStart) {
-            filter.addAction(Intent.ACTION_SCREEN_OFF);
-        }
-        if (wakeStart) filter.addAction(Intent.ACTION_SCREEN_ON);
-        // When notification-listener access is absent, this process is the
-        // persistent fallback for charger broadcasts as well.
-        if (!notificationAccess) {
-            filter.addAction(Intent.ACTION_POWER_CONNECTED);
-        }
-
-        try {
-            if (Build.VERSION.SDK_INT >= 33) {
-                registerReceiver(lockReceiver, filter, RECEIVER_NOT_EXPORTED);
-            } else {
-                registerReceiver(lockReceiver, filter);
-            }
-            receiverRegistered = true;
-            receiverFilterSignature = filterSignature;
-            Log.i(TAG, "Monitor event receiver registered. lock=" + lockStart
-                    + ", wake=" + wakeStart
-                    + ", notificationAccess=" + notificationAccess);
-        } catch (RuntimeException error) {
-            lockReceiver = null;
-            receiverRegistered = false;
-            receiverFilterSignature = null;
-            Log.e(TAG, "Failed to register the monitor event receiver.", error);
-        }
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        String action = intent == null ? null : intent.getAction();
-        Log.i(TAG, "onStartCommand received. intentNull=" + (intent == null)
-                + ", action=" + action + ", startId=" + startId);
+        latestStartId = startId;
 
-        // Promote immediately. This is deliberately before receiver registration
-        // or other setup, as required for startForegroundService callers.
+        // Establish foreground state before provider access or receiver registration.
+        if (!promoteToForeground()) {
+            lockMonitoringActive = false;
+            monitorReady = false;
+            stopSelfResult(startId);
+            return START_NOT_STICKY;
+        }
+
+        cancelScheduledRestart();
+        cancelReconcileRetry();
+
+        return reconcileFromPersistedSettings() ? START_STICKY : START_NOT_STICKY;
+    }
+
+    private boolean promoteToForeground() {
         try {
-            Notification notification = buildQuietNotification();
+            Notification notification = AutoStartNotificationController.buildNotification(this);
             if (Build.VERSION.SDK_INT >= 34) {
                 startForeground(NOTIFICATION_ID, notification,
                         ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
@@ -159,124 +135,242 @@ public final class LockScreenMonitorService extends Service {
             } else {
                 startForeground(NOTIFICATION_ID, notification);
             }
-        } catch (Throwable error) {
-            lockMonitoringActive = false;
-            Log.e(TAG, "startForeground failed; monitor cannot remain active.", error);
-            stopSelf(startId);
-            return START_NOT_STICKY;
+            foregroundStarted = true;
+            return true;
+        } catch (Throwable ignored) {
+            foregroundStarted = false;
+            return false;
         }
-
-        cancelScheduledRestart();
-
-        // Persisted user settings are authoritative, including for delayed recovery
-        // PendingIntents created before the user disabled automatic monitoring.
-        MonitorSettingsSnapshot snapshot = MonitorSettingsSnapshot.read(this);
-        boolean enabled = snapshot != null
-                && (snapshot.autoStartOnDeviceLock || snapshot.autoStartOnWake);
-        boolean overlayGranted = Build.VERSION.SDK_INT < 29 || Settings.canDrawOverlays(this);
-        if (!enabled || !overlayGranted) {
-            lockMonitoringActive = false;
-            Log.w(TAG, "Foreground service started but monitoring is disabled. enabled="
-                    + enabled + ", overlayGranted=" + overlayGranted);
-            stopForeground(STOP_FOREGROUND_REMOVE);
-            stopSelf(startId);
-            return START_NOT_STICKY;
-        }
-
-        updateLockReceiverRegistration();
-        monitorReady = receiverRegistered;
-        lockMonitoringActive = monitorReady;
-        if (!monitorReady) {
-            Log.e(TAG, "Monitor startup failed: foreground service started, but event receiver registration failed.");
-            stopForeground(STOP_FOREGROUND_REMOVE);
-            stopSelf(startId);
-            return START_NOT_STICKY;
-        }
-        Log.i(TAG, "Monitor is active. receiverRegistered=true, sticky restart enabled.");
-        return START_STICKY;
     }
 
-    private Notification buildQuietNotification() {
-        return AutoStartNotificationController.buildNotification(this);
+    /**
+     * Returns true while the service should remain started. A temporarily
+     * unavailable settings provider or a transient receiver-registration
+     * failure keeps the foreground service alive and schedules a retry.
+     */
+    private boolean reconcileFromPersistedSettings() {
+        if (destroying) return false;
+
+        MonitorSettingsSnapshot snapshot = MonitorSettingsSnapshot.read(this);
+        if (snapshot == null) {
+            scheduleReconcileRetry();
+            return true;
+        }
+
+        boolean requested = isMonitoringRequested(snapshot);
+        lastKnownMonitoringRequested = requested;
+        boolean overlayGranted = Build.VERSION.SDK_INT < 29
+                || Settings.canDrawOverlays(this);
+
+        if (!requested || !overlayGranted) {
+            stopForDisabledOrUnavailableFeature();
+            return false;
+        }
+
+        if (!updateLockReceiverRegistration(snapshot)) {
+            monitorReady = false;
+            lockMonitoringActive = false;
+            scheduleReconcileRetry();
+            return true;
+        }
+
+        monitorReady = true;
+        lockMonitoringActive = true;
+        retryAttempt = 0;
+        cancelReconcileRetry();
+        return true;
+    }
+
+    /**
+     * Register the replacement filter before retiring the previous receiver.
+     * That avoids a gap in SCREEN_OFF/SCREEN_ON delivery when settings change.
+     * If registration fails, the previous receiver remains registered while
+     * the service retries; activation is held disabled until the new filter is
+     * installed successfully.
+     */
+    private boolean updateLockReceiverRegistration(MonitorSettingsSnapshot snapshot) {
+        boolean lockStart = snapshot.autoStartOnDeviceLock;
+        boolean wakeStart = snapshot.autoStartOnWake;
+        boolean notificationAccess = NightScreenApplication.hasNotificationAccess(this);
+        boolean chargerFallback = !notificationAccess
+                && snapshot.autoStartOnCharge
+                && !snapshot.useAndroidDreamForCharging;
+
+        String filterSignature = "lock=" + lockStart
+                + ";wake=" + wakeStart
+                + ";chargerFallback=" + chargerFallback
+                + ";notificationAccess=" + notificationAccess;
+
+        if (receiverRegistered && lockReceiver != null
+                && filterSignature.equals(receiverFilterSignature)) {
+            return true;
+        }
+
+        AutoStartOnPowerReceiver replacement = new AutoStartOnPowerReceiver();
+        IntentFilter filter = new IntentFilter();
+
+        if (lockStart) filter.addAction(Intent.ACTION_USER_PRESENT);
+        if (lockStart || wakeStart) filter.addAction(Intent.ACTION_SCREEN_OFF);
+        if (wakeStart) filter.addAction(Intent.ACTION_SCREEN_ON);
+        if (chargerFallback) filter.addAction(Intent.ACTION_POWER_CONNECTED);
+
+        try {
+            if (Build.VERSION.SDK_INT >= 33) {
+                registerReceiver(replacement, filter, Context.RECEIVER_NOT_EXPORTED);
+            } else {
+                registerReceiver(replacement, filter);
+            }
+        } catch (RuntimeException ignored) {
+            replacement.deactivate();
+            return false;
+        }
+
+        AutoStartOnPowerReceiver previous = lockReceiver;
+        boolean previousWasRegistered = receiverRegistered;
+
+        lockReceiver = replacement;
+        receiverRegistered = true;
+        receiverFilterSignature = filterSignature;
+
+        if (previousWasRegistered && previous != null) {
+            previous.deactivate();
+            try {
+                unregisterReceiver(previous);
+            } catch (RuntimeException ignored) {
+                // A retired receiver is disabled, so it cannot cause duplicate activations.
+            }
+        }
+
+        return true;
+    }
+
+    private void stopForDisabledOrUnavailableFeature() {
+        cancelReconcileRetry();
+        cancelScheduledRestart();
+        unregisterLockReceiver();
+        monitorReady = false;
+        lockMonitoringActive = false;
+
+        if (foregroundStarted) {
+            stopForeground(STOP_FOREGROUND_REMOVE);
+            foregroundStarted = false;
+        }
+
+        if (latestStartId > 0) {
+            stopSelfResult(latestStartId);
+        } else {
+            stopSelf();
+        }
+    }
+
+    private void unregisterLockReceiver() {
+        if (lockReceiver == null) {
+            receiverRegistered = false;
+            receiverFilterSignature = null;
+            return;
+        }
+
+        lockReceiver.deactivate();
+        if (receiverRegistered) {
+            try {
+                unregisterReceiver(lockReceiver);
+            } catch (RuntimeException ignored) {
+                // The platform may already have removed it during process cleanup.
+            }
+        }
+
+        lockReceiver = null;
+        receiverRegistered = false;
+        receiverFilterSignature = null;
+    }
+
+    private void scheduleReconcileRetry() {
+        if (destroying || !foregroundStarted || retryScheduled) return;
+
+        int index = Math.min(retryAttempt, RECONCILE_RETRY_DELAYS_MS.length - 1);
+        long delay = RECONCILE_RETRY_DELAYS_MS[index];
+        if (retryAttempt < RECONCILE_RETRY_DELAYS_MS.length - 1) {
+            retryAttempt++;
+        }
+
+        retryScheduled = serviceHandler.postDelayed(reconcileRetry, delay);
+    }
+
+    private void cancelReconcileRetry() {
+        serviceHandler.removeCallbacks(reconcileRetry);
+        retryScheduled = false;
+        retryAttempt = 0;
     }
 
     @Override
     public void onTaskRemoved(Intent rootIntent) {
-        // This callback can arrive in a freshly recreated service instance
-        // before its first onStartCommand(). Do not require monitorReady here:
-        // persisted opt-in settings are enough to restore the FGS notification.
         MonitorSettingsSnapshot snapshot = MonitorSettingsSnapshot.read(this);
-        boolean monitoringRequested = snapshot != null
-                && (snapshot.autoStartOnDeviceLock || snapshot.autoStartOnWake);
-        boolean overlayGranted = Build.VERSION.SDK_INT < 29 || Settings.canDrawOverlays(this);
-        if (monitoringRequested && overlayGranted) {
-            try {
-                Notification notification = buildQuietNotification();
-                if (Build.VERSION.SDK_INT >= 34) {
-                    startForeground(NOTIFICATION_ID, notification,
-                            ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
-                } else if (Build.VERSION.SDK_INT >= 29) {
-                    startForeground(NOTIFICATION_ID, notification, 0);
-                } else {
-                    startForeground(NOTIFICATION_ID, notification);
-                }
-            } catch (RuntimeException error) {
-                Log.e(TAG, "Unable to reassert foreground state after task removal.", error);
-            }
+        boolean requested = snapshot == null
+                ? lastKnownMonitoringRequested
+                : isMonitoringRequested(snapshot);
+
+        if (snapshot != null) {
+            lastKnownMonitoringRequested = requested;
         }
-        scheduleRestartIfEnabled("task-removed");
+
+        boolean overlayGranted = Build.VERSION.SDK_INT < 29 || Settings.canDrawOverlays(this);
+        if (requested && overlayGranted) {
+            if (!foregroundStarted) promoteToForeground();
+            // stopWithTask=false keeps a started service alive on standard Android.
+            // The delayed start is a secondary recovery route for task managers
+            // that remove the service together with its task.
+            scheduleRestartIfEnabled();
+        }
+
         super.onTaskRemoved(rootIntent);
     }
 
     @Override
     public void onDestroy() {
-        boolean wasReady = monitorReady;
+        destroying = true;
+        cancelReconcileRetry();
+
+        MonitorSettingsSnapshot snapshot = MonitorSettingsSnapshot.read(this);
+        boolean requested = snapshot == null
+                ? lastKnownMonitoringRequested
+                : isMonitoringRequested(snapshot);
+        if (snapshot != null) {
+            lastKnownMonitoringRequested = requested;
+        }
+
         monitorReady = false;
         lockMonitoringActive = false;
-        Log.w(TAG, "Monitor service destroyed. Checking whether monitoring is still requested.");
-        if (wasReady) {
-            scheduleRestartIfEnabled("service-destroyed");
+        unregisterLockReceiver();
+
+        boolean overlayGranted = Build.VERSION.SDK_INT < 29 || Settings.canDrawOverlays(this);
+        if (requested && overlayGranted) {
+            scheduleRestartIfEnabled();
         }
-        if (receiverRegistered && lockReceiver != null) {
-            try {
-                unregisterReceiver(lockReceiver);
-            } catch (Throwable error) {
-                Log.w(TAG, "Monitor receiver cleanup failed.", error);
-            }
-            receiverRegistered = false;
-            receiverFilterSignature = null;
-        }
+
+        foregroundStarted = false;
         super.onDestroy();
     }
 
-    private void scheduleRestartIfEnabled(String reason) {
-        if (restartScheduled) {
-            Log.d(TAG, "Recovery alarm already scheduled; reason=" + reason);
-            return;
-        }
+    private void scheduleRestartIfEnabled() {
+        if (restartScheduled) return;
 
         MonitorSettingsSnapshot snapshot = MonitorSettingsSnapshot.read(this);
-        if (snapshot == null
-                || (!snapshot.autoStartOnDeviceLock && !snapshot.autoStartOnWake)) {
-            Log.i(TAG, "No recovery scheduled because automatic monitoring is disabled.");
-            return;
-        }
-        if (Build.VERSION.SDK_INT >= 29 && !Settings.canDrawOverlays(this)) {
-            Log.w(TAG, "No recovery scheduled because overlay permission is missing.");
-            return;
+        boolean requested = snapshot == null
+                ? lastKnownMonitoringRequested
+                : isMonitoringRequested(snapshot);
+        if (snapshot != null) {
+            lastKnownMonitoringRequested = requested;
         }
 
-        AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
-        if (alarmManager == null) {
-            Log.e(TAG, "No recovery scheduled: AlarmManager is unavailable.");
-            return;
-        }
+        if (!requested) return;
+        if (Build.VERSION.SDK_INT >= 29 && !Settings.canDrawOverlays(this)) return;
 
-        PendingIntent restartIntent = restartPendingIntent();
-        if (restartIntent == null) {
-            Log.e(TAG, "No recovery scheduled: foreground-service PendingIntent creation failed.");
-            return;
-        }
+        AlarmManager alarmManager =
+                (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+        if (alarmManager == null) return;
+
+        PendingIntent restartIntent = restartPendingIntent(this);
+        if (restartIntent == null) return;
 
         try {
             long triggerAt = SystemClock.elapsedRealtime() + RESTART_DELAY_MS;
@@ -288,17 +382,14 @@ public final class LockScreenMonitorService extends Service {
                         AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerAt, restartIntent);
             }
             restartScheduled = true;
-            Log.i(TAG, "Direct foreground-service recovery scheduled in "
-                    + RESTART_DELAY_MS + "ms; reason=" + reason);
-        } catch (Throwable error) {
-            Log.e(TAG, "Failed to schedule foreground-service recovery; reason=" + reason, error);
+        } catch (Throwable ignored) {
+            // START_STICKY remains the primary process-death recovery mechanism.
         }
     }
 
     private void cancelScheduledRestart() {
         cancelScheduledRestart(this);
         restartScheduled = false;
-        Log.d(TAG, "Pending monitor recovery alarm cancelled after service start.");
     }
 
     private static void cancelScheduledRestart(Context context) {
@@ -306,27 +397,21 @@ public final class LockScreenMonitorService extends Service {
                 (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
         PendingIntent restartIntent = restartPendingIntent(context);
         if (alarmManager == null || restartIntent == null) return;
+
         try {
             alarmManager.cancel(restartIntent);
-            Log.i(TAG, "Pending monitor recovery alarm cancelled.");
-        } catch (Throwable error) {
-            Log.e(TAG, "Unable to cancel pending monitor recovery alarm.", error);
+        } catch (Throwable ignored) {
+            // A missing alarm is already the desired state.
         }
-    }
-
-    /**
-     * OwnTracks-style restart route: the system alarm starts this foreground
-     * service directly. Persisted settings are rechecked when it arrives.
-     */
-    private PendingIntent restartPendingIntent() {
-        return restartPendingIntent(this);
     }
 
     private static PendingIntent restartPendingIntent(Context context) {
         Intent intent = new Intent(context, LockScreenMonitorService.class)
                 .setAction(ACTION_RESTART_AFTER_TASK_REMOVED);
+
         int pendingFlags = PendingIntent.FLAG_UPDATE_CURRENT;
         if (Build.VERSION.SDK_INT >= 23) pendingFlags |= PendingIntent.FLAG_IMMUTABLE;
+
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 return PendingIntent.getForegroundService(
@@ -334,8 +419,7 @@ public final class LockScreenMonitorService extends Service {
             }
             return PendingIntent.getService(
                     context, RESTART_PENDING_INTENT_ID, intent, pendingFlags);
-        } catch (Throwable error) {
-            Log.e(TAG, "Unable to create direct foreground-service PendingIntent.", error);
+        } catch (Throwable ignored) {
             return null;
         }
     }

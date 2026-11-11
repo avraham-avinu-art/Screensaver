@@ -19,10 +19,15 @@ import java.nio.channels.FileLock;
 
 public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
     private static final long DEEP_SLEEP_MIN_MS = 1_000L;
+    private volatile boolean receiverEnabled = true;
+
+    void deactivate() {
+        receiverEnabled = false;
+    }
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        if (intent == null || intent.getAction() == null) return;
+        if (!receiverEnabled || intent == null || intent.getAction() == null) return;
         String action = intent.getAction();
 
         SharedPreferences prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE);
@@ -30,7 +35,6 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
             MonitorSettingsSnapshot.resetDeviceLockActivation(context);
             prefs.edit().remove("deepSleepScreenOffElapsed")
                     .remove("deepSleepScreenOffUptime").apply();
-            MainActivity.clearPausedByDeviceLockState();
             return;
         }
 
@@ -142,8 +146,12 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
                 .remove("deepSleepScreenOffUptime").apply();
 
         MonitorSettingsSnapshot settings = MonitorSettingsSnapshot.read(context);
-        boolean afterDeepSleep = settings != null && settings.autoStartOnWake
-                && deepSleep && !settings.deviceLockActivationConsumed;
+        boolean afterDeepSleep = settings != null
+                && shouldActivateAfterDeepSleep(
+                        settings.autoStartOnWake,
+                        settings.autoStartOnDeviceLock,
+                        settings.deviceLockActivationConsumed,
+                        deepSleep);
         if (!afterDeepSleep
                 || !LockScreenMonitorService.isLockMonitoringActive()
                 || isMainActivityVisible(context)
@@ -159,6 +167,15 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
         } catch (Throwable ignored) {
             // Respect device-specific background-launch restrictions.
         }
+    }
+
+
+    static boolean shouldActivateAfterDeepSleep(boolean wakeEnabled,
+                                                boolean lockEnabled,
+                                                boolean lockCycleConsumed,
+                                                boolean deepSleep) {
+        return wakeEnabled && deepSleep
+                && (!lockEnabled || !lockCycleConsumed);
     }
 
     private boolean claimPowerConnectedEvent(Context context) {
