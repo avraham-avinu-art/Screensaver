@@ -1,5 +1,4 @@
 name: Build APK
-# Temporary CI trigger for lock-monitor recovery build.
 
 on:
   push:
@@ -97,8 +96,8 @@ jobs:
       - name: Report release signing mode
         run: echo "Using the configured persistent release signing key."
 
-      - name: Build release APK
-        run: gradle --version && gradle :app:assembleRelease --no-daemon
+      - name: Run automatic-start regression tests and build release APK
+        run: gradle --version && gradle :app:testReleaseUnitTest :app:assembleRelease --no-daemon
 
       - name: Verify APK
         run: |
