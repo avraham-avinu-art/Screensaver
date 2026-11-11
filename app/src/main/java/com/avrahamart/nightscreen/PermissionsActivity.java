@@ -113,6 +113,7 @@ public class PermissionsActivity extends Activity {
         addNotificationPermissionCard(cards);
         addOverlayPermissionCard(cards);
         addDeviceAdminPermissionCard(cards);
+        addMonitorDiagnosticsCard(cards);
 
         scroll.addView(cards, new ScrollView.LayoutParams(-1, -2));
         root.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1f));
@@ -184,6 +185,14 @@ public class PermissionsActivity extends Activity {
                         requestDeviceAdmin();
                     }
                 });
+    }
+
+    private void addMonitorDiagnosticsCard(LinearLayout parent) {
+        LinearLayout card = makeCard(parent, "אבחון פעילות השירות",
+                "יומן הבדיקה מתעד את הפעלת השירות, רישום אירועי המסך, מצב ההתראה "
+                + "וניסיון ההתאוששות לאחר הסרת האפליקציה ממסך האפליקציות האחרונות.");
+        addPermissionButton(card, "פתיחת יומן האבחון", v ->
+                startActivity(new Intent(this, MonitorDiagnosticsActivity.class)));
     }
 
     private LinearLayout makeCard(LinearLayout parent, String titleText, String descriptionText) {
