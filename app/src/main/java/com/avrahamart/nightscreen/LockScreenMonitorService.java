@@ -30,6 +30,7 @@ public final class LockScreenMonitorService extends Service {
     private boolean restartScheduled = false;
     // True only after the event receiver was successfully registered.
     private boolean monitorReady = false;
+    private String receiverFilterSignature;
     private AutoStartOnPowerReceiver lockReceiver;
 
     static boolean isLockMonitoringActive() {
@@ -93,21 +94,41 @@ public final class LockScreenMonitorService extends Service {
     }
 
     private void updateLockReceiverRegistration() {
+        MonitorSettingsSnapshot snapshot = MonitorSettingsSnapshot.read(this);
+        boolean lockStart = snapshot != null && snapshot.autoStartOnDeviceLock;
+        boolean wakeStart = snapshot != null && snapshot.autoStartOnWake;
+        boolean notificationAccess = NightScreenApplication.hasNotificationAccess(this);
+        String filterSignature = "lock=" + lockStart
+                + ";wake=" + wakeStart
+                + ";notificationAccess=" + notificationAccess;
+
+        // sync() may be called repeatedly from Activity onResume and permission
+        // callbacks. Keep the existing registration when its event set is unchanged:
+        // unregister/register here would create a gap in which SCREEN_OFF could be lost.
+        if (receiverRegistered && lockReceiver != null
+                && filterSignature.equals(receiverFilterSignature)) {
+            monitorReady = true;
+            lockMonitoringActive = true;
+            MonitorDiagnostics.record(this, "Monitor event receiver unchanged; keeping registration. "
+                    + filterSignature);
+            return;
+        }
+
         monitorReady = false;
+        lockMonitoringActive = false;
         if (receiverRegistered && lockReceiver != null) {
             try {
                 unregisterReceiver(lockReceiver);
-            } catch (Throwable error) {
-                Log.w(TAG, "Previous monitor receiver could not be unregistered cleanly.", error);
+            } catch (RuntimeException error) {
+                MonitorDiagnostics.record(this, "Previous monitor receiver unregister failed; exception="
+                        + error.getClass().getName() + ": " + error.getMessage());
             }
             receiverRegistered = false;
+            receiverFilterSignature = null;
         }
 
         lockReceiver = new AutoStartOnPowerReceiver();
         IntentFilter filter = new IntentFilter();
-        MonitorSettingsSnapshot snapshot = MonitorSettingsSnapshot.read(this);
-        boolean lockStart = snapshot != null && snapshot.autoStartOnDeviceLock;
-        boolean wakeStart = snapshot != null && snapshot.autoStartOnWake;
         if (lockStart) filter.addAction(Intent.ACTION_USER_PRESENT);
         if (lockStart || wakeStart) {
             filter.addAction(Intent.ACTION_SCREEN_OFF);
@@ -115,7 +136,7 @@ public final class LockScreenMonitorService extends Service {
         if (wakeStart) filter.addAction(Intent.ACTION_SCREEN_ON);
         // When notification-listener access is absent, this process is the
         // persistent fallback for charger broadcasts as well.
-        if (!NightScreenApplication.hasNotificationAccess(this)) {
+        if (!notificationAccess) {
             filter.addAction(Intent.ACTION_POWER_CONNECTED);
         }
 
@@ -126,15 +147,17 @@ public final class LockScreenMonitorService extends Service {
                 registerReceiver(lockReceiver, filter);
             }
             receiverRegistered = true;
+            receiverFilterSignature = filterSignature;
             String message = "Monitor event receiver registered. lock=" + lockStart
                     + ", wake=" + wakeStart
-                    + ", notificationAccess=" + NightScreenApplication.hasNotificationAccess(this)
+                    + ", notificationAccess=" + notificationAccess
                     + ", actions=" + filter.countActions();
             Log.i(TAG, message);
             MonitorDiagnostics.record(this, message);
         } catch (RuntimeException error) {
             lockReceiver = null;
             receiverRegistered = false;
+            receiverFilterSignature = null;
             String message = "Failed to register monitor event receiver; exception="
                     + error.getClass().getName() + ": " + error.getMessage()
                     + ", sdk=" + Build.VERSION.SDK_INT;
