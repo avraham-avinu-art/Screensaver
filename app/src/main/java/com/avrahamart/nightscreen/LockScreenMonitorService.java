@@ -74,7 +74,7 @@ public final class LockScreenMonitorService extends Service {
     public void onCreate() {
         super.onCreate();
         AutoStartNotificationController.createChannel(this);
-        Log.i(TAG, "Monitor service created in process " + android.app.Application.getProcessName());
+        Log.i(TAG, "Monitor service created.");
     }
 
     private void updateLockReceiverRegistration() {
@@ -129,10 +129,15 @@ public final class LockScreenMonitorService extends Service {
         // Promote immediately. This is deliberately before receiver registration
         // or other setup, as required for startForegroundService callers.
         try {
-            startForeground(NOTIFICATION_ID, buildQuietNotification(),
-                    Build.VERSION.SDK_INT >= 34
-                            ? ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
-                            : 0);
+            Notification notification = buildQuietNotification();
+            if (Build.VERSION.SDK_INT >= 34) {
+                startForeground(NOTIFICATION_ID, notification,
+                        ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
+            } else if (Build.VERSION.SDK_INT >= 29) {
+                startForeground(NOTIFICATION_ID, notification, 0);
+            } else {
+                startForeground(NOTIFICATION_ID, notification);
+            }
         } catch (Throwable error) {
             lockMonitoringActive = false;
             Log.e(TAG, "startForeground failed; monitor cannot remain active.", error);
