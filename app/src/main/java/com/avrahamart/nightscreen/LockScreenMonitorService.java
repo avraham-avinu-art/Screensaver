@@ -32,12 +32,6 @@ public final class LockScreenMonitorService extends Service {
     private static volatile boolean lockMonitoringActive = false;
 
     private final Handler serviceHandler = new Handler(Looper.getMainLooper());
-    private final Runnable reconcileRetry = () -> {
-        retryScheduled = false;
-        if (!destroying && foregroundStarted) {
-            reconcileFromPersistedSettings();
-        }
-    };
 
     private boolean receiverRegistered = false;
     private boolean foregroundStarted = false;
@@ -50,6 +44,14 @@ public final class LockScreenMonitorService extends Service {
     private int latestStartId = 0;
     private String receiverFilterSignature;
     private AutoStartOnPowerReceiver lockReceiver;
+
+    // Declared after the service state fields referenced by the callback.
+    private final Runnable reconcileRetry = () -> {
+        retryScheduled = false;
+        if (!destroying && foregroundStarted) {
+            reconcileFromPersistedSettings();
+        }
+    };
 
     static boolean isLockMonitoringActive() {
         return lockMonitoringActive;
