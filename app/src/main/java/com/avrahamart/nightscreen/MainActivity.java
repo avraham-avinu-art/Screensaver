@@ -327,7 +327,6 @@ public class MainActivity extends Activity {
         try {
             prefs = getSharedPreferences("settings", MODE_PRIVATE);
             initSettings();
-            LockScreenMonitorService.sync(this);
             getWindow().setFlags(
                     android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN,
                     android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN);
