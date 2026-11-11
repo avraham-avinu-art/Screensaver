@@ -24,12 +24,9 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent) {
         if (intent == null || intent.getAction() == null) return;
         String action = intent.getAction();
-        MonitorDiagnostics.record(context, "AutoStartOnPowerReceiver received action=" + action
-                + ", pid=" + android.os.Process.myPid());
 
         SharedPreferences prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE);
         if (Intent.ACTION_USER_PRESENT.equals(action)) {
-            MonitorDiagnostics.record(context, "USER_PRESENT received; resetting lock-cycle state.");
             MonitorSettingsSnapshot.resetDeviceLockActivation(context);
             prefs.edit().remove("deepSleepScreenOffElapsed")
                     .remove("deepSleepScreenOffUptime").apply();
@@ -42,36 +39,19 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
             return;
         }
         if (Intent.ACTION_SCREEN_OFF.equals(action)) {
-            long screenOffElapsed = SystemClock.elapsedRealtime();
-            long screenOffUptime = SystemClock.uptimeMillis();
-            boolean saved = prefs.edit()
-                    .putLong("deepSleepScreenOffElapsed", screenOffElapsed)
-                    .putLong("deepSleepScreenOffUptime", screenOffUptime)
+            prefs.edit()
+                    .putLong("deepSleepScreenOffElapsed", SystemClock.elapsedRealtime())
+                    .putLong("deepSleepScreenOffUptime", SystemClock.uptimeMillis())
                     .commit();
-            MonitorDiagnostics.record(context, "SCREEN_OFF timestamp saved=" + saved
-                    + ", elapsed=" + screenOffElapsed + ", uptime=" + screenOffUptime);
         }
 
         MonitorSettingsSnapshot settings = MonitorSettingsSnapshot.read(context);
-        if (settings == null) {
-            MonitorDiagnostics.record(context, "Event ignored: monitor settings snapshot is unavailable.");
-            return;
-        }
+        if (settings == null) return;
 
         if (Intent.ACTION_POWER_CONNECTED.equals(action)) {
-            MonitorDiagnostics.record(context, "POWER_CONNECTED state: enabled="
-                    + settings.autoStartOnCharge + ", androidDream="
-                    + settings.useAndroidDreamForCharging + ", overlayGranted="
-                    + canLaunchFromBackground(context));
             if (!settings.autoStartOnCharge || settings.useAndroidDreamForCharging) return;
-            if (!canLaunchFromBackground(context)) {
-                MonitorDiagnostics.record(context, "POWER_CONNECTED ignored: overlay permission unavailable.");
-                return;
-            }
-            if (!claimPowerConnectedEvent(context)) {
-                MonitorDiagnostics.record(context, "POWER_CONNECTED ignored: duplicate event guard claimed it.");
-                return;
-            }
+            if (!canLaunchFromBackground(context)) return;
+            if (!claimPowerConnectedEvent(context)) return;
 
             Intent launch = new Intent(context, MainActivity.class);
             launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
@@ -80,20 +60,12 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
             launch.putExtra(MainActivity.EXTRA_OPENED_BY_CHARGER, true);
             try {
                 context.startActivity(launch);
-            } catch (RuntimeException error) {
-                MonitorDiagnostics.record(context, "POWER_CONNECTED startActivity failed; exception="
-                        + error.getClass().getName() + ": " + error.getMessage());
+            } catch (Throwable ignored) {
+                // Respect device-specific background-launch restrictions.
             }
             return;
         }
 
-        if (Intent.ACTION_SCREEN_OFF.equals(action)) {
-            MonitorDiagnostics.record(context, "SCREEN_OFF lock-start gate: enabled="
-                    + settings.autoStartOnDeviceLock
-                    + ", consumed=" + settings.deviceLockActivationConsumed
-                    + ", monitorActive=" + LockScreenMonitorService.isLockMonitoringActive()
-                    + ", overlayGranted=" + canLaunchFromBackground(context));
-        }
         if (Intent.ACTION_SCREEN_OFF.equals(action)
                 && settings.autoStartOnDeviceLock
                 && !settings.deviceLockActivationConsumed
@@ -172,15 +144,10 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
         MonitorSettingsSnapshot settings = MonitorSettingsSnapshot.read(context);
         boolean afterDeepSleep = settings != null && settings.autoStartOnWake
                 && deepSleep && !settings.deviceLockActivationConsumed;
-        boolean monitorActive = LockScreenMonitorService.isLockMonitoringActive();
-        boolean activityVisible = isMainActivityVisible(context);
-        boolean overlayGranted = canLaunchFromBackground(context);
-        MonitorDiagnostics.record(context, "SCREEN_ON wake gate: deepSleep=" + deepSleep
-                + ", autoStartOnWake=" + (settings != null && settings.autoStartOnWake)
-                + ", lockCycleConsumed=" + (settings != null && settings.deviceLockActivationConsumed)
-                + ", monitorActive=" + monitorActive + ", mainActivityVisible="
-                + activityVisible + ", overlayGranted=" + overlayGranted);
-        if (!afterDeepSleep || !monitorActive || activityVisible || !overlayGranted) return;
+        if (!afterDeepSleep
+                || !LockScreenMonitorService.isLockMonitoringActive()
+                || isMainActivityVisible(context)
+                || !canLaunchFromBackground(context)) return;
 
         Intent launch = new Intent(context, MainActivity.class);
         launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
@@ -189,9 +156,8 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
         launch.putExtra(MainActivity.EXTRA_OPENED_BY_WAKE, true);
         try {
             context.startActivity(launch);
-        } catch (RuntimeException error) {
-            MonitorDiagnostics.record(context, "SCREEN_ON startActivity failed; exception="
-                    + error.getClass().getName() + ": " + error.getMessage());
+        } catch (Throwable ignored) {
+            // Respect device-specific background-launch restrictions.
         }
     }
 
