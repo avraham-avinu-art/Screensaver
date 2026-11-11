@@ -1,4 +1,5 @@
 name: Build APK
+# Temporary CI trigger for lock-monitor recovery build.
 
 on:
   push:
