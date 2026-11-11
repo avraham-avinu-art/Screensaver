@@ -28,6 +28,10 @@
             android:exported="false"
             android:screenOrientation="unspecified" />
         <activity
+            android:name=".MonitorDiagnosticsActivity"
+            android:label="אבחון פעילות השירות"
+            android:exported="false" />
+        <activity
             android:name=".GuideActivity"
             android:label="מדריך שימוש"
             android:exported="false"
@@ -70,6 +74,11 @@
 
         <receiver
             android:name=".LockScreenServiceRestartReceiver"
+            android:enabled="true"
+            android:exported="false" />
+
+        <receiver
+            android:name=".MonitorDiagnosticsProbeReceiver"
             android:enabled="true"
             android:exported="false" />
 
