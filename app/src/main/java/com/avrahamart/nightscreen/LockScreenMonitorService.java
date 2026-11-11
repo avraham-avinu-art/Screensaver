@@ -249,11 +249,6 @@ public final class LockScreenMonitorService extends Service {
         Log.d(TAG, "Pending monitor recovery alarm cancelled after service start.");
     }
 
-    private void cancelScheduledRestart() {
-        cancelScheduledRestart(this);
-        restartScheduled = false;
-    }
-
     private static void cancelScheduledRestart(Context context) {
         AlarmManager alarmManager =
                 (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
