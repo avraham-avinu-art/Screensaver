@@ -15,6 +15,9 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.RandomAccessFile;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -44,14 +47,14 @@ final class MonitorDiagnostics {
         Log.i(TAG, message);
         try {
             File file = new File(context.getFilesDir(), FILE_NAME);
-            if (file.exists() && file.length() > MAX_BYTES) {
-                File backup = new File(context.getFilesDir(), FILE_NAME + ".old");
-                if (backup.exists()) backup.delete();
-                if (!file.renameTo(backup)) file.delete();
-            }
-            try (FileOutputStream output = new FileOutputStream(file, true)) {
+            // The monitor and diagnostic probe run in different app processes.
+            // Use a file lock so their records cannot overwrite/interleave.
+            try (RandomAccessFile output = new RandomAccessFile(file, "rw");
+                 FileChannel channel = output.getChannel();
+                 FileLock ignored = channel.lock()) {
+                if (output.length() > MAX_BYTES) output.setLength(0L);
+                output.seek(output.length());
                 output.write(line.getBytes(StandardCharsets.UTF_8));
-                output.flush();
             }
         } catch (Throwable error) {
             Log.e(TAG, "Unable to persist diagnostic event", error);
