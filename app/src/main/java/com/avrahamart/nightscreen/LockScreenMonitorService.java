@@ -202,10 +202,14 @@ public final class LockScreenMonitorService extends Service {
 
     @Override
     public void onTaskRemoved(Intent rootIntent) {
-        // A launcher-task removal must not downgrade or drop the running FGS.
-        // Reassert the same persistent notification immediately, as in the
-        // task-removal handling used by ForegroundServiceExample.
-        if (monitorReady && receiverRegistered) {
+        // This callback can arrive in a freshly recreated service instance
+        // before its first onStartCommand(). Do not require monitorReady here:
+        // persisted opt-in settings are enough to restore the FGS notification.
+        MonitorSettingsSnapshot snapshot = MonitorSettingsSnapshot.read(this);
+        boolean monitoringRequested = snapshot != null
+                && (snapshot.autoStartOnDeviceLock || snapshot.autoStartOnWake);
+        boolean overlayGranted = Build.VERSION.SDK_INT < 29 || Settings.canDrawOverlays(this);
+        if (monitoringRequested && overlayGranted) {
             try {
                 Notification notification = buildQuietNotification();
                 if (Build.VERSION.SDK_INT >= 34) {
