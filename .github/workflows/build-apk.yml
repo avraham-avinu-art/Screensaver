@@ -2,7 +2,7 @@ name: Build APK
 
 on:
   push:
-    branches: [ main, recovery/rebuild-from-575 ]
+    branches: [ main ]
   pull_request:
   workflow_dispatch:
 
