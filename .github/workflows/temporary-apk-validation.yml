@@ -1,0 +1,93 @@
+name: Temporary APK validation
+
+on:
+  push:
+    branches: [ automation/apk-validation-20261111 ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Install Gradle 9.5
+        run: |
+          curl -fsSL https://services.gradle.org/distributions/gradle-9.5.1-bin.zip -o /tmp/gradle.zip
+          unzip -q /tmp/gradle.zip -d /tmp
+          echo "/tmp/gradle-9.5.1/bin" >> "$GITHUB_PATH"
+
+      - name: Prepare font editing tools
+        run: |
+          python3 -m venv /tmp/font-normalizer-env
+          /tmp/font-normalizer-env/bin/python -m pip install --disable-pip-version-check fonttools==4.63.0
+
+      - name: Normalize custom font files
+        run: |
+          /tmp/font-normalizer-env/bin/python tools/normalize_font_sizes.py \
+            --assets-dir app/src/main/assets/fonts \
+            --zip-output app/build/normalized-fonts.zip
+
+      - name: Configure persistent release signing
+        env:
+          NIGHTSCREEN_SIGNING_BUNDLE_BASE64: ${{ secrets.NIGHTSCREEN_SIGNING_BUNDLE_BASE64 }}
+        run: |
+          if [ -z "$NIGHTSCREEN_SIGNING_BUNDLE_BASE64" ]; then
+            echo "::error::The NIGHTSCREEN_SIGNING_BUNDLE_BASE64 repository secret is missing."
+            exit 1
+          fi
+          python3 - <<'PY'
+          import base64, json, os
+          raw = base64.b64decode(os.environ["NIGHTSCREEN_SIGNING_BUNDLE_BASE64"], validate=True)
+          bundle = json.loads(raw.decode("utf-8"))
+          if bundle.get("version") != 2:
+              raise SystemExit("Signing secret is outdated.")
+          keystore_bytes = base64.b64decode(bundle["keystore_base64"], validate=True)
+          if not keystore_bytes:
+              raise ValueError("Signing keystore is empty.")
+          keystore_path = os.path.join(os.environ["RUNNER_TEMP"], "nightscreen-release.jks")
+          with open(keystore_path, "wb") as keystore:
+              keystore.write(keystore_bytes)
+          os.chmod(keystore_path, 0o600)
+          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as env_file:
+              values = {
+                  "NIGHTSCREEN_RELEASE_KEYSTORE_PATH": keystore_path,
+                  "NIGHTSCREEN_RELEASE_STORE_PASSWORD": bundle["store_password"],
+                  "NIGHTSCREEN_RELEASE_KEY_ALIAS": bundle["key_alias"],
+                  "NIGHTSCREEN_RELEASE_KEY_PASSWORD": bundle["key_password"],
+              }
+              for key, value in values.items():
+                  if "\n" in value or "\r" in value:
+                      raise ValueError("Signing values must not contain line breaks")
+                  if key.endswith("_PASSWORD"):
+                      print(f"::add-mask::{value}")
+                  env_file.write(f"{key}={value}\n")
+          print("Persistent release signing key configured.")
+
+      - name: Build release APK
+        run: gradle --version && gradle :app:assembleRelease --no-daemon
+
+      - name: Verify APK
+        run: |
+          test -s app/build/outputs/apk/release/app-release.apk
+          sha256sum app/build/outputs/apk/release/app-release.apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: NightScreen-latest-recovery-apk
+          path: app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
+          retention-days: 30
