@@ -202,7 +202,22 @@ public final class LockScreenMonitorService extends Service {
 
     @Override
     public void onTaskRemoved(Intent rootIntent) {
-        Log.w(TAG, "App task removed. Scheduling direct foreground-service recovery.");
+        // A launcher-task removal must not downgrade or drop the running FGS.
+        // Reassert the same persistent notification immediately, as in the
+        // task-removal handling used by ForegroundServiceExample.
+        if (monitorReady && receiverRegistered) {
+            try {
+                Notification notification = buildQuietNotification();
+                if (Build.VERSION.SDK_INT >= 34) {
+                    startForeground(NOTIFICATION_ID, notification,
+                            ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
+                } else {
+                    startForeground(NOTIFICATION_ID, notification);
+                }
+            } catch (RuntimeException error) {
+                Log.e(TAG, "Unable to reassert foreground state after task removal.", error);
+            }
+        }
         scheduleRestartIfEnabled("task-removed");
         super.onTaskRemoved(rootIntent);
     }
