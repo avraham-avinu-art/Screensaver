@@ -1,0 +1,1 @@
+Temporary file used only to trigger release APK validation for the screensaver/settings task split. Do not merge this file.
