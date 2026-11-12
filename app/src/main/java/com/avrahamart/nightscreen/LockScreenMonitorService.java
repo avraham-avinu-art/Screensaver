@@ -306,11 +306,16 @@ public final class LockScreenMonitorService extends Service {
 
     @Override
     public void onTaskRemoved(Intent rootIntent) {
-        // The monitor's recovery hook belongs to the screensaver task only.
-        // Removing the independent Settings task must not schedule a monitor restart.
-        if (rootIntent == null || rootIntent.getComponent() == null
-                || !MainActivity.class.getName().equals(
-                        rootIntent.getComponent().getClassName())) {
+        // Normal monitor ownership remains independent of both UI tasks.
+        // This is recovery only: allow either app-owned root task to trigger it,
+        // because some task managers stop the foreground service when Settings is cleared.
+        String removedTaskRoot = rootIntent == null || rootIntent.getComponent() == null
+                ? null : rootIntent.getComponent().getClassName();
+        boolean screensaverTaskRemoved =
+                MainActivity.class.getName().equals(removedTaskRoot);
+        boolean settingsTaskRemoved =
+                SettingsActivity.class.getName().equals(removedTaskRoot);
+        if (!screensaverTaskRemoved && !settingsTaskRemoved) {
             super.onTaskRemoved(rootIntent);
             return;
         }
