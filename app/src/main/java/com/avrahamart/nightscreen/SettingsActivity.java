@@ -235,6 +235,7 @@ private LinearLayout clockDateCard;
     @Override
     protected void onResume() {
         super.onResume();
+        RecentTaskVisibility.setExcluded(this, false);
         MonitorDiagnostics.record(this, "SettingsActivity onResume; processPid="
                 + android.os.Process.myPid());
         if (content != null) {
