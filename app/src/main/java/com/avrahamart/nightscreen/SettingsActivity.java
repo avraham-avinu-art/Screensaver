@@ -228,7 +228,7 @@ private LinearLayout clockDateCard;
         if (currentCategory != CATEGORY_DASHBOARD) {
             buildDashboard();
         } else {
-            super.onBackPressed();
+            finish();
             overridePendingTransition(
                     R.anim.screensaver_fade_in, R.anim.screensaver_fade_out);
         }
