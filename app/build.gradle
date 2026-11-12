@@ -18,6 +18,22 @@ android {
         versionName '2.0.0'
     }
 
+    flavorDimensions += "usageDetection"
+    productFlavors {
+        usageAccess {
+            dimension "usageDetection"
+            buildConfigField "boolean", "USAGE_ACCESS_ENABLED", "true"
+        }
+        noUsageAccess {
+            dimension "usageDetection"
+            buildConfigField "boolean", "USAGE_ACCESS_ENABLED", "false"
+        }
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+
     signingConfigs {
         if (hasPersistentReleaseSigning) {
             stableRelease {
