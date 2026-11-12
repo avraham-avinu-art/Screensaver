@@ -904,6 +904,10 @@ public class MainActivity extends Activity {
     private void hideOverlayAndRestoreActivityWindow() {
         if (!overlayWindowAttached) return;
         removeOverlayWindow();
+        if (settingsDialogOpen) {
+            unregisterDeviceStateReceiver();
+            unregisterScreenOffTimeoutObserver();
+        }
         try {
             if (screensaverWindowRoot != null && screensaverWindowRoot.getParent() == null) {
                 setContentView(screensaverWindowRoot);
