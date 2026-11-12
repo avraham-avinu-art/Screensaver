@@ -235,6 +235,14 @@ private LinearLayout clockDateCard;
     }
 
     @Override
+    protected void onDestroy() {
+        if (isFinishing()) {
+            MainActivity.onSettingsActivityFinished();
+        }
+        super.onDestroy();
+    }
+
+    @Override
     protected void onResume() {
         super.onResume();
 if (content != null) {
