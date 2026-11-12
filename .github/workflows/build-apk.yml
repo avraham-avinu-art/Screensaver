@@ -96,19 +96,33 @@ jobs:
       - name: Report release signing mode
         run: echo "Using the configured persistent release signing key."
 
-      - name: Run automatic-start regression tests and build release APK
-        run: gradle --version && gradle :app:testReleaseUnitTest :app:assembleRelease --no-daemon
-
-      - name: Verify APK
+      - name: Run regression tests and build both release APK variants
         run: |
-          test -s app/build/outputs/apk/release/app-release.apk
-          sha256sum app/build/outputs/apk/release/app-release.apk
+          gradle --version
+          gradle :app:testUsageAccessReleaseUnitTest :app:testNoUsageAccessReleaseUnitTest \
+            :app:assembleUsageAccessRelease :app:assembleNoUsageAccessRelease --no-daemon
 
-      - name: Upload APK
+      - name: Verify both APKs
+        run: |
+          USAGE_APK=app/build/outputs/apk/usageAccess/release/app-usageAccess-release.apk
+          NO_USAGE_APK=app/build/outputs/apk/noUsageAccess/release/app-noUsageAccess-release.apk
+          test -s "$USAGE_APK"
+          test -s "$NO_USAGE_APK"
+          sha256sum "$USAGE_APK" "$NO_USAGE_APK"
+
+      - name: Upload Usage Access APK
         uses: actions/upload-artifact@v4
         with:
-          name: NightScreen-release-apk
-          path: app/build/outputs/apk/release/app-release.apk
+          name: NightScreen-usage-access-apk
+          path: app/build/outputs/apk/usageAccess/release/app-usageAccess-release.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload no-Usage-Access APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: NightScreen-no-usage-access-apk
+          path: app/build/outputs/apk/noUsageAccess/release/app-noUsageAccess-release.apk
           if-no-files-found: error
           retention-days: 30
 

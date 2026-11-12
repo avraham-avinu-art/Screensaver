@@ -19,6 +19,15 @@ public final class PermissionDependencySync {
     }
 
     public static String disableFeaturesWithoutPermissions(Context context) {
+        return disableFeaturesWithoutPermissions(context, true);
+    }
+
+    /**
+     * Settings-task callers may normalize persisted switches, but only the
+     * screensaver task owns foreground-monitor reconciliation.
+     */
+    public static String disableFeaturesWithoutPermissions(
+            Context context, boolean reconcileMonitor) {
         SharedPreferences prefs = context.getApplicationContext()
                 .getSharedPreferences("settings", Context.MODE_PRIVATE);
         boolean overlayRequired = Build.VERSION.SDK_INT >= 29
@@ -55,7 +64,7 @@ public final class PermissionDependencySync {
             MonitorSettingsSnapshot.resetDeviceLockActivation(context);
         }
 
-        if (disableLockStart || disableWakeStart) {
+        if (reconcileMonitor && (disableLockStart || disableWakeStart)) {
             LockScreenMonitorService.sync(context);
         }
         if (disableLockStart || disableChargeStart || disableWakeStart) {

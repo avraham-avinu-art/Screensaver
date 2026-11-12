@@ -6,9 +6,7 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
-import android.net.Uri;
 import android.os.Build;
-import android.provider.Settings;
 
 /**
  * Builds the single persistent notification owned exclusively by
@@ -28,14 +26,16 @@ public final class AutoStartNotificationController {
                 (NotificationManager) app.getSystemService(Context.NOTIFICATION_SERVICE);
         if (manager != null) createChannel(manager);
 
-        Intent settings = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION);
-        settings.setData(Uri.parse("package:" + app.getPackageName()));
-        settings.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
-                | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        // The persistent monitor notification belongs to the screensaver task.
+        // Opening it must never bring the Settings task to the foreground.
+        Intent mainScreen = new Intent(app, MainActivity.class);
+        mainScreen.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                | Intent.FLAG_ACTIVITY_CLEAR_TOP
+                | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         int pendingFlags = PendingIntent.FLAG_UPDATE_CURRENT;
         if (Build.VERSION.SDK_INT >= 23) pendingFlags |= PendingIntent.FLAG_IMMUTABLE;
         PendingIntent contentIntent = PendingIntent.getActivity(
-                app, NOTIFICATION_ID, settings, pendingFlags);
+                app, NOTIFICATION_ID, mainScreen, pendingFlags);
 
         Notification.Builder builder = Build.VERSION.SDK_INT >= 26
                 ? new Notification.Builder(app, CHANNEL_ID)

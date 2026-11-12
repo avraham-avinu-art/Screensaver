@@ -1,6 +1,7 @@
 package com.avrahamart.nightscreen;
 
 import android.app.Activity;
+import android.app.AppOpsManager;
 import android.app.AlertDialog;
 import android.app.admin.DevicePolicyManager;
 import android.app.NotificationManager;
@@ -13,6 +14,7 @@ import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Process;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.view.Gravity;
@@ -36,9 +38,11 @@ public class PermissionsActivity extends Activity {
 
     private TextView notificationStatus;
     private TextView overlayStatus;
+    private TextView usageStatus;
     private TextView adminStatus;
     private Button notificationButton;
     private Button overlayButton;
+    private Button usageButton;
     private Button adminButton;
     private DevicePolicyManager devicePolicyManager;
     private ComponentName adminComponent;
@@ -112,6 +116,7 @@ public class PermissionsActivity extends Activity {
 
         addNotificationPermissionCard(cards);
         addOverlayPermissionCard(cards);
+        if (BuildConfig.USAGE_ACCESS_ENABLED) addUsageAccessPermissionCard(cards);
         addDeviceAdminPermissionCard(cards);
 
         scroll.addView(cards, new ScrollView.LayoutParams(-1, -2));
@@ -124,7 +129,7 @@ public class PermissionsActivity extends Activity {
     protected void onResume() {
         super.onResume();
         String disabledFeatures =
-                PermissionDependencySync.disableFeaturesWithoutPermissions(this);
+                PermissionDependencySync.disableFeaturesWithoutPermissions(this, false);
         if (!disabledFeatures.isEmpty()) {
             AppToast.makeText(this, disabledFeatures, Toast.LENGTH_LONG).show();
         }
@@ -167,6 +172,37 @@ public class PermissionsActivity extends Activity {
                     }
                     openOverlayPermissionSettings();
                 });
+    }
+
+
+    private void addUsageAccessPermissionCard(LinearLayout parent) {
+        LinearLayout card = makeCard(parent, "הרשאת נתוני שימוש",
+                "ההרשאה מאפשרת לזהות מעבר לאפליקציה אחרת, להסתיר את השומר ממסך היישומים האחרונים ולמנוע ממנו לכסות אפליקציות אחרות.");
+        usageStatus = addStatus(card);
+        usageButton = addPermissionButton(card, "הפעל הרשאת נתוני שימוש", v -> {
+            if (hasUsageAccess()) {
+                AppToast.makeText(this,
+                        "כדי לשנות או לבטל את ההרשאה, נהל את נתוני השימוש של שומר מסך במסך הבא.",
+                        Toast.LENGTH_LONG).show();
+            }
+            try {
+                startActivity(new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS));
+            } catch (Throwable ignored) {
+                AppToast.makeText(this, "הגדרת נתוני שימוש אינה זמינה במכשיר זה.",
+                        Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
+    private boolean hasUsageAccess() {
+        try {
+            AppOpsManager manager = (AppOpsManager) getSystemService(APP_OPS_SERVICE);
+            return manager != null && manager.checkOpNoThrow(
+                    AppOpsManager.OPSTR_GET_USAGE_STATS,
+                    Process.myUid(), getPackageName()) == AppOpsManager.MODE_ALLOWED;
+        } catch (Throwable ignored) {
+            return false;
+        }
     }
 
     private void addDeviceAdminPermissionCard(LinearLayout parent) {
@@ -272,6 +308,18 @@ public class PermissionsActivity extends Activity {
                 ? "ניהול הרשאת הצגה מעל אפליקציות"
                 : "הפעל הרשאת הצגה מעל אפליקציות");
         overlayButton.setEnabled(true);
+
+        if (BuildConfig.USAGE_ACCESS_ENABLED && usageStatus != null && usageButton != null) {
+            boolean usageGranted = hasUsageAccess();
+            usageStatus.setText(usageGranted
+                    ? "ההרשאה ניתנה — זיהוי האפליקציה הפעילה זמין."
+                    : "נדרשת הרשאה כדי להסתיר את השומר כשעוברים לאפליקציה אחרת.");
+            usageStatus.setTextColor(usageGranted ? ACCENT : MUTED);
+            usageButton.setText(usageGranted
+                    ? "ניהול הרשאת נתוני שימוש"
+                    : "הפעל הרשאת נתוני שימוש");
+            usageButton.setEnabled(true);
+        }
 
         boolean adminGranted = isAdminActive();
         adminStatus.setText(adminGranted
