@@ -306,6 +306,15 @@ public final class LockScreenMonitorService extends Service {
 
     @Override
     public void onTaskRemoved(Intent rootIntent) {
+        // The monitor's recovery hook belongs to the screensaver task only.
+        // Removing the independent Settings task must not schedule a monitor restart.
+        if (rootIntent == null || rootIntent.getComponent() == null
+                || !MainActivity.class.getName().equals(
+                        rootIntent.getComponent().getClassName())) {
+            super.onTaskRemoved(rootIntent);
+            return;
+        }
+
         MonitorSettingsSnapshot snapshot = MonitorSettingsSnapshot.read(this);
         boolean requested = snapshot == null
                 ? lastKnownMonitoringRequested
