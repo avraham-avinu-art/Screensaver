@@ -229,6 +229,8 @@ private LinearLayout clockDateCard;
             buildDashboard();
         } else {
             super.onBackPressed();
+            overridePendingTransition(
+                    R.anim.screensaver_fade_in, R.anim.screensaver_fade_out);
         }
     }
 
