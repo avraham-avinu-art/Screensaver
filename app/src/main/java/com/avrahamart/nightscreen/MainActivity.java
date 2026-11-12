@@ -513,6 +513,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        RecentTaskVisibility.setExcluded(this, true);
         MonitorDiagnostics.record(this, "MainActivity onResume; processPid="
                 + android.os.Process.myPid()
                 + ", launchAction=" + (getIntent() == null ? "null" : getIntent().getAction()));
