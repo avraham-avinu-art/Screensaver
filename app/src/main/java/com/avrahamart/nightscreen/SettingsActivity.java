@@ -245,7 +245,6 @@ if (content != null) {
                 AppToast.makeText(this, disabledFeatures, Toast.LENGTH_LONG).show();
             }
             refreshPermissionDependentToggles();
-            LockScreenMonitorService.sync(this);
             NightScreenApplication.syncChargerReceiver(this);
             ensureAutoStartNotificationPermission();
             updateDeviceCapabilityNotice();
@@ -1352,7 +1351,6 @@ screenTitle.setText("הגדרות");
             }
             if ("useAndroidDreamForCharging".equals(key)) {
                 prefs.edit().putBoolean("autoStartOverlayPermissionPending", false).apply();
-                LockScreenMonitorService.sync(this);
                 if (checked) {
                     openingSystemSettingsForAutoStart = getBool("autoStartOnCharge", false);
                     try {
@@ -1402,7 +1400,6 @@ screenTitle.setText("הגדרות");
                             .apply();
                 }
                 updateOverlayPermissionCardVisibility();
-                LockScreenMonitorService.sync(this);
             } else if ("autoStartOnDeviceLock".equals(key)) {
                 if (checked && Build.VERSION.SDK_INT >= 29
                         && !Settings.canDrawOverlays(this)) {
@@ -1418,7 +1415,6 @@ screenTitle.setText("הגדרות");
                             .apply();
                     MonitorSettingsSnapshot.resetDeviceLockActivation(this);
                 }
-                LockScreenMonitorService.sync(this);
                 updateOverlayPermissionCardVisibility();
             } else if ("autoStartOnBoot".equals(key) || "autoStartOnWake".equals(key)) {
                 if (checked && Build.VERSION.SDK_INT >= 29
@@ -1433,9 +1429,7 @@ screenTitle.setText("הגדרות");
                         toggle.setChecked(false);
                     }
                 }
-                // Keep the same persistent notification for every enabled mode.
-                // Actual event subscriptions remain independently gated.
-                LockScreenMonitorService.sync(this);
+                // The main-screen task reconciles the monitor after Settings closes.
             } else if ("showPlayer".equals(key)) {
                 if (checked && !hasNotificationAccess()) {
                     prefs.edit().putBoolean("showPlayerPermissionPending", true).apply();
@@ -2105,7 +2099,6 @@ screenTitle.setText("הגדרות");
                                            int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode != REQUEST_AUTO_START_NOTIFICATION_PERMISSION) return;
-        LockScreenMonitorService.sync(this);
         if (grantResults.length == 0
                 || grantResults[0] != android.content.pm.PackageManager.PERMISSION_GRANTED) {
             AppToast.makeText(this,
@@ -2170,7 +2163,6 @@ screenTitle.setText("הגדרות");
                 || getBool("useAndroidDreamForCharging", false)) return;
 
         prefs.edit().putBoolean("autoStartOnCharge", false).apply();
-        LockScreenMonitorService.sync(this);
                 if (autoStartOnChargeToggle != null && autoStartOnChargeToggle.isChecked()) {
             autoStartOnChargeToggle.setChecked(false);
         }
