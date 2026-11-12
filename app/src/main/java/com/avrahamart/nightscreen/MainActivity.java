@@ -186,7 +186,6 @@ public class MainActivity extends Activity {
                 lastScreenOffElapsedRealtime = SystemClock.elapsedRealtime();
                 if (overlayWindowAttached) {
                     handoffOverlayToLockScreenActivity();
-                    return;
                 }
                 learnScreenTimeoutBehaviorFromScreenOff();
                 handleScreenOffForLockScreenContinuation();
@@ -909,8 +908,15 @@ public class MainActivity extends Activity {
     }
 
     private void restoreOverlayAfterSettings() {
-        if (!overlaySessionActive || !overlayHiddenForSettings
-                || isFinishing() || !canUseOverlayPresentation()) return;
+        if (!overlaySessionActive || !overlayHiddenForSettings || isFinishing()) return;
+        settingsDialogOpen = false;
+        if (!canUseOverlayPresentation()) {
+            // If Usage Access or overlay access was revoked in Settings, leave the
+            // Activity route available rather than showing a window we cannot monitor.
+            overlaySessionActive = false;
+            overlayHiddenForSettings = false;
+            return;
+        }
 
         long nowElapsed = SystemClock.elapsedRealtime();
         String activeDuration = getString("screenSaverDuration", "device");
