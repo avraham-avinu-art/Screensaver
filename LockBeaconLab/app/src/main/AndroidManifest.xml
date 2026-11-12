@@ -26,18 +26,29 @@
             </intent-filter>
         </activity>
 
-        <activity
-            android:name=".BeaconLockfaceActivity"
-            android:excludeFromRecents="true"
-            android:exported="false"
-            android:launchMode="singleTop"
-            android:showWhenLocked="true" />
+        <service
+            android:name=".BeaconAccessibilityService"
+            android:exported="true"
+            android:label="@string/beacon_accessibility_label"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/beacon_accessibility_service" />
+        </service>
 
         <service
             android:name=".BeaconPulseService"
+            android:enabled="true"
             android:exported="false"
-            android:process=":beaconengine"
             android:stopWithTask="false" />
+
+        <receiver
+            android:name=".BeaconRestartReceiver"
+            android:enabled="true"
+            android:exported="false" />
 
         <receiver
             android:name=".BeaconStartupReceiver"

@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.Settings;
 
 public final class BeaconStartupReceiver extends BroadcastReceiver {
     @Override
@@ -15,6 +16,9 @@ public final class BeaconStartupReceiver extends BroadcastReceiver {
         String action = intent.getAction();
         if (!Intent.ACTION_BOOT_COMPLETED.equals(action)
                 && !Intent.ACTION_MY_PACKAGE_REPLACED.equals(action)) return;
+
+        if (!Settings.canDrawOverlays(context)
+                || !BeaconAccessibilityService.isServiceEnabled(context)) return;
 
         try {
             Bundle state = context.getContentResolver().call(
@@ -30,7 +34,6 @@ public final class BeaconStartupReceiver extends BroadcastReceiver {
                 context.startService(engine);
             }
         } catch (RuntimeException ignored) {
-            // A normal launcher start remains available if the provider is not ready.
         }
     }
 }

@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Clock Beacon Lab</string>
+    <string name="beacon_accessibility_label">Clock Beacon</string>
+    <string name="beacon_accessibility_description">השירות משמש לשמירת מנגנון השעון פעיל בזמן שמסך האפליקציה סגור. הוא אינו קורא תוכן חלונות ואינו מבצע פעולות נגישות.</string>
 </resources>

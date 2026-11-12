@@ -19,6 +19,7 @@ public final class BeaconConsoleActivity extends Activity {
     private TextView stateText;
     private Button enableButton;
     private boolean waitingForOverlaySettings;
+    private boolean waitingForAccessibilitySettings;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -29,16 +30,29 @@ public final class BeaconConsoleActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+
         if (waitingForOverlaySettings) {
             waitingForOverlaySettings = false;
             if (Settings.canDrawOverlays(this)) {
-                turnBeaconOn();
+                continueEnableFlow();
             } else {
                 Toast.makeText(this,
                         "לא ניתנה הרשאת הצגה מעל אפליקציות אחרות.",
                         Toast.LENGTH_LONG).show();
             }
         }
+
+        if (waitingForAccessibilitySettings) {
+            waitingForAccessibilitySettings = false;
+            if (BeaconAccessibilityService.isServiceEnabled(this)) {
+                turnBeaconOn();
+            } else {
+                Toast.makeText(this,
+                        "שירות הנגישות לא הופעל. לא הופעל מעקב ברקע.",
+                        Toast.LENGTH_LONG).show();
+            }
+        }
+
         refreshConsole();
     }
 
@@ -55,14 +69,16 @@ public final class BeaconConsoleActivity extends Activity {
         heading.setTextSize(25);
         heading.setGravity(Gravity.CENTER);
         page.addView(heading, new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT));
 
         stateText = new TextView(this);
         stateText.setTextColor(0xFFCCCCCC);
         stateText.setTextSize(16);
         stateText.setGravity(Gravity.CENTER);
         LinearLayout.LayoutParams stateParams = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
         stateParams.topMargin = dp(28);
         page.addView(stateText, stateParams);
 
@@ -79,15 +95,21 @@ public final class BeaconConsoleActivity extends Activity {
     }
 
     private void onEnablePressed(View view) {
-        Boolean enabled = readEnabled();
-        if (Boolean.TRUE.equals(enabled)) {
-            turnBeaconOff();
-            return;
-        }
+        boolean ready = Settings.canDrawOverlays(this)
+                && BeaconAccessibilityService.isServiceEnabled(this);
 
+        if (Boolean.TRUE.equals(readEnabled()) && ready) {
+            turnBeaconOff();
+        } else {
+            continueEnableFlow();
+        }
+    }
+
+    private void continueEnableFlow() {
         if (!Settings.canDrawOverlays(this)) {
             waitingForOverlaySettings = true;
-            Intent permissionPage = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+            Intent permissionPage = new Intent(
+                    Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
                     Uri.parse("package:" + getPackageName()));
             try {
                 startActivityForResult(permissionPage, REQUEST_BEACON_OVERLAY);
@@ -100,11 +122,25 @@ public final class BeaconConsoleActivity extends Activity {
             return;
         }
 
+        if (!BeaconAccessibilityService.isServiceEnabled(this)) {
+            waitingForAccessibilitySettings = true;
+            try {
+                startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS));
+            } catch (RuntimeException error) {
+                waitingForAccessibilitySettings = false;
+                Toast.makeText(this,
+                        "לא ניתן לפתוח את הגדרות הנגישות במכשיר הזה.",
+                        Toast.LENGTH_LONG).show();
+            }
+            return;
+        }
+
         turnBeaconOn();
     }
 
     private void turnBeaconOn() {
-        if (!Settings.canDrawOverlays(this)) {
+        if (!Settings.canDrawOverlays(this)
+                || !BeaconAccessibilityService.isServiceEnabled(this)) {
             refreshConsole();
             return;
         }
@@ -125,15 +161,13 @@ public final class BeaconConsoleActivity extends Activity {
             Toast.makeText(this, "המעקב הופעל.", Toast.LENGTH_SHORT).show();
         } catch (RuntimeException error) {
             storeEnabled(false);
-            Toast.makeText(this, "Android לא אישרה להפעיל את שירות המעקב.",
-                    Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "לא ניתן להפעיל את שירות המעקב.", Toast.LENGTH_LONG).show();
         }
         refreshConsole();
     }
 
     private void turnBeaconOff() {
         storeEnabled(false);
-        BeaconPulseService.cancelRecovery(this);
         stopService(new Intent(this, BeaconPulseService.class));
         Toast.makeText(this, "המעקב כובה.", Toast.LENGTH_SHORT).show();
         refreshConsole();
@@ -141,16 +175,23 @@ public final class BeaconConsoleActivity extends Activity {
 
     private void refreshConsole() {
         if (stateText == null || enableButton == null) return;
-        Boolean enabled = readEnabled();
 
-        if (Boolean.TRUE.equals(enabled)) {
-            stateText.setText("שירות המעקב אמור לפעול ברקע.\nהשעון יופיע בעת התעוררות כשהמכשיר נעול.");
+        boolean enabled = Boolean.TRUE.equals(readEnabled());
+        boolean overlayGranted = Settings.canDrawOverlays(this);
+        boolean accessibilityEnabled =
+                BeaconAccessibilityService.isServiceEnabled(this);
+
+        if (enabled && overlayGranted && accessibilityEnabled) {
+            stateText.setText("שירות המעקב פעיל.\nהשעון יופיע כשהמסך יתעורר והמכשיר יהיה נעול.");
             enableButton.setText("כבה את המעקב");
-        } else if (!Settings.canDrawOverlays(this)) {
+        } else if (!overlayGranted) {
             stateText.setText("יש לאשר הצגה מעל אפליקציות אחרות כדי להציג את השעון במסך הנעילה.");
-            enableButton.setText("אישור הצגה במסך הנעילה");
+            enableButton.setText("אישור הצגה מעל אפליקציות אחרות");
+        } else if (!accessibilityEnabled) {
+            stateText.setText("כדי לשמור את מנגנון השעון פעיל לאחר סגירת מסך האפליקציה, יש להפעיל את שירות Clock Beacon בהגדרות הנגישות.");
+            enableButton.setText("הפעל שירות נגישות");
         } else {
-            stateText.setText("ההרשאה קיימת. אפשר להפעיל את שירות המעקב.");
+            stateText.setText("שתי ההרשאות קיימות. אפשר להפעיל את שירות המעקב.");
             enableButton.setText("הפעל מעקב ושעון במסך הנעילה");
         }
     }
