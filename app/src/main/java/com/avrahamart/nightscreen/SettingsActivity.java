@@ -610,13 +610,15 @@ screenTitle.setText("הגדרות");
                 new String[]{"ללא", "אחוזים", "סמל", "סמל ואחוזים"},
                 new String[]{"off", "percent", "icon", "icon_percent"},
                 "chargingBatteryDisplayMode");
-        addCheck(content, "השהיה באפליקציות מוחרגות",
-                "pauseWhenExcludedAppActive", false);
-        if (currentSettingsGroup != null && currentSettingsGroup.getChildCount() > 1) {
-            View exclusionCard = currentSettingsGroup.getChildAt(
-                    currentSettingsGroup.getChildCount() - 1);
-            if (exclusionCard instanceof LinearLayout) {
-                addExcludedAppsPicker((LinearLayout) exclusionCard);
+        if (BuildConfig.USAGE_ACCESS_ENABLED) {
+            addCheck(content, "השהיה באפליקציות מוחרגות",
+                    "pauseWhenExcludedAppActive", false);
+            if (currentSettingsGroup != null && currentSettingsGroup.getChildCount() > 1) {
+                View exclusionCard = currentSettingsGroup.getChildAt(
+                        currentSettingsGroup.getChildCount() - 1);
+                if (exclusionCard instanceof LinearLayout) {
+                    addExcludedAppsPicker((LinearLayout) exclusionCard);
+                }
             }
         }
     }
