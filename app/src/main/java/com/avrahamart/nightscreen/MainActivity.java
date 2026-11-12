@@ -407,6 +407,13 @@ public class MainActivity extends Activity {
             removeOverlayWindow();
             overlaySessionActive = false;
             overlayHiddenForSettings = false;
+            try {
+                if (screensaverWindowRoot != null
+                        && screensaverWindowRoot.getParent() == null) {
+                    setContentView(screensaverWindowRoot);
+                }
+            } catch (Throwable ignored) {
+            }
         }
         if (intent != null && (intent.getBooleanExtra(EXTRA_OPENED_BY_CHARGER, false)
                 || intent.getBooleanExtra(EXTRA_OPENED_BY_DEVICE_LOCK, false)
@@ -968,21 +975,26 @@ public class MainActivity extends Activity {
 
     private void handoffOverlayToLockScreenActivity() {
         if (!overlayWindowAttached) return;
-        removeOverlayWindow();
-        overlaySessionActive = false;
-        overlayHiddenForSettings = false;
         try {
-            if (screensaverWindowRoot != null && screensaverWindowRoot.getParent() == null) {
-                setContentView(screensaverWindowRoot);
-            }
             Intent lockLaunch = new Intent(this, MainActivity.class);
             lockLaunch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
                     | Intent.FLAG_ACTIVITY_CLEAR_TOP
                     | Intent.FLAG_ACTIVITY_SINGLE_TOP);
             lockLaunch.putExtra(EXTRA_OPENED_BY_DEVICE_LOCK, true);
+            // Launch the lock-screen Activity while the system overlay is still
+            // visible. onNewIntent removes the overlay and reparents its content.
             startActivity(lockLaunch);
         } catch (Throwable ignored) {
-            // The existing Activity lock-screen route remains the fallback.
+            removeOverlayWindow();
+            overlaySessionActive = false;
+            overlayHiddenForSettings = false;
+            try {
+                if (screensaverWindowRoot != null
+                        && screensaverWindowRoot.getParent() == null) {
+                    setContentView(screensaverWindowRoot);
+                }
+            } catch (Throwable ignoredAgain) {
+            }
         }
     }
 
@@ -3016,10 +3028,11 @@ public class MainActivity extends Activity {
             screensaverWindowRoot.animate().cancel();
             screensaverWindowRoot.animate().alpha(0f).setDuration(260L)
                     .setInterpolator(new android.view.animation.DecelerateInterpolator())
-                    .withEndAction(() -> {
-                        hideOverlayAndRestoreActivityWindow();
-                        launchSettingsActivity();
-                    }).start();
+                    .withEndAction(this::hideOverlayAndRestoreActivityWindow)
+                    .start();
+            // Start while the user-interacted overlay is still present; this keeps
+            // the transition within Android's allowed foreground-start path.
+            launchSettingsActivity();
         } else {
             launchSettingsActivity();
         }
@@ -3042,6 +3055,10 @@ public class MainActivity extends Activity {
                 restoreOverlayAfterSettings();
             } else {
                 scheduleAutoOff(false);
+            }
+            if (overlayWindowAttached && screensaverWindowRoot != null) {
+                screensaverWindowRoot.animate().cancel();
+                screensaverWindowRoot.animate().alpha(1f).setDuration(180L).start();
             }
             AppToast.makeText(
                     this, "לא ניתן לפתוח את מסך ההגדרות.", android.widget.Toast.LENGTH_LONG).show();
