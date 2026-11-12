@@ -2658,6 +2658,7 @@ public class MainActivity extends Activity {
         }
         getWindow().clearFlags(
                 android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        syncOverlayWindowParams();
     }
 
     private void learnScreenTimeoutBehaviorFromScreenOff() {
