@@ -24,6 +24,7 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.PixelFormat;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.media.AudioManager;
@@ -43,6 +44,7 @@ import android.view.KeyEvent;
 import android.provider.Settings;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.SeekBar;
@@ -82,6 +84,7 @@ public class MainActivity extends Activity {
     private static volatile boolean mainActivityResumed = false;
     private static volatile boolean mainActivitySessionAlive = false;
     private static volatile boolean mainActivityPausedByDeviceLock = false;
+    private static volatile MainActivity activeMainActivity;
 
     public static boolean isMainActivityResumed() {
         return mainActivityResumed;
@@ -99,6 +102,26 @@ public class MainActivity extends Activity {
         mainActivityPausedByDeviceLock = false;
     }
     private final Handler handler = new Handler(Looper.getMainLooper());
+    private OverlayRootFrameLayout screensaverWindowRoot;
+    private WindowManager overlayWindowManager;
+    private WindowManager.LayoutParams overlayWindowParams;
+    private boolean overlaySessionActive = false;
+    private boolean overlayWindowAttached = false;
+    private boolean overlayHiddenForSettings = false;
+    private long overlayActivatedAtMs = 0L;
+    private long overlayBaselineEventTimeMs = 0L;
+    private boolean overlayBaselineCaptured = false;
+    private String overlayBaselinePackage = null;
+    private String overlayBaselineClass = null;
+    private final Runnable overlayForegroundMonitor = new Runnable() {
+        @Override public void run() {
+            if (!overlayWindowAttached || settingsDialogOpen || isFinishing()) return;
+            monitorForegroundActivityForOverlay();
+            if (overlayWindowAttached && !settingsDialogOpen && !isFinishing()) {
+                handler.postDelayed(this, 450L);
+            }
+        }
+    };
     private final Runnable autoOffRunnable = this::exitApplicationAtSelectedTime;
     private final Runnable screenOnReleaseRunnable = this::releaseScreenOnHoldForSystemTimeout;
     private boolean waitingForScreenWakeAfterActivityEnd = false;
@@ -130,6 +153,9 @@ public class MainActivity extends Activity {
             if (Intent.ACTION_USER_PRESENT.equals(action)) {
                 mainActivityPausedByDeviceLock = false;
                 clearInitialDeviceLockLaunchOverride();
+                if (!overlayWindowAttached && !settingsDialogOpen) {
+                    scheduleOverlayModeActivation();
+                }
                 return;
             }
             if (Intent.ACTION_POWER_CONNECTED.equals(action)
@@ -158,6 +184,10 @@ public class MainActivity extends Activity {
                 scheduleNextClockUpdate();
             } else if (Intent.ACTION_SCREEN_OFF.equals(action)) {
                 lastScreenOffElapsedRealtime = SystemClock.elapsedRealtime();
+                if (overlayWindowAttached) {
+                    handoffOverlayToLockScreenActivity();
+                    return;
+                }
                 learnScreenTimeoutBehaviorFromScreenOff();
                 handleScreenOffForLockScreenContinuation();
             } else if (Intent.ACTION_SCREEN_ON.equals(action)) {
@@ -324,6 +354,7 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle state) {
         super.onCreate(state);
         mainActivitySessionAlive = true;
+        activeMainActivity = this;
         try {
             prefs = getSharedPreferences("settings", MODE_PRIVATE);
             initSettings();
@@ -370,6 +401,13 @@ public class MainActivity extends Activity {
         if (intent != null && ACTION_FINISH_FROM_TILE.equals(intent.getAction())) {
             finish();
             return;
+        }
+        if (intent != null && overlayWindowAttached
+                && (intent.getBooleanExtra(EXTRA_OPENED_BY_DEVICE_LOCK, false)
+                    || intent.getBooleanExtra(EXTRA_OPENED_BY_WAKE, false))) {
+            removeOverlayWindow();
+            overlaySessionActive = false;
+            overlayHiddenForSettings = false;
         }
         if (intent != null && (intent.getBooleanExtra(EXTRA_OPENED_BY_CHARGER, false)
                 || intent.getBooleanExtra(EXTRA_OPENED_BY_DEVICE_LOCK, false)
@@ -491,7 +529,10 @@ public class MainActivity extends Activity {
         super.onResume();
         mainActivityResumed = true;
         mainActivityPausedByDeviceLock = false;
-        if (shouldPauseForExcludedForegroundApp()) {
+        boolean launchedForLockOrWake = getIntent() != null
+                && (getIntent().getBooleanExtra(EXTRA_OPENED_BY_DEVICE_LOCK, false)
+                    || getIntent().getBooleanExtra(EXTRA_OPENED_BY_WAKE, false));
+        if (!launchedForLockOrWake && shouldPauseForExcludedForegroundApp()) {
             mainActivityResumed = false;
             finish();
             return;
@@ -540,6 +581,7 @@ public class MainActivity extends Activity {
                 stopMediaProgressTicker();
                 hideMediaMirror();
             }
+            scheduleOverlayModeActivation();
         } catch (Throwable t) {
             showFatalError(t);
         }
@@ -551,6 +593,13 @@ public class MainActivity extends Activity {
                 (android.app.KeyguardManager) getSystemService(KEYGUARD_SERVICE);
         mainActivityPausedByDeviceLock =
                 keyguardManager != null && keyguardManager.isKeyguardLocked();
+        if (overlayWindowAttached && !settingsDialogOpen) {
+            // The Activity is deliberately moved behind the active overlay. Keep its
+            // existing UI/controller session alive while the overlay owns presentation.
+            mainActivityResumed = true;
+            super.onPause();
+            return;
+        }
         mainActivityResumed = false;
         stopClockUpdates();
         handler.removeCallbacks(mediaSessionRefreshRunnable);
@@ -562,14 +611,20 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onStop() {
-        unregisterDeviceStateReceiver();
-        unregisterScreenOffTimeoutObserver();
+        if (!overlayWindowAttached) {
+            unregisterDeviceStateReceiver();
+            unregisterScreenOffTimeoutObserver();
+        }
         super.onStop();
     }
 
     @Override
     protected void onDestroy() {
         mainActivitySessionAlive = false;
+        handler.removeCallbacks(overlayForegroundMonitor);
+        removeOverlayWindow();
+        overlaySessionActive = false;
+        if (activeMainActivity == this) activeMainActivity = null;
         handler.removeCallbacks(clockUpdateRunnable);
         handler.removeCallbacks(mediaSessionRefreshRunnable);
         handler.removeCallbacks(mediaProgressTicker);
@@ -686,7 +741,381 @@ public class MainActivity extends Activity {
             applySettings();
             updateScreenPositions(stageView, clockBlockView, mediaHolderView);
         });
-        setContentView(root);
+        screensaverWindowRoot = new OverlayRootFrameLayout(this);
+        screensaverWindowRoot.setFocusable(false);
+        screensaverWindowRoot.setFocusableInTouchMode(false);
+        screensaverWindowRoot.addView(root, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        setContentView(screensaverWindowRoot);
+    }
+
+
+    private boolean hasUsageAccessForOverlay() {
+        if (!BuildConfig.USAGE_ACCESS_ENABLED) return false;
+        try {
+            AppOpsManager manager = (AppOpsManager) getSystemService(APP_OPS_SERVICE);
+            return manager != null && manager.checkOpNoThrow(
+                    AppOpsManager.OPSTR_GET_USAGE_STATS,
+                    android.os.Process.myUid(), getPackageName()) == AppOpsManager.MODE_ALLOWED;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    private boolean isKeyguardLockedNow() {
+        try {
+            android.app.KeyguardManager manager =
+                    (android.app.KeyguardManager) getSystemService(KEYGUARD_SERVICE);
+            return manager != null && manager.isKeyguardLocked();
+        } catch (Throwable ignored) {
+            return true;
+        }
+    }
+
+    private boolean canUseOverlayPresentation() {
+        return BuildConfig.USAGE_ACCESS_ENABLED
+                && Build.VERSION.SDK_INT >= 26
+                && Settings.canDrawOverlays(this)
+                && hasUsageAccessForOverlay()
+                && !isKeyguardLockedNow()
+                && screensaverWindowRoot != null
+                && !settingsDialogOpen;
+    }
+
+    private void scheduleOverlayModeActivation() {
+        if (!BuildConfig.USAGE_ACCESS_ENABLED || overlayWindowAttached
+                || overlaySessionActive || !canUseOverlayPresentation()) return;
+        if (screensaverWindowRoot == null) return;
+        screensaverWindowRoot.postDelayed(() -> {
+            if (canUseOverlayPresentation() && !overlayWindowAttached) {
+                attachOverlayWindow(true);
+            }
+        }, 350L);
+    }
+
+    private void attachOverlayWindow(boolean moveTaskBehind) {
+        if (overlayWindowAttached || screensaverWindowRoot == null
+                || !canUseOverlayPresentation()) return;
+        try {
+            overlayWindowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
+            if (overlayWindowManager == null) return;
+
+            ViewGroup parent = (ViewGroup) screensaverWindowRoot.getParent();
+            if (parent != null) parent.removeView(screensaverWindowRoot);
+
+            int flags = WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
+                    | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
+                    | WindowManager.LayoutParams.FLAG_FULLSCREEN
+                    | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+                    | WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL;
+            if ((getWindow().getAttributes().flags
+                    & WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) != 0) {
+                flags |= WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON;
+            }
+
+            overlayWindowParams = new WindowManager.LayoutParams(
+                    WindowManager.LayoutParams.MATCH_PARENT,
+                    WindowManager.LayoutParams.MATCH_PARENT,
+                    WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+                    flags,
+                    PixelFormat.TRANSLUCENT);
+            overlayWindowParams.gravity = Gravity.TOP | Gravity.LEFT;
+            overlayWindowParams.screenBrightness = getWindow().getAttributes().screenBrightness;
+            overlayWindowParams.alpha = 1f;
+
+            screensaverWindowRoot.setSystemUiVisibility(
+                    View.SYSTEM_UI_FLAG_FULLSCREEN
+                            | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                            | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                            | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                            | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                            | View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
+            overlayWindowManager.addView(screensaverWindowRoot, overlayWindowParams);
+            overlayWindowAttached = true;
+            overlaySessionActive = true;
+            overlayHiddenForSettings = false;
+            overlayActivatedAtMs = System.currentTimeMillis();
+            overlayBaselineCaptured = false;
+            overlayBaselineEventTimeMs = 0L;
+            overlayBaselinePackage = null;
+            overlayBaselineClass = null;
+            mainActivityResumed = true;
+
+            handler.removeCallbacks(overlayForegroundMonitor);
+            handler.postDelayed(overlayForegroundMonitor, 900L);
+            if (moveTaskBehind) {
+                screensaverWindowRoot.postDelayed(() -> {
+                    if (overlayWindowAttached && !isFinishing()) {
+                        moveTaskToBack(true);
+                    }
+                }, 80L);
+            }
+            screensaverWindowRoot.setAlpha(0f);
+            screensaverWindowRoot.animate().alpha(1f).setDuration(240L)
+                    .setInterpolator(new android.view.animation.DecelerateInterpolator()).start();
+        } catch (Throwable failure) {
+            overlayWindowAttached = false;
+            overlaySessionActive = false;
+            try {
+                if (screensaverWindowRoot.getParent() == null) setContentView(screensaverWindowRoot);
+            } catch (Throwable ignored) {
+            }
+            overlayWindowManager = null;
+            overlayWindowParams = null;
+        }
+    }
+
+    private void syncOverlayWindowParams() {
+        if (!overlayWindowAttached || overlayWindowManager == null
+                || overlayWindowParams == null) return;
+        try {
+            int activityFlags = getWindow().getAttributes().flags;
+            if ((activityFlags & WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) != 0) {
+                overlayWindowParams.flags |= WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON;
+            } else {
+                overlayWindowParams.flags &= ~WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON;
+            }
+            overlayWindowParams.screenBrightness = getWindow().getAttributes().screenBrightness;
+            overlayWindowManager.updateViewLayout(screensaverWindowRoot, overlayWindowParams);
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private void removeOverlayWindow() {
+        handler.removeCallbacks(overlayForegroundMonitor);
+        if (overlayWindowAttached && overlayWindowManager != null
+                && screensaverWindowRoot != null) {
+            try {
+                overlayWindowManager.removeViewImmediate(screensaverWindowRoot);
+            } catch (Throwable ignored) {
+            }
+        }
+        overlayWindowAttached = false;
+        overlayWindowManager = null;
+        overlayWindowParams = null;
+    }
+
+    private void hideOverlayAndRestoreActivityWindow() {
+        if (!overlayWindowAttached) return;
+        removeOverlayWindow();
+        try {
+            if (screensaverWindowRoot != null && screensaverWindowRoot.getParent() == null) {
+                setContentView(screensaverWindowRoot);
+            }
+        } catch (Throwable ignored) {
+        }
+        overlayHiddenForSettings = true;
+        overlaySessionActive = true;
+    }
+
+    private void restoreOverlayAfterSettings() {
+        if (!overlaySessionActive || !overlayHiddenForSettings
+                || isFinishing() || !canUseOverlayPresentation()) return;
+
+        long nowElapsed = SystemClock.elapsedRealtime();
+        String activeDuration = getString("screenSaverDuration", "device");
+        boolean durationWasChanged = lastScheduledDurationValue != null
+                && !activeDuration.equals(lastScheduledDurationValue);
+        if (!durationWasChanged && settingsOpenedElapsedRealtime > 0L
+                && activityDeadlineElapsedRealtime > 0L) {
+            activityDeadlineElapsedRealtime += Math.max(
+                    0L, nowElapsed - settingsOpenedElapsedRealtime);
+        }
+        settingsDialogOpen = false;
+        settingsOpenedElapsedRealtime = 0L;
+        applySettings();
+        if (stageView != null) {
+            stageView.post(() -> updateScreenPositions(
+                    stageView, clockBlockView, mediaHolderView));
+        }
+        scheduleAutoOff(false);
+        mainActivityResumed = true;
+        hideSystemUi();
+        startClockUpdates();
+        if (getBool("showPlayer", false)) {
+            registerActiveSessionsListener();
+            handler.removeCallbacks(mediaSessionRefreshRunnable);
+            handler.postDelayed(mediaSessionRefreshRunnable, 250L);
+        }
+        if (!deviceEventsRegistered) registerDeviceStateReceiver();
+        if (!screenOffTimeoutObserverRegistered) registerScreenOffTimeoutObserver();
+        attachOverlayWindow(true);
+    }
+
+    static void onSettingsActivityFinished() {
+        MainActivity activity = activeMainActivity;
+        if (activity == null) return;
+        activity.runOnUiThread(() -> activity.handler.postDelayed(
+                activity::restoreOverlayAfterSettings, 90L));
+    }
+
+    private void handoffOverlayToLockScreenActivity() {
+        if (!overlayWindowAttached) return;
+        removeOverlayWindow();
+        overlaySessionActive = false;
+        overlayHiddenForSettings = false;
+        try {
+            if (screensaverWindowRoot != null && screensaverWindowRoot.getParent() == null) {
+                setContentView(screensaverWindowRoot);
+            }
+            Intent lockLaunch = new Intent(this, MainActivity.class);
+            lockLaunch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                    | Intent.FLAG_ACTIVITY_CLEAR_TOP
+                    | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            lockLaunch.putExtra(EXTRA_OPENED_BY_DEVICE_LOCK, true);
+            startActivity(lockLaunch);
+        } catch (Throwable ignored) {
+            // The existing Activity lock-screen route remains the fallback.
+        }
+    }
+
+    private static final class ForegroundActivitySnapshot {
+        final String packageName;
+        final String className;
+        final long timestamp;
+
+        ForegroundActivitySnapshot(String packageName, String className, long timestamp) {
+            this.packageName = packageName;
+            this.className = className;
+            this.timestamp = timestamp;
+        }
+    }
+
+    private ForegroundActivitySnapshot latestForegroundActivity(long sinceMs) {
+        if (!hasUsageAccessForOverlay()) return null;
+        try {
+            UsageStatsManager usage =
+                    (UsageStatsManager) getSystemService(USAGE_STATS_SERVICE);
+            if (usage == null) return null;
+            long now = System.currentTimeMillis();
+            UsageEvents events = usage.queryEvents(Math.max(0L, sinceMs), now);
+            if (events == null) return null;
+            UsageEvents.Event event = new UsageEvents.Event();
+            ForegroundActivitySnapshot latest = null;
+            while (events.hasNextEvent()) {
+                events.getNextEvent(event);
+                int type = event.getEventType();
+                boolean foreground = type == UsageEvents.Event.MOVE_TO_FOREGROUND
+                        || (Build.VERSION.SDK_INT >= 29
+                        && type == UsageEvents.Event.ACTIVITY_RESUMED);
+                if (!foreground) continue;
+                latest = new ForegroundActivitySnapshot(
+                        event.getPackageName(), event.getClassName(), event.getTimeStamp());
+            }
+            return latest;
+        } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
+    private void monitorForegroundActivityForOverlay() {
+        long now = System.currentTimeMillis();
+        ForegroundActivitySnapshot current = latestForegroundActivity(
+                Math.max(0L, now - 12_000L));
+        if (current == null || current.packageName == null) return;
+
+        if (!overlayBaselineCaptured) {
+            // Ignore the one foreground transition caused by moving the saver task
+            // behind the app that was already underneath it.
+            if (now - overlayActivatedAtMs < 1_700L) return;
+            overlayBaselineCaptured = true;
+            overlayBaselineEventTimeMs = current.timestamp;
+            overlayBaselinePackage = current.packageName;
+            overlayBaselineClass = current.className;
+            return;
+        }
+
+        if (current.timestamp <= overlayBaselineEventTimeMs) return;
+        if (getPackageName().equals(current.packageName)) {
+            // Settings and permission screens belong to this package. Settings
+            // is normally handled by an explicit hide/show hand-off.
+            overlayBaselineEventTimeMs = current.timestamp;
+            overlayBaselinePackage = current.packageName;
+            overlayBaselineClass = current.className;
+            return;
+        }
+
+        // A newly resumed external Activity means the user has switched away.
+        // Remove the full-screen overlay so it can never cover another app.
+        removeOverlayWindow();
+        overlaySessionActive = false;
+        overlayHiddenForSettings = false;
+        finish();
+    }
+
+    private final class OverlayRootFrameLayout extends FrameLayout {
+        private boolean swipeCandidate;
+        private boolean swipeDragging;
+        private float startX;
+        private float startY;
+
+        OverlayRootFrameLayout(Context context) {
+            super(context);
+            setClipChildren(false);
+            setClipToPadding(false);
+        }
+
+        @Override
+        public boolean dispatchTouchEvent(android.view.MotionEvent event) {
+            if (!overlayWindowAttached) return super.dispatchTouchEvent(event);
+            if (bottomSwipeDismissAnimating) return true;
+
+            int action = event.getActionMasked();
+            if (action == android.view.MotionEvent.ACTION_DOWN) {
+                swipeCandidate = false;
+                swipeDragging = false;
+                if (event.getY() >= getHeight() * (2f / 3f)) {
+                    swipeCandidate = true;
+                    startX = event.getX();
+                    startY = event.getY();
+                }
+                if (event.getY() <= getHeight() / 2f) {
+                    showSettingsButtonForThreeSeconds();
+                }
+                return super.dispatchTouchEvent(event);
+            }
+
+            if (action == android.view.MotionEvent.ACTION_MOVE && swipeCandidate) {
+                float dx = Math.abs(event.getX() - startX);
+                float dy = event.getY() - startY;
+                if (!swipeDragging && (dy > dp(24) || dx > dp(96))) {
+                    swipeCandidate = false;
+                } else if (!swipeDragging && dy <= -dp(12) && -dy > dx * 1.2f) {
+                    swipeDragging = true;
+                    android.view.MotionEvent cancel = android.view.MotionEvent.obtain(event);
+                    cancel.setAction(android.view.MotionEvent.ACTION_CANCEL);
+                    super.dispatchTouchEvent(cancel);
+                    cancel.recycle();
+                }
+                if (swipeDragging) {
+                    if (stageView != null) stageView.setTranslationY(Math.min(0f, dy));
+                    return true;
+                }
+            } else if (action == android.view.MotionEvent.ACTION_UP && swipeDragging) {
+                float upward = startY - event.getY();
+                boolean dismiss = upward >= getHeight() / 3f
+                        && event.getY() <= getHeight() / 3f;
+                swipeCandidate = false;
+                swipeDragging = false;
+                if (dismiss) {
+                    dismissScreensaverWithUpwardSlide();
+                } else if (stageView != null) {
+                    stageView.animate().cancel();
+                    stageView.animate().translationY(0f).setDuration(160L).start();
+                }
+                return true;
+            } else if (action == android.view.MotionEvent.ACTION_CANCEL) {
+                boolean handled = swipeDragging;
+                swipeCandidate = false;
+                swipeDragging = false;
+                if (handled && stageView != null) {
+                    stageView.animate().cancel();
+                    stageView.animate().translationY(0f).setDuration(160L).start();
+                }
+                if (handled) return true;
+            }
+            return super.dispatchTouchEvent(event);
+        }
     }
 
     private void updateScreenPositions(FrameLayout stage, View clockBlock, View mediaHolder) {
@@ -1846,6 +2275,7 @@ public class MainActivity extends Activity {
                 ? android.view.WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
                 : requestedBrightness;
         getWindow().setAttributes(attributes);
+        syncOverlayWindowParams();
     }
 
     
@@ -2557,6 +2987,9 @@ public class MainActivity extends Activity {
         if (settingsDialogOpen) return;
         if (prefs == null) initSettings();
 
+        if (overlayWindowAttached) {
+            hideOverlayAndRestoreActivityWindow();
+        }
         settingsDialogOpen = true;
         settingsOpenedElapsedRealtime = SystemClock.elapsedRealtime();
         handler.removeCallbacks(autoOffRunnable);
