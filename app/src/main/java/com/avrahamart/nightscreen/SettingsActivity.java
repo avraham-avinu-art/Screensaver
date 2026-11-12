@@ -242,7 +242,7 @@ if (content != null) {
             handleChargerPermissionResult();
             handleLockStartPermissionResult();
             String disabledFeatures =
-                    PermissionDependencySync.disableFeaturesWithoutPermissions(this);
+                    PermissionDependencySync.disableFeaturesWithoutPermissions(this, false);
             if (!disabledFeatures.isEmpty()) {
                 AppToast.makeText(this, disabledFeatures, Toast.LENGTH_LONG).show();
             }
