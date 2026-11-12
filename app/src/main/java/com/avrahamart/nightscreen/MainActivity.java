@@ -2562,9 +2562,7 @@ public class MainActivity extends Activity {
         handler.removeCallbacks(autoOffRunnable);
         try {
             Intent settingsIntent = new Intent(this, SettingsActivity.class);
-            settingsIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
-                    | Intent.FLAG_ACTIVITY_CLEAR_TOP
-                    | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            settingsIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(settingsIntent);
         } catch (Throwable t) {
             settingsDialogOpen = false;
