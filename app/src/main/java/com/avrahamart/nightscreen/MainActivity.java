@@ -910,11 +910,22 @@ public class MainActivity extends Activity {
     private void restoreOverlayAfterSettings() {
         if (!overlaySessionActive || !overlayHiddenForSettings || isFinishing()) return;
         settingsDialogOpen = false;
-        if (!canUseOverlayPresentation()) {
-            // If Usage Access or overlay access was revoked in Settings, leave the
-            // Activity route available rather than showing a window we cannot monitor.
+        if (isKeyguardLockedNow() || !canUseOverlayPresentation()) {
+            // If permissions changed or the device locked in Settings, use the
+            // original Activity presentation rather than losing the screensaver.
             overlaySessionActive = false;
             overlayHiddenForSettings = false;
+            try {
+                Intent fallback = new Intent(this, MainActivity.class);
+                fallback.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                        | Intent.FLAG_ACTIVITY_CLEAR_TOP
+                        | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                if (isKeyguardLockedNow()) {
+                    fallback.putExtra(EXTRA_OPENED_BY_DEVICE_LOCK, true);
+                }
+                startActivity(fallback);
+            } catch (Throwable ignored) {
+            }
             return;
         }
 
