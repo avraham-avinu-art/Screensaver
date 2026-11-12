@@ -20,6 +20,7 @@
         <activity
             android:name=".SettingsActivity"
             android:label="הגדרות"
+            android:taskAffinity="com.screensaver.settings"
             android:exported="false"
             android:screenOrientation="unspecified" />
         <activity
@@ -35,6 +36,7 @@
         <activity
             android:name=".MainActivity"
             android:theme="@style/AppTheme.Fullscreen"
+            android:excludeFromRecents="true"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
