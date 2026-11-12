@@ -2440,6 +2440,7 @@ public class MainActivity extends Activity {
             activityDeadlineElapsedRealtime = 0L;
             getWindow().addFlags(
                     android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            syncOverlayWindowParams();
             return;
         }
 
@@ -2447,6 +2448,7 @@ public class MainActivity extends Activity {
             activityDeadlineElapsedRealtime = 0L;
             getWindow().clearFlags(
                     android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            syncOverlayWindowParams();
             return;
         }
 
@@ -2457,6 +2459,7 @@ public class MainActivity extends Activity {
             activityDeadlineElapsedRealtime = 0L;
             getWindow().addFlags(
                     android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            syncOverlayWindowParams();
             return;
         }
 
@@ -2503,6 +2506,7 @@ public class MainActivity extends Activity {
             }
         }
         handler.postDelayed(autoOffRunnable, remaining);
+        syncOverlayWindowParams();
     }
 
     private long getSystemScreenOffTimeoutMs() {
@@ -2993,12 +2997,23 @@ public class MainActivity extends Activity {
         if (settingsDialogOpen) return;
         if (prefs == null) initSettings();
 
-        if (overlayWindowAttached) {
-            hideOverlayAndRestoreActivityWindow();
-        }
         settingsDialogOpen = true;
         settingsOpenedElapsedRealtime = SystemClock.elapsedRealtime();
         handler.removeCallbacks(autoOffRunnable);
+        if (overlayWindowAttached && screensaverWindowRoot != null) {
+            screensaverWindowRoot.animate().cancel();
+            screensaverWindowRoot.animate().alpha(0f).setDuration(260L)
+                    .setInterpolator(new android.view.animation.DecelerateInterpolator())
+                    .withEndAction(() -> {
+                        hideOverlayAndRestoreActivityWindow();
+                        launchSettingsActivity();
+                    }).start();
+        } else {
+            launchSettingsActivity();
+        }
+    }
+
+    private void launchSettingsActivity() {
         try {
             Intent settingsIntent = new Intent(this, SettingsActivity.class);
             settingsIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -3011,7 +3026,11 @@ public class MainActivity extends Activity {
         } catch (Throwable t) {
             settingsDialogOpen = false;
             settingsOpenedElapsedRealtime = 0L;
-            scheduleAutoOff(false);
+            if (overlaySessionActive && overlayHiddenForSettings) {
+                restoreOverlayAfterSettings();
+            } else {
+                scheduleAutoOff(false);
+            }
             AppToast.makeText(
                     this, "לא ניתן לפתוח את מסך ההגדרות.", android.widget.Toast.LENGTH_LONG).show();
         }
