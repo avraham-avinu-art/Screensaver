@@ -34,6 +34,10 @@ class CounterService : Service() {
         when (intent?.action) {
             "START" -> startCounter()
             "STOP" -> stopCounter()
+            /*"NOTIFICATION_CLICK" -> {
+                stopForeground(true)   // 🔥 remove notification
+                openMainActivity()
+            }*/
         }
 
         return START_STICKY
@@ -64,9 +68,9 @@ class CounterService : Service() {
     }
 
     fun updateNotification(value: Int) {
-        val notify = createNotification(value)
-        val manger = getSystemService(NotificationManager::class.java)
-        manger.notify(1, notify)
+        val notify= createNotification(value)
+        val manger= getSystemService(NotificationManager::class.java)
+        manger.notify(1,notify)
     }
 
     private fun stopCounter() {
@@ -79,9 +83,8 @@ class CounterService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
-        serviceScope.cancel()
+        serviceScope.cancel()   // prevent memory leak
     }
-
     private fun createNotification(value: Int): Notification {
 
         val intent = Intent(this, MainActivity::class.java).apply {
@@ -98,9 +101,9 @@ class CounterService : Service() {
         return NotificationCompat.Builder(this, channelId)
             .setContentTitle("Counter Running $value")
             .setContentText("Counter is running in background")
-            .setSmallIcon(R.drawable.ic_android)
-            .setContentIntent(pendingIntent)
-            .setAutoCancel(false)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentIntent(pendingIntent)   // 🔥 Important
+            .setAutoCancel(false)              // Foreground me generally false
             .build()
     }
 
