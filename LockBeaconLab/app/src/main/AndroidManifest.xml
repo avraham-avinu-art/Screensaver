@@ -21,15 +21,11 @@
             </intent-filter>
         </activity>
 
-        <!-- Foreground service lifecycle copied from vinayjuyal07/ForegroundServiceExample. -->
+        <!-- Independent keeper process: UI task removal does not own this service lifecycle. -->
         <service
-            android:name=".CounterService"
-            android:exported="false" />
-
-        <!-- This component only adds the requested lock-screen clock display. -->
-        <service
-            android:name=".ClockOverlayService"
+            android:name=".BeaconKeeperService"
             android:exported="false"
+            android:process=":keeper"
             android:stopWithTask="false" />
 
     </application>

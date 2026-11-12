@@ -15,7 +15,7 @@ import android.widget.Toast;
 import androidx.core.content.ContextCompat;
 
 public final class MainActivity extends Activity {
-    private boolean servicesStarted;
+    private boolean serviceStartRequested;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,21 +57,17 @@ public final class MainActivity extends Activity {
             return;
         }
 
-        if (!servicesStarted) {
-            servicesStarted = true;
-
-            Intent foreground = new Intent(this, CounterService.class);
-            foreground.setAction("START");
+        if (!serviceStartRequested) {
+            serviceStartRequested = true;
+            Intent keeper = new Intent(this, BeaconKeeperService.class);
             try {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    ContextCompat.startForegroundService(this, foreground);
+                    ContextCompat.startForegroundService(this, keeper);
                 } else {
-                    startService(foreground);
+                    startService(keeper);
                 }
-
-                startService(new Intent(this, ClockOverlayService.class));
             } catch (RuntimeException error) {
-                servicesStarted = false;
+                serviceStartRequested = false;
                 Toast.makeText(this, "לא ניתן להפעיל את שירות השעון.", Toast.LENGTH_LONG).show();
             }
         }
