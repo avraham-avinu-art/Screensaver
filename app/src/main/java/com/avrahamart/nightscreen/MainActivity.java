@@ -2561,7 +2561,11 @@ public class MainActivity extends Activity {
         settingsOpenedElapsedRealtime = SystemClock.elapsedRealtime();
         handler.removeCallbacks(autoOffRunnable);
         try {
-            startActivity(new Intent(this, SettingsActivity.class));
+            Intent settingsIntent = new Intent(this, SettingsActivity.class);
+            settingsIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                    | Intent.FLAG_ACTIVITY_CLEAR_TOP
+                    | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            startActivity(settingsIntent);
         } catch (Throwable t) {
             settingsDialogOpen = false;
             settingsOpenedElapsedRealtime = 0L;
