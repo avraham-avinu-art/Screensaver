@@ -3383,7 +3383,10 @@ public class MainActivity extends Activity {
     }
 
     private boolean shouldPauseForExcludedForegroundApp() {
-        if (!getBool("pauseWhenExcludedAppActive", false)) return false;
+        // This behavior is deliberately absent from the no-Usage-Access APK.
+        // The feature gate prevents any UsageStatsManager/AppOps query in that build.
+        if (!BuildConfig.USAGE_ACCESS_ENABLED
+                || !getBool("pauseWhenExcludedAppActive", false)) return false;
         Set<String> excluded = new HashSet<>(prefs.getStringSet(
                 "excludedForegroundPackages", Collections.emptySet()));
         if (excluded.isEmpty()) return false;
