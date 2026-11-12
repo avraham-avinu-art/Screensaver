@@ -1,17 +1,18 @@
 plugins {
     id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
 }
 
 android {
-    namespace 'io.clockbeacon.minilock'
+    namespace 'com.example.foregroundserviceexample'
     compileSdk 36
 
     defaultConfig {
         applicationId 'io.clockbeacon.minilock'
         minSdk 26
         targetSdk 30
-        versionCode 1
-        versionName '1.0'
+        versionCode 3
+        versionName '3.0'
     }
 
     buildTypes {
@@ -20,4 +21,9 @@ android {
             versionNameSuffix ''
         }
     }
+}
+
+dependencies {
+    implementation 'androidx.core:core-ktx:1.17.0'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0'
 }

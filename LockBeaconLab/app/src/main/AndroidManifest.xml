@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 
     <application
         android:allowBackup="false"
@@ -12,53 +11,26 @@
         android:theme="@style/BeaconTheme"
         android:supportsRtl="true">
 
-        <provider
-            android:name=".BeaconControlProvider"
-            android:authorities="${applicationId}.control"
-            android:exported="false" />
-
         <activity
-            android:name=".BeaconConsoleActivity"
-            android:exported="true">
+            android:name=".MainActivity"
+            android:exported="true"
+            android:showWhenLocked="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
+        <!-- Foreground service lifecycle copied from vinayjuyal07/ForegroundServiceExample. -->
         <service
-            android:name=".BeaconAccessibilityService"
-            android:exported="true"
-            android:label="@string/beacon_accessibility_label"
-            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
-            <intent-filter>
-                <action android:name="android.accessibilityservice.AccessibilityService" />
-            </intent-filter>
-            <meta-data
-                android:name="android.accessibilityservice"
-                android:resource="@xml/beacon_accessibility_service" />
-        </service>
-
-        <service
-            android:name=".BeaconPulseService"
-            android:enabled="true"
-            android:exported="false"
-            android:stopWithTask="false" />
-
-        <receiver
-            android:name=".BeaconRestartReceiver"
-            android:enabled="true"
+            android:name=".CounterService"
             android:exported="false" />
 
-        <receiver
-            android:name=".BeaconStartupReceiver"
-            android:enabled="true"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
-            </intent-filter>
-        </receiver>
+        <!-- This component only adds the requested lock-screen clock display. -->
+        <service
+            android:name=".ClockOverlayService"
+            android:exported="false"
+            android:stopWithTask="false" />
 
     </application>
 </manifest>
