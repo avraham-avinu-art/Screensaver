@@ -2563,9 +2563,12 @@ public class MainActivity extends Activity {
         try {
             Intent settingsIntent = new Intent(this, SettingsActivity.class);
             settingsIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            startActivity(settingsIntent);
-            overridePendingTransition(
-                    R.anim.screensaver_fade_in, R.anim.screensaver_fade_out);
+            android.app.ActivityOptions transition =
+                    android.app.ActivityOptions.makeCustomAnimation(
+                            this,
+                            R.anim.screensaver_fade_in,
+                            R.anim.screensaver_fade_out);
+            startActivity(settingsIntent, transition.toBundle());
         } catch (Throwable t) {
             settingsDialogOpen = false;
             settingsOpenedElapsedRealtime = 0L;
