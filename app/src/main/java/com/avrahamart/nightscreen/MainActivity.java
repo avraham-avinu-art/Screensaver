@@ -1042,6 +1042,13 @@ public class MainActivity extends Activity {
     }
 
     private void monitorForegroundActivityForOverlay() {
+        if (!hasUsageAccessForOverlay() || !Settings.canDrawOverlays(this)) {
+            removeOverlayWindow();
+            overlaySessionActive = false;
+            overlayHiddenForSettings = false;
+            finish();
+            return;
+        }
         long now = System.currentTimeMillis();
         ForegroundActivitySnapshot current = latestForegroundActivity(
                 Math.max(0L, now - 12_000L));
