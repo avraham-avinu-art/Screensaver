@@ -1,0 +1,53 @@
+name: Build Clock Beacon Lab APK
+
+on:
+  push:
+    branches:
+      - experiment/clockbeacon-independent-app
+    paths:
+      - 'LockBeaconLab/**'
+      - '.github/workflows/lockbeacon-apk.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout isolated experiment
+        uses: actions/checkout@v5
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Install Gradle 8.13
+        run: |
+          curl -fsSL https://services.gradle.org/distributions/gradle-8.13-bin.zip -o /tmp/gradle.zip
+          unzip -q /tmp/gradle.zip -d /tmp
+          echo "/tmp/gradle-8.13/bin" >> "$GITHUB_PATH"
+
+      - name: Build standalone debug APK
+        run: gradle -p LockBeaconLab :app:assembleDebug --no-daemon
+
+      - name: Verify package and APK
+        run: |
+          APK="LockBeaconLab/app/build/outputs/apk/debug/app-debug.apk"
+          test -s "$APK"
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" | grep -F "package: name='io.clockbeacon.minilock'"
+          sha256sum "$APK"
+
+      - name: Upload test APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Clock-Beacon-Lab-debug-apk
+          path: LockBeaconLab/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 30
