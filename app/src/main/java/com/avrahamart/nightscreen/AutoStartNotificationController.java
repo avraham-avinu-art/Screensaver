@@ -51,7 +51,7 @@ public final class AutoStartNotificationController {
                 .setOngoing(true)
                 .setOnlyAlertOnce(true)
                 .setShowWhen(false)
-                .setVisibility(Notification.VISIBILITY_SECRET)
+                .setVisibility(Notification.VISIBILITY_PRIVATE)
                 .setPriority(Notification.PRIORITY_MIN)
                 .setSound(null)
                 .setVibrate(new long[0])
@@ -90,7 +90,7 @@ public final class AutoStartNotificationController {
                 CHANNEL_ID, "הפעלה אוטומטית של שומר מסך", NotificationManager.IMPORTANCE_MIN);
         channel.setDescription("התראה מתמשכת לשירות ההפעלה האוטומטית");
         channel.setShowBadge(false);
-        channel.setLockscreenVisibility(Notification.VISIBILITY_SECRET);
+        channel.setLockscreenVisibility(Notification.VISIBILITY_PRIVATE);
         channel.enableLights(false);
         channel.enableVibration(false);
         channel.setSound(null, null);
