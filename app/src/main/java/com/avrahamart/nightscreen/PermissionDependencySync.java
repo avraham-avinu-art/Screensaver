@@ -1,5 +1,6 @@
 package com.avrahamart.nightscreen;
 
+import android.app.AppOpsManager;
 import android.app.NotificationManager;
 import android.content.ComponentName;
 import android.content.Context;
@@ -24,6 +25,7 @@ public final class PermissionDependencySync {
         boolean overlayRequired = Build.VERSION.SDK_INT >= 29
                 && !Settings.canDrawOverlays(context);
         boolean notificationAccess = hasNotificationAccess(context);
+        boolean usageAccess = hasUsageAccess(context);
 
         boolean disableLockStart =
                 prefs.getBoolean("autoStartOnDeviceLock", false) && overlayRequired;
@@ -37,9 +39,14 @@ public final class PermissionDependencySync {
                 prefs.getBoolean("autoStartOnWake", false) && overlayRequired;
         boolean disablePlayer =
                 prefs.getBoolean("showPlayer", false) && !notificationAccess;
+        boolean disableUseProtection =
+                prefs.getBoolean("preventAutoStartDuringUse", false) && !usageAccess;
+        boolean disableExcludedApps =
+                prefs.getBoolean("pauseWhenExcludedAppActive", false) && !usageAccess;
 
         if (!disableLockStart && !disableChargeStart && !disableBootStart
-                && !disableWakeStart && !disablePlayer) return "";
+                && !disableWakeStart && !disablePlayer
+                && !disableUseProtection && !disableExcludedApps) return "";
 
         SharedPreferences.Editor editor = prefs.edit();
         if (disableLockStart) editor.putBoolean("autoStartOnDeviceLock", false)
@@ -50,6 +57,8 @@ public final class PermissionDependencySync {
         if (disableWakeStart) editor.putBoolean("autoStartOnWake", false);
         if (disablePlayer) editor.putBoolean("showPlayer", false)
                 .putBoolean("showPlayerPermissionPending", false);
+        if (disableUseProtection) editor.putBoolean("preventAutoStartDuringUse", false);
+        if (disableExcludedApps) editor.putBoolean("pauseWhenExcludedAppActive", false);
         editor.apply();
         if (disableLockStart) {
             MonitorSettingsSnapshot.resetDeviceLockActivation(context);
@@ -78,7 +87,23 @@ public final class PermissionDependencySync {
         if (disablePlayer) {
             messages.add("הצגת הנגן כובתה מפני שהרשאת הגישה להתראות בוטלה.");
         }
+        if (disableUseProtection || disableExcludedApps) {
+            messages.add("הגדרות זיהוי האפליקציות בחזית כובו מפני שהרשאת נתוני השימוש בוטלה.");
+        }
         return android.text.TextUtils.join("\n", messages);
+    }
+
+    private static boolean hasUsageAccess(Context context) {
+        try {
+            AppOpsManager manager =
+                    (AppOpsManager) context.getSystemService(Context.APP_OPS_SERVICE);
+            return manager != null && manager.checkOpNoThrow(
+                    AppOpsManager.OPSTR_GET_USAGE_STATS,
+                    android.os.Process.myUid(), context.getPackageName())
+                    == AppOpsManager.MODE_ALLOWED;
+        } catch (Throwable ignored) {
+            return false;
+        }
     }
 
     private static boolean hasNotificationAccess(Context context) {

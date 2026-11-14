@@ -47,11 +47,13 @@ final class AutoStartConditions {
      * blocks the automatic start.
      */
     static boolean isAnotherAppInForeground(Context context) {
-        if (!hasUsageAccess(context)) return false;
+        // When the user enables this protection but revokes Usage Access,
+        // fail closed instead of launching and interrupting active use.
+        if (!hasUsageAccess(context)) return true;
 
         UsageStatsManager usage =
                 (UsageStatsManager) context.getSystemService(Context.USAGE_STATS_SERVICE);
-        if (usage == null) return false;
+        if (usage == null) return true;
 
         long now = System.currentTimeMillis();
         long bootTime = now - SystemClock.elapsedRealtime();
@@ -59,7 +61,7 @@ final class AutoStartConditions {
 
         try {
             UsageEvents events = usage.queryEvents(begin, now);
-            if (events == null) return false;
+            if (events == null) return true;
 
             String launcherPackage = getHomePackage(context);
             Map<String, Set<String>> resumedByPackage = new HashMap<>();
@@ -117,6 +119,7 @@ final class AutoStartConditions {
         } catch (Throwable error) {
             android.util.Log.w("NightScreenAutoStart",
                     "Could not identify the foreground app from usage events.", error);
+            return true;
         }
         return false;
     }
