@@ -198,6 +198,11 @@ public class MainActivity extends Activity {
     private FrameLayout settingsButtonHitArea;
 
     private final Runnable hideSettingsButtonRunnable = () -> {
+        if (isSettingsButtonAlwaysVisible()) {
+            if (settingsButtonHitArea != null) settingsButtonHitArea.setVisibility(View.VISIBLE);
+            if (settingsButton != null) settingsButton.setAlpha(1f);
+            return;
+        }
         if (settingsButtonHitArea != null) settingsButtonHitArea.setVisibility(View.GONE);
         else if (settingsButton != null) settingsButton.setVisibility(View.GONE);
     };
@@ -340,6 +345,7 @@ public class MainActivity extends Activity {
             hideSystemUi();
             buildUi();
             applySettings();
+            refreshSettingsButtonVisibility();
             updateClock();
             scheduleAutoOff();
         } catch (Throwable t) {
@@ -384,7 +390,6 @@ public class MainActivity extends Activity {
             applyPreventLockWhileActivePreference();
             hideSystemUi();
             scheduleAutoOff(true);
-            showSettingsButtonForThreeSeconds();
             if (stageView != null) {
                 stageView.post(() -> updateScreenPositions(
                         stageView, clockBlockView, mediaHolderView));
@@ -524,6 +529,7 @@ public class MainActivity extends Activity {
                 }
             }
 
+            refreshSettingsButtonVisibility();
             if (waitingForScreenWakeAfterActivityEnd) {
                 if (isScreenInteractive()) resumeScreensaverAfterScreenWake();
             } else {
@@ -2341,7 +2347,6 @@ public class MainActivity extends Activity {
         screenTimeoutAtHoldReleaseMs = -1L;
 
         scheduleAutoOff(true);
-        showSettingsButtonForThreeSeconds();
     }
 
     private void handleScreenOffForLockScreenContinuation() {
@@ -2448,11 +2453,43 @@ public class MainActivity extends Activity {
         screenOffTimeoutObserverRegistered = false;
     }
 
+    private boolean isSettingsButtonAlwaysVisible() {
+        return getBool("settingsButtonAlwaysVisible", false);
+    }
+
+    private void refreshSettingsButtonVisibility() {
+        if (settingsButton == null || settingsButtonHitArea == null) return;
+        handler.removeCallbacks(hideSettingsButtonRunnable);
+        if (settingsDialogOpen) return;
+
+        if (isSettingsButtonAlwaysVisible()) {
+            settingsButtonHitArea.setVisibility(View.VISIBLE);
+            settingsButton.setAlpha(1f);
+        } else {
+            settingsButtonHitArea.setVisibility(View.GONE);
+        }
+    }
+
+    private boolean isPlayerInteractionTouch(android.view.MotionEvent event) {
+        return isTouchInsideVisibleView(event, mediaProgressRow)
+                || isTouchInsideVisibleView(event, mediaControlsHolder);
+    }
+
+    private boolean isTouchInsideVisibleView(
+            android.view.MotionEvent event, View target) {
+        if (target == null || target.getVisibility() != View.VISIBLE) return false;
+        android.graphics.Rect visibleBounds = new android.graphics.Rect();
+        return target.getGlobalVisibleRect(visibleBounds)
+                && visibleBounds.contains(
+                        Math.round(event.getRawX()), Math.round(event.getRawY()));
+    }
+
     private void showSettingsButtonForThreeSeconds() {
         if (settingsButton == null || settingsButtonHitArea == null || settingsDialogOpen) return;
         handler.removeCallbacks(hideSettingsButtonRunnable);
         settingsButtonHitArea.setVisibility(View.VISIBLE);
         settingsButton.setAlpha(1f);
+        if (isSettingsButtonAlwaysVisible()) return;
         handler.postDelayed(hideSettingsButtonRunnable, 3_000L);
     }
 
@@ -2482,11 +2519,8 @@ public class MainActivity extends Activity {
                 }
             }
 
-            if (stageView != null && stageView.getHeight() > 0) {
-                float localY = event.getY() - stageView.getTop();
-                if (localY >= 0 && localY <= stageView.getHeight() / 2f) {
-                    showSettingsButtonForThreeSeconds();
-                }
+            if (!settingsDialogOpen && !isPlayerInteractionTouch(event)) {
+                showSettingsButtonForThreeSeconds();
             }
         } else if (action == android.view.MotionEvent.ACTION_MOVE
                 && bottomSwipeCandidate) {
