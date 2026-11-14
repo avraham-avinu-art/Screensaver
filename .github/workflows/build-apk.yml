@@ -2,7 +2,7 @@ name: Build APK
 
 on:
   push:
-    branches: [ main, recovery/rebuild-from-575 ]
+    branches: [ main ]
   pull_request:
   workflow_dispatch:
 
@@ -10,6 +10,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
+      actions: read
       contents: write
     steps:
       - name: Checkout
@@ -120,13 +121,39 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-      - name: Publish version 2.0.0 release
+      - name: Download the original Build 802 APK
+        if: github.ref == 'refs/heads/main'
+        uses: actions/download-artifact@v4
+        with:
+          name: NightScreen-release-apk
+          path: /tmp/build-802
+          repository: avraham-avinu-art/Screensaver
+          run-id: 43035847044
+          github-token: ${{ github.token }}
+
+      - name: Verify the original Build 802 APK
+        if: github.ref == 'refs/heads/main'
+        run: |
+          test -s /tmp/build-802/app-release.apk
+          echo "05717af985cccecbf31a334b419a00f69508586316bad55181c4e4804b406609  /tmp/build-802/app-release.apk" | sha256sum --check
+
+      - name: Set the default branch and restore the v2.0.0 Build 802 tag
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ! gh api --method PATCH repos/avraham-avinu-art/Screensaver -f default_branch=main; then
+            echo "::warning::This workflow token cannot change the repository's default branch. The main branch itself is already based on Build 802."
+          fi
+          gh api --method PATCH repos/avraham-avinu-art/Screensaver/git/refs/tags/v2.0.0 -f sha=925db0142a26ea9b19ed9a78a341b567dfe1eece -F force=true
+
+      - name: Publish the original Build 802 APK as version 2.0.0
         if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v2.0.0
           name: Version 2.0.0
-          target_commitish: main
-          generate_release_notes: true
+          target_commitish: 925db0142a26ea9b19ed9a78a341b567dfe1eece
+          body: Original APK from the successful GitHub Actions Build #802.
           overwrite_files: true
-          files: app/build/outputs/apk/release/app-release.apk
+          files: /tmp/build-802/app-release.apk
