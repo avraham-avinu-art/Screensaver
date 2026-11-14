@@ -17,5 +17,6 @@ public final class CancelAutoStartServiceReceiver extends BroadcastReceiver {
                 .putBoolean("deviceLockActivationConsumed", false)
                 .apply();
         LockScreenMonitorService.sync(context);
+        NightScreenApplication.syncChargerReceiver(context);
     }
 }

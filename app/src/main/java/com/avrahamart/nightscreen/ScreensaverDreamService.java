@@ -46,11 +46,13 @@ public final class ScreensaverDreamService extends DreamService {
         launch.putExtra(MainActivity.EXTRA_OPENED_BY_CHARGER, true);
         try {
             startActivity(launch);
+            // Android closes the Dream as the foreground Activity takes over.
+            finish();
         } catch (Throwable ignored) {
-            // If Android blocks the foreground transition, leave the Dream intact
+            // If Android blocks the foreground transition, keep the Dream intact
             // rather than replacing it with a visually incomplete fallback.
+            launchRequested = false;
         }
-        finish();
     }
 
     @Override
