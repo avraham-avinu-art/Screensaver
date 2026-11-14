@@ -45,7 +45,7 @@ public final class AutoStartNotificationController {
                 .setContentTitle("שירות ההפעלה האוטומטית פועל.")
                 .setContentText(null)
                 .setStyle(new Notification.BigTextStyle()
-                        .bigText("לחץ לביטול השירות"))
+                        .bigText("לחץ לביטול השירות."))
                 .setContentIntent(cancelIntent)
                 .setCategory(Notification.CATEGORY_SERVICE)
                 .setOngoing(true)
