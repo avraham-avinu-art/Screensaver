@@ -813,6 +813,8 @@ screenTitle.setText("הגדרות");
         }
         addCheck(content, "מניעת הפעלה בזמן שימוש",
                 "preventAutoStartDuringUse", false);
+        addCheck(content, "הצגת סמל ההגדרות באופן קבוע",
+                "settingsButtonAlwaysVisible", false);
     }
 
     private String settingsGroupTitleFor(String key) {
@@ -853,6 +855,7 @@ screenTitle.setText("הגדרות");
                 }
                 return "הצגת הנגן";
             case CATEGORY_ADVANCED:
+                if ("settingsButtonAlwaysVisible".equals(key)) return "סמל ההגדרות";
                 if ("nightModeEnabled".equals(key) || "nightModeStartHour".equals(key)
                         || "nightModeEndHour".equals(key)) return "מצב לילה";
                 if ("batteryProtectionEnabled".equals(key)
