@@ -14,7 +14,7 @@ public final class AnalogClockView extends View {
     private int minute;
     private int accentColor = Color.WHITE;
     private int faceColor = Color.BLACK;
-    private String dialStyle = "classic";
+    private String dialStyle = "lines_only";
 
     public AnalogClockView(Context context) {
         super(context);

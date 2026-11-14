@@ -1027,7 +1027,17 @@ public class MainActivity extends Activity {
         e.putString("backgroundStyle", getString("backgroundStyle", "solid"));
         e.putString("clockDatePosition", getString("clockDatePosition", "upper"));
         e.putString("clockDisplayMode", getString("clockDisplayMode", "digital"));
-        e.putString("clockDialStyle", getString("clockDialStyle", "classic"));
+        String savedDialStyle = getString("clockDialStyle", "lines_only");
+        if ("classic".equals(savedDialStyle) || "minimal".equals(savedDialStyle)) {
+            savedDialStyle = "lines_only";
+        } else if ("numerals".equals(savedDialStyle)) {
+            savedDialStyle = "lines_numbers";
+        } else if (!"numbers_only".equals(savedDialStyle)
+                && !"lines_only".equals(savedDialStyle)
+                && !"lines_numbers".equals(savedDialStyle)) {
+            savedDialStyle = "lines_only";
+        }
+        e.putString("clockDialStyle", savedDialStyle);
         e.putString("playerPosition", getString("playerPosition", "bottom"));
         e.putString("chargingBatteryDisplayMode",
                 getString("chargingBatteryDisplayMode", "off"));
