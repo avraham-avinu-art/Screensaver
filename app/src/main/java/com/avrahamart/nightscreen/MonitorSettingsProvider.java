@@ -42,6 +42,10 @@ public final class MonitorSettingsProvider extends ContentProvider {
                     prefs.getBoolean("autoStartOnCharge", false));
             result.putBoolean("useAndroidDreamForCharging",
                     prefs.getBoolean("useAndroidDreamForCharging", false));
+            result.putBoolean("autoStartOnlyWhenLocked",
+                    prefs.getBoolean("autoStartOnlyWhenLocked", false));
+            result.putBoolean("preventAutoStartDuringUse",
+                    prefs.getBoolean("preventAutoStartDuringUse", false));
             result.putBoolean("deviceLockActivationConsumed",
                     prefs.getBoolean("deviceLockActivationConsumed", false));
             return result;

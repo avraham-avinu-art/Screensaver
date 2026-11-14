@@ -187,6 +187,7 @@ public class MainActivity extends Activity {
 
     private TextView timeText;
     private AnalogClockView analogClockView;
+    private View screenRootView;
     private BatteryChargeIndicatorView chargingBatteryView;
 
     private TextView gregorianText;
@@ -588,6 +589,7 @@ public class MainActivity extends Activity {
 
     private void buildUi() {
         LinearLayout root = new LinearLayout(this);
+        screenRootView = root;
         root.setOrientation(LinearLayout.VERTICAL);
         root.setGravity(Gravity.CENTER_HORIZONTAL);
         int initialScreenBackground = getInt("screenBackgroundColor", Color.BLACK);
@@ -1290,6 +1292,47 @@ public class MainActivity extends Activity {
         }
     }
 
+    private void applyTextAlignmentPreference() {
+        if (screenRootView == null) return;
+        String mode = getString("textAlignmentMode", "center");
+        int horizontalGravity;
+        int textAlignment;
+        int textDirection;
+        if ("rtl".equals(mode)) {
+            horizontalGravity = Gravity.RIGHT;
+            textAlignment = View.TEXT_ALIGNMENT_GRAVITY;
+            textDirection = View.TEXT_DIRECTION_RTL;
+        } else if ("ltr".equals(mode)) {
+            horizontalGravity = Gravity.LEFT;
+            textAlignment = View.TEXT_ALIGNMENT_GRAVITY;
+            textDirection = View.TEXT_DIRECTION_LTR;
+        } else {
+            horizontalGravity = Gravity.CENTER_HORIZONTAL;
+            textAlignment = View.TEXT_ALIGNMENT_CENTER;
+            textDirection = View.TEXT_DIRECTION_ANY_RTL;
+        }
+        applyTextAlignmentRecursively(
+                screenRootView, horizontalGravity, textAlignment, textDirection);
+    }
+
+    private void applyTextAlignmentRecursively(View target, int horizontalGravity,
+                                               int textAlignment, int textDirection) {
+        if (target instanceof TextView) {
+            TextView text = (TextView) target;
+            int verticalGravity = text.getGravity() & Gravity.VERTICAL_GRAVITY_MASK;
+            text.setGravity(verticalGravity | horizontalGravity);
+            text.setTextAlignment(textAlignment);
+            text.setTextDirection(textDirection);
+        }
+        if (target instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) target;
+            for (int i = 0; i < group.getChildCount(); i++) {
+                applyTextAlignmentRecursively(
+                        group.getChildAt(i), horizontalGravity, textAlignment, textDirection);
+            }
+        }
+    }
+
     private void applySettings() {
         if (prefs == null || gregorianText == null) return;
 
@@ -1350,8 +1393,8 @@ public class MainActivity extends Activity {
 
         int effectiveClockSize = effectiveClockDateSize(fontFamily, clockDateSize);
         boolean analogClock = "analog".equals(getString("clockDisplayMode", "digital"));
-        int analogClockDiameter = Math.max(dp(96),
-                dp(Math.round(effectiveClockSize * 1.30f)));
+        int analogClockDiameter = Math.max(dp(144),
+                dp(Math.round(effectiveClockSize * 1.95f)));
         if (analogClockView != null) {
             analogClockView.setDialStyle(getString("clockDialStyle", "classic"));
             analogClockView.setColors(color, getScreenBackgroundColor());
@@ -1591,6 +1634,7 @@ public class MainActivity extends Activity {
             }
         }
         updateClock();
+        applyTextAlignmentPreference();
     }
 
     private int dateClockGapDp(int clockSize) {

@@ -33,7 +33,8 @@ public final class ScreensaverDreamService extends DreamService {
         android.content.SharedPreferences prefs =
                 getSharedPreferences("settings", MODE_PRIVATE);
         if (!prefs.getBoolean("autoStartOnCharge", false)
-                || !prefs.getBoolean("useAndroidDreamForCharging", false)) {
+                || !prefs.getBoolean("useAndroidDreamForCharging", false)
+                || !AutoStartConditions.canActivate(this, prefs)) {
             finish();
             return;
         }

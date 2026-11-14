@@ -36,10 +36,12 @@ public final class AnalogClockView extends View {
     }
 
     public void setDialStyle(String value) {
-        if ("minimal".equals(value) || "numerals".equals(value)) {
-            dialStyle = value;
+        if ("numbers_only".equals(value) || "numerals".equals(value)) {
+            dialStyle = "numbers_only";
+        } else if ("lines_only".equals(value) || "minimal".equals(value)) {
+            dialStyle = "lines_only";
         } else {
-            dialStyle = "classic";
+            dialStyle = "lines_numbers";
         }
         invalidate();
     }
@@ -58,33 +60,36 @@ public final class AnalogClockView extends View {
         float cx = width * 0.5f;
         float cy = height * 0.5f;
 
+        // No enclosing rim: the face remains visually open against the background.
         paint.setStyle(Paint.Style.FILL);
-        paint.setColor(Color.argb(26, Color.red(faceColor),
+        paint.setColor(Color.argb(10, Color.red(faceColor),
                 Color.green(faceColor), Color.blue(faceColor)));
         canvas.drawCircle(cx, cy, radius, paint);
 
-        paint.setStyle(Paint.Style.STROKE);
-        paint.setStrokeCap(Paint.Cap.ROUND);
-        paint.setStrokeWidth(dp("minimal".equals(dialStyle) ? 1f : 1.6f));
-        paint.setColor(withAlpha(accentColor, "minimal".equals(dialStyle) ? 145 : 205));
-        canvas.drawCircle(cx, cy, radius, paint);
+        boolean showLines = "lines_only".equals(dialStyle)
+                || "lines_numbers".equals(dialStyle);
+        boolean showNumbers = "numbers_only".equals(dialStyle)
+                || "lines_numbers".equals(dialStyle);
 
-        for (int tick = 0; tick < 60; tick++) {
-            boolean major = tick % 5 == 0;
-            if ("minimal".equals(dialStyle) && !major) continue;
-            double angle = Math.toRadians(tick * 6.0 - 90.0);
-            float outer = radius * 0.91f;
-            float inner = radius * (major ? 0.77f : 0.85f);
-            float x1 = cx + (float) Math.cos(angle) * inner;
-            float y1 = cy + (float) Math.sin(angle) * inner;
-            float x2 = cx + (float) Math.cos(angle) * outer;
-            float y2 = cy + (float) Math.sin(angle) * outer;
-            paint.setStrokeWidth(dp(major ? 1.8f : 0.8f));
-            paint.setColor(withAlpha(accentColor, major ? 230 : 105));
-            canvas.drawLine(x1, y1, x2, y2, paint);
+        if (showLines) {
+            for (int tick = 0; tick < 60; tick++) {
+                boolean major = tick % 5 == 0;
+                double angle = Math.toRadians(tick * 6.0 - 90.0);
+                float outer = radius * 0.93f;
+                float inner = radius * (major ? 0.77f : 0.86f);
+                float x1 = cx + (float) Math.cos(angle) * inner;
+                float y1 = cy + (float) Math.sin(angle) * inner;
+                float x2 = cx + (float) Math.cos(angle) * outer;
+                float y2 = cy + (float) Math.sin(angle) * outer;
+                paint.setStyle(Paint.Style.STROKE);
+                paint.setStrokeCap(Paint.Cap.ROUND);
+                paint.setStrokeWidth(dp(major ? 1.8f : 0.8f));
+                paint.setColor(withAlpha(accentColor, major ? 230 : 105));
+                canvas.drawLine(x1, y1, x2, y2, paint);
+            }
         }
 
-        if ("numerals".equals(dialStyle)) {
+        if (showNumbers) {
             paint.setStyle(Paint.Style.FILL);
             paint.setColor(accentColor);
             paint.setTextAlign(Paint.Align.CENTER);

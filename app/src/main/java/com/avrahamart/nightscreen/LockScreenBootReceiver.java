@@ -28,6 +28,7 @@ public final class LockScreenBootReceiver extends BroadcastReceiver {
         if (monitorNeeded) LockScreenMonitorService.sync(context);
 
         if (!Intent.ACTION_BOOT_COMPLETED.equals(action) || !autoStartOnBoot) return;
+        if (!AutoStartConditions.canActivate(context, prefs)) return;
         if (Build.VERSION.SDK_INT >= 29 && !Settings.canDrawOverlays(context)) return;
 
         Intent launch = new Intent(context, MainActivity.class);

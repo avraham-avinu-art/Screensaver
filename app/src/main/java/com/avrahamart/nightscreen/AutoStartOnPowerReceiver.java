@@ -54,6 +54,7 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
 
         if (Intent.ACTION_POWER_CONNECTED.equals(action)) {
             if (!settings.autoStartOnCharge || settings.useAndroidDreamForCharging) return;
+            if (!AutoStartConditions.canActivate(context, settings)) return;
             if (!canLaunchFromBackground(context)) return;
             if (!claimPowerConnectedEvent(context)) return;
 
@@ -109,7 +110,8 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
         MonitorSettingsSnapshot settings = MonitorSettingsSnapshot.read(context);
         if (!LockScreenMonitorService.isLockMonitoringActive()
                 || settings == null || !settings.autoStartOnDeviceLock
-                || settings.deviceLockActivationConsumed) return;
+                || settings.deviceLockActivationConsumed
+                || !AutoStartConditions.canActivate(context, settings)) return;
 
         PowerManager powerManager =
                 (PowerManager) context.getSystemService(Context.POWER_SERVICE);
@@ -153,6 +155,7 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
                         settings.deviceLockActivationConsumed,
                         deepSleep);
         if (!afterDeepSleep
+                || !AutoStartConditions.canActivate(context, settings)
                 || !LockScreenMonitorService.isLockMonitoringActive()
                 || isMainActivityVisible(context)
                 || !canLaunchFromBackground(context)) return;

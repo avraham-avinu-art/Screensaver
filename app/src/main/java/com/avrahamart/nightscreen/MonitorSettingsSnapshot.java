@@ -19,6 +19,8 @@ final class MonitorSettingsSnapshot {
     final boolean autoStartOnWake;
     final boolean autoStartOnCharge;
     final boolean useAndroidDreamForCharging;
+    final boolean autoStartOnlyWhenLocked;
+    final boolean preventAutoStartDuringUse;
     final boolean deviceLockActivationConsumed;
 
     private MonitorSettingsSnapshot(Bundle data) {
@@ -28,6 +30,8 @@ final class MonitorSettingsSnapshot {
         autoStartOnCharge = data.getBoolean("autoStartOnCharge", false);
         useAndroidDreamForCharging =
                 data.getBoolean("useAndroidDreamForCharging", false);
+        autoStartOnlyWhenLocked = data.getBoolean("autoStartOnlyWhenLocked", false);
+        preventAutoStartDuringUse = data.getBoolean("preventAutoStartDuringUse", false);
         deviceLockActivationConsumed =
                 data.getBoolean("deviceLockActivationConsumed", false);
     }
@@ -50,6 +54,10 @@ final class MonitorSettingsSnapshot {
                         prefs.getBoolean("autoStartOnCharge", false));
                 data.putBoolean("useAndroidDreamForCharging",
                         prefs.getBoolean("useAndroidDreamForCharging", false));
+                data.putBoolean("autoStartOnlyWhenLocked",
+                        prefs.getBoolean("autoStartOnlyWhenLocked", false));
+                data.putBoolean("preventAutoStartDuringUse",
+                        prefs.getBoolean("preventAutoStartDuringUse", false));
                 data.putBoolean("deviceLockActivationConsumed",
                         prefs.getBoolean("deviceLockActivationConsumed", false));
             } else {
