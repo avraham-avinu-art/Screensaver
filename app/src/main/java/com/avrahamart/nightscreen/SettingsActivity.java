@@ -501,8 +501,8 @@ screenTitle.setText("הגדרות");
                 new String[]{"דיגיטלי", "אנלוגי"},
                 new String[]{"digital", "analog"}, "clockDisplayMode");
         addSegmentedChoices(content, "עיצוב לוח השעון",
-                new String[]{"קלאסי", "נקי", "ספרות"},
-                new String[]{"classic", "minimal", "numerals"}, "clockDialStyle");
+                new String[]{"מספרים ללא קווים", "קווים בלבד", "קווים ומספרים"},
+                new String[]{"numbers_only", "lines_only", "lines_numbers"}, "clockDialStyle");
         addDiscreteSlider(content, "גודל",
                 new String[]{"קטן", "בינוני", "רגיל", "גדול", "ענק"},
                 new String[]{"60", "72", "84", "96", "108"}, "clockDateSize");
@@ -604,20 +604,12 @@ screenTitle.setText("הגדרות");
         addCheck(content, "הפעלה אוטומטית בהדלקה", "autoStartOnBoot", false);
         addCheck(content, "הפעלה אוטומטית בהתעוררות", "autoStartOnWake", false);
         addCheck(content, "הפעלה אוטומטית בטעינה", "autoStartOnCharge", false);
+        addCheck(content, "רק כשהמכשיר נעול", "autoStartOnlyWhenLocked", false);
         addCheck(content, "ללא כיבוי בטעינה", "noShutdownWhileCharging", false);
         addSegmentedChoices(content, "תצוגת סוללה בטעינה",
                 new String[]{"ללא", "אחוזים", "סמל", "סמל ואחוזים"},
                 new String[]{"off", "percent", "icon", "icon_percent"},
                 "chargingBatteryDisplayMode");
-        addCheck(content, "השהיה באפליקציות מוחרגות",
-                "pauseWhenExcludedAppActive", false);
-        if (currentSettingsGroup != null && currentSettingsGroup.getChildCount() > 1) {
-            View exclusionCard = currentSettingsGroup.getChildAt(
-                    currentSettingsGroup.getChildCount() - 1);
-            if (exclusionCard instanceof LinearLayout) {
-                addExcludedAppsPicker((LinearLayout) exclusionCard);
-            }
-        }
     }
 
     private void addExcludedAppsPicker(LinearLayout parent) {
@@ -745,6 +737,9 @@ screenTitle.setText("הגדרות");
         addColorChoices(content, "צבע הגופן",
                 new String[]{"לבן", "כחול עדין", "כסף", "אפור", "אפור בהיר"},
                 new String[]{"white", "blue", "silver", "gray", "light"}, "fontColor");
+        addSegmentedChoices(content, "סידור הטקסט במסך",
+                new String[]{"ממורכז", "מימין לשמאל", "משמאל לימין"},
+                new String[]{"center", "rtl", "ltr"}, "textAlignmentMode");
     }
 
     
@@ -804,6 +799,18 @@ screenTitle.setText("הגדרות");
 
         addCheck(content, "הגדרת הפעלה אוטומטית בטעינה דרך הגדרות אנדרואיד",
                 "useAndroidDreamForCharging", getBool("useAndroidDreamForCharging", false));
+
+        addCheck(content, "השהיה באפליקציות מוחרגות",
+                "pauseWhenExcludedAppActive", false);
+        if (currentSettingsGroup != null && currentSettingsGroup.getChildCount() > 1) {
+            View exclusionCard = currentSettingsGroup.getChildAt(
+                    currentSettingsGroup.getChildCount() - 1);
+            if (exclusionCard instanceof LinearLayout) {
+                addExcludedAppsPicker((LinearLayout) exclusionCard);
+            }
+        }
+        addCheck(content, "מניעת הפעלה בזמן שימוש",
+                "preventAutoStartDuringUse", false);
     }
 
     private String settingsGroupTitleFor(String key) {
@@ -824,16 +831,15 @@ screenTitle.setText("הגדרות");
                 }
                 if ("autoStartOnDeviceLock".equals(key) || "autoStartOnBoot".equals(key)
                         || "autoStartOnWake".equals(key)
-                        || "autoStartOnCharge".equals(key)) {
+                        || "autoStartOnCharge".equals(key)
+                        || "autoStartOnlyWhenLocked".equals(key)) {
                     return "הפעלות אוטומטיות";
-                }
-                if ("pauseWhenExcludedAppActive".equals(key)) {
-                    return "השהיה באפליקציות מוחרגות";
                 }
                 return "שומר מסך במצב טעינה";
             case CATEGORY_APPEARANCE:
                         if ("screenBackgroundColor".equals(key) || "screenBrightness".equals(key)
-                        || "backgroundStyle".equals(key)) {
+                        || "backgroundStyle".equals(key)
+                        || "textAlignmentMode".equals(key)) {
                     return "התאמת מראה המסך";
                 }
                 return "גופן וצבע הטקסט";
@@ -849,6 +855,10 @@ screenTitle.setText("הגדרות");
                         || "nightModeEndHour".equals(key)) return "מצב לילה";
                 if ("batteryProtectionEnabled".equals(key)
                         || "batteryProtectionThreshold".equals(key)) return "הגנה על הסוללה";
+                if ("pauseWhenExcludedAppActive".equals(key)
+                        || "preventAutoStartDuringUse".equals(key)) {
+                    return "השהיית הפעלה אוטומטית";
+                }
                 return "הגדרות מתקדמות";
             default:
                 return "הגדרות";
@@ -1009,7 +1019,11 @@ screenTitle.setText("הגדרות");
         if ("gregorianDateFormat".equals(key)) return "בחירת תבנית התצוגה של התאריך הלועזי";
         if ("clockDateSize".equals(key)) return "בחירת גודל התצוגה של השעון והתאריך";
         if ("clockDisplayMode".equals(key)) return "בחירה בין תצוגת שעה דיגיטלית לבין שעון אנלוגי עם מחוגים";
-        if ("clockDialStyle".equals(key)) return "בחירת מראה לוח השעון האנלוגי וסימוני השעות";
+        if ("clockDialStyle".equals(key)) return "בחירת עיצוב השעון האנלוגי";
+        if ("textAlignmentMode".equals(key)) return "בחירת אופן היישור של כל הטקסט במסך";
+        if ("autoStartOnlyWhenLocked".equals(key)) return "הגבלת כל ההפעלות האוטומטיות כך שיפעלו רק כשהמכשיר נעול";
+        if ("preventAutoStartDuringUse".equals(key)) return "מניעת הפעלה אוטומטית כאשר אפליקציה אחרת נמצאת בחזית";
+        if ("pauseWhenExcludedAppActive".equals(key)) return "השהיית ההפעלה האוטומטית כאשר אפליקציה שנבחרה להחרגה נמצאת בחזית";
         if ("fontWeight".equals(key)) return "בחירת עובי גופן השעון והתאריך";
         if ("clockDatePosition".equals(key)) return "בחירת מיקום הצגת השעון והתאריך במסך";
         if ("screenSaverDuration".equals(key)) return "בחירת משך זמן הצגת השומר מסך";
@@ -1443,12 +1457,13 @@ screenTitle.setText("הגדרות");
                 } else {
                     prefs.edit().putBoolean("showPlayerPermissionPending", false).apply();
                 }
-            } else if ("pauseWhenExcludedAppActive".equals(key)
+            } else if (("pauseWhenExcludedAppActive".equals(key)
+                    || "preventAutoStartDuringUse".equals(key))
                     && checked && !hasUsageAccess()) {
                 prefs.edit().putBoolean(key, false).apply();
                 toggle.setChecked(false);
                 AppToast.makeText(this,
-                        "כדי להפעיל החרגת אפליקציות, יש לאפשר תחילה הרשאת נתוני שימוש.",
+                        "כדי לזהות אפליקציה פעילה בחזית, יש לאפשר תחילה הרשאת נתוני שימוש.",
                         Toast.LENGTH_LONG).show();
                 try {
                     startActivity(new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS));
@@ -1481,8 +1496,8 @@ screenTitle.setText("הגדרות");
 
         LinearLayout resetRow = new LinearLayout(this);
         resetRow.setOrientation(LinearLayout.HORIZONTAL);
-        resetRow.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        resetRow.setGravity(Gravity.CENTER_VERTICAL);
+        resetRow.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+        resetRow.setGravity(Gravity.CENTER_HORIZONTAL);
 
         TextView reset = textView("איפוס לברירת מחדל", 13, ON_SURFACE);
         reset.setGravity(Gravity.CENTER);
@@ -1493,9 +1508,22 @@ screenTitle.setText("הגדרות");
         reset.setFocusable(true);
         reset.setContentDescription("איפוס " + label + " לברירת המחדל");
         resetRow.addView(reset, new LinearLayout.LayoutParams(-2, dp(32)));
-        View resetSpacer = new View(this);
-        resetRow.addView(resetSpacer, new LinearLayout.LayoutParams(dp(8), dp(1)));
-        card.addView(resetRow, new LinearLayout.LayoutParams(-1, dp(34)));
+        LinearLayout.LayoutParams resetParams = new LinearLayout.LayoutParams(-1, dp(38));
+        resetParams.topMargin = dp(10);
+        resetParams.bottomMargin = dp(4);
+        card.addView(resetRow, resetParams);
+
+        LinearLayout adjustmentRow = new LinearLayout(this);
+        adjustmentRow.setOrientation(LinearLayout.HORIZONTAL);
+        adjustmentRow.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+        adjustmentRow.setGravity(Gravity.CENTER_VERTICAL);
+
+        TextView left = textView("שמאלה", 12, MUTED);
+        left.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
+        left.setSingleLine(true);
+        LinearLayout.LayoutParams leftParams = new LinearLayout.LayoutParams(-2, dp(34));
+        leftParams.rightMargin = dp(7);
+        adjustmentRow.addView(left, leftParams);
 
         SeekBar seekBar = new SeekBar(this);
         seekBar.setMax(maxValue - minValue);
@@ -1503,28 +1531,26 @@ screenTitle.setText("הגדרות");
                 getInt(key, 0) - minValue)));
         seekBar.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         seekBar.setContentDescription(label);
-        seekBar.setMinimumHeight(dp(48));
-        seekBar.setPadding(dp(8), 0, dp(8), 0);
+        seekBar.setMinimumHeight(dp(44));
+        seekBar.setPadding(dp(4), 0, dp(4), 0);
         if (Build.VERSION.SDK_INT >= 21) {
             seekBar.setProgressTintList(ColorStateList.valueOf(ACCENT));
             seekBar.setThumbTintList(ColorStateList.valueOf(ON_SURFACE));
             seekBar.setProgressBackgroundTintList(ColorStateList.valueOf(TRACK));
         }
-        LinearLayout.LayoutParams seekParams = new LinearLayout.LayoutParams(-1, dp(52));
-        seekParams.leftMargin = dp(2);
-        seekParams.rightMargin = dp(2);
-        card.addView(seekBar, seekParams);
+        LinearLayout.LayoutParams seekParams = new LinearLayout.LayoutParams(0, dp(46), 1f);
+        adjustmentRow.addView(seekBar, seekParams);
 
-        LinearLayout directions = new LinearLayout(this);
-        directions.setOrientation(LinearLayout.HORIZONTAL);
-        directions.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-        TextView left = textView("שמאלה", 12, MUTED);
         TextView right = textView("ימינה", 12, MUTED);
-        left.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
         right.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        directions.addView(left, new LinearLayout.LayoutParams(0, dp(22), 1f));
-        directions.addView(right, new LinearLayout.LayoutParams(0, dp(22), 1f));
-        card.addView(directions, new LinearLayout.LayoutParams(-1, dp(22)));
+        right.setSingleLine(true);
+        LinearLayout.LayoutParams rightParams = new LinearLayout.LayoutParams(-2, dp(34));
+        rightParams.leftMargin = dp(7);
+        adjustmentRow.addView(right, rightParams);
+
+        LinearLayout.LayoutParams adjustmentParams = new LinearLayout.LayoutParams(-1, dp(46));
+        adjustmentParams.topMargin = dp(2);
+        card.addView(adjustmentRow, adjustmentParams);
 
         Runnable updateReset = () -> {
             int value = seekBar.getProgress() + minValue;
@@ -1576,7 +1602,7 @@ screenTitle.setText("הגדרות");
         final int[] responsiveTextWidths = new int[names.length];
         final int[] responsiveExpandedWidths = new int[names.length];
         int initial = selectedIndex(key, values);
-        int optionTileHeight = "clockDialStyle".equals(key) ? 88 : 37;
+        int optionTileHeight = "clockDialStyle".equals(key) ? 116 : 37;
 
         for (int i = 0; i < names.length; i++) {
             final int index = i;
@@ -1613,7 +1639,7 @@ screenTitle.setText("הגדרות");
                 dialPreview.setColors(ON_SURFACE, CARD_SURFACE);
                 dialPreview.setDialStyle(values[i]);
                 previewContent.addView(dialPreview,
-                        new LinearLayout.LayoutParams(dp(56), dp(56)));
+                        new LinearLayout.LayoutParams(dp(84), dp(84)));
                 option.setGravity(Gravity.CENTER);
                 option.setTextSize(12);
                 previewContent.addView(option,
@@ -2258,6 +2284,10 @@ screenTitle.setText("הגדרות");
         if ("screenSaverDuration".equals(key)) return "activity-history";
         if ("preventLockWhileActive".equals(key)) return "power-off";
         if ("autoStartOnCharge".equals(key)) return "usb";
+        if ("autoStartOnlyWhenLocked".equals(key)) return "lock-play";
+        if ("preventAutoStartDuringUse".equals(key)) return "activity-history";
+        if ("pauseWhenExcludedAppActive".equals(key)) return "activity-history";
+        if ("textAlignmentMode".equals(key)) return "position-arrows";
         if ("autoStartOnDeviceLock".equals(key)) return "lock-play";
         if ("autoStartOnBoot".equals(key)) return "power";
         if ("autoStartOnWake".equals(key)) return "screen-wake";
