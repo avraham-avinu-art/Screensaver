@@ -364,10 +364,8 @@ screenTitle.setText("הגדרות");
         FrameLayout iconBadge = new FrameLayout(this);
         iconBadge.setBackground(roundOutline(ICON_SURFACE, dp(24), ACCENT));
         View glyph = makeIconGlyph(iconName, ACCENT);
-        int iconOffsetDp = "calendar-clock".equals(iconName) ? 1
-                : "music-note".equals(iconName) ? -4
-                : "palette".equals(iconName) ? 0 : 0;
-        if (iconOffsetDp != 0) glyph.setTranslationX(dp(iconOffsetDp));
+        glyph.setTranslationX(0f);
+        glyph.setTranslationY(0f);
         iconBadge.addView(glyph,
                 new FrameLayout.LayoutParams(dp(35), dp(35), Gravity.CENTER));
         LinearLayout.LayoutParams iconParams =
@@ -621,7 +619,11 @@ screenTitle.setText("הגדרות");
         description.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
         description.setTextDirection(View.TEXT_DIRECTION_RTL);
         description.setLineSpacing(dp(3), 1f);
-        card.addView(description, new LinearLayout.LayoutParams(-1, -2));
+        LinearLayout.LayoutParams descriptionParams =
+                new LinearLayout.LayoutParams(-1, -2);
+        descriptionParams.rightMargin = dp(42);
+        descriptionParams.leftMargin = dp(7);
+        card.addView(description, descriptionParams);
         Button choose = makeActionButton("בחירת אפליקציות");
         LinearLayout.LayoutParams buttonParams = new LinearLayout.LayoutParams(-1, dp(42));
         buttonParams.topMargin = dp(8);

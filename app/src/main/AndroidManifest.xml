@@ -73,6 +73,11 @@
             android:enabled="true"
             android:exported="false" />
 
+        <receiver
+            android:name=".CancelAutoStartServiceReceiver"
+            android:enabled="true"
+            android:exported="false" />
+
 
         <receiver
             android:name=".LockScreenBootReceiver"

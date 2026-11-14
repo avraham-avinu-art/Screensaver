@@ -6,7 +6,9 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
-import android.net.Uri;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.provider.Settings;
 
@@ -16,7 +18,7 @@ import android.provider.Settings;
  * This class deliberately never posts a standalone notification.
  */
 public final class AutoStartNotificationController {
-    static final String CHANNEL_ID = "screensaver_lock_monitor_v3";
+    static final String CHANNEL_ID = "screensaver_lock_monitor_v4";
     static final int NOTIFICATION_ID = 6723;
 
     private AutoStartNotificationController() {
@@ -24,32 +26,33 @@ public final class AutoStartNotificationController {
 
     static Notification buildNotification(Context context) {
         Context app = context.getApplicationContext();
+
         NotificationManager manager =
                 (NotificationManager) app.getSystemService(Context.NOTIFICATION_SERVICE);
         if (manager != null) createChannel(manager);
 
-        Intent settings = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION);
-        settings.setData(Uri.parse("package:" + app.getPackageName()));
-        settings.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
-                | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        Intent cancelService = new Intent(app, CancelAutoStartServiceReceiver.class);
         int pendingFlags = PendingIntent.FLAG_UPDATE_CURRENT;
         if (Build.VERSION.SDK_INT >= 23) pendingFlags |= PendingIntent.FLAG_IMMUTABLE;
-        PendingIntent contentIntent = PendingIntent.getActivity(
-                app, NOTIFICATION_ID, settings, pendingFlags);
+        PendingIntent cancelIntent = PendingIntent.getBroadcast(
+                app, NOTIFICATION_ID, cancelService, pendingFlags);
 
         Notification.Builder builder = Build.VERSION.SDK_INT >= 26
                 ? new Notification.Builder(app, CHANNEL_ID)
                 : new Notification.Builder(app);
         builder.setSmallIcon(R.drawable.ic_qs_screensaver)
-                .setContentTitle("שומר מסך")
-                .setContentText("ההפעלה האוטומטית פעילה")
-                .setContentIntent(contentIntent)
+                .setLargeIcon(createApplicationIcon(app))
+                .setContentTitle("שירות ההפעלה האוטומטית פועל.")
+                .setContentText(null)
+                .setStyle(new Notification.BigTextStyle()
+                        .bigText("לחץ לביטול השירות"))
+                .setContentIntent(cancelIntent)
                 .setCategory(Notification.CATEGORY_SERVICE)
                 .setOngoing(true)
                 .setOnlyAlertOnce(true)
                 .setShowWhen(false)
                 .setVisibility(Notification.VISIBILITY_SECRET)
-                .setPriority(Notification.PRIORITY_LOW)
+                .setPriority(Notification.PRIORITY_MIN)
                 .setSound(null)
                 .setVibrate(new long[0])
                 .setDefaults(0);
@@ -57,6 +60,22 @@ public final class AutoStartNotificationController {
         Notification notification = builder.build();
         notification.flags |= Notification.FLAG_ONGOING_EVENT | Notification.FLAG_NO_CLEAR;
         return notification;
+    }
+
+    private static Bitmap createApplicationIcon(Context context) {
+        try {
+            Drawable drawable = context.getDrawable(R.drawable.ic_launcher);
+            if (drawable == null) return null;
+            int size = Math.max(1, Math.round(48f
+                    * context.getResources().getDisplayMetrics().density));
+            Bitmap bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
+            Canvas canvas = new Canvas(bitmap);
+            drawable.setBounds(0, 0, size, size);
+            drawable.draw(canvas);
+            return bitmap;
+        } catch (Throwable ignored) {
+            return null;
+        }
     }
 
     static void createChannel(Context context) {
@@ -68,8 +87,8 @@ public final class AutoStartNotificationController {
     private static void createChannel(NotificationManager manager) {
         if (Build.VERSION.SDK_INT < 26) return;
         NotificationChannel channel = new NotificationChannel(
-                CHANNEL_ID, "הפעלה אוטומטית של שומר מסך", NotificationManager.IMPORTANCE_LOW);
-        channel.setDescription("התראה מתמשכת לשירות ההפעלה האוטומטית בנעילת המכשיר");
+                CHANNEL_ID, "הפעלה אוטומטית של שומר מסך", NotificationManager.IMPORTANCE_MIN);
+        channel.setDescription("התראה מתמשכת לשירות ההפעלה האוטומטית");
         channel.setShowBadge(false);
         channel.setLockscreenVisibility(Notification.VISIBILITY_SECRET);
         channel.enableLights(false);
