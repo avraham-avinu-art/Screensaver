@@ -1841,10 +1841,28 @@ screenTitle.setText("הגדרות");
         final int selectedInitially = initial;
         final ColorSwatchView[] swatches = new ColorSwatchView[names.length];
         final TextView[] captions = new TextView[names.length];
-        LinearLayout choiceRow = null;
+        final int columnsPerRow = names.length > 5 ? 4 : 5;
 
+        ColorSwatchView customColorSwatch = new ColorSwatchView(
+                this,
+                String.format(Locale.US, "#%08X",
+                        getInt(key, "screenBackgroundColor".equals(key)
+                                ? Color.BLACK : Color.WHITE)),
+                selectedInitially < 0,
+                "screenBackgroundColor".equals(key));
+        final ColorSwatchView selectedCustomSwatch = customColorSwatch;
+
+        final TextView customCaption = textView("מותאם אישית", 11,
+                selectedInitially < 0 ? ACCENT : MUTED);
+        customCaption.setGravity(Gravity.CENTER);
+        customCaption.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        customCaption.setSingleLine(true);
+        customCaption.setIncludeFontPadding(false);
+        customCaption.setTypeface(Typeface.create("sans-serif-medium",
+                selectedInitially < 0 ? Typeface.BOLD : Typeface.NORMAL));
+
+        LinearLayout choiceRow = null;
         for (int i = 0; i < names.length; i++) {
-            int columnsPerRow = names.length > 5 ? 4 : 5;
             if (i % columnsPerRow == 0) {
                 choiceRow = new LinearLayout(this);
                 choiceRow.setOrientation(LinearLayout.HORIZONTAL);
@@ -1894,6 +1912,10 @@ screenTitle.setText("הגדרות");
                     captions[j].setTypeface(Typeface.create("sans-serif-medium",
                             j == index ? Typeface.BOLD : Typeface.NORMAL));
                 }
+                selectedCustomSwatch.setSwatchSelected(false);
+                customCaption.setTextColor(MUTED);
+                customCaption.setTypeface(Typeface.create(
+                        "sans-serif-medium", Typeface.NORMAL));
             });
             choiceRow.addView(item, new LinearLayout.LayoutParams(0, -2, 1f));
         }
@@ -1901,29 +1923,46 @@ screenTitle.setText("הגדרות");
         LinearLayout customColorRow = new LinearLayout(this);
         customColorRow.setOrientation(LinearLayout.HORIZONTAL);
         customColorRow.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        customColorRow.setGravity(Gravity.CENTER_VERTICAL);
-        customColorRow.setPadding(dp(5), dp(7), dp(5), dp(2));
-        View customColorSwatch = new View(this);
-        customColorSwatch.setBackground(makeCustomColorDot(
-                getInt(key, "screenBackgroundColor".equals(key) ? Color.BLACK : Color.WHITE)));
-        customColorRow.addView(customColorSwatch,
-                new LinearLayout.LayoutParams(dp(28), dp(28)));
-        TextView customColorLabel = textView("בחירת צבע מותאם אישית", 14, ON_SURFACE);
-        customColorLabel.setGravity(Gravity.CENTER_VERTICAL);
-        LinearLayout.LayoutParams customLabelParams =
-                new LinearLayout.LayoutParams(-2, dp(32));
-        customLabelParams.rightMargin = dp(9);
-        customColorRow.addView(customColorLabel, customLabelParams);
-        customColorRow.setClickable(true);
-        customColorRow.setFocusable(true);
-        customColorRow.setOnClickListener(v -> showCustomColorDialog(key, customColorSwatch));
-        LinearLayout.LayoutParams customColorParams = new LinearLayout.LayoutParams(-1, -2);
-        customColorParams.topMargin = dp(5);
+        customColorRow.setGravity(Gravity.TOP);
+
+        LinearLayout customColorItem = new LinearLayout(this);
+        customColorItem.setOrientation(LinearLayout.VERTICAL);
+        customColorItem.setGravity(Gravity.CENTER);
+        customColorItem.setPadding(dp(1), dp(2), dp(1), 0);
+        customColorItem.addView(selectedCustomSwatch,
+                new LinearLayout.LayoutParams(dp(38), dp(38)));
+        customColorItem.addView(customCaption,
+                new LinearLayout.LayoutParams(-1, dp(22)));
+        customColorItem.setClickable(true);
+        customColorItem.setFocusable(true);
+        customColorItem.setOnClickListener(v -> showCustomColorDialog(
+                key, selectedCustomSwatch, () -> {
+                    for (int j = 0; j < swatches.length; j++) {
+                        swatches[j].setSwatchSelected(false);
+                        captions[j].setTextColor(MUTED);
+                        captions[j].setTypeface(Typeface.create(
+                                "sans-serif-medium", Typeface.NORMAL));
+                    }
+                    selectedCustomSwatch.setSwatchSelected(true);
+                    customCaption.setTextColor(ACCENT);
+                    customCaption.setTypeface(Typeface.create(
+                            "sans-serif-medium", Typeface.BOLD));
+                }));
+        customColorRow.addView(customColorItem,
+                new LinearLayout.LayoutParams(0, -2, 1f));
+        for (int i = 1; i < columnsPerRow; i++) {
+            View spacer = new View(this);
+            customColorRow.addView(spacer,
+                    new LinearLayout.LayoutParams(0, dp(62), 1f));
+        }
+        LinearLayout.LayoutParams customColorParams =
+                new LinearLayout.LayoutParams(-1, -2);
+        customColorParams.topMargin = dp(4);
         choices.addView(customColorRow, customColorParams);
 
         LinearLayout.LayoutParams choicesParams =
                 new LinearLayout.LayoutParams(-1, -2);
-        choicesParams.topMargin = dp(9);
+        choicesParams.topMargin = dp(7);
         card.addView(choices, choicesParams);
     }
 
@@ -1936,7 +1975,7 @@ screenTitle.setText("הגדרות");
     }
 
     
-    private void showCustomColorDialog(String key, View preview) {
+    private void showCustomColorDialog(String key, View preview, Runnable onSaved) {
         int current = getInt(key,
                 "screenBackgroundColor".equals(key) ? Color.BLACK : Color.WHITE);
         final float[] hsv = new float[3];
@@ -1945,10 +1984,10 @@ screenTitle.setText("הגדרות");
         LinearLayout panel = new LinearLayout(this);
         panel.setOrientation(LinearLayout.VERTICAL);
         panel.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        panel.setPadding(dp(18), dp(16), dp(18), dp(14));
+        panel.setPadding(dp(14), dp(9), dp(14), dp(9));
         panel.setBackground(roundOutline(CARD_SURFACE, dp(18), CARD_OUTLINE));
 
-        TextView heading = textView("בחירת צבע מותאם אישית", 18, ON_SURFACE);
+        TextView heading = textView("בחירת צבע מותאם אישית", 20, ON_SURFACE);
         heading.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD));
         heading.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         panel.addView(heading, new LinearLayout.LayoutParams(-1, dp(30)));
@@ -1957,7 +1996,7 @@ screenTitle.setText("הגדרות");
         sampleRow.setOrientation(LinearLayout.HORIZONTAL);
         sampleRow.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         sampleRow.setGravity(Gravity.CENTER_VERTICAL);
-        TextView sampleHint = textView("כוון את המחוונים עד לקבלת הגוון הרצוי", 13, MUTED);
+        TextView sampleHint = textView("כוון את המחוונים עד לקבלת הגוון הרצוי", 15, MUTED);
         sampleHint.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         sampleRow.addView(sampleHint, new LinearLayout.LayoutParams(0, dp(42), 1f));
         View colorPreview = new View(this);
@@ -1967,15 +2006,15 @@ screenTitle.setText("הגדרות");
         colorPreview.setBackground(makeCustomColorDot(current));
         sampleRow.addView(colorPreview, previewParams);
         LinearLayout.LayoutParams sampleParams = new LinearLayout.LayoutParams(-1, dp(48));
-        sampleParams.topMargin = dp(5);
+        sampleParams.topMargin = dp(2);
         panel.addView(sampleRow, sampleParams);
 
         View separator = new View(this);
         separator.setBackgroundColor(CARD_OUTLINE);
         LinearLayout.LayoutParams separatorParams =
                 new LinearLayout.LayoutParams(-1, dp(1));
-        separatorParams.topMargin = dp(8);
-        separatorParams.bottomMargin = dp(8);
+        separatorParams.topMargin = dp(3);
+        separatorParams.bottomMargin = dp(3);
         panel.addView(separator, separatorParams);
 
         String[] captions = {"גוון", "רוויה", "בהירות"};
@@ -1996,9 +2035,9 @@ screenTitle.setText("הגדרות");
             captionRow.setOrientation(LinearLayout.HORIZONTAL);
             captionRow.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
             captionRow.setGravity(Gravity.CENTER_VERTICAL);
-            TextView caption = textView(captions[i], 14, ON_SURFACE);
+            TextView caption = textView(captions[i], 16, ON_SURFACE);
             captionRow.addView(caption, new LinearLayout.LayoutParams(0, dp(24), 1f));
-            TextView value = textView("", 13, ACCENT);
+            TextView value = textView("", 14, ACCENT);
             value.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
             value.setTextDirection(View.TEXT_DIRECTION_LTR);
             captionRow.addView(value, new LinearLayout.LayoutParams(-2, dp(24)));
@@ -2026,10 +2065,10 @@ screenTitle.setText("הגדרות");
                 @Override public void onStartTrackingTouch(SeekBar seek) { }
                 @Override public void onStopTrackingTouch(SeekBar seek) { }
             });
-            control.addView(bar, new LinearLayout.LayoutParams(-1, dp(38)));
+            control.addView(bar, new LinearLayout.LayoutParams(-1, dp(30)));
             LinearLayout.LayoutParams controlParams =
                     new LinearLayout.LayoutParams(-1, -2);
-            if (i > 0) controlParams.topMargin = dp(4);
+            if (i > 0) controlParams.topMargin = dp(1);
             panel.addView(control, controlParams);
         }
 
@@ -2037,34 +2076,40 @@ screenTitle.setText("הגדרות");
         actions.setOrientation(LinearLayout.HORIZONTAL);
         actions.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         actions.setGravity(Gravity.CENTER_VERTICAL);
-        TextView save = textView("שמירה", 14, Color.rgb(7, 31, 49));
+        TextView save = textView("שמירה", 16, Color.rgb(7, 31, 49));
         save.setGravity(Gravity.CENTER);
         save.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD));
         save.setBackground(roundOutline(ACCENT, dp(10), ACCENT));
         save.setClickable(true);
         save.setFocusable(true);
-        TextView cancel = textView("ביטול", 14, ON_SURFACE);
+        TextView cancel = textView("ביטול", 16, ON_SURFACE);
         cancel.setGravity(Gravity.CENTER);
         cancel.setBackground(roundOutline(CONTROL_SURFACE, dp(10), OUTLINE));
         cancel.setClickable(true);
         cancel.setFocusable(true);
         LinearLayout.LayoutParams actionButtonParams =
-                new LinearLayout.LayoutParams(0, dp(42), 1f);
+                new LinearLayout.LayoutParams(0, dp(40), 1f);
         actions.addView(save, actionButtonParams);
         LinearLayout.LayoutParams cancelParams =
-                new LinearLayout.LayoutParams(0, dp(42), 1f);
+                new LinearLayout.LayoutParams(0, dp(40), 1f);
         cancelParams.rightMargin = dp(9);
         actions.addView(cancel, cancelParams);
         LinearLayout.LayoutParams actionsParams =
-                new LinearLayout.LayoutParams(-1, dp(42));
-        actionsParams.topMargin = dp(12);
+                new LinearLayout.LayoutParams(-1, dp(40));
+        actionsParams.topMargin = dp(6);
         panel.addView(actions, actionsParams);
 
         AlertDialog dialog = new AlertDialog.Builder(this).setView(panel).create();
         save.setOnClickListener(v -> {
             int selected = Color.HSVToColor(hsv);
             persistOption(key, String.format(Locale.US, "#%08X", selected));
-            preview.setBackground(makeCustomColorDot(selected));
+            if (preview instanceof ColorSwatchView) {
+                ((ColorSwatchView) preview).setSwatchColor(
+                        String.format(Locale.US, "#%08X", selected), true);
+            } else {
+                preview.setBackground(makeCustomColorDot(selected));
+            }
+            if (onSaved != null) onSaved.run();
             dialog.dismiss();
         });
         cancel.setOnClickListener(v -> dialog.dismiss());
@@ -2972,7 +3017,7 @@ screenTitle.setText("הגדרות");
 
 
     private class ColorSwatchView extends View {
-        private final String value;
+        private String value;
         private boolean selected;
         private final boolean screenBackgroundPalette;
         private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -2991,6 +3036,12 @@ screenTitle.setText("הגדרות");
             invalidate();
         }
 
+        void setSwatchColor(String value, boolean selected) {
+            this.value = value;
+            this.selected = selected;
+            invalidate();
+        }
+
         @Override protected void onDraw(Canvas canvas) {
             super.onDraw(canvas);
             float cx = getWidth() / 2f;
@@ -3004,7 +3055,7 @@ screenTitle.setText("הגדרות");
 
             // A clearly visible outline separates every color sample from the card.
             paint.setStyle(Paint.Style.STROKE);
-            paint.setStrokeWidth(dp(selected ? 3 : 1));
+            paint.setStrokeWidth(dp(selected ? 2 : 1));
             paint.setColor(selected ? ACCENT : Color.rgb(151, 177, 202));
             canvas.drawCircle(cx, cy, radius, paint);
 
