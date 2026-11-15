@@ -2153,12 +2153,12 @@ screenHeader.setVisibility(View.GONE);
                 AnalogClockView dialPreview = new AnalogClockView(this);
                 dialPreview.setTime(10, 10);
                 dialPreview.setColors(ON_SURFACE, CARD_SURFACE);
-                boolean replaceNumbersPreview = "numbers_only".equals(values[i]);
-                // The numbers-only choice uses a separate, full-resolution hand-clock
-                // preview. Draw it at its final size rather than scaling a smaller View.
-                dialPreview.setDialStyle(replaceNumbersPreview ? "lines_numbers" : values[i]);
-                int previewDiameter = replaceNumbersPreview ? 90 : 60;
-                if (replaceNumbersPreview) {
+                boolean enlargedNumbersPreview = "numbers_only".equals(values[i]);
+                // Keep the numbers-only preview faithful to its selected dial style.
+                // It is drawn at native resolution at the same enlarged diameter.
+                dialPreview.setDialStyle(values[i]);
+                int previewDiameter = enlargedNumbersPreview ? 90 : 60;
+                if (enlargedNumbersPreview) {
                     previewContent.setClipChildren(false);
                     previewContent.setClipToPadding(false);
                 }
