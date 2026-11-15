@@ -63,8 +63,6 @@ public final class MonitorSettingsProvider extends ContentProvider {
                     prefs.getBoolean("wakeOnTrackChange", false));
             result.putBoolean("showPlayer",
                     prefs.getBoolean("showPlayer", false));
-            result.putInt("playerStartDurationSeconds",
-                    prefs.getInt("playerStartDurationSeconds", 6));
             result.putBoolean("deviceLockActivationConsumed",
                     prefs.getBoolean("deviceLockActivationConsumed", false));
             return result;
