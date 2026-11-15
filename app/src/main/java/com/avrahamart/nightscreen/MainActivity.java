@@ -367,7 +367,7 @@ public class MainActivity extends Activity {
 
         lastBackPressElapsedRealtime = now;
         Toast notice = AppToast.makeText(
-                this, "לחץ שוב על חזרה כדי לצאת", Toast.LENGTH_SHORT);
+                this, getString(R.string.main_activity_text_001), Toast.LENGTH_SHORT);
         notice.setGravity(Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL, 0, dp(64));
         notice.show();
     }
@@ -613,7 +613,7 @@ public class MainActivity extends Activity {
         settingsButtonHitArea.setBackgroundColor(Color.TRANSPARENT);
         settingsButtonHitArea.setVisibility(View.GONE);
         settingsButtonHitArea.setClickable(true);
-        settingsButtonHitArea.setContentDescription("הגדרות");
+        settingsButtonHitArea.setContentDescription(getString(R.string.main_activity_text_002));
         settingsButtonHitArea.setOnClickListener(v -> showSettings());
 
         settingsButton = new ImageView(this);
@@ -623,7 +623,7 @@ public class MainActivity extends Activity {
         settingsButton.setAlpha(1f);
         settingsButton.setPadding(dp(4), dp(4), dp(4), dp(4));
         settingsButton.setBackgroundColor(Color.TRANSPARENT);
-        settingsButton.setContentDescription("הגדרות");
+        settingsButton.setContentDescription(getString(R.string.main_activity_text_002));
         settingsButton.setOnClickListener(v -> showSettings());
         // The hit target is twice as wide and tall; the visual settings icon stays 36x38dp.
         settingsButtonHitArea.addView(settingsButton, new FrameLayout.LayoutParams(
@@ -861,7 +861,7 @@ public class MainActivity extends Activity {
         mediaSetup.setVisibility(View.GONE);
 
         TextView message = textView(
-                "יש לאפשר גישה להתראות\nכדי להציג את נגן המערכת",
+                getString(R.string.main_activity_text_003),
                 14, Color.rgb(215, 220, 228));
         message.setGravity(Gravity.CENTER);
         message.setTextDirection(View.TEXT_DIRECTION_RTL);
@@ -878,7 +878,7 @@ public class MainActivity extends Activity {
         messageParams.leftMargin = dp(6);
         mediaSetup.addView(message, messageParams);
 
-        TextView openSettings = mediaButton("הפעל");
+        TextView openSettings = mediaButton(getString(R.string.main_activity_text_004));
         openSettings.setTextSize(14);
         openSettings.setTextColor(Color.WHITE);
         GradientDrawable accessButtonBackground = new GradientDrawable();
@@ -1037,19 +1037,19 @@ public class MainActivity extends Activity {
         controlAreaParams.topMargin = dp(-5);
 
         // Physical order: Next on the left, Play/Pause in the center, Previous on the right.
-        mediaNext = mediaIconButton(R.drawable.media_next, "הבא");
+        mediaNext = mediaIconButton(R.drawable.media_next, getString(R.string.main_activity_text_005));
         mediaNext.setOnClickListener(v -> sendPrevious());
         FrameLayout.LayoutParams nextParams =
                 new FrameLayout.LayoutParams(buttonSize, buttonSize, Gravity.LEFT | Gravity.CENTER_VERTICAL);
         controls.addView(mediaNext, nextParams);
 
-        mediaPlayPause = mediaIconButton(R.drawable.media_play, "נגן");
+        mediaPlayPause = mediaIconButton(R.drawable.media_play, getString(R.string.main_activity_text_006));
         mediaPlayPause.setOnClickListener(v -> sendPlayPause());
         FrameLayout.LayoutParams playParams =
                 new FrameLayout.LayoutParams(buttonSize, buttonSize, Gravity.CENTER);
         controls.addView(mediaPlayPause, playParams);
 
-        mediaPrev = mediaIconButton(R.drawable.media_previous, "הקודם");
+        mediaPrev = mediaIconButton(R.drawable.media_previous, getString(R.string.main_activity_text_007));
         mediaPrev.setOnClickListener(v -> sendNext());
         FrameLayout.LayoutParams prevParams =
                 new FrameLayout.LayoutParams(buttonSize, buttonSize, Gravity.RIGHT | Gravity.CENTER_VERTICAL);
@@ -1573,9 +1573,9 @@ public class MainActivity extends Activity {
                 : Math.max(dp(62), measuredLineHeight(
                         timeText, "0123456789:00", 2, effectiveClockSize));
         int gregorianH = Math.max(dateRowHeightForClockPreset(effectiveClockSize),
-                measuredLineHeight(gregorianText, "יום ה׳ · 22.10.2026", 0, 24));
+                measuredLineHeight(gregorianText, getString(R.string.main_activity_text_008), 0, 24));
         int hebrewH = Math.max(dateRowHeightForClockPreset(effectiveClockSize),
-                measuredLineHeight(hebrewText, "כ״ט בתשרי תשפ״ז אבגדהוזחטיכלמנסעפצקרשת", 0, 24));
+                measuredLineHeight(hebrewText, getString(R.string.main_activity_text_009), 0, 24));
 
         // Custom fonts can declare unusually tall font metrics even when the painted
         // characters are not tall. A fixed negative margin therefore leaves different
@@ -1590,21 +1590,21 @@ public class MainActivity extends Activity {
             gregorianTopMargin = analogClock ? clockToDateGapPx
                     : visualGapMarginPx(
                             timeText, clockH, "0123456789:00",
-                            gregorianText, gregorianH, "יום ה׳ · 22.10.2026",
+                            gregorianText, gregorianH, getString(R.string.main_activity_text_008),
                             clockToDateGapPx);
         }
         if (showHebrew) {
             if (showGregorian) {
                 hebrewTopMargin = visualGapMarginPx(
-                        gregorianText, gregorianH, "יום ה׳ · 22.10.2026",
-                        hebrewText, hebrewH, "כ״ט בתשרי תשפ״ז אבגדהוזחטיכלמנסעפצקרשת",
+                        gregorianText, gregorianH, getString(R.string.main_activity_text_008),
+                        hebrewText, hebrewH, getString(R.string.main_activity_text_009),
                         dateToDateGapPx);
             } else if (analogClock) {
                 hebrewTopMargin = clockToDateGapPx;
             } else {
                 hebrewTopMargin = visualGapMarginPx(
                         timeText, clockH, "0123456789:00",
-                        hebrewText, hebrewH, "כ״ט בתשרי תשפ״ז אבגדהוזחטיכלמנסעפצקרשת",
+                        hebrewText, hebrewH, getString(R.string.main_activity_text_009),
                         clockToDateGapPx);
             }
         }
@@ -2780,7 +2780,7 @@ public class MainActivity extends Activity {
             settingsOpenedElapsedRealtime = 0L;
             scheduleAutoOff(false);
             AppToast.makeText(
-                    this, "לא ניתן לפתוח את מסך ההגדרות.", android.widget.Toast.LENGTH_LONG).show();
+                    this, getString(R.string.main_activity_text_010), android.widget.Toast.LENGTH_LONG).show();
         }
     }
 
@@ -2920,7 +2920,7 @@ public class MainActivity extends Activity {
             numericDateFormat.setTimeZone(now.getTimeZone());
             return numericDateFormat.format(now.getTime());
         }
-        Locale formatLocale = "d 'ב'MMMM yyyy".equals(pattern)
+        Locale formatLocale = getString(R.string.main_activity_text_011).equals(pattern)
                 ? new Locale("he", "IL") : Locale.US;
         SimpleDateFormat formatter = new SimpleDateFormat(pattern, formatLocale);
         formatter.setTimeZone(now.getTimeZone());
@@ -2929,9 +2929,9 @@ public class MainActivity extends Activity {
 
     private String formatHebrewDate(String rawDate, String format) {
         String normalized = rawDate
-                .replace("מרחשוון", "חשוון")
-                .replace("מרחשון", "חשוון")
-                .replace("חשון", "חשוון")
+                .replace(getString(R.string.main_activity_text_012), getString(R.string.main_activity_text_013))
+                .replace(getString(R.string.main_activity_text_014), getString(R.string.main_activity_text_013))
+                .replace(getString(R.string.main_activity_text_015), getString(R.string.main_activity_text_013))
                 .replace("\u05F3", "'")
                 .replace("\u05F4", "\"")
                 .replace("’", "'")
@@ -2944,10 +2944,10 @@ public class MainActivity extends Activity {
         String month = normalized.substring(firstSpace + 1, lastSpace);
         String year = normalized.substring(lastSpace + 1);
         if ("monthBet".equals(format) || "monthBetYearArticle".equals(format)) {
-            month = "ב" + month;
+            month = getString(R.string.main_activity_text_016) + month;
         }
         if ("yearArticle".equals(format) || "monthBetYearArticle".equals(format)) {
-            year = "ה" + year;
+            year = getString(R.string.main_activity_text_017) + year;
         }
         return day + " " + month + " " + year;
     }
@@ -2961,19 +2961,19 @@ public class MainActivity extends Activity {
         }
         int hour = hourOfDay % 12;
         if (hour == 0) hour = 12;
-        String period = hourOfDay < 12 ? " לפנה״צ" : " אחה״צ";
+        String period = hourOfDay < 12 ? getString(R.string.main_activity_text_018) : getString(R.string.main_activity_text_019);
         return String.format(Locale.US, "%d:%02d", hour, minute) + period;
     }
 
     private String hebrewWeekday() {
         switch (now.get(Calendar.DAY_OF_WEEK)) {
-            case Calendar.SUNDAY: return "יום א'";
-            case Calendar.MONDAY: return "יום ב'";
-            case Calendar.TUESDAY: return "יום ג'";
-            case Calendar.WEDNESDAY: return "יום ד'";
-            case Calendar.THURSDAY: return "יום ה'";
-            case Calendar.FRIDAY: return "יום ו'";
-            default: return "שבת";
+            case Calendar.SUNDAY: return getString(R.string.main_activity_text_020);
+            case Calendar.MONDAY: return getString(R.string.main_activity_text_021);
+            case Calendar.TUESDAY: return getString(R.string.main_activity_text_022);
+            case Calendar.WEDNESDAY: return getString(R.string.main_activity_text_023);
+            case Calendar.THURSDAY: return getString(R.string.main_activity_text_024);
+            case Calendar.FRIDAY: return getString(R.string.main_activity_text_025);
+            default: return getString(R.string.main_activity_text_026);
         }
     }
 
@@ -3233,7 +3233,7 @@ public class MainActivity extends Activity {
                         metadata.getString(MediaMetadata.METADATA_KEY_TITLE);
             }
             if (title == null || title.trim().isEmpty()) {
-                title = "מדיה";
+                title = getString(R.string.main_activity_text_027);
             }
 
             title = removeFileExtension(title);
@@ -3252,9 +3252,9 @@ public class MainActivity extends Activity {
             if (artist.equalsIgnoreCase("unknown artist") ||
                     artist.equalsIgnoreCase("unknown") ||
                     artist.equalsIgnoreCase("artist unknown") ||
-                    artist.equals("אמן לא ידוע") ||
-                    artist.equals("אמן לא ידוע/ה") ||
-                    artist.equals("לא ידוע")) {
+                    artist.equals(getString(R.string.main_activity_text_028)) ||
+                    artist.equals(getString(R.string.main_activity_text_029)) ||
+                    artist.equals(getString(R.string.main_activity_text_030))) {
                 artist = "";
             }
             String previousArtistText = mediaDetails.getText() == null
@@ -3282,7 +3282,7 @@ public class MainActivity extends Activity {
                     : metadata.getString(MediaMetadata.METADATA_KEY_MEDIA_ID);
             String trackIdentity = mediaId != null && !mediaId.trim().isEmpty()
                     ? "id:" + mediaId.trim()
-                    : (!"מדיה".equals(title) && !title.trim().isEmpty()
+                    : (!getString(R.string.main_activity_text_027).equals(title) && !title.trim().isEmpty()
                             ? "title:" + title.trim() : "");
             boolean playbackActive = playback == PlaybackState.STATE_PLAYING
                     || playback == PlaybackState.STATE_BUFFERING;
@@ -3334,7 +3334,7 @@ public class MainActivity extends Activity {
                 boolean isPlaying = playback == PlaybackState.STATE_PLAYING;
             mediaPlayPause.setImageResource(
                     isPlaying ? R.drawable.media_pause : R.drawable.media_play);
-            mediaPlayPause.setContentDescription(isPlaying ? "השהה" : "נגן");
+            mediaPlayPause.setContentDescription(isPlaying ? getString(R.string.main_activity_text_031) : getString(R.string.main_activity_text_006));
             int mediaColor = getInt("fontColor", dateTextColor);
             if (mediaPlayPause.getDrawable() != null) mediaPlayPause.getDrawable().setTint(mediaColor);
 
@@ -4084,7 +4084,7 @@ public class MainActivity extends Activity {
     private void showFatalError(Throwable t) {
         try {
             TextView error = textView(
-                    "שומר מסך\n" + t.getClass().getSimpleName(),
+                    getString(R.string.main_activity_text_032) + t.getClass().getSimpleName(),
                     22, Color.WHITE);
             error.setGravity(Gravity.CENTER);
             error.setBackgroundColor(Color.BLACK);

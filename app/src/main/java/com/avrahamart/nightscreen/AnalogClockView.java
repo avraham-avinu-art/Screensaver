@@ -20,7 +20,7 @@ public final class AnalogClockView extends View {
         super(context);
         density = getResources().getDisplayMetrics().density;
         setLayerType(View.LAYER_TYPE_SOFTWARE, null);
-        setContentDescription("שעון אנלוגי");
+        setContentDescription(getContext().getString(R.string.analog_clock_text_001));
     }
 
     public void setTime(int hourOfDay, int minuteOfHour) {

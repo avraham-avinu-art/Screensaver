@@ -79,7 +79,7 @@ public class PermissionsActivity extends Activity {
         titleBlock.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         titleBlock.setGravity(Gravity.CENTER);
 
-        TextView title = textView("ניהול הרשאות", 23, ON_SURFACE);
+        TextView title = textView(getString(R.string.permissions_activity_text_001), 23, ON_SURFACE);
         title.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
         title.setIncludeFontPadding(false);
         title.setLetterSpacing(-0.015f);
@@ -88,7 +88,7 @@ public class PermissionsActivity extends Activity {
         title.setTextDirection(View.TEXT_DIRECTION_RTL);
         titleBlock.addView(title, new LinearLayout.LayoutParams(-1, -2));
 
-        TextView subtitle = textView("הרשאות הנדרשות לפעילות האפליקציה", 16, MUTED);
+        TextView subtitle = textView(getString(R.string.permissions_activity_text_002), 16, MUTED);
         subtitle.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
         subtitle.setIncludeFontPadding(false);
         subtitle.setGravity(Gravity.CENTER);
@@ -136,18 +136,18 @@ public class PermissionsActivity extends Activity {
     }
 
     private void addNotificationPermissionCard(LinearLayout parent) {
-        LinearLayout card = makeCard(parent, "הרשאת גישה להתראות",
-                "כדי להציג את נגן המערכת, יש לאפשר גישה להתראות.");
+        LinearLayout card = makeCard(parent, getString(R.string.permissions_activity_text_003),
+                getString(R.string.permissions_activity_text_004));
         notificationStatus = addStatus(card);
         notificationButton = addPermissionButton(card,
-                "הפעל הרשאת גישה להתראות", v -> {
+                getString(R.string.permissions_activity_text_005), v -> {
                     if (hasNotificationAccess()) {
                         AppToast.makeText(this,
-                                "כדי לשנות או לבטל את ההרשאה, שנה במסך הבא את גישת ההתראות של שומר מסך.",
+                                getString(R.string.permissions_activity_text_006),
                                 Toast.LENGTH_LONG).show();
                     } else {
                         AppToast.makeText(this,
-                                "כדי להציג את הנגן, צריך לאפשר לשומר מסך גישה להתראות במסך הבא. בחר את \"שומר מסך\" והפעל את ההרשאה.",
+                                getString(R.string.permissions_activity_text_007),
                                 Toast.LENGTH_LONG).show();
                     }
                     openNotificationAccessSettings();
@@ -155,18 +155,18 @@ public class PermissionsActivity extends Activity {
     }
 
     private void addUsageAccessPermissionCard(LinearLayout parent) {
-        LinearLayout card = makeCard(parent, "הרשאת גישה לנתוני שימוש",
-                "ההרשאה מאפשרת לזהות איזו אפליקציה פעילה בחזית המסך, ונדרשת להפעלת ההגדרה „מניעת הפעלה בזמן שימוש”.");
+        LinearLayout card = makeCard(parent, getString(R.string.permissions_activity_text_008),
+                getString(R.string.permissions_activity_text_009));
         usageStatus = addStatus(card);
         usageButton = addPermissionButton(card,
-                "הפעל הרשאת גישה לנתוני שימוש", v -> {
+                getString(R.string.permissions_activity_text_010), v -> {
                     if (hasUsageAccess()) {
                         AppToast.makeText(this,
-                                "כדי לשנות או לבטל את ההרשאה, שנה במסך הבא את גישת נתוני השימוש של שומר מסך.",
+                                getString(R.string.permissions_activity_text_011),
                                 Toast.LENGTH_LONG).show();
                     } else {
                         AppToast.makeText(this,
-                                "כדי לזהות אפליקציה פעילה בחזית המסך, בחר במסך הבא את „שומר מסך” ואפשר גישה לנתוני שימוש.",
+                                getString(R.string.permissions_activity_text_012),
                                 Toast.LENGTH_LONG).show();
                     }
                     openUsageAccessSettings();
@@ -174,18 +174,18 @@ public class PermissionsActivity extends Activity {
     }
 
     private void addOverlayPermissionCard(LinearLayout parent) {
-        LinearLayout card = makeCard(parent, "הרשאת תצוגה על אפליקציות",
-                "ההרשאה נדרשת להפעלה אוטומטית בטעינה, בנעילה, בהפעלת המכשיר ובהתעוררות ממצב שינה.");
+        LinearLayout card = makeCard(parent, getString(R.string.permissions_activity_text_013),
+                getString(R.string.permissions_activity_text_014));
         overlayStatus = addStatus(card);
         overlayButton = addPermissionButton(card,
-                "הפעל הרשאת הצגה מעל אפליקציות", v -> {
+                getString(R.string.permissions_activity_text_015), v -> {
                     if (Settings.canDrawOverlays(this)) {
                         AppToast.makeText(this,
-                                "כדי לשנות או לבטל את ההרשאה, שנה במסך הבא את הגדרת ההצגה מעל אפליקציות אחרות עבור שומר מסך.",
+                                getString(R.string.permissions_activity_text_016),
                                 Toast.LENGTH_LONG).show();
                     } else {
                         AppToast.makeText(this,
-                                "כדי לאפשר הפעלה אוטומטית, בחר במסך הבא את \"שומר מסך\" ואפשר \"הצגה מעל אפליקציות אחרות\".",
+                                getString(R.string.permissions_activity_text_017),
                                 Toast.LENGTH_LONG).show();
                     }
                     openOverlayPermissionSettings();
@@ -193,16 +193,16 @@ public class PermissionsActivity extends Activity {
     }
 
     private void addDeviceAdminPermissionCard(LinearLayout parent) {
-        LinearLayout card = makeCard(parent, "הרשאת מנהל מכשיר",
-                "ההרשאה מאפשרת לנעול את המכשיר בסיום זמן הפעילות שנבחר.");
+        LinearLayout card = makeCard(parent, getString(R.string.permissions_activity_text_018),
+                getString(R.string.permissions_activity_text_019));
         adminStatus = addStatus(card);
         adminButton = addPermissionButton(card,
-                "הפעל הרשאת מנהל מכשיר", v -> {
+                getString(R.string.permissions_activity_text_020), v -> {
                     if (isAdminActive()) {
                         confirmDeviceAdminRemoval();
                     } else {
                         AppToast.makeText(this,
-                                "כדי לאפשר נעילת המכשיר בסיום זמן הפעילות, אשר במסך הבא את הרשאת מנהל המכשיר.",
+                                getString(R.string.permissions_activity_text_021),
                                 Toast.LENGTH_LONG).show();
                         requestDeviceAdmin();
                     }
@@ -278,42 +278,42 @@ public class PermissionsActivity extends Activity {
     private void updatePermissionStatuses() {
         boolean notificationGranted = hasNotificationAccess();
         notificationStatus.setText(notificationGranted
-                ? "ההרשאה ניתנה — גישה להתראות פעילה."
-                : "ההרשאה עדיין לא ניתנה.");
+                ? getString(R.string.permissions_activity_text_022)
+                : getString(R.string.permissions_activity_text_023));
         notificationStatus.setTextColor(notificationGranted ? ACCENT : MUTED);
         notificationButton.setText(notificationGranted
-                ? "ניהול הרשאת גישה להתראות"
-                : "הפעל הרשאת גישה להתראות");
+                ? getString(R.string.permissions_activity_text_024)
+                : getString(R.string.permissions_activity_text_005));
         notificationButton.setEnabled(true);
 
         boolean usageGranted = hasUsageAccess();
         usageStatus.setText(usageGranted
-                ? "ההרשאה ניתנה — זיהוי אפליקציה פעילה זמין."
-                : "ההרשאה עדיין לא ניתנה.");
+                ? getString(R.string.permissions_activity_text_025)
+                : getString(R.string.permissions_activity_text_023));
         usageStatus.setTextColor(usageGranted ? ACCENT : MUTED);
         usageButton.setText(usageGranted
-                ? "ניהול הרשאת גישה לנתוני שימוש"
-                : "הפעל הרשאת גישה לנתוני שימוש");
+                ? getString(R.string.permissions_activity_text_026)
+                : getString(R.string.permissions_activity_text_010));
         usageButton.setEnabled(true);
 
         boolean overlayGranted = Settings.canDrawOverlays(this);
         overlayStatus.setText(overlayGranted
-                ? "ההרשאה ניתנה — הצגה מעל אפליקציות אחרות פעילה."
-                : "ההרשאה עדיין לא ניתנה.");
+                ? getString(R.string.permissions_activity_text_027)
+                : getString(R.string.permissions_activity_text_023));
         overlayStatus.setTextColor(overlayGranted ? ACCENT : MUTED);
         overlayButton.setText(overlayGranted
-                ? "ניהול הרשאת הצגה מעל אפליקציות"
-                : "הפעל הרשאת הצגה מעל אפליקציות");
+                ? getString(R.string.permissions_activity_text_028)
+                : getString(R.string.permissions_activity_text_015));
         overlayButton.setEnabled(true);
 
         boolean adminGranted = isAdminActive();
         adminStatus.setText(adminGranted
-                ? "ההרשאה ניתנה — הרשאת מנהל המכשיר פעילה."
-                : "ההרשאה עדיין לא ניתנה; נעילת המכשיר תתנהל לפי הגדרות המכשיר.");
+                ? getString(R.string.permissions_activity_text_029)
+                : getString(R.string.permissions_activity_text_030));
         adminStatus.setTextColor(adminGranted ? ACCENT : MUTED);
         adminButton.setText(adminGranted
-                ? "בטל הרשאת מנהל מכשיר"
-                : "הפעל הרשאת מנהל מכשיר");
+                ? getString(R.string.permissions_activity_text_031)
+                : getString(R.string.permissions_activity_text_020));
         adminButton.setEnabled(true);
     }
 
@@ -343,10 +343,10 @@ public class PermissionsActivity extends Activity {
             startActivity(new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS));
             return true;
         } catch (ActivityNotFoundException ignored) {
-            AppToast.makeText(this, "לא ניתן לפתוח את הגדרות ההתראות במכשיר.",
+            AppToast.makeText(this, getString(R.string.permissions_activity_text_032),
                     Toast.LENGTH_LONG).show();
         } catch (Throwable ignored) {
-            AppToast.makeText(this, "לא ניתן לפתוח את הגדרות ההתראות במכשיר.",
+            AppToast.makeText(this, getString(R.string.permissions_activity_text_032),
                     Toast.LENGTH_LONG).show();
         }
         return false;
@@ -370,10 +370,10 @@ public class PermissionsActivity extends Activity {
             startActivity(new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS));
             return true;
         } catch (ActivityNotFoundException ignored) {
-            AppToast.makeText(this, "לא ניתן לפתוח את הגדרות הגישה לנתוני שימוש במכשיר.",
+            AppToast.makeText(this, getString(R.string.permissions_activity_text_033),
                     Toast.LENGTH_LONG).show();
         } catch (Throwable ignored) {
-            AppToast.makeText(this, "לא ניתן לפתוח את הגדרות הגישה לנתוני שימוש במכשיר.",
+            AppToast.makeText(this, getString(R.string.permissions_activity_text_033),
                     Toast.LENGTH_LONG).show();
         }
         return false;
@@ -389,7 +389,7 @@ public class PermissionsActivity extends Activity {
             return true;
         } catch (Throwable ex) {
             AppToast.makeText(this,
-                    "לא ניתן לפתוח את הגדרת ההרשאה. פתח בהגדרות Android את \"הצגה מעל אפליקציות אחרות\".",
+                    getString(R.string.permissions_activity_text_034),
                     Toast.LENGTH_LONG).show();
             return false;
         }
@@ -403,10 +403,10 @@ public class PermissionsActivity extends Activity {
             Intent intent = new Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN);
             intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, adminComponent);
             intent.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION,
-                    "ההרשאה מאפשרת לנעול את המכשיר בסיום זמן הפעילות שנבחר.");
+                    getString(R.string.permissions_activity_text_019));
             startActivity(intent);
         } catch (Throwable ex) {
-            AppToast.makeText(this, "לא ניתן לפתוח את בקשת הרשאת מנהל המכשיר.",
+            AppToast.makeText(this, getString(R.string.permissions_activity_text_035),
                     Toast.LENGTH_LONG).show();
         }
     }
@@ -421,7 +421,7 @@ public class PermissionsActivity extends Activity {
         panel.setPadding(dp(20), dp(18), dp(20), dp(16));
         panel.setBackground(roundOutline(CARD_SURFACE, dp(22), CARD_OUTLINE));
 
-        TextView title = textView("ביטול הרשאת מנהל מכשיר", 19, ON_SURFACE);
+        TextView title = textView(getString(R.string.permissions_activity_text_036), 19, ON_SURFACE);
         title.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD));
         title.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         title.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
@@ -429,7 +429,7 @@ public class PermissionsActivity extends Activity {
         panel.addView(title, new LinearLayout.LayoutParams(-1, -2));
 
         TextView message = textView(
-                "האם לבטל את הרשאת מנהל המכשיר של שומר מסך?",
+                getString(R.string.permissions_activity_text_037),
                 15, MUTED);
         message.setGravity(Gravity.RIGHT | Gravity.TOP);
         message.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
@@ -447,7 +447,7 @@ public class PermissionsActivity extends Activity {
                 new LinearLayout.LayoutParams(-1, dp(44));
         actionsParams.topMargin = dp(18);
 
-        Button cancel = makeButton("ביטול");
+        Button cancel = makeButton(getString(R.string.permissions_activity_text_038));
         cancel.setBackground(roundOutline(CONTROL_SURFACE, dp(20), CARD_OUTLINE));
         cancel.setTextColor(ON_SURFACE);
         LinearLayout.LayoutParams cancelParams =
@@ -456,7 +456,7 @@ public class PermissionsActivity extends Activity {
         actions.addView(cancel, cancelParams);
         cancel.setOnClickListener(v -> dialog.dismiss());
 
-        Button confirm = makeButton("בטל הרשאה");
+        Button confirm = makeButton(getString(R.string.permissions_activity_text_039));
         LinearLayout.LayoutParams confirmParams =
                 new LinearLayout.LayoutParams(0, -1, 1f);
         confirmParams.leftMargin = dp(6);
@@ -510,20 +510,20 @@ public class PermissionsActivity extends Activity {
             devicePolicyManager.removeActiveAdmin(adminComponent);
 
             adminButton.setEnabled(false);
-            adminButton.setText("מבטל הרשאה…");
-            adminStatus.setText("בקשת ביטול ההרשאה נשלחה ל־Android.");
+            adminButton.setText(getString(R.string.permissions_activity_text_040));
+            adminStatus.setText(getString(R.string.permissions_activity_text_041));
             adminStatus.setTextColor(MUTED);
             adminButton.postDelayed(() -> verifyDeviceAdminRemoval(0), 250);
         } catch (SecurityException ex) {
             updatePermissionStatuses();
             AppToast.makeText(this,
-                    "Android לא אפשר לבטל את ההרשאה מתוך האפליקציה. נפתח את הגדרות האבטחה להמשך ידני.",
+                    getString(R.string.permissions_activity_text_042),
                     Toast.LENGTH_LONG).show();
             openSecuritySettingsFallback();
         } catch (Throwable ex) {
             updatePermissionStatuses();
             AppToast.makeText(this,
-                    "לא ניתן להשלים את ביטול ההרשאה כרגע. נפתח את הגדרות האבטחה להמשך ידני.",
+                    getString(R.string.permissions_activity_text_043),
                     Toast.LENGTH_LONG).show();
             openSecuritySettingsFallback();
         }
@@ -534,7 +534,7 @@ public class PermissionsActivity extends Activity {
 
         if (!isAdminActive()) {
             updatePermissionStatuses();
-            AppToast.makeText(this, "הרשאת מנהל המכשיר בוטלה בהצלחה.",
+            AppToast.makeText(this, getString(R.string.permissions_activity_text_044),
                     Toast.LENGTH_LONG).show();
             return;
         }
@@ -549,7 +549,7 @@ public class PermissionsActivity extends Activity {
 
         updatePermissionStatuses();
         AppToast.makeText(this,
-                "Android עדיין מדווח שההרשאה פעילה. אפשר להשלים את הביטול דרך הגדרות האבטחה.",
+                getString(R.string.permissions_activity_text_045),
                 Toast.LENGTH_LONG).show();
         openSecuritySettingsFallback();
     }
@@ -562,7 +562,7 @@ public class PermissionsActivity extends Activity {
                 startActivity(new Intent(Settings.ACTION_SETTINGS));
             } catch (Throwable ignoredAgain) {
                 AppToast.makeText(this,
-                        "פתח הגדרות > אבטחה > אפליקציות מנהל מכשיר > שומר מסך כדי לבטל את ההרשאה.",
+                        getString(R.string.permissions_activity_text_046),
                         Toast.LENGTH_LONG).show();
             }
         } catch (Throwable ignored) {
@@ -570,7 +570,7 @@ public class PermissionsActivity extends Activity {
                 startActivity(new Intent(Settings.ACTION_SETTINGS));
             } catch (Throwable ignoredAgain) {
                 AppToast.makeText(this,
-                        "פתח הגדרות > אבטחה > אפליקציות מנהל מכשיר > שומר מסך כדי לבטל את ההרשאה.",
+                        getString(R.string.permissions_activity_text_046),
                         Toast.LENGTH_LONG).show();
             }
         }

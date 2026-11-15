@@ -18,7 +18,7 @@ public final class BatteryChargeIndicatorView extends View {
     public BatteryChargeIndicatorView(Context context) {
         super(context);
         density = getResources().getDisplayMetrics().density;
-        setContentDescription("תצוגת סוללה בטעינה");
+        setContentDescription(getContext().getString(R.string.battery_indicator_text_001));
     }
 
     public void setBatteryState(String displayMode, int batteryLevel,

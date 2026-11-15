@@ -73,22 +73,22 @@ public final class PermissionDependencySync {
 
         ArrayList<String> messages = new ArrayList<>();
         if (disableLockStart) {
-            messages.add("ההפעלה האוטומטית בנעילה כובתה מפני שהרשאת ההצגה מעל אפליקציות אחרות בוטלה.");
+            messages.add(context.getString(R.string.permission_sync_text_001));
         }
         if (disableChargeStart) {
-            messages.add("ההפעלה האוטומטית בטעינה כובתה מפני שהרשאת ההצגה מעל אפליקציות אחרות בוטלה.");
+            messages.add(context.getString(R.string.permission_sync_text_002));
         }
         if (disableBootStart) {
-            messages.add("ההפעלה האוטומטית בהפעלת המכשיר כובתה מפני שהרשאת ההצגה מעל אפליקציות אחרות בוטלה.");
+            messages.add(context.getString(R.string.permission_sync_text_003));
         }
         if (disableWakeStart) {
-            messages.add("ההפעלה האוטומטית בהתעוררות כובתה מפני שהרשאת ההצגה מעל אפליקציות אחרות בוטלה.");
+            messages.add(context.getString(R.string.permission_sync_text_004));
         }
         if (disablePlayer) {
-            messages.add("הצגת הנגן כובתה מפני שהרשאת הגישה להתראות בוטלה.");
+            messages.add(context.getString(R.string.permission_sync_text_005));
         }
         if (disableUseProtection || disableExcludedApps) {
-            messages.add("הגדרות זיהוי האפליקציות בחזית כובו מפני שהרשאת נתוני השימוש בוטלה.");
+            messages.add(context.getString(R.string.permission_sync_text_006));
         }
         return android.text.TextUtils.join("\n", messages);
     }

@@ -52,7 +52,7 @@ public final class GuideActivity extends Activity {
         titleBlock.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         titleBlock.setGravity(Gravity.CENTER);
 
-        TextView title = textView("מדריך שימוש", 23, ON_SURFACE);
+        TextView title = textView(getString(R.string.guide_activity_text_001), 23, ON_SURFACE);
         title.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
         title.setIncludeFontPadding(false);
         title.setLetterSpacing(-0.015f);
@@ -61,7 +61,7 @@ public final class GuideActivity extends Activity {
         title.setTextDirection(View.TEXT_DIRECTION_RTL);
         titleBlock.addView(title, new LinearLayout.LayoutParams(-1, -2));
 
-        TextView subtitle = textView("הסברים וטיפים לשימוש באפליקציה", 16, MUTED);
+        TextView subtitle = textView(getString(R.string.guide_activity_text_002), 16, MUTED);
         subtitle.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
         subtitle.setIncludeFontPadding(false);
         subtitle.setGravity(Gravity.CENTER);
@@ -86,93 +86,93 @@ public final class GuideActivity extends Activity {
         sections.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         sections.setPadding(0, dp(2), 0, dp(8));
 
-        addSection(sections, "היכרות עם האפליקציה",
-                "שומר מסך מציג שעון גדול, תאריך עברי ותאריך לועזי, ובאפשרותך להוסיף גם נגן מדיה ואחוז סוללה.\n\n" +
-                "ההגדרות מחולקות לארבעה מסכים עיקריים: שעון ותאריך; הפעלה והתנהגות; מראה ועיצוב; נגן מדיה. " +
-                "בכל מסך כל הגדרה מוצגת בחלונית נפרדת. בנוסף קיימים מסך ניהול הרשאות ומדריך שימוש. כל שינוי נשמר בהגדרות האפליקציה.");
+        addSection(sections, getString(R.string.guide_activity_text_003),
+                getString(R.string.guide_activity_text_004) +
+                getString(R.string.guide_activity_text_005) +
+                getString(R.string.guide_activity_text_006));
 
-        addSection(sections, "שימוש במסך הראשי",
-                "סמל ההגדרות אינו מוצג כל הזמן. הקש באזור העליון של המסך כדי להציג את סמל ההגדרות למשך כשלוש שניות, " +
-                "ולאחר מכן הקש על סמל גלגל השיניים שמופיע בפינה העליונה.\n\n" +
-                "אפשר לפתוח את ההגדרות גם באמצעות מקש התפריט הפיזי במכשירים שתומכים בו. כדי לצאת משומר מסך, " +
-                "השתמש בלחצן החזרה של המכשיר; נדרשות שתי לחיצות רצופות.");
+        addSection(sections, getString(R.string.guide_activity_text_007),
+                getString(R.string.guide_activity_text_008) +
+                getString(R.string.guide_activity_text_009) +
+                getString(R.string.guide_activity_text_010) +
+                getString(R.string.guide_activity_text_011));
 
-        addSection(sections, "זמן פעילות ונעילת המכשיר",
-                "במסך \"הפעלה והתנהגות\" נמצאת בחירת זמן הפעילות. לכל אפשרות משמעות שונה:\n\n" +
-                "• לפי המכשיר — Android מנהל את זמן כיבוי המסך. שומר מסך נשאר מוצג כל עוד המערכת משאירה את המסך פעיל. " +
-                "אם המכשיר אינו מכבה את המסך אוטומטית, שומר מסך ימשיך להיות מוצג.\n\n" +
-                "• 1 דק' / 5 דק' — שומר מסך מסיים את הפעילות בתום הזמן שנבחר. אם זמן כיבוי המסך של המכשיר ארוך יותר, " +
-                "שומר מסך עשוי להיסגר לפני שהמסך עצמו ייכבה. המסך נשאר בשליטת Android.\n\n" +
-                "• ללא כיבוי — שומר מסך נשאר מוצג ומבקש להשאיר את המסך פעיל ללא הגבלת זמן.\n\n" +
-                "שלוש ההגדרות הנוספות אינן זהות זו לזו:\n" +
-                "• מניעת נעילה בזמן פעילות — קובעת אם מסך הנעילה של Android יכול להופיע מעל שומר מסך בזמן שהוא פעיל.\n" +
-                "• המשך הצגה במסך הנעילה — מאפשרת לשומר מסך להמשיך ולהופיע לאחר כיבוי המסך והפעלתו מחדש, בהתאם להתנהגות המכשיר ולתנאי זמן הפעילות.\n" +
-                "• הפעלה אוטומטית בנעילה — מפעילה את שומר מסך בעקבות נעילת המכשיר גם כאשר הוא לא היה פעיל קודם.");
+        addSection(sections, getString(R.string.guide_activity_text_012),
+                getString(R.string.guide_activity_text_013) +
+                getString(R.string.guide_activity_text_014) +
+                getString(R.string.guide_activity_text_015) +
+                getString(R.string.guide_activity_text_016) +
+                getString(R.string.guide_activity_text_017) +
+                getString(R.string.guide_activity_text_018) +
+                getString(R.string.guide_activity_text_019) +
+                getString(R.string.guide_activity_text_020) +
+                getString(R.string.guide_activity_text_021) +
+                getString(R.string.guide_activity_text_022));
 
-        addSection(sections, "הפעלה אוטומטית",
-                "הפעלה אוטומטית בנעילה והפעלה אוטומטית בטעינה הן שתי אפשרויות נפרדות.\n\n" +
-                "• הפעלה אוטומטית בנעילה — כאשר האפשרות פעילה, האפליקציה עוקבת אחר אירועי נעילת המכשיר ומנסה להציג את שומר מסך מעל מסך הנעילה. " +
-                "בגרסאות Android שבהן נדרשת הרשאת הצגה מעל אפליקציות אחרות, יש לאפשר אותה במסך ההרשאות.\n\n" +
-                "• הפעלה אוטומטית בטעינה — מפעילה את שומר מסך בעת חיבור המטען. גם כאן, בגרסאות Android שבהן נדרשת הרשאת הצגה מעל אפליקציות אחרות, " +
-                "יש להעניק אותה.\n\n" +
-                "הפעלה אוטומטית בנעילה אינה תחליף ל\"המשך הצגה במסך הנעילה\": הראשונה מפעילה את שומר מסך בעקבות נעילה, " +
-                "והשנייה עוסקת בהמשך הצגתו לאחר מחזור כיבוי והפעלה של המסך.");
+        addSection(sections, getString(R.string.guide_activity_text_023),
+                getString(R.string.guide_activity_text_024) +
+                getString(R.string.guide_activity_text_025) +
+                getString(R.string.guide_activity_text_026) +
+                getString(R.string.guide_activity_text_027) +
+                getString(R.string.guide_activity_text_028) +
+                getString(R.string.guide_activity_text_029) +
+                getString(R.string.guide_activity_text_030));
 
-        addSection(sections, "שעון ותאריך",
-                "במסך \"שעון ותאריך\" אפשר להציג או להסתיר בנפרד את התאריך העברי ואת התאריך הלועזי, ולבחור לכל אחד מהם תבנית תצוגה משלו. " +
-                "היום בשבוע נשאר מוצג לפני התאריך הלועזי.\n\n" +
-                "• גודל — בחירה בין קטן, בינוני, רגיל, גדול וענק.\n" +
-                "• עובי הגופן — בחירה בין דק, רגיל, מודגש ועבה.\n" +
-                "• מיקום — בראש המסך, ברבע העליון או במרכז המסך.\n\n" +
-                "הגודל והמשקל משפיעים על תצוגת השעון והתאריכים. בחלק מהגופנים קיימות התאמות תצוגה מיוחדות כדי לשמור על קריאות ואחידות.");
+        addSection(sections, getString(R.string.guide_activity_text_031),
+                getString(R.string.guide_activity_text_032) +
+                getString(R.string.guide_activity_text_033) +
+                getString(R.string.guide_activity_text_034) +
+                getString(R.string.guide_activity_text_035) +
+                getString(R.string.guide_activity_text_036) +
+                getString(R.string.guide_activity_text_037));
 
-        addSection(sections, "נגן מדיה",
-                "במסך \"נגן מדיה\" אפשר להציג את נגן המדיה של Android כאשר קיימת הפעלת מדיה זמינה.\n\n" +
-                "• הצגת הנגן — מפעילה או מסתירה את הנגן.\n" +
-                "• הצגה רק בתחילת שיר — מציגה את הנגן למשך חלון הזמן הראשוני של השיר.\n" +
-                "• פרטי האמן — מציגה את שם האמן כאשר הוא נמסר על ידי נגן המדיה.\n" +
-                "• זמני השיר ופקדי הנגן — מציגה את זמני השיר ואת סרגל ההתקדמות לצד כפתורי הניגון.\n" +
-                "• גודל הנגן ומיקום הנגן — קובעים את גודל הכרטיס ואת מיקומו ברבע התחתון או בתחתית המסך.\n\n" +
-                "אפשר גם להציג מסגרת, לבחור את צבעה, את עובייה ואת מידת עיגול הפינות. האפשרויות האלה נמצאות תחת \"מסגרת לנגן\".");
+        addSection(sections, getString(R.string.guide_activity_text_038),
+                getString(R.string.guide_activity_text_039) +
+                getString(R.string.guide_activity_text_040) +
+                getString(R.string.guide_activity_text_041) +
+                getString(R.string.guide_activity_text_042) +
+                getString(R.string.guide_activity_text_043) +
+                getString(R.string.guide_activity_text_044) +
+                getString(R.string.guide_activity_text_045));
 
-        addSection(sections, "מראה ועיצוב",
-                "במסך \"מראה ועיצוב\" אפשר להתאים את הרקע, הבהירות והגופן:\n\n" +
-                "• צבע המסך — בחירה בין שחור, כחול, כחול כהה, טורקיז, אפור פחם, ירוק יער, כחול עמוק ואפור אבן.\n" +
-                "• בהירות המסך — לפי המכשיר או אחת מדרגות הבהירות הזמינות.\n" +
-                "• סוג הגופן — בחירה מבין הגופנים המותקנים באפליקציה.\n" +
-                "• צבע הגופן — בחירת צבע הטקסט מבין הדוגמיות.\n\n" +
-                "הדוגמית המסומנת בטורקיז היא הצבע הפעיל.");
+        addSection(sections, getString(R.string.guide_activity_text_046),
+                getString(R.string.guide_activity_text_047) +
+                getString(R.string.guide_activity_text_048) +
+                getString(R.string.guide_activity_text_049) +
+                getString(R.string.guide_activity_text_050) +
+                getString(R.string.guide_activity_text_051) +
+                getString(R.string.guide_activity_text_052));
 
-        addSection(sections, "שומר מסך בזמן טעינה",
-                "הגדרות הטעינה נמצאות במסך \"הפעלה והתנהגות\":\n\n" +
-                "• הפעלה אוטומטית בטעינה — מפעילה את שומר מסך כאשר המטען מתחבר.\n" +
-                "• ללא כיבוי בטעינה — כאשר המכשיר בטעינה ושומר מסך פעיל, מונעת כיבוי מסך אוטומטי.\n" +
-                "• הצגת אחוז הסוללה — מציגה את אחוז הסוללה בזמן טעינה.\n\n" +
-                "הגדרות אלה נפרדות מבחירת זמן הפעילות הרגילה. ניתוק המטען מפסיק את התנאי של \"ללא כיבוי בטעינה\".");
+        addSection(sections, getString(R.string.guide_activity_text_053),
+                getString(R.string.guide_activity_text_054) +
+                getString(R.string.guide_activity_text_055) +
+                getString(R.string.guide_activity_text_056) +
+                getString(R.string.guide_activity_text_057) +
+                getString(R.string.guide_activity_text_058));
 
-        addSection(sections, "ניהול הרשאות",
-                "במסך \"ניהול הרשאות\" אפשר לבדוק את מצב ההרשאות ולפתוח את מסכי Android המתאימים גם לאחר שההרשאה כבר ניתנה.\n\n" +
-                "• גישה להתראות — נדרשת להצגת נגן המדיה של המערכת.\n" +
-                "• הצגה מעל אפליקציות אחרות — נדרשת להפעלה אוטומטית בתנאים שבהם Android מחייב הרשאה זו.\n" +
-                "• מנהל מכשיר — מאפשר לאפליקציה לבקש נעילה בסיום זמן פעילות מוגדר.\n\n" +
-                "אם הרשאה הנדרשת להגדרה פעילה מבוטלת, האפליקציה בודקת זאת בחזרה אליה, מכבה את המתג התלוי ומציגה הודעה שמסבירה מדוע. " +
-                "ביטול הרשאת מנהל מכשיר אינו מכבה הגדרות שאינן תלויות בה.");
+        addSection(sections, getString(R.string.guide_activity_text_059),
+                getString(R.string.guide_activity_text_060) +
+                getString(R.string.guide_activity_text_061) +
+                getString(R.string.guide_activity_text_062) +
+                getString(R.string.guide_activity_text_063) +
+                getString(R.string.guide_activity_text_064) +
+                getString(R.string.guide_activity_text_065));
 
-        addSection(sections, "מכשירים שונים והתנהגות המסך",
-                "לא בכל מכשיר קיימים מסך נעילה רגיל או כיבוי מסך אוטומטי. מערכות מולטימדיה מסוימות מבוססות Android עשויות לפעול ברצף, " +
-                "ולא להציג מסך נעילה רגיל.\n\n" +
-                "האפליקציה בודקת את מאפייני Android ואת התנהגות המסך שנצפתה בפועל, ועשויה להציג הודעה כאשר הגדרות נעילה אינן רלוונטיות " +
-                "או כאשר זמן כיבוי המסך של המכשיר ארוך מזמן הפעילות שנבחר. זיהוי Android Automotive לבדו אינו מזהה את כל מערכות המולטימדיה.\n\n" +
-                "אפליקציה רגילה אינה יכולה להבטיח כיבוי פיזי של כל מסך. בסיום 1 דק' או 5 דק' שומר מסך יכול להיסגר, " +
-                "אבל התצוגה עצמה תישאר בשליטת Android והיצרן.");
+        addSection(sections, getString(R.string.guide_activity_text_066),
+                getString(R.string.guide_activity_text_067) +
+                getString(R.string.guide_activity_text_068) +
+                getString(R.string.guide_activity_text_069) +
+                getString(R.string.guide_activity_text_070) +
+                getString(R.string.guide_activity_text_071) +
+                getString(R.string.guide_activity_text_072));
 
-        addSection(sections, "פעולות ומחוות ופתרון תקלות",
-                "• הצגת ההגדרות — הקש באזור העליון של המסך כדי להציג את סמל גלגל השיניים למשך כשלוש שניות, ואז הקש עליו.\n" +
-                "• יציאה משומר מסך — החלק כלפי מעלה מאזורו התחתון של המסך.\n\n" +
-                "אם הנגן אינו מופיע, בדוק שהאפשרות \"הצגת הנגן\" פעילה ושניתנה גישה להתראות.\n\n" +
-                "אם שומר מסך אינו מופעל אוטומטית בנעילה או בטעינה, בדוק שהמתג המתאים פעיל ושכל הרשאה נדרשת ניתנה.\n\n" +
-                "אם המסך נשאר דולק אחרי סיום 1 דק' או 5 דק', בדוק את זמן כיבוי המסך בהגדרות Android. סגירת שומר מסך וכיבוי התצוגה הן פעולות נפרדות. " +
-                "ההודעה שמופיעה בכרטיס \"זמן פעילות\" במסך \"הפעלה והתנהגות\" מסבירה כאשר זמן הכיבוי במכשיר ארוך יותר מהזמן שנבחר.");
+        addSection(sections, getString(R.string.guide_activity_text_073),
+                getString(R.string.guide_activity_text_074) +
+                getString(R.string.guide_activity_text_075) +
+                getString(R.string.guide_activity_text_076) +
+                getString(R.string.guide_activity_text_077) +
+                getString(R.string.guide_activity_text_078) +
+                getString(R.string.guide_activity_text_079));
 
         scroll.addView(sections, new ScrollView.LayoutParams(-1, -2));
         root.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1f));

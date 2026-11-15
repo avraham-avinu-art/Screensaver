@@ -29,7 +29,7 @@ public final class AutoStartNotificationController {
 
         NotificationManager manager =
                 (NotificationManager) app.getSystemService(Context.NOTIFICATION_SERVICE);
-        if (manager != null) createChannel(manager);
+        if (manager != null) createChannel(context, manager);
 
         Intent openSettings = new Intent(app, SettingsActivity.class);
         openSettings.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
@@ -47,10 +47,10 @@ public final class AutoStartNotificationController {
         // IMPORTANCE_MIN suppresses the notification icon in the status bar.
         builder.setSmallIcon(R.drawable.ic_qs_screensaver)
                 .setLargeIcon(createApplicationIcon(app))
-                .setContentTitle("שירות ההפעלה האוטומטית פועל.")
+                .setContentTitle(context.getString(R.string.auto_start_notification_text_001))
                 .setContentText(null)
                 .setStyle(new Notification.BigTextStyle()
-                        .bigText("לחץ לביטול השירות."))
+                        .bigText(context.getString(R.string.auto_start_notification_text_002)))
                 .setContentIntent(settingsIntent)
                 .setCategory(Notification.CATEGORY_SERVICE)
                 .setOngoing(true)
@@ -89,11 +89,11 @@ public final class AutoStartNotificationController {
         if (manager != null) createChannel(manager);
     }
 
-    private static void createChannel(NotificationManager manager) {
+    private static void createChannel(Context context, NotificationManager manager) {
         if (Build.VERSION.SDK_INT < 26) return;
         NotificationChannel channel = new NotificationChannel(
-                CHANNEL_ID, "הפעלה אוטומטית של שומר מסך", NotificationManager.IMPORTANCE_MIN);
-        channel.setDescription("התראה מתמשכת לשירות ההפעלה האוטומטית");
+                CHANNEL_ID, context.getString(R.string.auto_start_notification_text_003), NotificationManager.IMPORTANCE_MIN);
+        channel.setDescription(context.getString(R.string.auto_start_notification_text_004));
         channel.setShowBadge(false);
         channel.setLockscreenVisibility(Notification.VISIBILITY_SECRET);
         channel.enableLights(false);
