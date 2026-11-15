@@ -2011,6 +2011,11 @@ screenHeader.setVisibility(View.GONE);
         dividerParams.bottomMargin = dp(8);
         card.addView(divider, dividerParams);
 
+        LinearLayout sectionTitleRow = new LinearLayout(this);
+        sectionTitleRow.setOrientation(LinearLayout.HORIZONTAL);
+        sectionTitleRow.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+        sectionTitleRow.setGravity(Gravity.CENTER_VERTICAL);
+
         TextView sectionTitle = textView(
                 getString(R.string.settings_activity_text_289), 16, ON_SURFACE);
         sectionTitle.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD));
@@ -2018,20 +2023,43 @@ screenHeader.setVisibility(View.GONE);
         sectionTitle.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         sectionTitle.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
         sectionTitle.setTextDirection(View.TEXT_DIRECTION_RTL);
-        LinearLayout.LayoutParams titleParams =
-                new LinearLayout.LayoutParams(-1, dp(25));
-        titleParams.rightMargin = dp(42);
-        titleParams.bottomMargin = dp(8);
-        card.addView(sectionTitle, titleParams);
+        LinearLayout.LayoutParams sectionTitleTextParams =
+                new LinearLayout.LayoutParams(0, dp(30), 1f);
+        sectionTitleTextParams.rightMargin = dp(7);
+        sectionTitleRow.addView(sectionTitle, sectionTitleTextParams);
+
+        FrameLayout sectionTitleIcon = new FrameLayout(this);
+        sectionTitleIcon.setBackground(roundOutline(ICON_SURFACE, dp(10), CARD_OUTLINE));
+        View sectionTitleGlyph = makeIconGlyph("setting-night-mode-hours", ACCENT);
+        sectionTitleIcon.addView(sectionTitleGlyph,
+                new FrameLayout.LayoutParams(dp(22), dp(22), Gravity.CENTER));
+        sectionTitleRow.addView(sectionTitleIcon,
+                new LinearLayout.LayoutParams(dp(30), dp(30)));
+
+        LinearLayout.LayoutParams titleRowParams =
+                new LinearLayout.LayoutParams(-1, dp(30));
+        titleRowParams.bottomMargin = dp(8);
+        card.addView(sectionTitleRow, titleRowParams);
+
+        Paint hourLabelPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        hourLabelPaint.setTypeface(Typeface.create(
+                "sans-serif-medium", Typeface.NORMAL));
+        hourLabelPaint.setTextSize(
+                15f * getResources().getDisplayMetrics().scaledDensity);
+        int hourLabelWidth = (int) Math.ceil(Math.max(
+                hourLabelPaint.measureText(getString(R.string.settings_activity_text_268)),
+                hourLabelPaint.measureText(getString(R.string.settings_activity_text_269))))
+                + dp(2);
 
         addNightModeHourRow(card, getString(R.string.settings_activity_text_268),
-                hourNames, hourValues, "nightModeStartHour");
+                hourNames, hourValues, "nightModeStartHour", hourLabelWidth);
         addNightModeHourRow(card, getString(R.string.settings_activity_text_269),
-                hourNames, hourValues, "nightModeEndHour");
+                hourNames, hourValues, "nightModeEndHour", hourLabelWidth);
     }
 
     private void addNightModeHourRow(
-            LinearLayout card, String label, String[] names, String[] values, String key) {
+            LinearLayout card, String label, String[] names, String[] values,
+            String key, int hourLabelWidth) {
         final int selectedPosition = selectedIndex(key, values);
         final int visibleWidth = spinnerVisibleWidthForOption(names[selectedPosition]);
         final int dropdownWidth = dropdownWidthForOptions(names);
@@ -2099,7 +2127,7 @@ screenHeader.setVisibility(View.GONE);
         rowLabel.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
         rowLabel.setTextDirection(View.TEXT_DIRECTION_RTL);
         LinearLayout.LayoutParams labelParams =
-                new LinearLayout.LayoutParams(-2, dp(40));
+                new LinearLayout.LayoutParams(hourLabelWidth, dp(40));
         // The label remains anchored to the same right edge as before.
         // Its left margin is the small gap to the selector beside it.
         labelParams.leftMargin = dp(9);
