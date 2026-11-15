@@ -379,7 +379,7 @@ screenTitle.setText(getString(R.string.settings_activity_text_001));
         button.setGravity(Gravity.CENTER_VERTICAL);
         button.setPadding(dp(14), dp(12), dp(23), dp(12));
         button.setMinimumHeight(dp(99));
-        button.setBackground(roundOutline(CARD_SURFACE, dp(19), CARD_OUTLINE));
+        button.setBackground(dashboardButtonOutline(CARD_SURFACE, dp(19), CARD_OUTLINE));
         button.setClickable(true);
         button.setFocusable(true);
         button.setContentDescription(description == null || description.isEmpty()
@@ -3464,7 +3464,7 @@ screenHeader.setVisibility(View.GONE);
         GradientDrawable circle = new GradientDrawable();
         circle.setShape(GradientDrawable.OVAL);
         circle.setColor(color);
-        circle.setStroke(dp(2), strokeColor);
+        circle.setStroke(dp(1), strokeColor);
         return circle;
     }
 
