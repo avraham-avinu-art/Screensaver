@@ -9,6 +9,11 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Process;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+
 /** Fresh cross-process view of automatic-start settings and lock-cycle state. */
 final class MonitorSettingsSnapshot {
     private static final Uri URI =
