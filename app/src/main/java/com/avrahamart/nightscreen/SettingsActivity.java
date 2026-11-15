@@ -1929,6 +1929,9 @@ screenHeader.setVisibility(View.GONE);
         LinearLayout.LayoutParams previewParams =
                 new LinearLayout.LayoutParams(-1, dp(34));
         colorPreview.setBackground(makeCustomColorPreview(current));
+        // Scale the preview uniformly to 75% of its former width and height.
+        colorPreview.setScaleX(0.75f);
+        colorPreview.setScaleY(0.75f);
         sampleRow.addView(colorPreview, previewParams);
         LinearLayout.LayoutParams sampleParams = new LinearLayout.LayoutParams(-1, dp(40));
         sampleParams.topMargin = dp(2);

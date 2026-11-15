@@ -192,8 +192,10 @@ public class MainActivity extends Activity {
             if (settingsButton != null) settingsButton.setAlpha(1f);
             return;
         }
-        if (settingsButtonHitArea != null) settingsButtonHitArea.setVisibility(View.GONE);
-        else if (settingsButton != null) settingsButton.setVisibility(View.GONE);
+        // Keep the hit target in the layout while hidden so the first tap can hit it
+        // immediately after it is made visible.
+        if (settingsButtonHitArea != null) settingsButtonHitArea.setVisibility(View.INVISIBLE);
+        else if (settingsButton != null) settingsButton.setVisibility(View.INVISIBLE);
     };
     private boolean settingsDialogOpen = false;
     private FrameLayout stageView;
@@ -598,7 +600,8 @@ public class MainActivity extends Activity {
 
         settingsButtonHitArea = new FrameLayout(this);
         settingsButtonHitArea.setBackgroundColor(Color.TRANSPARENT);
-        settingsButtonHitArea.setVisibility(View.GONE);
+        // INVISIBLE preserves measured bounds for reliable first-tap hit testing.
+        settingsButtonHitArea.setVisibility(View.INVISIBLE);
         settingsButtonHitArea.setClickable(true);
         settingsButtonHitArea.setContentDescription(getString(R.string.main_activity_text_002));
         settingsButtonHitArea.setOnClickListener(v -> showSettings());
@@ -2538,7 +2541,7 @@ public class MainActivity extends Activity {
             settingsButtonHitArea.setVisibility(View.VISIBLE);
             settingsButton.setAlpha(1f);
         } else {
-            settingsButtonHitArea.setVisibility(View.GONE);
+            settingsButtonHitArea.setVisibility(View.INVISIBLE);
         }
     }
 
