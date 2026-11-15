@@ -4,7 +4,6 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.AppOpsManager;
 import android.app.NotificationManager;
-import android.app.admin.DevicePolicyManager;
 import android.content.ActivityNotFoundException;
 import android.content.ComponentName;
 import android.content.Context;
@@ -60,7 +59,6 @@ import java.util.List;
 import java.util.Set;
 
 public class SettingsActivity extends Activity {
-    private static final int REQUEST_ENABLE_SCREEN_LOCK_ADMIN = 8142;
     private static final int REQUEST_AUTO_START_NOTIFICATION_PERMISSION = 8143;
     private static final int SURFACE = Color.rgb(9, 19, 33);
     private static final int CARD_SURFACE = Color.rgb(20, 36, 56);
@@ -80,22 +78,12 @@ public class SettingsActivity extends Activity {
     private String currentSettingsGroupTitle;
 private LinearLayout clockDateCard;
     private LinearLayout playerFrameCard;
-    private LinearLayout notificationAccessCard;
-    private LinearLayout overlayPermissionCard;
-    private TextView overlayPermissionStatus;
-    private Button overlayPermissionButton;
     private Switch showPlayerToggle;
     private Switch autoStartOnChargeToggle;
     private Switch autoStartOnDeviceLockToggle;
     private Switch autoStartOnBootToggle;
     private Switch autoStartOnWakeToggle;
     private TextView activityCapabilityNotice;
-    private View activityHelpHeaderButton;
-    private LinearLayout screenLockAdminCard;
-    private TextView screenLockAdminStatus;
-    private Button screenLockAdminButton;
-    private DevicePolicyManager devicePolicyManager;
-    private ComponentName screenLockAdminComponent;
     private LinearLayout currentCard;
 
 
@@ -257,12 +245,7 @@ if (content != null) {
         clockDateCard = null;
         playerFrameCard = null;
         activityCapabilityNotice = null;
-        if (activityHelpHeaderButton != null
-                && activityHelpHeaderButton.getParent() == screenHeader) {
-            screenHeader.removeView(activityHelpHeaderButton);
-        }
-        activityHelpHeaderButton = null;
-        if (content == null) return;
+if (content == null) return;
         if (settingsScroll != null) settingsScroll.setFillViewport(true);
         content.setPadding(0, 0, 0, 0);
         content.setLayoutParams(new LinearLayout.LayoutParams(-1, 0, 1f));
@@ -409,12 +392,7 @@ screenTitle.setText(getString(R.string.settings_activity_text_001));
 
     private void showCategory(int category) {
         currentCategory = category;
-        if (activityHelpHeaderButton != null
-                && activityHelpHeaderButton.getParent() == screenHeader) {
-            screenHeader.removeView(activityHelpHeaderButton);
-        }
-        activityHelpHeaderButton = null;
-        screenHeader.setVisibility(View.GONE);
+screenHeader.setVisibility(View.GONE);
         screenSubtitle.setVisibility(View.GONE);
         if (settingsScroll != null) settingsScroll.setFillViewport(true);
         content.setPadding(0, dp(10), 0, 0);
@@ -574,26 +552,7 @@ screenTitle.setText(getString(R.string.settings_activity_text_001));
         return day + " " + month + " " + year;
     }
 
-    private void addActivityHelpHeaderButton() {
-        // The information button belongs to the page title bar, at its upper-left.
-        FrameLayout button = new FrameLayout(this);
-        button.setContentDescription(getString(R.string.settings_activity_text_055));
-        button.setClickable(true);
-        button.setFocusable(true);
-        button.setBackgroundColor(Color.TRANSPARENT);
-
-        View glyph = makeIconGlyph("message-circle-question", ACCENT);
-        button.addView(glyph,
-                new FrameLayout.LayoutParams(dp(30), dp(30), Gravity.CENTER));
-
-        FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
-                dp(38), dp(38), Gravity.LEFT | Gravity.CENTER_VERTICAL);
-        params.leftMargin = dp(2);
-        screenHeader.addView(button, params);
-        button.setOnClickListener(v -> showActivityTimeHelpDialog());
-        activityHelpHeaderButton = button;
-    }
-
+    
     private void buildActivitySettings() {
         LinearLayout durationCard = addSegmentedChoices(content, getString(R.string.settings_activity_text_056),
                 new String[]{getString(R.string.settings_activity_text_057), getString(R.string.settings_activity_text_058), getString(R.string.settings_activity_text_059), getString(R.string.settings_activity_text_060)},
@@ -2574,34 +2533,7 @@ screenTitle.setText(getString(R.string.settings_activity_text_001));
         return Math.min(maximumWidth, Math.max(minimumWidth, contentWidth));
     }
 
-    private void normalizeSpinnerWidths(LinearLayout card) {
-        if (card == null) return;
-        int widest = dp(88);
-        int screenLimit = getResources().getDisplayMetrics().widthPixels
-                - dp(70 + 31 + 8 + 18 + 55);
-        for (int i = 0; i < card.getChildCount(); i++) {
-            View child = card.getChildAt(i);
-            if (!(child instanceof LinearLayout)) continue;
-            LinearLayout row = (LinearLayout) child;
-            if (row.getChildCount() == 0 || !(row.getChildAt(0) instanceof Spinner)) continue;
-            View spinner = row.getChildAt(0);
-            LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) spinner.getLayoutParams();
-            widest = Math.max(widest, params.width);
-        }
-        widest = Math.min(widest, Math.max(dp(88), screenLimit));
-        for (int i = 0; i < card.getChildCount(); i++) {
-            View child = card.getChildAt(i);
-            if (!(child instanceof LinearLayout)) continue;
-            LinearLayout row = (LinearLayout) child;
-            if (row.getChildCount() == 0 || !(row.getChildAt(0) instanceof Spinner)) continue;
-            Spinner spinner = (Spinner) row.getChildAt(0);
-            LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) spinner.getLayoutParams();
-            params.width = widest;
-            spinner.setLayoutParams(params);
-            spinner.setDropDownWidth(widest);
-        }
-    }
-
+    
     private int selectedIndex(String key, String[] values) {
         int index = 0;
         if ("playerDisplayMode".equals(key)) {
@@ -2659,98 +2591,13 @@ screenTitle.setText(getString(R.string.settings_activity_text_001));
         return index;
     }
 
-    private LinearLayout addNotificationAccessCard(LinearLayout parent) {
-        LinearLayout card = addCard(parent, getString(R.string.settings_activity_text_255));
-        card.setPadding(dp(8), dp(9), dp(12), dp(15));
-        setPermissionCardHeadingTypeface(card);
-        TextView message = textView(
-                getString(R.string.settings_activity_text_256),
-                15, ON_SURFACE);
-        message.setGravity(Gravity.CENTER);
-        message.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-        message.setTextDirection(View.TEXT_DIRECTION_RTL);
-        message.setTypeface(Typeface.create("sans-serif-light", Typeface.NORMAL));
-        message.setLineSpacing(dp(1), 1f);
-        message.setPadding(0, 0, 0, 0);
-        LinearLayout.LayoutParams messageParams = new LinearLayout.LayoutParams(-1, -2);
-        messageParams.topMargin = 0;
-        messageParams.bottomMargin = 0;
-        card.addView(message, messageParams);
-
-        Button grant = makeActionButton(getString(R.string.settings_activity_text_257));
-        LinearLayout.LayoutParams params =
-                new LinearLayout.LayoutParams(-2, dp(44));
-        params.gravity = Gravity.CENTER_HORIZONTAL;
-        params.topMargin = dp(12);
-        card.addView(grant, params);
-        grant.setOnClickListener(v -> openNotificationAccessSettings());
-        return card;
-    }
-
-    private LinearLayout addOverlayPermissionCard(LinearLayout parent) {
-        LinearLayout card = addCard(parent, getString(R.string.settings_activity_text_258));
-        card.setPadding(dp(8), dp(9), dp(12), dp(15));
-        setPermissionCardHeadingTypeface(card);
-
-        TextView message = textView(
-                getString(R.string.settings_activity_text_259),
-                15, ON_SURFACE);
-        message.setGravity(Gravity.CENTER);
-        message.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-        message.setTextDirection(View.TEXT_DIRECTION_RTL);
-        message.setTypeface(Typeface.create("sans-serif-light", Typeface.NORMAL));
-        message.setLineSpacing(dp(1), 1f);
-        LinearLayout.LayoutParams messageParams = new LinearLayout.LayoutParams(-1, -2);
-        card.addView(message, messageParams);
-
-        overlayPermissionStatus = textView("", 14, MUTED);
-        overlayPermissionStatus.setGravity(Gravity.CENTER);
-        overlayPermissionStatus.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-        overlayPermissionStatus.setTextDirection(View.TEXT_DIRECTION_RTL);
-        overlayPermissionStatus.setLineSpacing(dp(1), 1f);
-        LinearLayout.LayoutParams statusParams = new LinearLayout.LayoutParams(-1, -2);
-        statusParams.topMargin = dp(7);
-        card.addView(overlayPermissionStatus, statusParams);
-
-        overlayPermissionButton = makeActionButton(getString(R.string.settings_activity_text_257));
-        LinearLayout.LayoutParams buttonParams =
-                new LinearLayout.LayoutParams(-2, dp(44));
-        buttonParams.gravity = Gravity.CENTER_HORIZONTAL;
-        buttonParams.topMargin = dp(10);
-        card.addView(overlayPermissionButton, buttonParams);
-        overlayPermissionButton.setOnClickListener(v -> openOverlayPermissionSettings());
-        updateOverlayPermissionCardState();
-        return card;
-    }
-
+    
+    
     private void updateOverlayPermissionCardVisibility() {
         // Overlay permission management now lives in PermissionsActivity.
     }
 
-    private void updateOverlayPermissionCardState() {
-        if (overlayPermissionCard == null
-                || overlayPermissionStatus == null
-                || overlayPermissionButton == null) return;
-
-        boolean granted = Settings.canDrawOverlays(this);
-        boolean autoStartEnabled = (getBool("autoStartOnCharge", false)
-                && !getBool("useAndroidDreamForCharging", false))
-                || getBool("autoStartOnDeviceLock", false)
-                || getBool("autoStartOnBoot", false)
-                || getBool("autoStartOnWake", false);
-        overlayPermissionStatus.setText(granted
-                ? (autoStartEnabled
-                    ? getString(R.string.settings_activity_text_260)
-                    : getString(R.string.settings_activity_text_261))
-                : getString(R.string.settings_activity_text_262));
-        overlayPermissionStatus.setTextColor(granted ? ACCENT : MUTED);
-        overlayPermissionButton.setText(granted
-                ? getString(R.string.settings_activity_text_263)
-                : getString(R.string.settings_activity_text_257));
-        overlayPermissionButton.setEnabled(!granted);
-        overlayPermissionButton.setAlpha(granted ? 0.65f : 1f);
-    }
-
+    
     private boolean openOverlayPermissionSettings() {
         try {
             Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION);
@@ -2768,41 +2615,8 @@ screenTitle.setText(getString(R.string.settings_activity_text_001));
         }
     }
 
-    private void updateNotificationAccessCardVisibility() {
-        // Notification access management now lives in PermissionsActivity.
-    }
-
-    private void positionPermissionCards() {
-        if (content == null) return;
-
-        // Reinsert permission cards in a stable order: notification access,
-        // charger auto-start overlay permission, then device-admin permission.
-        if (notificationAccessCard != null && notificationAccessCard.getParent() == content) {
-            content.removeView(notificationAccessCard);
-        }
-        if (overlayPermissionCard != null && overlayPermissionCard.getParent() == content) {
-            content.removeView(overlayPermissionCard);
-        }
-
-        int frameIndex = playerFrameCard != null ? content.indexOfChild(playerFrameCard) : -1;
-        int insertAt = frameIndex >= 0 ? frameIndex + 1 : content.getChildCount();
-
-        if (notificationAccessCard != null) {
-            insertAt = Math.min(insertAt, content.getChildCount());
-            content.addView(notificationAccessCard, insertAt++);
-        }
-        if (overlayPermissionCard != null) {
-            insertAt = Math.min(insertAt, content.getChildCount());
-            content.addView(overlayPermissionCard, insertAt);
-        }
-
-        if (screenLockAdminCard != null && screenLockAdminCard.getParent() == content
-                && content.indexOfChild(screenLockAdminCard) != content.getChildCount() - 1) {
-            content.removeView(screenLockAdminCard);
-            content.addView(screenLockAdminCard);
-        }
-    }
-
+    
+    
     private boolean hasNotificationAccess() {
         ComponentName component = new ComponentName(
                 this, SystemMediaNotificationListener.class);
@@ -2838,75 +2652,12 @@ screenTitle.setText(getString(R.string.settings_activity_text_001));
         return false;
     }
 
-    private void updateScreenLockAdminCard() {
-        if (screenLockAdminCard == null || screenLockAdminStatus == null
-                || screenLockAdminButton == null) return;
-        boolean active = isScreenLockAdminActive();
-        screenLockAdminStatus.setText(active
-                ? getString(R.string.settings_activity_text_266)
-                : getString(R.string.settings_activity_text_267));
-        screenLockAdminStatus.setTextColor(active ? ACCENT : MUTED);
-        screenLockAdminButton.setText(active
-                ? getString(R.string.settings_activity_text_268)
-                : getString(R.string.settings_activity_text_269));
-        screenLockAdminButton.setEnabled(!active);
-        screenLockAdminButton.setAlpha(active ? 0.65f : 1f);
-    }
-
-    private boolean isScreenLockAdminActive() {
-        try {
-            if (devicePolicyManager == null) {
-                devicePolicyManager = (DevicePolicyManager) getSystemService(
-                        Context.DEVICE_POLICY_SERVICE);
-            }
-            if (screenLockAdminComponent == null) {
-                screenLockAdminComponent = new ComponentName(
-                        this, ScreenLockAdminReceiver.class);
-            }
-            return devicePolicyManager != null
-                    && devicePolicyManager.isAdminActive(screenLockAdminComponent);
-        } catch (Throwable ignored) {
-            return false;
-        }
-    }
-
-    private void requestScreenLockAdmin() {
-        try {
-            if (screenLockAdminComponent == null) {
-                screenLockAdminComponent = new ComponentName(
-                        this, ScreenLockAdminReceiver.class);
-            }
-            Intent intent = new Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN);
-            intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN,
-                    screenLockAdminComponent);
-            intent.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION,
-                    getString(R.string.settings_activity_text_270)
-                    + getString(R.string.settings_activity_text_271));
-            startActivityForResult(intent, REQUEST_ENABLE_SCREEN_LOCK_ADMIN);
-        } catch (Throwable ex) {
-            AppToast.makeText(this, getString(R.string.settings_activity_text_272),
-                    Toast.LENGTH_LONG).show();
-        }
-    }
-
+    
+    
+    
     @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == REQUEST_ENABLE_SCREEN_LOCK_ADMIN) {
-            updateScreenLockAdminCard();
-            if (isScreenLockAdminActive()) {
-                AppToast.makeText(this, getString(R.string.settings_activity_text_273),
-                        Toast.LENGTH_LONG).show();
-            }
-        }
-    }
-
-    private void removeCard(LinearLayout card) {
-        if (card != null && card.getParent() instanceof android.view.ViewGroup) {
-            ((android.view.ViewGroup) card.getParent()).removeView(card);
-        }
-    }
-
+    
+    
     private Button makeActionButton(String text) {
         Button button = new Button(this);
         button.setText(text);

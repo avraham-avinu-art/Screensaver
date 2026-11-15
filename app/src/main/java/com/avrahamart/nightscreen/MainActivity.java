@@ -83,22 +83,13 @@ public class MainActivity extends Activity {
     private static volatile boolean mainActivitySessionAlive = false;
     private static volatile boolean mainActivityPausedByDeviceLock = false;
 
-    public static boolean isMainActivityResumed() {
-        return mainActivityResumed;
-    }
-
+    
     public static boolean isMainActivitySessionAlive() {
         return mainActivitySessionAlive;
     }
 
-    public static boolean wasMainActivityPausedByDeviceLock() {
-        return mainActivityPausedByDeviceLock;
-    }
-
-    public static void clearPausedByDeviceLockState() {
-        mainActivityPausedByDeviceLock = false;
-    }
-    private final Handler handler = new Handler(Looper.getMainLooper());
+    
+        private final Handler handler = new Handler(Looper.getMainLooper());
     private final Runnable autoOffRunnable = this::exitApplicationAtSelectedTime;
     private final Runnable screenOnReleaseRunnable = this::releaseScreenOnHoldForSystemTimeout;
     private boolean waitingForScreenWakeAfterActivityEnd = false;
@@ -247,7 +238,6 @@ public class MainActivity extends Activity {
         refreshMediaHolderPosition();
     };
 
-    private LinearLayout mediaSetup;
     private LinearLayout mediaMirror;
     private LinearLayout playerTextColumn;
     private TextView mediaTitle;
@@ -852,56 +842,7 @@ public class MainActivity extends Activity {
         }
     }
 
-    private void buildMediaSetup(LinearLayout root) {
-        mediaSetup = new LinearLayout(this);
-        mediaSetup.setOrientation(LinearLayout.HORIZONTAL);
-        mediaSetup.setGravity(Gravity.CENTER_VERTICAL);
-        mediaSetup.setPadding(dp(8), dp(5), dp(8), dp(5));
-        mediaSetup.setBackgroundColor(Color.BLACK);
-        mediaSetup.setVisibility(View.GONE);
-
-        TextView message = textView(
-                getString(R.string.main_activity_text_003),
-                14, Color.rgb(215, 220, 228));
-        message.setGravity(Gravity.CENTER);
-        message.setTextDirection(View.TEXT_DIRECTION_RTL);
-        message.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-        message.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        message.setLineSpacing(dp(2), 1.0f);
-        message.setSingleLine(false);
-        message.setMaxLines(2);
-        message.setEllipsize(null);
-        message.setIncludeFontPadding(false);
-
-        LinearLayout.LayoutParams messageParams =
-                new LinearLayout.LayoutParams(0, dp(58), 1f);
-        messageParams.leftMargin = dp(6);
-        mediaSetup.addView(message, messageParams);
-
-        TextView openSettings = mediaButton(getString(R.string.main_activity_text_004));
-        openSettings.setTextSize(14);
-        openSettings.setTextColor(Color.WHITE);
-        GradientDrawable accessButtonBackground = new GradientDrawable();
-        accessButtonBackground.setColor(Color.rgb(47, 83, 125));
-        accessButtonBackground.setCornerRadius(dp(16));
-        accessButtonBackground.setStroke(dp(1), Color.rgb(94, 137, 184));
-        openSettings.setBackground(accessButtonBackground);
-        openSettings.setGravity(Gravity.CENTER);
-        openSettings.setPadding(dp(10), 0, dp(10), 0);
-        openSettings.setElevation(dp(2));
-        openSettings.setOnClickListener(v -> openNotificationAccessSettings());
-        mediaSetup.addView(openSettings, new LinearLayout.LayoutParams(dp(76), dp(46)));
-
-        int availableWidth = Math.max(
-                dp(1),
-                getResources().getDisplayMetrics().widthPixels - dp(20));
-        LinearLayout.LayoutParams setupParams = new LinearLayout.LayoutParams(
-                Math.min(dp(760), availableWidth), dp(68));
-        setupParams.gravity = Gravity.CENTER_HORIZONTAL;
-        setupParams.bottomMargin = dp(5);
-        root.addView(mediaSetup, setupParams);
-    }
-
+    
     private void buildSystemMediaMirror(LinearLayout root) {
         mediaMirror = new LinearLayout(this);
         mediaMirror.setOrientation(LinearLayout.VERTICAL);
@@ -1927,10 +1868,7 @@ public class MainActivity extends Activity {
     }
 
     
-    private boolean usesLayeredBackground() {
-        return !"solid".equals(getString("backgroundStyle", "solid"));
-    }
-
+    
     
     private int mixColor(int from, int to, float amount) {
         float f = Math.max(0f, Math.min(1f, amount));
@@ -2784,25 +2722,7 @@ public class MainActivity extends Activity {
         }
     }
 
-    private MediaController selectPlayableSession(List<MediaController> sessions) {
-        if (sessions == null || sessions.isEmpty()) return null;
-
-        for (MediaController controller : sessions) {
-            try {
-                PlaybackState state = controller.getPlaybackState();
-                if (state != null &&
-                        (state.getState() == PlaybackState.STATE_PAUSED ||
-                         state.getState() == PlaybackState.STATE_PLAYING ||
-                         state.getState() == PlaybackState.STATE_BUFFERING)) {
-                    return controller;
-                }
-            } catch (Throwable ignored) {
-            }
-        }
-
-        return sessions.get(0);
-    }
-
+    
     private void updateChargingBatteryDisplay() {
         if (chargingBatteryView == null || prefs == null) return;
         int previousVisibility = chargingBatteryView.getVisibility();
@@ -3675,20 +3595,9 @@ public class MainActivity extends Activity {
     }
 
     private void hideMediaSetup() {
-        if (mediaSetup != null) mediaSetup.setVisibility(View.GONE);
     }
 
-    private void openNotificationAccessSettings() {
-        // Use the top-level Notification Access page for maximum OEM compatibility.
-        // Some devices crash when launched with the newer detail-page extra.
-        Intent intent = new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS);
-        try {
-            startActivity(intent);
-        } catch (ActivityNotFoundException ignored) {
-        } catch (Throwable ignored) {
-        }
-    }
-
+    
     private void updateAlbumArtwork(MediaMetadata metadata) {
         Bitmap artwork = null;
         if (metadata != null) {
@@ -4036,21 +3945,13 @@ public class MainActivity extends Activity {
         return v;
     }
 
-    private LinearLayout.LayoutParams matchWrap() {
-        return new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT);
-    }
-
+    
     private int dp(int value) {
         return Math.round(
                 value * getResources().getDisplayMetrics().density);
     }
 
-    private float dpFloat(float value) {
-        return value * getResources().getDisplayMetrics().density;
-    }
-
+    
     private void hideSystemUi() {
         View decor = getWindow().getDecorView();
         decor.setSystemUiVisibility(
