@@ -1917,7 +1917,8 @@ screenHeader.setVisibility(View.GONE);
 
         TextView heading = textView(getString(R.string.settings_activity_text_243), 20, ON_SURFACE);
         heading.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD));
-        heading.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        heading.setGravity(Gravity.CENTER);
+        heading.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         panel.addView(heading, new LinearLayout.LayoutParams(-1, dp(30)));
 
         LinearLayout sampleRow = new LinearLayout(this);
