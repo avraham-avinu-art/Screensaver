@@ -20,7 +20,7 @@
     <string name="settings_activity_text_015" formatted="false">תאריך עברי</string>
     <string name="settings_activity_text_016" formatted="false">תבנית התאריך העברי</string>
     <string name="settings_activity_text_017" formatted="false">תאריך לועזי</string>
-    <string name="settings_activity_text_018" formatted="false">d 'ב'MMMM yyyy</string>
+    <string name="settings_activity_text_018" formatted="false">d \'ב\'MMMM yyyy</string>
     <string name="settings_activity_text_019" formatted="false">תבנית התאריך הלועזי</string>
     <string name="settings_activity_text_020" formatted="false">תצוגת שעה</string>
     <string name="settings_activity_text_021" formatted="false">24 שעות</string>
@@ -60,8 +60,8 @@
     <string name="settings_activity_text_055" formatted="false">הסבר על הגדרות זמני הפעילות</string>
     <string name="settings_activity_text_056" formatted="false">זמן מסך</string>
     <string name="settings_activity_text_057" formatted="false">לפי המכשיר</string>
-    <string name="settings_activity_text_058" formatted="false">1 דק'</string>
-    <string name="settings_activity_text_059" formatted="false">5 דק'</string>
+    <string name="settings_activity_text_058" formatted="false">1 דק\'</string>
+    <string name="settings_activity_text_059" formatted="false">5 דק\'</string>
     <string name="settings_activity_text_060" formatted="false">ללא כיבוי</string>
     <string name="settings_activity_text_061" formatted="false">מניעת נעילה בזמן פעילות</string>
     <string name="settings_activity_text_062" formatted="false">המשך הצגה במסך נעילה</string>
@@ -202,7 +202,7 @@
 </string>
     <string name="settings_activity_text_196" formatted="false">• לפי המכשיר - אין לאפליקציה טיימר סיום עצמאי. שומר מסך נשאר מוצג עד שהמכשיר מכבה את המסך לפי ההגדרות שלו. אם המסך אינו נכבה אוטומטית, שומר מסך ימשיך להופיע ברציפות.
 </string>
-    <string name="settings_activity_text_197" formatted="false">• 1 דק' / 5 דק' - שומר מסך יורד מהמסך בתום הזמן שנבחר. אם זמן כיבוי המסך של Android ארוך יותר, המסך עצמו עשוי להישאר דולק עד לכיבוי המערכת.
+    <string name="settings_activity_text_197" formatted="false">• 1 דק\' / 5 דק\' - שומר מסך יורד מהמסך בתום הזמן שנבחר. אם זמן כיבוי המסך של Android ארוך יותר, המסך עצמו עשוי להישאר דולק עד לכיבוי המערכת.
 </string>
     <string name="settings_activity_text_198" formatted="false">• ללא כיבוי - האפליקציה מונעת כיבוי מסך אוטומטי ומשאירה את שומר מסך מוצג ברציפות, עד ליציאה יזומה או לשינוי ההגדרה.
 
@@ -222,7 +222,7 @@
 </string>
     <string name="settings_activity_text_205" formatted="false">• במצב לפי המכשיר, כיבוי המסך על ידי המערכת מסיים את מחזור התצוגה; כשההגדרה פעילה שומר מסך יופיע שוב בהפעלה הבאה.
 </string>
-    <string name="settings_activity_text_206" formatted="false">• בבחירת 1 דק' או 5 דק', ההמשך יתאפשר רק אם המסך אכן כבה עד למועד סיום זמן הפעילות. אם זמן הכיבוי של המכשיר ארוך יותר, שומר מסך ייסגר בתום הזמן ולא ימתין לכיבוי מאוחר.
+    <string name="settings_activity_text_206" formatted="false">• בבחירת 1 דק\' או 5 דק\', ההמשך יתאפשר רק אם המסך אכן כבה עד למועד סיום זמן הפעילות. אם זמן הכיבוי של המכשיר ארוך יותר, שומר מסך ייסגר בתום הזמן ולא ימתין לכיבוי מאוחר.
 </string>
     <string name="settings_activity_text_207" formatted="false">• במכשיר שאין בו מסך נעילה, להגדרה זו אין משמעות מעשית.
 
@@ -276,7 +276,7 @@
     <string name="settings_activity_text_238" formatted="false">בבדיקה האחרונה לא זוהה מסך נעילה בפועל. לכן ההגדרות הקשורות לנעילה ולהצגת שומר מסך במסך הנעילה עשויות שלא להיות רלוונטיות למכשיר זה.</string>
     <string name="settings_activity_text_239" formatted="false">זוהתה במכשיר תמיכה ב־Android Automotive. בחלק ממערכות המולטימדיה אין מסך נעילה רגיל, ולכן הגדרות הקשורות לנעילה עשויות שלא להיות רלוונטיות.</string>
     <string name="settings_activity_text_240" formatted="false">לא ניתן לזהות את זמן כיבוי המסך שהוגדר במכשיר. בסיום זמן הפעילות שומר מסך ייסגר, אך כיבוי התצוגה נשאר באחריות Android.</string>
-    <string name="settings_activity_text_241" formatted="false">לא זוהה במכשיר כיבוי מסך אוטומטי. בבחירת 1 דק' או 5 דק' שומר מסך ייסגר בתום הזמן, אך המסך עצמו עשוי להישאר דולק.</string>
+    <string name="settings_activity_text_241" formatted="false">לא זוהה במכשיר כיבוי מסך אוטומטי. בבחירת 1 דק\' או 5 דק\' שומר מסך ייסגר בתום הזמן, אך המסך עצמו עשוי להישאר דולק.</string>
     <string name="settings_activity_text_242" formatted="false">זמן כיבוי המסך שמוגדר במכשיר ארוך מזמן הפעילות שבחרת. בסיום הזמן שומר מסך ייסגר, אך המסך עשוי להישאר דולק עד ש־Android יכבה אותו.</string>
     <string name="settings_activity_text_243" formatted="false">בחירת צבע מותאם אישית</string>
     <string name="settings_activity_text_244" formatted="false">כוון את המחוונים עד לקבלת הגוון הרצוי</string>
