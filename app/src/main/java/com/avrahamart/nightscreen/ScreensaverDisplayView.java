@@ -861,6 +861,34 @@ public final class ScreensaverDisplayView extends LinearLayout {
         applySectionTextAlignmentPreferences();
     }
 
+    private int measuredLineHeight(TextView view, String sampleText,
+                                   int extraSpaceDp, int minimumHeightDp) {
+        if (view == null) return dp(minimumHeightDp);
+
+        android.graphics.Paint paint = view.getPaint();
+        android.graphics.Paint.FontMetrics metrics = paint.getFontMetrics();
+
+        // Exclude excess font padding; visible glyph bounds below still protect custom fonts.
+        int lineMetricsHeight = Math.round(metrics.descent - metrics.ascent);
+
+        // Also inspect a representative sample and the current text, including Hebrew
+        // characters and digits, in case visible outlines extend beyond font metrics.
+        android.graphics.Rect bounds = new android.graphics.Rect();
+        int visibleGlyphHeight = 0;
+        if (sampleText != null && !sampleText.isEmpty()) {
+            paint.getTextBounds(sampleText, 0, sampleText.length(), bounds);
+            visibleGlyphHeight = Math.max(visibleGlyphHeight, bounds.height());
+        }
+        CharSequence currentText = view.getText();
+        if (currentText != null && currentText.length() > 0) {
+            paint.getTextBounds(currentText.toString(), 0, currentText.length(), bounds);
+            visibleGlyphHeight = Math.max(visibleGlyphHeight, bounds.height());
+        }
+
+        int measured = Math.max(lineMetricsHeight, visibleGlyphHeight) + dp(extraSpaceDp);
+        return Math.max(dp(minimumHeightDp), measured);
+    }
+
     private int dateClockGapDp(int clockSize) {
         // Used only for the initial layout before the selected font has been measured.
         return -8;
