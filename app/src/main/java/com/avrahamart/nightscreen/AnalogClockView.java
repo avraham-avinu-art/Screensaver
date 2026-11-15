@@ -93,7 +93,8 @@ public final class AnalogClockView extends View {
             paint.setStyle(Paint.Style.FILL);
             paint.setColor(accentColor);
             paint.setTextAlign(Paint.Align.CENTER);
-            paint.setTextSize(radius * 0.145f);
+            paint.setTextSize(radius * ("numbers_only".equals(dialStyle)
+                    ? 0.17f : 0.145f));
             paint.setTypeface(android.graphics.Typeface.create(
                     "sans-serif-medium", android.graphics.Typeface.NORMAL));
             for (int number = 1; number <= 12; number++) {

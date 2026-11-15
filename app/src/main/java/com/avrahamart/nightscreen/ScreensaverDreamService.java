@@ -1,13 +1,19 @@
 package com.avrahamart.nightscreen;
 
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Handler;
 import android.os.Looper;
 import android.service.dreams.DreamService;
 import android.view.Gravity;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -33,6 +39,8 @@ public final class ScreensaverDreamService extends DreamService {
     private TextView hebrewDate;
     private AnalogClockView analogClock;
     private View clockBlock;
+    private LinearLayout clockTextColumn;
+    private BatteryChargeIndicatorView chargingBatteryView;
     private int clockLineHeightPx;
     private boolean dreamActive;
     private final Runnable clockTick = new Runnable() {
@@ -86,7 +94,7 @@ public final class ScreensaverDreamService extends DreamService {
         Typeface face = loadTypeface(fontFamily, requestedWeight);
 
         FrameLayout root = new FrameLayout(this);
-        root.setBackgroundColor(background);
+        root.setBackground(createDreamBackground(background));
 
         LinearLayout block = new LinearLayout(this);
         block.setOrientation(LinearLayout.VERTICAL);
@@ -95,24 +103,38 @@ public final class ScreensaverDreamService extends DreamService {
         block.setClipToPadding(false);
         clockBlock = block;
 
-        boolean analog = "analog".equals(prefs.getString("clockDisplayMode", "digital"));
+        boolean analog = "analog".equals(
+                prefs.getString("clockDisplayMode", "digital"));
+        boolean numbersOnly = "numbers_only".equals(
+                prefs.getString("clockDialStyle", "lines_only"));
         int analogDiameter = dp(Math.max(170,
-                Math.round(effectiveSize * ("numbers_only".equals(
-                        prefs.getString("clockDialStyle", "lines_only")) ? 2.50f : 2.25f))));
+                Math.round(effectiveSize * (numbersOnly ? 2.85f : 2.25f))));
+
         if (analog) {
             analogClock = new AnalogClockView(this);
             analogClock.setDialStyle(prefs.getString("clockDialStyle", "lines_only"));
             analogClock.setColors(foreground, background);
             LinearLayout.LayoutParams analogParams =
                     new LinearLayout.LayoutParams(analogDiameter, analogDiameter);
+            analogParams.gravity = Gravity.CENTER_HORIZONTAL;
             block.addView(analogClock, analogParams);
             clockLineHeightPx = analogDiameter;
-        } else {
+        }
+
+        clockTextColumn = new LinearLayout(this);
+        clockTextColumn.setOrientation(LinearLayout.VERTICAL);
+        clockTextColumn.setGravity(Gravity.TOP | Gravity.CENTER_HORIZONTAL);
+        clockTextColumn.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+        clockTextColumn.setClipChildren(false);
+        clockTextColumn.setClipToPadding(false);
+
+        if (!analog) {
             digitalClock = makeText("", effectiveSize, foreground, face);
-            LinearLayout.LayoutParams clockParams =
-                    new LinearLayout.LayoutParams(-1, dp(Math.max(48, effectiveSize)));
-            block.addView(digitalClock, clockParams);
-            clockLineHeightPx = clockParams.height;
+            int clockHeight = Math.max(dp(62),
+                    measuredLineHeight(digitalClock, "0123456789:00", 2, effectiveSize));
+            clockLineHeightPx = clockHeight;
+            clockTextColumn.addView(digitalClock,
+                    new LinearLayout.LayoutParams(-1, clockHeight));
         }
 
         float dateSize = effectiveSize * 0.26f;
@@ -121,33 +143,227 @@ public final class ScreensaverDreamService extends DreamService {
         boolean showHebrew = prefs.getBoolean("showHebrew", true);
         if (showGregorian) {
             gregorianDate = makeText("", dateSize, foreground, face);
-            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, dateRowHeight);
-            params.topMargin = analog ? 0 : dp(20);
-            block.addView(gregorianDate, params);
+            int height = Math.max(dateRowHeight,
+                    measuredLineHeight(gregorianDate,
+                            getString(R.string.main_activity_text_008), 0, 24));
+            gregorianDate.setLayoutParams(new LinearLayout.LayoutParams(-1, height));
+            clockTextColumn.addView(gregorianDate);
         }
         if (showHebrew) {
             hebrewDate = makeText("", dateSize, foreground, face);
-            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, dateRowHeight);
-            params.topMargin = gregorianDate == null ? (analog ? 0 : dp(20)) : dp(10);
-            block.addView(hebrewDate, params);
+            int height = Math.max(dateRowHeight,
+                    measuredLineHeight(hebrewDate,
+                            getString(R.string.main_activity_text_009), 0, 24));
+            hebrewDate.setLayoutParams(new LinearLayout.LayoutParams(-1, height));
+            clockTextColumn.addView(hebrewDate);
         }
 
+        int numbersOnlyDateOverlap = analog && numbersOnly
+                ? Math.round(analogDiameter * 0.17f) : 0;
+        if (gregorianDate != null) {
+            LinearLayout.LayoutParams params =
+                    (LinearLayout.LayoutParams) gregorianDate.getLayoutParams();
+            params.topMargin = analog ? -numbersOnlyDateOverlap : dp(20);
+            gregorianDate.setLayoutParams(params);
+        }
+        if (hebrewDate != null) {
+            LinearLayout.LayoutParams params =
+                    (LinearLayout.LayoutParams) hebrewDate.getLayoutParams();
+            params.topMargin = gregorianDate == null
+                    ? (analog ? -numbersOnlyDateOverlap : dp(20)) : dp(10);
+            hebrewDate.setLayoutParams(params);
+        }
+
+        LinearLayout.LayoutParams textColumnParams =
+                new LinearLayout.LayoutParams(-2, -2);
+        textColumnParams.gravity = Gravity.CENTER_HORIZONTAL;
+        block.addView(clockTextColumn, textColumnParams);
+
         FrameLayout.LayoutParams blockParams =
-                new FrameLayout.LayoutParams(-1, -2, Gravity.TOP | Gravity.CENTER_HORIZONTAL);
+                new FrameLayout.LayoutParams(-1, -2,
+                        Gravity.TOP | Gravity.CENTER_HORIZONTAL);
         String position = prefs.getString("clockDatePosition", "upper");
         if ("middle".equals(position)) {
             blockParams.gravity = Gravity.CENTER;
         } else if ("upper".equals(position)) {
-                int screenHeight = getResources().getDisplayMetrics().heightPixels;
+            int screenHeight = getResources().getDisplayMetrics().heightPixels;
             blockParams.topMargin = Math.max(0,
                     Math.round(screenHeight / 4f - clockLineHeightPx / 2f));
-            // The outer block is vertically positioned so the clock line itself is
-            // at 25% of the display, exactly as in the regular screensaver screen.
         } else {
             blockParams.topMargin = 0;
         }
         root.addView(block, blockParams);
+
+        chargingBatteryView = new BatteryChargeIndicatorView(this);
+        FrameLayout.LayoutParams batteryParams =
+                new FrameLayout.LayoutParams(-2, dp(28),
+                        Gravity.TOP | Gravity.RIGHT);
+        batteryParams.rightMargin = dp(12);
+        batteryParams.topMargin = dp(12);
+        root.addView(chargingBatteryView, batteryParams);
+
         setContentView(root);
+        applyDreamBrightness();
+        updateChargingBatteryDisplay();
+        updateClockTextColumnWidth();
+        root.post(this::applyClockHorizontalOffset);
+    }
+
+    private Drawable createDreamBackground(int base) {
+        String style = prefs.getString("backgroundStyle", "solid");
+        if ("gradient".equals(style)) {
+            return new GradientDrawable(GradientDrawable.Orientation.TL_BR,
+                    new int[]{
+                            mixColor(base, Color.rgb(47, 89, 132), 0.52f),
+                            mixColor(base, Color.rgb(20, 36, 56), 0.30f),
+                            mixColor(base, Color.rgb(5, 12, 22), 0.68f)
+                    });
+        }
+        if ("glow".equals(style)) {
+            GradientDrawable glow = new GradientDrawable(
+                    GradientDrawable.Orientation.TOP_BOTTOM,
+                    new int[]{
+                            mixColor(base, Color.rgb(52, 112, 169), 0.78f),
+                            mixColor(base, Color.rgb(25, 56, 88), 0.44f),
+                            base
+                    });
+            glow.setGradientType(GradientDrawable.RADIAL_GRADIENT);
+            glow.setGradientRadius(dp(Math.max(250, Math.round(Math.max(
+                    getResources().getDisplayMetrics().widthPixels,
+                    getResources().getDisplayMetrics().heightPixels) * 0.78f))));
+            glow.setGradientCenter(0.5f, 0.42f);
+            return glow;
+        }
+        if ("vignette".equals(style)) {
+            GradientDrawable vignette = new GradientDrawable(
+                    GradientDrawable.Orientation.TL_BR,
+                    new int[]{base, mixColor(base, Color.BLACK, 0.62f), Color.BLACK});
+            vignette.setGradientType(GradientDrawable.RADIAL_GRADIENT);
+            vignette.setGradientRadius(dp(Math.max(250, Math.round(Math.max(
+                    getResources().getDisplayMetrics().widthPixels,
+                    getResources().getDisplayMetrics().heightPixels) * 0.66f))));
+            vignette.setGradientCenter(0.5f, 0.45f);
+            return vignette;
+        }
+        return new ColorDrawable(base);
+    }
+
+    private int mixColor(int from, int to, float amount) {
+        float f = Math.max(0f, Math.min(1f, amount));
+        return Color.rgb(
+                Math.round(Color.red(from) * (1f - f) + Color.red(to) * f),
+                Math.round(Color.green(from) * (1f - f) + Color.green(to) * f),
+                Math.round(Color.blue(from) * (1f - f) + Color.blue(to) * f));
+    }
+
+    private boolean isAutomaticNightModeActive() {
+        if (!prefs.getBoolean("nightModeEnabled", false)) return false;
+        int start = Math.max(0, Math.min(23, prefs.getInt("nightModeStartHour", 22)));
+        int end = Math.max(0, Math.min(23, prefs.getInt("nightModeEndHour", 7)));
+        if (start == end) return false;
+        int hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
+        return start < end ? hour >= start && hour < end
+                : hour >= start || hour < end;
+    }
+
+    private void applyDreamBrightness() {
+        int percent = prefs.getInt("screenBrightness", -1);
+        float brightness = percent < 0 ? -1f
+                : Math.max(0.01f, Math.min(1f, percent / 100f));
+        if (isAutomaticNightModeActive()) {
+            brightness = brightness < 0f ? 0.20f : Math.min(brightness, 0.20f);
+        }
+        WindowManager.LayoutParams attributes = getWindow().getAttributes();
+        attributes.screenBrightness = brightness < 0f
+                ? WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE : brightness;
+        getWindow().setAttributes(attributes);
+    }
+
+    private int measuredLineHeight(TextView view, String sample, int extraSpaceDp,
+                                   int minimumHeightDp) {
+        if (view == null) return dp(minimumHeightDp);
+        android.graphics.Paint paint = view.getPaint();
+        android.graphics.Paint.FontMetrics metrics = paint.getFontMetrics();
+        int fontHeight = Math.round(metrics.descent - metrics.ascent);
+        android.graphics.Rect bounds = new android.graphics.Rect();
+        int visibleHeight = 0;
+        if (sample != null && !sample.isEmpty()) {
+            paint.getTextBounds(sample, 0, sample.length(), bounds);
+            visibleHeight = Math.max(visibleHeight, bounds.height());
+        }
+        CharSequence current = view.getText();
+        if (current != null && current.length() > 0) {
+            paint.getTextBounds(current.toString(), 0, current.length(), bounds);
+            visibleHeight = Math.max(visibleHeight, bounds.height());
+        }
+        return Math.max(dp(minimumHeightDp),
+                Math.max(fontHeight, visibleHeight) + dp(extraSpaceDp));
+    }
+
+    private void updateClockTextColumnWidth() {
+        if (clockTextColumn == null) return;
+        float widest = 0f;
+        TextView[] rows = {digitalClock, gregorianDate, hebrewDate};
+        for (TextView row : rows) {
+            if (row == null || row.getVisibility() != View.VISIBLE) continue;
+            CharSequence value = row.getText();
+            if (value == null || value.length() == 0) continue;
+            widest = Math.max(widest,
+                    row.getPaint().measureText(value, 0, value.length())
+                            + row.getPaddingLeft() + row.getPaddingRight() + dp(32));
+        }
+        int available = Math.max(dp(1),
+                getResources().getDisplayMetrics().widthPixels - dp(24));
+        int width = Math.max(dp(1), Math.min(available, (int) Math.ceil(widest)));
+        ViewGroup.LayoutParams raw = clockTextColumn.getLayoutParams();
+        if (raw instanceof LinearLayout.LayoutParams
+                && raw.width != width) {
+            raw.width = width;
+            clockTextColumn.setLayoutParams(raw);
+            clockTextColumn.requestLayout();
+        }
+    }
+
+    private void applyClockHorizontalOffset() {
+        if (clockBlock == null || clockTextColumn == null) return;
+        int width = clockBlock.getWidth();
+        if (width <= 0) width = getResources().getDisplayMetrics().widthPixels;
+        int contentWidth = clockTextColumn.getMeasuredWidth();
+        if (analogClock != null && analogClock.getVisibility() == View.VISIBLE) {
+            contentWidth = Math.max(contentWidth, analogClock.getMeasuredWidth());
+        }
+        float fraction = Math.max(-1f, Math.min(1f,
+                prefs.getInt("clockHorizontalOffset", 0) / 20f));
+        float translation = ((width - contentWidth) / 2f) * fraction;
+        if (analogClock != null) analogClock.setTranslationX(translation);
+        clockTextColumn.setTranslationX(translation);
+    }
+
+    private void updateChargingBatteryDisplay() {
+        if (chargingBatteryView == null || prefs == null) return;
+        int level = 0;
+        boolean charging = false;
+        try {
+            Intent battery = registerReceiver(null,
+                    new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+            if (battery != null) {
+                int rawLevel = battery.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
+                int scale = battery.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
+                int status = battery.getIntExtra(BatteryManager.EXTRA_STATUS,
+                        BatteryManager.BATTERY_STATUS_UNKNOWN);
+                int plugged = battery.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0);
+                if (rawLevel >= 0 && scale > 0) {
+                    level = Math.max(0, Math.min(100,
+                            Math.round(rawLevel * 100f / scale)));
+                }
+                charging = plugged != 0
+                        && (status == BatteryManager.BATTERY_STATUS_CHARGING
+                        || status == BatteryManager.BATTERY_STATUS_FULL);
+            }
+        } catch (Throwable ignored) { }
+        chargingBatteryView.setBatteryState(
+                prefs.getString("chargingBatteryDisplayMode", "off"),
+                level, charging, prefs.getInt("fontColor", Color.WHITE));
     }
 
     private TextView makeText(String value, float size, int color, Typeface face) {
@@ -257,6 +473,9 @@ public final class ScreensaverDreamService extends DreamService {
                 hebrewDate.setText("");
             }
         }
+        updateClockTextColumnWidth();
+        if (clockBlock != null) clockBlock.post(this::applyClockHorizontalOffset);
+        updateChargingBatteryDisplay();
     }
 
     private String hebrewWeekday(int day) {

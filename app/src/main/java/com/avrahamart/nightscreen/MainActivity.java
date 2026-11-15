@@ -1501,7 +1501,7 @@ public class MainActivity extends Activity {
         boolean analogClock = "analog".equals(getString("clockDisplayMode", "digital"));
         String analogDialStyle = getString("clockDialStyle", "classic");
         float analogSizeMultiplier = "numbers_only".equals(analogDialStyle)
-                ? 2.50f : 2.25f;
+                ? 2.85f : 2.25f;
         int analogClockDiameter = Math.max(dp(170),
                 dp(Math.round(effectiveClockSize * analogSizeMultiplier)));
         if (analogClockView != null) {
@@ -1554,8 +1554,14 @@ public class MainActivity extends Activity {
         int dateToDateGapPx = dp(visualGapDp(effectiveClockSize) / 2);
         int gregorianTopMargin = 0;
         int hebrewTopMargin = 0;
+        // In the numbers-only dial there are no outer tick marks or rim. The
+        // visible hands end well inside the view bounds, so overlap the
+        // transparent lower part of the view to bring the date directly below
+        // the actual clock artwork.
+        int numbersOnlyDateOverlap = analogClock && "numbers_only".equals(analogDialStyle)
+                ? Math.round(analogClockDiameter * 0.17f) : 0;
         if (showGregorian) {
-            gregorianTopMargin = analogClock ? 0
+            gregorianTopMargin = analogClock ? -numbersOnlyDateOverlap
                     : visualGapMarginPx(
                             timeText, clockH, "0123456789:00",
                             gregorianText, gregorianH, getString(R.string.main_activity_text_008),
@@ -1568,7 +1574,7 @@ public class MainActivity extends Activity {
                         hebrewText, hebrewH, getString(R.string.main_activity_text_009),
                         dateToDateGapPx);
             } else if (analogClock) {
-                hebrewTopMargin = 0;
+                hebrewTopMargin = -numbersOnlyDateOverlap;
             } else {
                 hebrewTopMargin = visualGapMarginPx(
                         timeText, clockH, "0123456789:00",

@@ -116,6 +116,15 @@ public class SettingsActivity extends Activity {
         window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN);
         window.setStatusBarColor(SURFACE);
         window.setNavigationBarColor(SURFACE);
+        if (Build.VERSION.SDK_INT >= 29) {
+            window.setStatusBarContrastEnforced(false);
+            window.setNavigationBarContrastEnforced(false);
+        }
+        // Android 15+ enforces edge-to-edge for this target SDK. Keep the app
+        // canvas behind the system bars and reserve their insets exactly once.
+        if (Build.VERSION.SDK_INT >= 30) {
+            window.setDecorFitsSystemWindows(false);
+        }
         window.getDecorView().setSystemUiVisibility(0);
 
         LinearLayout root = new LinearLayout(this);
@@ -126,12 +135,29 @@ public class SettingsActivity extends Activity {
         root.setClipChildren(false);
         root.setClipToPadding(false);
         root.setPadding(dp(10), dp(2), dp(10), 0);
-        if (Build.VERSION.SDK_INT >= 21) {
+        if (Build.VERSION.SDK_INT >= 30) {
+            root.setOnApplyWindowInsetsListener((view, insets) -> {
+                android.graphics.Insets systemBars = insets.getInsets(
+                        android.view.WindowInsets.Type.statusBars()
+                                | android.view.WindowInsets.Type.navigationBars());
+                view.setPadding(dp(10), dp(2) + systemBars.top,
+                        dp(10), systemBars.bottom);
+                // Prevent the ScrollView and its children from applying the
+                // same system-bar insets a second time.
+                android.view.WindowInsets.Builder builder =
+                        new android.view.WindowInsets.Builder(insets);
+                int bars = android.view.WindowInsets.Type.statusBars()
+                        | android.view.WindowInsets.Type.navigationBars();
+                builder.setInsets(bars, android.graphics.Insets.NONE);
+                builder.setInsetsIgnoringVisibility(bars, android.graphics.Insets.NONE);
+                return builder.build();
+            });
+        } else if (Build.VERSION.SDK_INT >= 21) {
             root.setOnApplyWindowInsetsListener((view, insets) -> {
                 int topInset = insets.getSystemWindowInsetTop();
                 int bottomInset = insets.getSystemWindowInsetBottom();
                 view.setPadding(dp(10), dp(2) + topInset, dp(10), bottomInset);
-                return insets;
+                return insets.consumeSystemWindowInsets();
             });
         }
 
@@ -1701,7 +1727,7 @@ screenHeader.setVisibility(View.GONE);
         final int[] responsiveTextWidths = new int[names.length];
         final int[] responsiveExpandedWidths = new int[names.length];
         int initial = selectedIndex(key, values);
-        int optionTileHeight = "clockDialStyle".equals(key) ? 92 : 37;
+        int optionTileHeight = "clockDialStyle".equals(key) ? 104 : 37;
 
         for (int i = 0; i < names.length; i++) {
             final int index = i;
@@ -1737,8 +1763,10 @@ screenHeader.setVisibility(View.GONE);
                 dialPreview.setTime(10, 10);
                 dialPreview.setColors(ON_SURFACE, CARD_SURFACE);
                 dialPreview.setDialStyle(values[i]);
+                int previewDiameter = "numbers_only".equals(values[i]) ? 72 : 60;
                 previewContent.addView(dialPreview,
-                        new LinearLayout.LayoutParams(dp(60), dp(60)));
+                        new LinearLayout.LayoutParams(dp(previewDiameter),
+                                dp(previewDiameter)));
                 option.setGravity(Gravity.CENTER);
                 option.setTextSize(12);
                 previewContent.addView(option,

@@ -15,6 +15,9 @@ final class SettingIconRegistry {
             "autoStartOnBoot",
             "autoStartOnWake",
             "autoStartOnCharge",
+            "autoStartOnIdle",
+            "wakeOnTrackChange",
+            "idleWaitSeconds",
             "autoStartOnlyWhenLocked",
             "noShutdownWhileCharging",
             "showDetails",
@@ -41,6 +44,7 @@ final class SettingIconRegistry {
             "backgroundStyle",
             "playerDisplayMode",
             "playerControlsDisplayMode",
+            "playerStartDurationSeconds",
             "playerPosition",
             "playerTextAlignment",
             "clockDateSize",
@@ -74,6 +78,9 @@ final class SettingIconRegistry {
             case "autoStartOnBoot": return "power";
             case "autoStartOnWake": return "screen-wake";
             case "autoStartOnCharge": return "usb";
+            case "autoStartOnIdle": return "setting-auto-start-idle";
+            case "wakeOnTrackChange": return "setting-track-change-wake";
+            case "idleWaitSeconds": return "setting-idle-wait-duration";
             case "autoStartOnlyWhenLocked": return "lock-play";
             case "noShutdownWhileCharging": return "phone-charging";
             case "showDetails": return "artist";
@@ -100,6 +107,7 @@ final class SettingIconRegistry {
             case "backgroundStyle": return "setting-background-style";
             case "playerDisplayMode": return "media-toggle";
             case "playerControlsDisplayMode": return "progress-time-digital";
+            case "playerStartDurationSeconds": return "setting-player-start-duration";
             case "playerPosition": return "panel-bottom";
             case "playerTextAlignment": return "setting-player-text-alignment";
             case "clockDateSize": return "clock-size";

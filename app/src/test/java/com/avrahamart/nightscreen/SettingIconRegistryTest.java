@@ -27,14 +27,22 @@ public final class SettingIconRegistryTest {
             }
         }
 
-        assertEquals(48, keys.length);
-        assertEquals(16, newSettingIcons.size());
+        assertEquals(52, keys.length);
+        assertEquals(20, newSettingIcons.size());
         assertEquals("hebrew-date", SettingIconRegistry.iconNameForKey("showHebrew"));
         assertEquals("paint-roller", SettingIconRegistry.iconNameForKey("fontColor"));
         assertEquals("activity-history",
                 SettingIconRegistry.iconNameForKey("screenSaverDuration"));
         assertEquals("setting-night-mode-enabled",
                 SettingIconRegistry.iconNameForKey("nightModeEnabled"));
+        assertEquals("setting-auto-start-idle",
+                SettingIconRegistry.iconNameForKey("autoStartOnIdle"));
+        assertEquals("setting-track-change-wake",
+                SettingIconRegistry.iconNameForKey("wakeOnTrackChange"));
+        assertEquals("setting-idle-wait-duration",
+                SettingIconRegistry.iconNameForKey("idleWaitSeconds"));
+        assertEquals("setting-player-start-duration",
+                SettingIconRegistry.iconNameForKey("playerStartDurationSeconds"));
     }
 
     @Test(expected = IllegalArgumentException.class)
