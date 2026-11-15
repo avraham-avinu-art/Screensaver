@@ -673,11 +673,23 @@ public final class ScreensaverDisplayView extends LinearLayout {
         int gregorianTopMargin = 0;
         int hebrewTopMargin = 0;
         // The numbers-only hands end at 72% of the dial radius, while the
-        // other styles' outer tick marks reach 93%. Reduce the transparent
-        // bottom overlap by that exact difference so the visible clock-to-date
-        // gap matches the two dial styles that use outer tick marks.
+        // other styles' outer tick marks reach 93%. First compensate for that
+        // shorter visual extent, then reduce the remaining visible gap by one-third.
         int numbersOnlyDateOverlap = analogClock && "numbers_only".equals(analogDialStyle)
                 ? Math.round(analogClockDiameter * 0.455f * (0.93f - 0.72f)) : 0;
+        if (numbersOnlyDateOverlap > 0 && (showGregorian || showHebrew)) {
+            TextView firstDateView = showGregorian ? gregorianText : hebrewText;
+            int firstDateHeight = showGregorian ? gregorianH : hebrewH;
+            String firstDateSample = showGregorian
+                    ? getString(R.string.main_activity_text_008)
+                    : getString(R.string.main_activity_text_009);
+            int clockVisibleBottom = Math.round(analogClockDiameter * 0.5f
+                    + analogClockDiameter * 0.455f * 0.72f);
+            int dateVisibleTop = analogClockDiameter - numbersOnlyDateOverlap
+                    + glyphTopInsetPx(firstDateView, firstDateHeight, firstDateSample);
+            int currentVisibleGap = Math.max(0, dateVisibleTop - clockVisibleBottom);
+            numbersOnlyDateOverlap += Math.round(currentVisibleGap / 3f);
+        }
         if (showGregorian) {
             gregorianTopMargin = analogClock ? -numbersOnlyDateOverlap
                     : visualGapMarginPx(
