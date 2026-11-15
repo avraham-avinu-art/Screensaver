@@ -257,29 +257,10 @@
     <string name="settings_activity_text_252" formatted="false">המתג \"הפעלה אוטומטית בטעינה\" נשאר כבוי מפני שלא ניתנה הרשאת \"הצגה מעל אפליקציות אחרות\".</string>
     <string name="settings_activity_text_253" formatted="false">כדי לאפשר הפעלה אוטומטית בנעילה, אפשר במסך הבא לשומר מסך את ההרשאה \"הצגה מעל אפליקציות אחרות\".</string>
     <string name="settings_activity_text_254" formatted="false">ההפעלה האוטומטית בנעילת המכשיר נשארה כבויה מפני שלא ניתנה הרשאת \"הצגה מעל אפליקציות אחרות\".</string>
-    <string name="settings_activity_text_255" formatted="false">הרשאת גישה להתראות</string>
-    <string name="settings_activity_text_256" formatted="false">כדי להציג את נגן המערכת, יש לאפשר גישה להתראות.</string>
-    <string name="settings_activity_text_257" formatted="false">פתיחת הגדרות הרשאה</string>
-    <string name="settings_activity_text_258" formatted="false">הרשאת תצוגה על אפליקציות</string>
-    <string name="settings_activity_text_259" formatted="false">ההרשאה מאפשרת הפעלה אוטומטית של שומר המסך בחיבור לטעינה.</string>
-    <string name="settings_activity_text_260" formatted="false">ההרשאה פעילה — ההפעלה האוטומטית זמינה.</string>
-    <string name="settings_activity_text_261" formatted="false">ההרשאה ניתנה, אך ההפעלה האוטומטית כבויה.</string>
-    <string name="settings_activity_text_262" formatted="false">נדרשת הרשאה להפעלה אוטומטית.</string>
-    <string name="settings_activity_text_263" formatted="false">ההרשאה פעילה</string>
     <string name="settings_activity_text_264" formatted="false">לא ניתן לפתוח את הגדרת ההרשאה. פתח בהגדרות Android את \"הצגה מעל אפליקציות אחרות\".</string>
     <string name="settings_activity_text_265" formatted="false">לא ניתן לפתוח את הגדרות ההתראות במכשיר.</string>
-    <string name="settings_activity_text_266" formatted="false">הרשאה פעילה — המכשיר יינעל בסיום הזמן.</string>
-    <string name="settings_activity_text_267" formatted="false">ההרשאה עדיין לא ניתנה, כיבוי המסך תלוי בהגדרות המכשיר.</string>
-    <string name="settings_activity_text_268" formatted="false">הרשאת מנהל מכשיר פעילה</string>
-    <string name="settings_activity_text_269" formatted="false">הפעל הרשאת מנהל מכשיר</string>
-    <string name="settings_activity_text_270" formatted="false">ההרשאה מאפשרת לנעול את המכשיר בכל מצב בסיום הזמן שנבחר.\n</string>
-    <string name="settings_activity_text_271" formatted="false">ללא ההרשאה, כיבוי המסך לא יהיה לפני הזמן המוגדר במכשיר.</string>
-    <string name="settings_activity_text_272" formatted="false">לא ניתן לפתוח את בקשת הרשאת מנהל המכשיר.</string>
-    <string name="settings_activity_text_273" formatted="false">הרשאת נעילת המסך הופעלה.</string>
     <string name="main_activity_text_001" formatted="false">לחץ שוב על חזרה כדי לצאת</string>
     <string name="main_activity_text_002" formatted="false">הגדרות</string>
-    <string name="main_activity_text_003" formatted="false">יש לאפשר גישה להתראות\nכדי להציג את נגן המערכת</string>
-    <string name="main_activity_text_004" formatted="false">הפעל</string>
     <string name="main_activity_text_005" formatted="false">הבא</string>
     <string name="main_activity_text_006" formatted="false">נגן</string>
     <string name="main_activity_text_007" formatted="false">הקודם</string>
