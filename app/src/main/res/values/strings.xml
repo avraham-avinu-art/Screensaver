@@ -246,7 +246,6 @@
     <string name="settings_activity_text_241" formatted="false">לא זוהה במכשיר כיבוי מסך אוטומטי. בבחירת 1 דק\' או 5 דק\' שומר מסך ייסגר בתום הזמן, אך המסך עצמו עשוי להישאר דולק.</string>
     <string name="settings_activity_text_242" formatted="false">זמן כיבוי המסך שמוגדר במכשיר ארוך מזמן הפעילות שבחרת. בסיום הזמן שומר מסך ייסגר, אך המסך עשוי להישאר דולק עד ש־Android יכבה אותו.</string>
     <string name="settings_activity_text_243" formatted="false">בחירת צבע מותאם אישית</string>
-    <string name="settings_activity_text_244" formatted="false">כוון את המחוונים עד לקבלת הגוון הרצוי</string>
     <string name="settings_activity_text_245" formatted="false">גוון</string>
     <string name="settings_activity_text_246" formatted="false">רוויה</string>
     <string name="settings_activity_text_247" formatted="false">בהירות</string>

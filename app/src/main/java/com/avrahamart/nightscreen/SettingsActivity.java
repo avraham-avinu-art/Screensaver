@@ -1902,6 +1902,8 @@ screenHeader.setVisibility(View.GONE);
         panel.setOrientation(LinearLayout.VERTICAL);
         panel.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         panel.setPadding(dp(14), dp(9), dp(14), dp(9));
+        panel.setClipChildren(false);
+        panel.setClipToPadding(false);
         panel.setBackground(roundOutline(CARD_SURFACE, dp(18), CARD_OUTLINE));
 
         TextView heading = textView(getString(R.string.settings_activity_text_243), 20, ON_SURFACE);
@@ -1912,14 +1914,10 @@ screenHeader.setVisibility(View.GONE);
         LinearLayout sampleRow = new LinearLayout(this);
         sampleRow.setOrientation(LinearLayout.HORIZONTAL);
         sampleRow.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        sampleRow.setGravity(Gravity.CENTER_VERTICAL);
-        TextView sampleHint = textView(getString(R.string.settings_activity_text_244), 15, MUTED);
-        sampleHint.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        sampleRow.addView(sampleHint, new LinearLayout.LayoutParams(0, dp(42), 1f));
+        sampleRow.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         View colorPreview = new View(this);
         LinearLayout.LayoutParams previewParams =
                 new LinearLayout.LayoutParams(dp(44), dp(44));
-        previewParams.leftMargin = dp(10);
         colorPreview.setBackground(makeCustomColorDot(current));
         sampleRow.addView(colorPreview, previewParams);
         LinearLayout.LayoutParams sampleParams = new LinearLayout.LayoutParams(-1, dp(48));
@@ -1947,6 +1945,8 @@ screenHeader.setVisibility(View.GONE);
             LinearLayout control = new LinearLayout(this);
             control.setOrientation(LinearLayout.VERTICAL);
             control.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+            control.setClipChildren(false);
+            control.setClipToPadding(false);
 
             LinearLayout captionRow = new LinearLayout(this);
             captionRow.setOrientation(LinearLayout.HORIZONTAL);
@@ -1965,7 +1965,8 @@ screenHeader.setVisibility(View.GONE);
             bar.setProgress(Math.max(0, Math.min(maxes[i],
                     Math.round(hsv[i] * (i == 0 ? 1f : 100f)))));
             bar.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-            bar.setPadding(dp(4), 0, dp(4), 0);
+            // Reserve room for the circular thumb at both endpoints and vertically.
+            bar.setPadding(dp(12), dp(5), dp(12), dp(5));
             if (Build.VERSION.SDK_INT >= 21) {
                 bar.setProgressTintList(ColorStateList.valueOf(ACCENT));
                 bar.setThumbTintList(ColorStateList.valueOf(ON_SURFACE));
@@ -1982,7 +1983,7 @@ screenHeader.setVisibility(View.GONE);
                 @Override public void onStartTrackingTouch(SeekBar seek) { }
                 @Override public void onStopTrackingTouch(SeekBar seek) { }
             });
-            control.addView(bar, new LinearLayout.LayoutParams(-1, dp(30)));
+            control.addView(bar, new LinearLayout.LayoutParams(-1, dp(42)));
             LinearLayout.LayoutParams controlParams =
                     new LinearLayout.LayoutParams(-1, -2);
             if (i > 0) controlParams.topMargin = dp(1);
