@@ -1,6 +1,7 @@
 package com.avrahamart.nightscreen;
 
 import android.app.Activity;
+import android.app.AppOpsManager;
 import android.app.AlertDialog;
 import android.app.admin.DevicePolicyManager;
 import android.app.NotificationManager;
@@ -35,9 +36,11 @@ public class PermissionsActivity extends Activity {
     private static final int ACCENT = Color.rgb(70, 200, 244);
 
     private TextView notificationStatus;
+    private TextView usageStatus;
     private TextView overlayStatus;
     private TextView adminStatus;
     private Button notificationButton;
+    private Button usageButton;
     private Button overlayButton;
     private Button adminButton;
     private DevicePolicyManager devicePolicyManager;
@@ -111,6 +114,7 @@ public class PermissionsActivity extends Activity {
         cards.setTextDirection(View.TEXT_DIRECTION_RTL);
 
         addNotificationPermissionCard(cards);
+        addUsageAccessPermissionCard(cards);
         addOverlayPermissionCard(cards);
         addDeviceAdminPermissionCard(cards);
 
@@ -133,7 +137,7 @@ public class PermissionsActivity extends Activity {
 
     private void addNotificationPermissionCard(LinearLayout parent) {
         LinearLayout card = makeCard(parent, "הרשאת גישה להתראות",
-                "ההרשאה מאפשרת להציג את נגן המערכת, ונדרשת גם להפעלת שומר המסך באמצעות הגדרת ההפעלה האוטומטית בטעינה דרך הגדרות Android.");
+                "כדי להציג את נגן המערכת, יש לאפשר גישה להתראות.");
         notificationStatus = addStatus(card);
         notificationButton = addPermissionButton(card,
                 "הפעל הרשאת גישה להתראות", v -> {
@@ -147,6 +151,25 @@ public class PermissionsActivity extends Activity {
                                 Toast.LENGTH_LONG).show();
                     }
                     openNotificationAccessSettings();
+                });
+    }
+
+    private void addUsageAccessPermissionCard(LinearLayout parent) {
+        LinearLayout card = makeCard(parent, "הרשאת גישה לנתוני שימוש",
+                "ההרשאה מאפשרת לזהות איזו אפליקציה פעילה בחזית המסך, ונדרשת להפעלת ההגדרה „מניעת הפעלה בזמן שימוש”.");
+        usageStatus = addStatus(card);
+        usageButton = addPermissionButton(card,
+                "הפעל הרשאת גישה לנתוני שימוש", v -> {
+                    if (hasUsageAccess()) {
+                        AppToast.makeText(this,
+                                "כדי לשנות או לבטל את ההרשאה, שנה במסך הבא את גישת נתוני השימוש של שומר מסך.",
+                                Toast.LENGTH_LONG).show();
+                    } else {
+                        AppToast.makeText(this,
+                                "כדי לזהות אפליקציה פעילה בחזית המסך, בחר במסך הבא את „שומר מסך” ואפשר גישה לנתוני שימוש.",
+                                Toast.LENGTH_LONG).show();
+                    }
+                    openUsageAccessSettings();
                 });
     }
 
@@ -263,6 +286,16 @@ public class PermissionsActivity extends Activity {
                 : "הפעל הרשאת גישה להתראות");
         notificationButton.setEnabled(true);
 
+        boolean usageGranted = hasUsageAccess();
+        usageStatus.setText(usageGranted
+                ? "ההרשאה ניתנה — זיהוי אפליקציה פעילה זמין."
+                : "ההרשאה עדיין לא ניתנה.");
+        usageStatus.setTextColor(usageGranted ? ACCENT : MUTED);
+        usageButton.setText(usageGranted
+                ? "ניהול הרשאת גישה לנתוני שימוש"
+                : "הפעל הרשאת גישה לנתוני שימוש");
+        usageButton.setEnabled(true);
+
         boolean overlayGranted = Settings.canDrawOverlays(this);
         overlayStatus.setText(overlayGranted
                 ? "ההרשאה ניתנה — הצגה מעל אפליקציות אחרות פעילה."
@@ -314,6 +347,33 @@ public class PermissionsActivity extends Activity {
                     Toast.LENGTH_LONG).show();
         } catch (Throwable ignored) {
             AppToast.makeText(this, "לא ניתן לפתוח את הגדרות ההתראות במכשיר.",
+                    Toast.LENGTH_LONG).show();
+        }
+        return false;
+    }
+
+    private boolean hasUsageAccess() {
+        try {
+            AppOpsManager manager =
+                    (AppOpsManager) getSystemService(APP_OPS_SERVICE);
+            return manager != null && manager.checkOpNoThrow(
+                    AppOpsManager.OPSTR_GET_USAGE_STATS,
+                    android.os.Process.myUid(), getPackageName())
+                    == AppOpsManager.MODE_ALLOWED;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    private boolean openUsageAccessSettings() {
+        try {
+            startActivity(new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS));
+            return true;
+        } catch (ActivityNotFoundException ignored) {
+            AppToast.makeText(this, "לא ניתן לפתוח את הגדרות הגישה לנתוני שימוש במכשיר.",
+                    Toast.LENGTH_LONG).show();
+        } catch (Throwable ignored) {
+            AppToast.makeText(this, "לא ניתן לפתוח את הגדרות הגישה לנתוני שימוש במכשיר.",
                     Toast.LENGTH_LONG).show();
         }
         return false;
