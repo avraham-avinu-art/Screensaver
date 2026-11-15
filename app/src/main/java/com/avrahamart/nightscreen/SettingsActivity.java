@@ -1076,17 +1076,16 @@ screenHeader.setVisibility(View.GONE);
         if ("system".equals(getString("timeFormat", "24"))) {
             prefs.edit().putString("timeFormat", "24").apply();
         }
-        addCheck(content, getString(R.string.settings_activity_text_122), "nightModeEnabled", false);
         String[] hourNames = new String[24];
         String[] hourValues = new String[24];
         for (int hour = 0; hour < 24; hour++) {
             hourNames[hour] = String.format(Locale.US, "%02d:00", hour);
             hourValues[hour] = String.valueOf(hour);
         }
-        addSpinner(content, getString(R.string.settings_activity_text_268),
-                hourNames, hourValues, "nightModeStartHour");
-        addSpinner(content, getString(R.string.settings_activity_text_269),
-                hourNames, hourValues, "nightModeEndHour");
+        LinearLayout nightModeCard = addCheck(
+                content, getString(R.string.settings_activity_text_122),
+                "nightModeEnabled", false);
+        addNightModeHoursSection(nightModeCard, hourNames, hourValues);
 
         addDiscreteSlider(content, getString(R.string.settings_activity_text_284),
                 new String[]{getString(R.string.settings_activity_text_301),
@@ -1332,11 +1331,10 @@ screenHeader.setVisibility(View.GONE);
                 if ("useAndroidDreamForCharging".equals(key)) return getString(R.string.settings_activity_text_066);
                 if ("settingsButtonAlwaysVisible".equals(key)) return getString(R.string.settings_activity_text_141);
         if ("resetAllSettings".equals(key)) return getString(R.string.settings_activity_text_011);
-                if ("nightModeEnabled".equals(key)) {
+                if ("nightModeEnabled".equals(key)
+                        || "nightModeStartHour".equals(key)
+                        || "nightModeEndHour".equals(key)) {
                     return getString(R.string.settings_activity_text_142);
-                }
-                if ("nightModeStartHour".equals(key) || "nightModeEndHour".equals(key)) {
-                    return getString(R.string.settings_activity_text_289);
                 }
                 if ("batteryProtectionEnabled".equals(key)
                         || "batteryProtectionThreshold".equals(key)) return getString(R.string.settings_activity_text_143);
@@ -1777,7 +1775,8 @@ screenHeader.setVisibility(View.GONE);
         }
     }
 
-    private void addCheck(LinearLayout parent, String label, String key, boolean defaultValue) {
+    private LinearLayout addCheck(
+            LinearLayout parent, String label, String key, boolean defaultValue) {
         LinearLayout card = addSettingCard(parent, label, key);
         LinearLayout row = (LinearLayout) card.getChildAt(0);
         row.setClickable(true);
@@ -1995,6 +1994,139 @@ screenHeader.setVisibility(View.GONE);
         });
         row.setOnClickListener(v -> {
             if (v != toggle) toggle.setChecked(!toggle.isChecked());
+        });
+        return card;
+    }
+
+    private void addNightModeHoursSection(
+            LinearLayout card, String[] hourNames, String[] hourValues) {
+        View divider = new View(this);
+        divider.setBackgroundColor(Color.rgb(54, 78, 102));
+        LinearLayout.LayoutParams dividerParams =
+                new LinearLayout.LayoutParams(-1, dp(1));
+        dividerParams.leftMargin = dp(13);
+        dividerParams.rightMargin = dp(13);
+        dividerParams.topMargin = dp(2);
+        dividerParams.bottomMargin = dp(8);
+        card.addView(divider, dividerParams);
+
+        TextView sectionTitle = textView(
+                getString(R.string.settings_activity_text_289), 16, ON_SURFACE);
+        sectionTitle.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD));
+        sectionTitle.setIncludeFontPadding(false);
+        sectionTitle.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        sectionTitle.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
+        sectionTitle.setTextDirection(View.TEXT_DIRECTION_RTL);
+        LinearLayout.LayoutParams titleParams =
+                new LinearLayout.LayoutParams(-1, dp(25));
+        titleParams.rightMargin = dp(42);
+        titleParams.bottomMargin = dp(4);
+        card.addView(sectionTitle, titleParams);
+
+        addNightModeHourRow(card, getString(R.string.settings_activity_text_268),
+                hourNames, hourValues, "nightModeStartHour");
+        addNightModeHourRow(card, getString(R.string.settings_activity_text_269),
+                hourNames, hourValues, "nightModeEndHour");
+    }
+
+    private void addNightModeHourRow(
+            LinearLayout card, String label, String[] names, String[] values, String key) {
+        final int selectedPosition = selectedIndex(key, values);
+        final int visibleWidth = spinnerVisibleWidthForOption(names[selectedPosition]);
+        final int dropdownWidth = dropdownWidthForOptions(names);
+
+        LinearLayout row = new LinearLayout(this);
+        // LTR child order places the selector on the left and its Hebrew label on the right.
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+
+        Spinner spinner = new Spinner(this);
+        spinner.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        spinner.setContentDescription(label);
+        spinner.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>(
+                this, android.R.layout.simple_spinner_item, names) {
+            @Override public View getView(int position, View convertView,
+                                          android.view.ViewGroup parent) {
+                TextView view = convertView instanceof TextView
+                        ? (TextView) convertView : new TextView(SettingsActivity.this);
+                view.setText(names[position]);
+                styleSpinnerText(view, true, false);
+                return view;
+            }
+
+            @Override public View getDropDownView(int position, View convertView,
+                                                  android.view.ViewGroup parent) {
+                if (parent instanceof View) ((View) parent).setVerticalScrollBarEnabled(false);
+                TextView view = new TextView(SettingsActivity.this);
+                view.setText(names[position]);
+                styleDropdownOptionText(view, position == selectedIndex(key, values));
+                view.setLayoutParams(new android.widget.AbsListView.LayoutParams(-1, dp(39)));
+                return view;
+            }
+        };
+        spinner.setAdapter(adapter);
+        spinner.setPadding(dp(7), 0, dp(7), 0);
+        spinner.setBackgroundColor(Color.TRANSPARENT);
+        spinner.setDropDownWidth(Math.max(dropdownWidth, visibleWidth));
+        if (Build.VERSION.SDK_INT >= 16) {
+            spinner.setPopupBackgroundDrawable(roundOutline(CARD_SURFACE, dp(12), OUTLINE));
+        }
+        spinner.setSelection(selectedPosition, false);
+
+        FrameLayout spinnerContainer = new FrameLayout(this);
+        spinnerContainer.setBackground(roundOutline(ACCENT, dp(12), ACCENT));
+        spinnerContainer.setTag(spinner);
+        spinnerContainer.addView(spinner,
+                new FrameLayout.LayoutParams(-1, -1));
+        View dropdownIcon = makeIconGlyph("chevron", Color.rgb(7, 31, 49));
+        FrameLayout.LayoutParams dropdownIconParams =
+                new FrameLayout.LayoutParams(dp(18), dp(18),
+                        Gravity.LEFT | Gravity.CENTER_VERTICAL);
+        dropdownIconParams.leftMargin = dp(8);
+        spinnerContainer.addView(dropdownIcon, dropdownIconParams);
+
+        LinearLayout.LayoutParams spinnerParams =
+                new LinearLayout.LayoutParams(visibleWidth, dp(40));
+        row.addView(spinnerContainer, spinnerParams);
+
+        TextView rowLabel = textView(label, 15, ON_SURFACE);
+        rowLabel.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        rowLabel.setIncludeFontPadding(false);
+        rowLabel.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        rowLabel.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
+        rowLabel.setTextDirection(View.TEXT_DIRECTION_RTL);
+        LinearLayout.LayoutParams labelParams =
+                new LinearLayout.LayoutParams(0, dp(40), 1f);
+        labelParams.leftMargin = dp(9);
+        row.addView(rowLabel, labelParams);
+
+        LinearLayout.LayoutParams rowParams =
+                new LinearLayout.LayoutParams(-1, dp(42));
+        rowParams.rightMargin = dp(42);
+        rowParams.leftMargin = dp(5);
+        card.addView(row, rowParams);
+
+        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            private boolean initialSelectionPending = true;
+            private int lastHandledPosition = selectedPosition;
+
+            @Override public void onItemSelected(AdapterView<?> parent, View view,
+                                                 int position, long id) {
+                if (initialSelectionPending) {
+                    initialSelectionPending = false;
+                    if (position == selectedPosition) {
+                        lastHandledPosition = position;
+                        return;
+                    }
+                }
+                if (position == lastHandledPosition) return;
+                lastHandledPosition = position;
+                persistOption(key, values[position]);
+            }
+
+            @Override public void onNothingSelected(AdapterView<?> parent) {}
         });
     }
 
