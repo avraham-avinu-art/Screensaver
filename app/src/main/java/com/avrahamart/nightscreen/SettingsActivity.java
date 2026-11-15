@@ -1080,9 +1080,9 @@ screenHeader.setVisibility(View.GONE);
             hourNames[hour] = String.format(Locale.US, "%02d:00", hour);
             hourValues[hour] = String.valueOf(hour);
         }
-        addInlineHourSelector(content, getString(R.string.settings_activity_text_268),
+        addSpinner(content, getString(R.string.settings_activity_text_268),
                 hourNames, hourValues, "nightModeStartHour");
-        addInlineHourSelector(content, getString(R.string.settings_activity_text_269),
+        addSpinner(content, getString(R.string.settings_activity_text_269),
                 hourNames, hourValues, "nightModeEndHour");
 
         addDiscreteSlider(content, getString(R.string.settings_activity_text_284),
@@ -1270,8 +1270,12 @@ screenHeader.setVisibility(View.GONE);
                 if ("useAndroidDreamForCharging".equals(key)) return getString(R.string.settings_activity_text_066);
                 if ("settingsButtonAlwaysVisible".equals(key)) return getString(R.string.settings_activity_text_141);
         if ("resetAllSettings".equals(key)) return getString(R.string.settings_activity_text_011);
-                if ("nightModeEnabled".equals(key) || "nightModeStartHour".equals(key)
-                        || "nightModeEndHour".equals(key)) return getString(R.string.settings_activity_text_142);
+                if ("nightModeEnabled".equals(key)) {
+                    return getString(R.string.settings_activity_text_142);
+                }
+                if ("nightModeStartHour".equals(key) || "nightModeEndHour".equals(key)) {
+                    return getString(R.string.settings_activity_text_289);
+                }
                 if ("batteryProtectionEnabled".equals(key)
                         || "batteryProtectionThreshold".equals(key)) return getString(R.string.settings_activity_text_143);
                 if ("pauseWhenExcludedAppActive".equals(key)
@@ -1364,8 +1368,7 @@ screenHeader.setVisibility(View.GONE);
                     currentCategory == CATEGORY_ACTIVITY
                             && getString(R.string.settings_activity_text_134).equals(groupTitle));
         } else if (currentSettingsGroup.getChildCount() > 1
-                && !"idleWaitSeconds".equals(key)
-                && !"nightModeEndHour".equals(key)) {
+                && !"idleWaitSeconds".equals(key)) {
             View divider = new View(this);
             divider.setBackgroundColor(Color.rgb(54, 78, 102));
             LinearLayout.LayoutParams dividerParams =
@@ -1379,12 +1382,8 @@ screenHeader.setVisibility(View.GONE);
         card.setOrientation(LinearLayout.VERTICAL);
         card.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         card.setTextDirection(View.TEXT_DIRECTION_RTL);
-        int cardTopPadding = "idleWaitSeconds".equals(key) ? dp(2)
-                : ("nightModeEndHour".equals(key) ? dp(2)
-                : "nightModeStartHour".equals(key) ? dp(8) : dp(12));
-        int cardBottomPadding = "autoStartOnIdle".equals(key) ? dp(7)
-                : (("nightModeStartHour".equals(key) || "nightModeEndHour".equals(key))
-                ? dp(4) : dp(14));
+        int cardTopPadding = "idleWaitSeconds".equals(key) ? dp(2) : dp(12);
+        int cardBottomPadding = "autoStartOnIdle".equals(key) ? dp(7) : dp(14);
         card.setPadding(dp(7), cardTopPadding, dp(7), cardBottomPadding);
         card.setClipChildren(false);
         card.setClipToPadding(false);
@@ -2893,109 +2892,6 @@ screenHeader.setVisibility(View.GONE);
         badge.addView(graphic, graphicParams);
         graphic.setContentDescription(settingLabel);
         return badge;
-    }
-
-    private void addInlineHourSelector(LinearLayout parent, String label,
-                                       String[] names, String[] values, String key) {
-        LinearLayout card = addSettingCard(parent, label, key);
-        LinearLayout header = (LinearLayout) card.getChildAt(0);
-        card.setGravity(Gravity.RIGHT);
-        header.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        header.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        if (header.getChildCount() > 1) header.removeViewAt(header.getChildCount() - 1);
-        LinearLayout textBlock = (LinearLayout) header.getChildAt(0);
-        if (textBlock.getChildCount() > 1) textBlock.removeViewAt(1);
-        TextView title = (TextView) textBlock.getChildAt(0);
-        title.setText(label);
-        title.setTextSize(15);
-        title.setSingleLine(true);
-        title.setLayoutParams(new LinearLayout.LayoutParams(-2, -2));
-        LinearLayout.LayoutParams textParams =
-                (LinearLayout.LayoutParams) textBlock.getLayoutParams();
-        textParams.width = -2;
-        textParams.weight = 0f;
-        textParams.rightMargin = 0;
-        textBlock.setLayoutParams(textParams);
-        LinearLayout.LayoutParams compactHeaderParams =
-                new LinearLayout.LayoutParams(-2, -2);
-        compactHeaderParams.gravity = Gravity.RIGHT;
-        header.setLayoutParams(compactHeaderParams);
-        if ("nightModeStartHour".equals(key)) {
-            TextView hourHeading = textView(
-                    getString(R.string.settings_activity_text_289), 15, ACCENT);
-            hourHeading.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD));
-            hourHeading.setIncludeFontPadding(false);
-            hourHeading.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-            hourHeading.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
-            hourHeading.setTextDirection(View.TEXT_DIRECTION_RTL);
-            LinearLayout.LayoutParams hourHeadingParams =
-                    new LinearLayout.LayoutParams(-2, dp(24));
-            hourHeadingParams.gravity = Gravity.RIGHT;
-            hourHeadingParams.bottomMargin = dp(3);
-            card.addView(hourHeading, 0, hourHeadingParams);
-        }
-
-        int selected = selectedIndex(key, values);
-        Spinner spinner = new Spinner(this);
-        spinner.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        spinner.setContentDescription(label);
-        ArrayAdapter<String> adapter = new ArrayAdapter<String>(
-                this, android.R.layout.simple_spinner_item, names) {
-            @Override public View getView(int position, View convertView,
-                                          android.view.ViewGroup parent) {
-                TextView view = convertView instanceof TextView
-                        ? (TextView) convertView : new TextView(SettingsActivity.this);
-                view.setText(names[position]);
-                styleSpinnerText(view, true, false);
-                return view;
-            }
-            @Override public View getDropDownView(int position, View convertView,
-                                                  android.view.ViewGroup parent) {
-                TextView view = new TextView(SettingsActivity.this);
-                view.setText(names[position]);
-                styleDropdownOptionText(view, position == selectedIndex(key, values));
-                view.setLayoutParams(new android.widget.AbsListView.LayoutParams(-1, dp(39)));
-                return view;
-            }
-        };
-        spinner.setAdapter(adapter);
-        spinner.setPadding(dp(4), 0, dp(4), 0);
-        spinner.setBackgroundColor(Color.TRANSPARENT);
-        spinner.setDropDownWidth(dropdownWidthForOptions(names));
-        if (Build.VERSION.SDK_INT >= 16) {
-            spinner.setPopupBackgroundDrawable(roundOutline(CARD_SURFACE, dp(12), OUTLINE));
-        }
-        spinner.setSelection(selected, false);
-
-        FrameLayout selector = new FrameLayout(this);
-        selector.setBackground(roundOutline(ACCENT, dp(10), ACCENT));
-        selector.addView(spinner, new FrameLayout.LayoutParams(-1, -1));
-        View chevron = makeIconGlyph("chevron", Color.rgb(7, 31, 49));
-        FrameLayout.LayoutParams chevronParams =
-                new FrameLayout.LayoutParams(dp(16), dp(16),
-                        Gravity.LEFT | Gravity.CENTER_VERTICAL);
-        chevronParams.leftMargin = dp(5);
-        selector.addView(chevron, chevronParams);
-        LinearLayout.LayoutParams selectorParams =
-                new LinearLayout.LayoutParams(dp(112), dp(40));
-        selectorParams.rightMargin = dp(8);
-        header.addView(selector, selectorParams);
-
-        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            private boolean initialSelectionPending = true;
-            private int lastPosition = selected;
-            @Override public void onItemSelected(AdapterView<?> parentView, View view,
-                                                 int position, long id) {
-                if (initialSelectionPending) {
-                    initialSelectionPending = false;
-                    return;
-                }
-                if (position == lastPosition) return;
-                lastPosition = position;
-                persistOption(key, values[position]);
-            }
-            @Override public void onNothingSelected(AdapterView<?> parentView) { }
-        });
     }
 
     private void addSpinner(LinearLayout parent, String label, String[] names,
