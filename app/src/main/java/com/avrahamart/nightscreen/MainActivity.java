@@ -509,11 +509,6 @@ public class MainActivity extends Activity {
         super.onResume();
         mainActivityResumed = true;
         mainActivityPausedByDeviceLock = false;
-        if (shouldPauseForExcludedForegroundApp()) {
-            mainActivityResumed = false;
-            finish();
-            return;
-        }
         String disabledFeatures =
                 PermissionDependencySync.disableFeaturesWithoutPermissions(this);
         if (!disabledFeatures.isEmpty()) {
@@ -3569,61 +3564,6 @@ public class MainActivity extends Activity {
         if (mediaSeekBar != null) mediaSeekBar.setVisibility(visibility);
         if (mediaCurrentText != null) mediaCurrentText.setVisibility(visibility);
         if (mediaTotalText != null) mediaTotalText.setVisibility(visibility);
-    }
-
-    private boolean shouldPauseForExcludedForegroundApp() {
-        if (!getBool("pauseWhenExcludedAppActive", false)) return false;
-        Set<String> excluded = new HashSet<>(prefs.getStringSet(
-                "excludedForegroundPackages", Collections.emptySet()));
-        if (excluded.isEmpty()) return false;
-        try {
-            AppOpsManager appOps = (AppOpsManager) getSystemService(APP_OPS_SERVICE);
-            if (appOps == null || appOps.checkOpNoThrow(
-                    AppOpsManager.OPSTR_GET_USAGE_STATS,
-                    android.os.Process.myUid(), getPackageName()) != AppOpsManager.MODE_ALLOWED) {
-                return false;
-            }
-            UsageStatsManager usage =
-                    (UsageStatsManager) getSystemService(USAGE_STATS_SERVICE);
-            if (usage == null) return false;
-            long nowMs = System.currentTimeMillis();
-            UsageEvents events = usage.queryEvents(nowMs - 24L * 60L * 60L * 1000L, nowMs);
-            if (events == null) return false;
-            UsageEvents.Event event = new UsageEvents.Event();
-            String lastTopPackage = null;
-            long lastTopEventTime = 0L;
-            boolean lastTopStillActive = false;
-            while (events.hasNextEvent()) {
-                events.getNextEvent(event);
-                int type = event.getEventType();
-                String packageName = event.getPackageName();
-                if (packageName == null || packageName.equals(getPackageName())) continue;
-                boolean foregroundEvent = type == UsageEvents.Event.MOVE_TO_FOREGROUND
-                        || (Build.VERSION.SDK_INT >= 29
-                        && type == UsageEvents.Event.ACTIVITY_RESUMED);
-                boolean backgroundEvent = type == UsageEvents.Event.MOVE_TO_BACKGROUND
-                        || (Build.VERSION.SDK_INT >= 29
-                        && (type == UsageEvents.Event.ACTIVITY_PAUSED
-                        || type == UsageEvents.Event.ACTIVITY_STOPPED));
-                if (foregroundEvent) {
-                    lastTopPackage = packageName;
-                    lastTopEventTime = event.getTimeStamp();
-                    lastTopStillActive = true;
-                } else if (backgroundEvent && packageName.equals(lastTopPackage)) {
-                    long eventAge = Math.max(0L, nowMs - event.getTimeStamp());
-                    // A pause in the last few seconds can be caused by this very
-                    // screensaver Activity opening over the previously visible app.
-                    lastTopStillActive = eventAge <= 3_000L;
-                    lastTopEventTime = event.getTimeStamp();
-                    if (!lastTopStillActive) lastTopPackage = null;
-                }
-            }
-            return lastTopStillActive && lastTopPackage != null
-                    && excluded.contains(lastTopPackage)
-                    && nowMs - lastTopEventTime <= 10_000L;
-        } catch (Throwable ignored) {
-            return false;
-        }
     }
 
     private boolean hasNotificationAccess() {
