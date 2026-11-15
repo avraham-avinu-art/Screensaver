@@ -773,9 +773,13 @@ public class MainActivity extends Activity {
                 }
             }
             cp.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
-            clockBlock.setTranslationX(stage.getWidth()
-                    * Math.max(-0.20f, Math.min(0.20f,
-                    getInt("clockHorizontalOffset", 0) / 100f)));
+            float clockOffset = Math.max(-1f, Math.min(1f,
+                    getInt("clockHorizontalOffset", 0) / 20f));
+            int clockContentWidth = clockBlock.getWidth() > 0
+                    ? clockBlock.getWidth() : clockBlock.getMeasuredWidth();
+            float clockMaxOffset = Math.max(0f,
+                    (stage.getWidth() - clockContentWidth) / 2f);
+            clockBlock.setTranslationX(clockOffset * clockMaxOffset);
             if ("upper".equals(clockPos)) {
                 // Place the center of the clock line at exactly one quarter of the
                 // screen height, independent of the clock/date block's total height.
@@ -789,9 +793,13 @@ public class MainActivity extends Activity {
             clockBlock.setLayoutParams(cp);
 
             FrameLayout.LayoutParams mp = (FrameLayout.LayoutParams) mediaHolder.getLayoutParams();
-            mediaHolder.setTranslationX(stage.getWidth()
-                    * Math.max(-0.20f, Math.min(0.20f,
-                    getInt("playerHorizontalOffset", 0) / 100f)));
+            float playerOffset = Math.max(-1f, Math.min(1f,
+                    getInt("playerHorizontalOffset", 0) / 20f));
+            int playerContentWidth = mediaHolder.getWidth() > 0
+                    ? mediaHolder.getWidth() : mediaHolder.getMeasuredWidth();
+            float playerMaxOffset = Math.max(0f,
+                    (stage.getWidth() - playerContentWidth) / 2f);
+            mediaHolder.setTranslationX(playerOffset * playerMaxOffset);
             if ("bottom".equals(playerPos)) {
                 // Let FrameLayout anchor the entire holder to the real bottom.
                 // This avoids the first-layout race where measured height is still stale
