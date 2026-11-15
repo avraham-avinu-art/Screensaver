@@ -2318,13 +2318,23 @@ screenHeader.setVisibility(View.GONE);
                 AnalogClockView dialPreview = new AnalogClockView(this);
                 dialPreview.setTime(10, 10);
                 dialPreview.setColors(ON_SURFACE, CARD_SURFACE);
+                boolean enlargedNumbersPreview = "numbers_only".equals(values[i]);
                 dialPreview.setDialStyle(values[i]);
-                // Keep the three dial-style previews at the same diameter.
+                int previewDiameter = enlargedNumbersPreview ? 80 : 60;
+                if (enlargedNumbersPreview) {
+                    previewContent.setClipChildren(false);
+                    previewContent.setClipToPadding(false);
+                }
                 previewContent.addView(dialPreview,
-                        new LinearLayout.LayoutParams(dp(60), dp(60)));
+                        new LinearLayout.LayoutParams(dp(previewDiameter),
+                                dp(previewDiameter)));
 
                 option.setGravity(Gravity.CENTER);
                 option.setTextSize(12);
+                // Keep the numbers-only caption aligned with its established preview position.
+                if (enlargedNumbersPreview) {
+                    option.setTranslationY(-dp(12));
+                }
                 previewContent.addView(option,
                         new LinearLayout.LayoutParams(-1, dp(22)));
                 tile.addView(previewContent, new FrameLayout.LayoutParams(-1, -1));
