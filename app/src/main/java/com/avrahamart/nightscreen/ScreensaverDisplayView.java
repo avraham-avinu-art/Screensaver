@@ -618,9 +618,8 @@ public final class ScreensaverDisplayView extends LinearLayout {
         int effectiveClockSize = effectiveClockDateSize(fontFamily, clockDateSize);
         boolean analogClock = "analog".equals(getString("clockDisplayMode", "digital"));
         String analogDialStyle = getString("clockDialStyle", "classic");
-        // Keep numbers-only slightly larger, while reducing its previous oversized diameter.
         float analogSizeMultiplier = "numbers_only".equals(analogDialStyle)
-                ? 2.53f : 2.25f;
+                ? 2.85f : 2.25f;
         int analogClockDiameter = Math.max(dp(170),
                 dp(Math.round(effectiveClockSize * analogSizeMultiplier)));
         if (analogClockView != null) {
@@ -673,12 +672,12 @@ public final class ScreensaverDisplayView extends LinearLayout {
         int dateToDateGapPx = dp(visualGapDp(effectiveClockSize) / 2);
         int gregorianTopMargin = 0;
         int hebrewTopMargin = 0;
-        // In the numbers-only dial there are no outer tick marks or rim. The
-        // visible hands end well inside the view bounds, so overlap the
-        // transparent lower part of the view to bring the date directly below
-        // the actual clock artwork.
+        // The numbers-only hands end at 72% of the dial radius, while the
+        // other styles' outer tick marks reach 93%. Reduce the transparent
+        // bottom overlap by that exact difference so the visible clock-to-date
+        // gap matches the two dial styles that use outer tick marks.
         int numbersOnlyDateOverlap = analogClock && "numbers_only".equals(analogDialStyle)
-                ? Math.round(analogClockDiameter * 0.17f) : 0;
+                ? Math.round(analogClockDiameter * 0.455f * (0.93f - 0.72f)) : 0;
         if (showGregorian) {
             gregorianTopMargin = analogClock ? -numbersOnlyDateOverlap
                     : visualGapMarginPx(

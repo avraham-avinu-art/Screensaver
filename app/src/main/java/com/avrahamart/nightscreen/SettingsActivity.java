@@ -2320,7 +2320,7 @@ screenHeader.setVisibility(View.GONE);
                 dialPreview.setColors(ON_SURFACE, CARD_SURFACE);
                 boolean enlargedNumbersPreview = "numbers_only".equals(values[i]);
                 dialPreview.setDialStyle(values[i]);
-                int previewDiameter = enlargedNumbersPreview ? 80 : 60;
+                int previewDiameter = enlargedNumbersPreview ? 90 : 60;
                 if (enlargedNumbersPreview) {
                     previewContent.setClipChildren(false);
                     previewContent.setClipToPadding(false);
