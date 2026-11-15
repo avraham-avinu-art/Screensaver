@@ -2002,6 +2002,8 @@ screenHeader.setVisibility(View.GONE);
         actions.setOrientation(LinearLayout.HORIZONTAL);
         actions.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         actions.setGravity(Gravity.CENTER_VERTICAL);
+        // Keep the outer edges of both action buttons aligned with the SeekBar track.
+        actions.setPadding(dp(12), 0, dp(12), 0);
         TextView save = textView(getString(R.string.settings_activity_text_079), 16, Color.rgb(7, 31, 49));
         save.setGravity(Gravity.CENTER);
         save.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD));
