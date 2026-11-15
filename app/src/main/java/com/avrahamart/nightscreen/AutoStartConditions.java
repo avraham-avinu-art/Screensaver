@@ -12,7 +12,6 @@ import android.content.pm.ResolveInfo;
 import android.os.Build;
 import android.os.SystemClock;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
