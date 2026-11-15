@@ -446,13 +446,13 @@
     <string name="settings_activity_text_270" formatted="false">הפעלה בחוסר פעילות</string>
     <string name="settings_activity_text_271" formatted="false">זמן חוסר פעילות</string>
     <string name="settings_activity_text_272" formatted="false">מעירה את המסך ומציגה את שומר המסך בכל מעבר שיר בזמן טעינה, כאשר המסך כבוי. נדרש להפעיל את נגן המדיה.</string>
-    <string name="settings_activity_text_273" formatted="false">מפעילה את שומר המסך לאחר שלא זוהתה נגיעה במסך במשך הזמן שנבחר, ורק כאשר מסך הבית פתוח.</string>
+    <string name="settings_activity_text_273" formatted="false">מפעילה את שומר המסך כאשר מסך הבית נשאר בחזית במשך הזמן שנבחר. הבדיקה מבוססת על מצב האפליקציות הפתוחות בלבד, ללא מעקב אחר נגיעות.</string>
     <string name="settings_activity_text_274" formatted="false">מחייבת הצגת נגן מדיה פעיל והרשאת גישה להתראות.</string>
-    <string name="settings_activity_text_275" formatted="false">דורשת הפעלת שירות הנגישות של שומר מסך כדי לזהות נגיעות ושינויים בחלונות.</string>
+    <string name="settings_activity_text_275" formatted="false">משך הזמן שבו מסך הבית נשאר בחזית לפני הפעלת שומר המסך.</string>
     <string name="settings_activity_text_276" formatted="false">ההפעלה דרך Android עדיין אינה פעילה או ששומר מסך זה אינו נבחר בהגדרות המערכת. פתח את הגדרות שומר המסך של Android, הפעל אותו, בחר בשומר המסך של האפליקציה והגדר הפעלה בזמן טעינה.</string>
     <string name="settings_activity_text_277" formatted="false">כדי להדליק את המסך במעבר שיר, יש להפעיל תחילה את הצגת נגן המדיה.</string>
     <string name="settings_activity_text_278" formatted="false">כדי לזהות מעבר שיר, יש לאפשר תחילה גישה להתראות.</string>
-    <string name="settings_activity_text_279" formatted="false">כדי לזהות חוסר פעילות, יש להפעיל את שירות הנגישות של שומר מסך במסך הבא.</string>
+    <string name="settings_activity_text_279" formatted="false">כדי להפעיל שומר מסך בחוסר פעילות, יש לאפשר גישה לנתוני השימוש.</string>
     <string name="settings_activity_text_280" formatted="false">חיפוש אפליקציה או חבילה</string>
     <string name="settings_activity_text_281" formatted="false">לא נמצאו אפליקציות מתאימות.</string>
     <string name="settings_activity_text_282" formatted="false">כדי להפעיל תכונה אוטומטית כשהאפליקציה ברקע, יש לאפשר לשומר מסך הרשאת תצוגה מעל אפליקציות אחרות.</string>
@@ -465,6 +465,6 @@
     <string name="permissions_activity_text_049" formatted="false">פעיל</string>
     <string name="permissions_activity_text_050" formatted="false">לא פעיל</string>
     <string name="permissions_activity_text_051" formatted="false">פתיחת הגדרות נגישות</string>
-    <string name="permission_sync_text_007" formatted="false">ההפעלה בחוסר פעילות כובתה מפני שחסרה הרשאת נגישות או הרשאת תצוגה מעל אפליקציות.</string>
+    <string name="permission_sync_text_007" formatted="false">ההפעלה בחוסר פעילות כובתה מפני שחסרה הרשאת נתוני שימוש או הרשאת תצוגה מעל אפליקציות.</string>
     <string name="permission_sync_text_008" formatted="false">הדלקה במעבר שיר כובתה מפני שחסרה גישה להתראות או הרשאת תצוגה מעל אפליקציות.</string>
 </resources>

@@ -120,10 +120,22 @@ public class SettingsActivity extends Activity {
             window.setStatusBarContrastEnforced(false);
             window.setNavigationBarContrastEnforced(false);
         }
-        // Android 15+ enforces edge-to-edge for this target SDK. Keep the app
-        // canvas behind the system bars and reserve their insets exactly once.
+        // Apply system-bar space before the first content frame to prevent a later layout jump.
+        int initialTopInset = 0;
+        int initialBottomInset = 0;
         if (Build.VERSION.SDK_INT >= 30) {
             window.setDecorFitsSystemWindows(false);
+            try {
+                android.view.WindowMetrics metrics = getWindowManager().getCurrentWindowMetrics();
+                android.view.WindowInsets initialInsets = metrics.getWindowInsets();
+                android.graphics.Insets bars = initialInsets.getInsets(
+                        android.view.WindowInsets.Type.statusBars()
+                                | android.view.WindowInsets.Type.navigationBars());
+                initialTopInset = bars.top;
+                initialBottomInset = bars.bottom;
+            } catch (Throwable ignored) {
+                // The insets listener below remains a fallback for unusual window managers.
+            }
         }
         window.getDecorView().setSystemUiVisibility(0);
 
@@ -134,7 +146,8 @@ public class SettingsActivity extends Activity {
         root.setBackgroundColor(SURFACE);
         root.setClipChildren(false);
         root.setClipToPadding(false);
-        root.setPadding(dp(10), dp(2), dp(10), 0);
+        root.setPadding(dp(10), dp(2) + initialTopInset,
+                dp(10), initialBottomInset);
         if (Build.VERSION.SDK_INT >= 30) {
             root.setOnApplyWindowInsetsListener((view, insets) -> {
                 android.graphics.Insets systemBars = insets.getInsets(
@@ -151,13 +164,6 @@ public class SettingsActivity extends Activity {
                 builder.setInsets(bars, android.graphics.Insets.NONE);
                 builder.setInsetsIgnoringVisibility(bars, android.graphics.Insets.NONE);
                 return builder.build();
-            });
-        } else if (Build.VERSION.SDK_INT >= 21) {
-            root.setOnApplyWindowInsetsListener((view, insets) -> {
-                int topInset = insets.getSystemWindowInsetTop();
-                int bottomInset = insets.getSystemWindowInsetBottom();
-                view.setPadding(dp(10), dp(2) + topInset, dp(10), bottomInset);
-                return insets.consumeSystemWindowInsets();
             });
         }
 
@@ -591,11 +597,11 @@ screenHeader.setVisibility(View.GONE);
                 new String[]{"חצי דק׳", "1 דק׳", "2 דק׳", "5 דק׳", "10 דק׳"},
                 new String[]{"30", "60", "120", "300", "600"}, "idleWaitSeconds");
         addCheck(content, getString(R.string.settings_activity_text_068), "noShutdownWhileCharging", false);
-        addCheck(content, getString(R.string.settings_activity_text_266), "wakeOnTrackChange", false);
         addSegmentedChoices(content, getString(R.string.settings_activity_text_069),
                 new String[]{getString(R.string.settings_activity_text_070), getString(R.string.settings_activity_text_071), getString(R.string.settings_activity_text_072), getString(R.string.settings_activity_text_073)},
                 new String[]{"off", "percent", "icon", "icon_percent"},
                 "chargingBatteryDisplayMode");
+        addCheck(content, getString(R.string.settings_activity_text_266), "wakeOnTrackChange", false);
     }
 
     private void addExcludedAppsPicker(LinearLayout parent) {
@@ -891,6 +897,8 @@ screenHeader.setVisibility(View.GONE);
         addCheck(content, getString(R.string.settings_activity_text_127),
                 "useAndroidDreamForCharging", getBool("useAndroidDreamForCharging", false));
 
+        addCheck(content, getString(R.string.settings_activity_text_067),
+                "autoStartOnlyWhenLocked", false);
         addCheck(content, getString(R.string.settings_activity_text_129),
                 "preventAutoStartDuringUse", false);
         addCheck(content, getString(R.string.settings_activity_text_128),
@@ -902,8 +910,6 @@ screenHeader.setVisibility(View.GONE);
                 addExcludedAppsPicker((LinearLayout) exclusionCard);
             }
         }
-        addCheck(content, getString(R.string.settings_activity_text_067),
-                "autoStartOnlyWhenLocked", false);
         addCheck(content, getString(R.string.settings_activity_text_130),
                 "settingsButtonAlwaysVisible", false);
     }
@@ -1044,7 +1050,10 @@ screenHeader.setVisibility(View.GONE);
             addSettingsGroupHeading(currentSettingsGroup, groupTitle,
                     currentCategory == CATEGORY_ACTIVITY
                             && getString(R.string.settings_activity_text_134).equals(groupTitle));
-        } else if (currentSettingsGroup.getChildCount() > 1) {
+        } else if (currentSettingsGroup.getChildCount() > 1
+                && !"idleWaitSeconds".equals(key)
+                && !"nightModeStartHour".equals(key)
+                && !"nightModeEndHour".equals(key)) {
             View divider = new View(this);
             divider.setBackgroundColor(Color.rgb(54, 78, 102));
             LinearLayout.LayoutParams dividerParams =
@@ -1058,7 +1067,8 @@ screenHeader.setVisibility(View.GONE);
         card.setOrientation(LinearLayout.VERTICAL);
         card.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         card.setTextDirection(View.TEXT_DIRECTION_RTL);
-        card.setPadding(dp(7), dp(12), dp(7), dp(14));
+        card.setPadding(dp(7), "idleWaitSeconds".equals(key) ? dp(5) : dp(12),
+                dp(7), dp(14));
         card.setClipChildren(false);
         card.setClipToPadding(false);
         card.setBackgroundColor(Color.TRANSPARENT);
@@ -1546,14 +1556,14 @@ screenHeader.setVisibility(View.GONE);
                     openBackgroundActivityStartPermissionSettings();
                 }
             } else if ("autoStartOnIdle".equals(key)) {
-                if (checked && !isIdleAccessibilityEnabled()) {
+                if (checked && !hasUsageAccess()) {
                     prefs.edit().putBoolean(key, false).apply();
                     toggle.setChecked(false);
                     openingSystemSettingsForAutoStart = true;
                     AppToast.makeText(this,
                             getString(R.string.settings_activity_text_279),
                             Toast.LENGTH_LONG).show();
-                    try { startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)); }
+                    try { startActivity(new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)); }
                     catch (Throwable ignored) { }
                 } else if (checked && !hasBackgroundActivityStartPermission()) {
                     prefs.edit().putBoolean(key, false).apply();
@@ -1563,6 +1573,8 @@ screenHeader.setVisibility(View.GONE);
                             getString(R.string.settings_activity_text_282),
                             Toast.LENGTH_LONG).show();
                     openBackgroundActivityStartPermissionSettings();
+                } else {
+                    LockScreenMonitorService.sync(this);
                 }
             } else if ("showPlayer".equals(key)) {
                 if (checked && !hasNotificationAccess()) {
@@ -1763,7 +1775,7 @@ screenHeader.setVisibility(View.GONE);
                 dialPreview.setTime(10, 10);
                 dialPreview.setColors(ON_SURFACE, CARD_SURFACE);
                 dialPreview.setDialStyle(values[i]);
-                int previewDiameter = "numbers_only".equals(values[i]) ? 72 : 60;
+                int previewDiameter = 60;
                 previewContent.addView(dialPreview,
                         new LinearLayout.LayoutParams(dp(previewDiameter),
                                 dp(previewDiameter)));
@@ -2324,10 +2336,6 @@ screenHeader.setVisibility(View.GONE);
         NightScreenApplication.syncChargerReceiver(this);
     }
 
-    private boolean isIdleAccessibilityEnabled() {
-        return IdleScreensaverAccessibilityService.isEnabled(this);
-    }
-
     private boolean hasBackgroundActivityStartPermission() {
         return Build.VERSION.SDK_INT < 29 || Settings.canDrawOverlays(this);
     }
@@ -2555,6 +2563,7 @@ screenHeader.setVisibility(View.GONE);
         LinearLayout card = addSettingCard(parent, label, key);
         LinearLayout header = (LinearLayout) card.getChildAt(0);
         header.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        header.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         if (header.getChildCount() > 1) header.removeViewAt(header.getChildCount() - 1);
         LinearLayout textBlock = (LinearLayout) header.getChildAt(0);
         if (textBlock.getChildCount() > 1) textBlock.removeViewAt(1);
@@ -2562,11 +2571,12 @@ screenHeader.setVisibility(View.GONE);
         title.setText(label);
         title.setTextSize(15);
         title.setSingleLine(true);
+        title.setLayoutParams(new LinearLayout.LayoutParams(-2, -2));
         LinearLayout.LayoutParams textParams =
                 (LinearLayout.LayoutParams) textBlock.getLayoutParams();
-        textParams.width = 0;
-        textParams.weight = 1f;
-        textParams.rightMargin = dp(6);
+        textParams.width = -2;
+        textParams.weight = 0f;
+        textParams.rightMargin = 0;
         textBlock.setLayoutParams(textParams);
 
         int selected = selectedIndex(key, values);
@@ -2595,7 +2605,10 @@ screenHeader.setVisibility(View.GONE);
         spinner.setAdapter(adapter);
         spinner.setPadding(dp(4), 0, dp(4), 0);
         spinner.setBackgroundColor(Color.TRANSPARENT);
-        spinner.setDropDownWidth(dp(128));
+        spinner.setDropDownWidth(dropdownWidthForOptions(names));
+        if (Build.VERSION.SDK_INT >= 16) {
+            spinner.setPopupBackgroundDrawable(roundOutline(CARD_SURFACE, dp(12), OUTLINE));
+        }
         spinner.setSelection(selected, false);
 
         FrameLayout selector = new FrameLayout(this);
@@ -2607,7 +2620,10 @@ screenHeader.setVisibility(View.GONE);
                         Gravity.LEFT | Gravity.CENTER_VERTICAL);
         chevronParams.leftMargin = dp(5);
         selector.addView(chevron, chevronParams);
-        header.addView(selector, new LinearLayout.LayoutParams(dp(112), dp(40)));
+        LinearLayout.LayoutParams selectorParams =
+                new LinearLayout.LayoutParams(dp(112), dp(40));
+        selectorParams.rightMargin = dp(8);
+        header.addView(selector, selectorParams);
 
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             private boolean initialSelectionPending = true;
