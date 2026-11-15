@@ -1,8 +1,6 @@
 package com.avrahamart.nightscreen;
 
 import android.app.Activity;
-import android.app.ActivityOptions;
-import android.app.PendingIntent;
 import android.animation.ObjectAnimator;
 import android.app.NotificationManager;
 import android.app.AppOpsManager;
@@ -18,7 +16,6 @@ import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.Drawable;
 import android.text.Layout;
 import android.text.TextUtils;
-import android.content.ActivityNotFoundException;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -3839,14 +3836,7 @@ public class MainActivity extends Activity {
         } catch (Throwable ignored) {}
     }
 
-    private TextView mediaButton(String symbol) {
-        TextView v = textView(symbol, 24, Color.WHITE);
-        v.setGravity(Gravity.CENTER);
-        v.setClickable(true);
-        v.setTypeface(Typeface.DEFAULT_BOLD);
-        return v;
-    }
-
+    
     private ImageView mediaIconButton(int drawableRes, String description) {
         ImageView v = new ImageView(this);
         v.setImageResource(drawableRes);

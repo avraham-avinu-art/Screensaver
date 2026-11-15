@@ -15,10 +15,8 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
-import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
-import android.graphics.drawable.Icon;
 import android.text.style.StyleSpan;
 import android.text.style.RelativeSizeSpan;
 import android.text.style.ForegroundColorSpan;
@@ -36,9 +34,7 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.FrameLayout;
-import android.widget.CompoundButton;
 import android.widget.LinearLayout;
-import android.widget.PopupMenu;
 import android.widget.ScrollView;
 import android.widget.SeekBar;
 import android.widget.Spinner;
@@ -76,7 +72,7 @@ public class SettingsActivity extends Activity {
     private LinearLayout currentSettingsGroup;
     private LinearLayout currentSettingsGroupParent;
     private String currentSettingsGroupTitle;
-private LinearLayout clockDateCard;
+    private LinearLayout clockDateCard;
     private LinearLayout playerFrameCard;
     private Switch showPlayerToggle;
     private Switch autoStartOnChargeToggle;
@@ -84,7 +80,6 @@ private LinearLayout clockDateCard;
     private Switch autoStartOnBootToggle;
     private Switch autoStartOnWakeToggle;
     private TextView activityCapabilityNotice;
-    private LinearLayout currentCard;
 
 
     private TextView screenTitle;
@@ -100,7 +95,6 @@ private LinearLayout clockDateCard;
     private static final int CATEGORY_APPEARANCE = 3;
     private static final int CATEGORY_PLAYER = 4;
     private static final int CATEGORY_ADVANCED = 5;
-    private final int dateTextColor = Color.rgb(220, 220, 220);
 
     @Override
     protected void onCreate(Bundle state) {
@@ -1013,50 +1007,7 @@ screenHeader.setVisibility(View.GONE);
         return "";
     }
 
-    private LinearLayout addCard(LinearLayout parent, String title) {
-        LinearLayout card = new LinearLayout(this);
-        card.setOrientation(LinearLayout.VERTICAL);
-        card.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        card.setTextDirection(View.TEXT_DIRECTION_RTL);
-        card.setPadding(dp(13), dp(10), dp(13), dp(14));
-
-        GradientDrawable bg = new GradientDrawable();
-        bg.setColor(CARD_SURFACE);
-        bg.setCornerRadius(dp(20));
-        bg.setStroke(dp(1), Color.rgb(30, 48, 69));
-        card.setBackground(bg);
-        if (Build.VERSION.SDK_INT >= 21) card.setElevation(0f);
-
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, -2);
-        params.setMargins(0, 0, 0, 0);
-        parent.addView(card, params);
-
-        LinearLayout headingRow = new LinearLayout(this);
-        headingRow.setOrientation(LinearLayout.HORIZONTAL);
-        headingRow.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-        headingRow.setGravity(Gravity.CENTER_VERTICAL);
-        TextView heading = textView(title, 18, ON_SURFACE);
-        heading.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        heading.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        heading.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
-        heading.setTextDirection(View.TEXT_DIRECTION_RTL);
-        heading.setPadding(0, 0, dp(3), 0);
-        heading.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
-        LinearLayout.LayoutParams headingTextParams =
-                new LinearLayout.LayoutParams(0, dp(42), 1f);
-        headingRow.addView(heading, headingTextParams);
-
-        card.addView(headingRow, new LinearLayout.LayoutParams(-1, dp(42)));
-
-        View separator = new View(this);
-        separator.setBackgroundColor(Color.rgb(30, 48, 69));
-        LinearLayout.LayoutParams separatorParams =
-                new LinearLayout.LayoutParams(-1, dp(1));
-        separatorParams.setMargins(dp(2), dp(5), dp(2), dp(10));
-        card.addView(separator, separatorParams);
-        return card;
-    }
-
+    
     private void showActivityTimeHelpDialog() {
         String help =
                 getString(R.string.settings_activity_text_194)
@@ -2300,25 +2251,7 @@ screenHeader.setVisibility(View.GONE);
         return image;
     }
 
-    private FrameLayout makeIconBadge(String iconName, int size) {
-        FrameLayout badge = new FrameLayout(this);
-        // Keep the standard square badge behind every settings glyph, including progress/time.
-        badge.setBackground(roundOutline(ICON_SURFACE, dp(10), CARD_OUTLINE));
-        View graphic = makeIconGlyph(iconName, ACCENT);
-        int glyphSize = "progress-time-digital".equals(iconName) ? dp(27)
-                : "bold".equals(iconName) ? dp(24)
-                : "phone-charging".equals(iconName) ? dp(24)
-                : "power-off".equals(iconName) ? dp(19)
-                : ("history".equals(iconName) || "panel-bottom".equals(iconName)) ? dp(24)
-                : "position-arrows".equals(iconName) ? dp(27)
-                : "gregorian-date".equals(iconName) ? dp(25)
-                : dp(22);
-        FrameLayout.LayoutParams graphicParams =
-                new FrameLayout.LayoutParams(glyphSize, glyphSize, Gravity.CENTER);
-        badge.addView(graphic, graphicParams);
-        return badge;
-    }
-
+    
     private FrameLayout makeSettingIconBadge(String settingKey, int size) {
         FrameLayout badge = new FrameLayout(this);
         badge.setBackground(roundOutline(ICON_SURFACE, dp(10), CARD_OUTLINE));
@@ -2336,22 +2269,7 @@ screenHeader.setVisibility(View.GONE);
         return badge;
     }
 
-    private void setPermissionCardHeadingTypeface(LinearLayout card) {
-        if (card == null || card.getChildCount() == 0) return;
-        View first = card.getChildAt(0);
-        if (!(first instanceof LinearLayout)) return;
-        LinearLayout headingRow = (LinearLayout) first;
-        if (headingRow.getChildCount() == 0) return;
-        View headingView = headingRow.getChildAt(0);
-        if (headingView instanceof TextView) {
-            TextView heading = (TextView) headingView;
-            heading.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-            heading.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
-            heading.setPadding(dp(2), 0, dp(5), 0);
-            heading.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
-        }
-    }
-
+    
     private void addSpinner(LinearLayout parent, String label, String[] names,
                             String[] values, String key) {
         LinearLayout card = addSettingCard(parent, label, key);
