@@ -89,6 +89,24 @@ public final class AutoStartConditionsTest {
         assertFalse(AutoStartConditions.shouldAllowAutomaticActivation(false, () -> false));
     }
 
+    @Test
+    public void reEnablingAnAutoStartSettingRequestsResume() {
+        assertTrue(AutoStartConditions.shouldResumeAfterAutoStartSettingEnabled(
+                true, true));
+    }
+
+    @Test
+    public void disablingAnAutoStartSettingDoesNotRequestResume() {
+        assertFalse(AutoStartConditions.shouldResumeAfterAutoStartSettingEnabled(
+                true, false));
+    }
+
+    @Test
+    public void enablingAnUnrelatedSettingDoesNotRequestResume() {
+        assertFalse(AutoStartConditions.shouldResumeAfterAutoStartSettingEnabled(
+                false, true));
+    }
+
     private static boolean blocks(Set<String> foreground,
                                   boolean global,
                                   boolean selected,
