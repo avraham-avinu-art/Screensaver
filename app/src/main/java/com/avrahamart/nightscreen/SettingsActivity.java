@@ -1868,16 +1868,16 @@ screenTitle.setText("הגדרות");
                 "screenBackgroundColor".equals(key));
         final ColorSwatchView selectedCustomSwatch = customColorSwatch;
 
-        final TextView customCaption = textView("בחירת צבע מותאם אישית", 12,
-                selectedInitially < 0 ? ACCENT : MUTED);
-        customCaption.setGravity(Gravity.CENTER);
-        customCaption.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-        customCaption.setSingleLine(false);
-        customCaption.setMaxLines(2);
-        customCaption.setEllipsize(null);
+        // The custom-color label stays neutral in every selection state.
+        final TextView customCaption = textView("בחירת צבע מותאם אישית", 13, MUTED);
+        customCaption.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        customCaption.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
+        customCaption.setSingleLine(true);
         customCaption.setIncludeFontPadding(false);
-        customCaption.setTypeface(Typeface.create("sans-serif-medium",
-                selectedInitially < 0 ? Typeface.BOLD : Typeface.NORMAL));
+        customCaption.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        final int customCaptionWidth = (int) Math.ceil(
+                customCaption.getPaint().measureText(customCaption.getText().toString()))
+                + dp(4);
 
         LinearLayout choiceRow = null;
         for (int i = 0; i < names.length; i++) {
@@ -1931,9 +1931,6 @@ screenTitle.setText("הגדרות");
                             j == index ? Typeface.BOLD : Typeface.NORMAL));
                 }
                 selectedCustomSwatch.setSwatchSelected(false);
-                customCaption.setTextColor(MUTED);
-                customCaption.setTypeface(Typeface.create(
-                        "sans-serif-medium", Typeface.NORMAL));
             });
             choiceRow.addView(item, new LinearLayout.LayoutParams(0, -2, 1f));
         }
@@ -1942,24 +1939,24 @@ screenTitle.setText("הגדרות");
         customColorRow.setOrientation(LinearLayout.HORIZONTAL);
         customColorRow.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         customColorRow.setGravity(Gravity.CENTER_VERTICAL);
+        customColorRow.setClipChildren(false);
 
-        LinearLayout customColorItem = new LinearLayout(this);
-        customColorItem.setOrientation(LinearLayout.HORIZONTAL);
-        customColorItem.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        customColorItem.setGravity(Gravity.CENTER_VERTICAL);
-        customColorItem.setPadding(0, dp(2), 0, 0);
-        customColorItem.addView(selectedCustomSwatch,
-                new LinearLayout.LayoutParams(dp(38), dp(38)));
-        customCaption.setSingleLine(true);
-        customCaption.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        customCaption.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
-        LinearLayout.LayoutParams customCaptionParams =
-                new LinearLayout.LayoutParams(-2, dp(38));
-        customCaptionParams.rightMargin = dp(8);
-        customColorItem.addView(customCaption, customCaptionParams);
-        customColorItem.setClickable(true);
-        customColorItem.setFocusable(true);
-        customColorItem.setOnClickListener(v -> showCustomColorDialog(
+        // Give the custom swatch the exact width of the first palette column.
+        // Its center therefore stays directly beneath the right-most swatch above.
+        FrameLayout customColorCell = new FrameLayout(this);
+        customColorCell.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        customColorCell.setClipChildren(false);
+        customColorCell.addView(selectedCustomSwatch,
+                new FrameLayout.LayoutParams(dp(38), dp(38), Gravity.CENTER));
+
+        // The label is positioned to the physical left of the swatch without
+        // affecting the cell width or shifting the swatch away from its column.
+        FrameLayout.LayoutParams customCaptionParams = new FrameLayout.LayoutParams(
+                customCaptionWidth, dp(38), Gravity.CENTER);
+        customCaption.setTranslationX(-dp(27) - customCaptionWidth / 2f);
+        customColorCell.addView(customCaption, customCaptionParams);
+
+        Runnable openCustomColorPicker = () -> showCustomColorDialog(
                 key, selectedCustomSwatch, () -> {
                     for (int j = 0; j < swatches.length; j++) {
                         swatches[j].setSwatchSelected(false);
@@ -1968,15 +1965,22 @@ screenTitle.setText("הגדרות");
                                 "sans-serif-medium", Typeface.NORMAL));
                     }
                     selectedCustomSwatch.setSwatchSelected(true);
-                    customCaption.setTextColor(ACCENT);
-                    customCaption.setTypeface(Typeface.create(
-                            "sans-serif-medium", Typeface.BOLD));
-                }));
-        customColorRow.addView(customColorItem,
-                new LinearLayout.LayoutParams(-2, dp(42)));
-        View remainingSpace = new View(this);
-        customColorRow.addView(remainingSpace,
+                    // Only the custom circle shows selection; its label remains neutral.
+                });
+        customColorCell.setClickable(true);
+        customColorCell.setFocusable(true);
+        customColorCell.setOnClickListener(v -> openCustomColorPicker.run());
+        customCaption.setClickable(true);
+        customCaption.setFocusable(true);
+        customCaption.setOnClickListener(v -> openCustomColorPicker.run());
+
+        customColorRow.addView(customColorCell,
                 new LinearLayout.LayoutParams(0, dp(42), 1f));
+        View remainingSpace = new View(this);
+        int firstRowColumnCount = Math.min(names.length, columnsPerRow);
+        customColorRow.addView(remainingSpace,
+                new LinearLayout.LayoutParams(0, dp(42),
+                        Math.max(0, firstRowColumnCount - 1)));
         LinearLayout.LayoutParams customColorParams =
                 new LinearLayout.LayoutParams(-1, -2);
         customColorParams.topMargin = dp(4);
