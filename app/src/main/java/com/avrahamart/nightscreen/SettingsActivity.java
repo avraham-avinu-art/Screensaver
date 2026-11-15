@@ -2282,35 +2282,35 @@ screenHeader.setVisibility(View.GONE);
                         10, 14, 1, android.util.TypedValue.COMPLEX_UNIT_SP);
             }
             if ("clockDialStyle".equals(key)) {
-                FrameLayout previewContent = new FrameLayout(this);
-                previewContent.setClipChildren(false);
-                previewContent.setClipToPadding(false);
+                LinearLayout previewContent = new LinearLayout(this);
+                previewContent.setOrientation(LinearLayout.VERTICAL);
+                previewContent.setGravity(Gravity.CENTER);
+                previewContent.setPadding(0, dp(3), 0, dp(2));
 
                 AnalogClockView dialPreview = new AnalogClockView(this);
                 dialPreview.setTime(10, 10);
                 dialPreview.setColors(ON_SURFACE, CARD_SURFACE);
                 boolean enlargedNumbersPreview = "numbers_only".equals(values[i]);
-                // Keep the native-resolution 90dp dial, while anchoring every
-                // option label to the same bottom baseline.
                 dialPreview.setDialStyle(values[i]);
                 int previewDiameter = enlargedNumbersPreview ? 90 : 60;
-                FrameLayout.LayoutParams dialParams =
-                        new FrameLayout.LayoutParams(dp(previewDiameter),
-                                dp(previewDiameter),
-                                Gravity.TOP | Gravity.CENTER_HORIZONTAL);
-                // Both dial sizes share the same center point; the larger dial
-                // extends upward so it does not push its label down.
-                dialParams.topMargin = enlargedNumbersPreview ? dp(-11) : dp(4);
-                previewContent.addView(dialPreview, dialParams);
+                if (enlargedNumbersPreview) {
+                    previewContent.setClipChildren(false);
+                    previewContent.setClipToPadding(false);
+                }
+                previewContent.addView(dialPreview,
+                        new LinearLayout.LayoutParams(dp(previewDiameter),
+                                dp(previewDiameter)));
 
                 option.setGravity(Gravity.CENTER);
                 option.setTextSize(12);
-                FrameLayout.LayoutParams optionParams =
-                        new FrameLayout.LayoutParams(-1, dp(22),
-                                Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
-                optionParams.bottomMargin = dp(2);
-                previewContent.addView(option, optionParams);
-
+                // Only the caption under the enlarged numbers-only dial was
+                // too low. Lift that caption without moving the dial or
+                // changing either of the other two previews.
+                if (enlargedNumbersPreview) {
+                    option.setTranslationY(-dp(12));
+                }
+                previewContent.addView(option,
+                        new LinearLayout.LayoutParams(-1, dp(22)));
                 tile.addView(previewContent, new FrameLayout.LayoutParams(-1, -1));
             } else {
                 tile.addView(option, new FrameLayout.LayoutParams(-1, -1));
