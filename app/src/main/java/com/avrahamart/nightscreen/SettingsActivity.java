@@ -1933,7 +1933,8 @@ screenHeader.setVisibility(View.GONE);
         colorPreview.setScaleX(0.75f);
         sampleRow.addView(colorPreview, previewParams);
         LinearLayout.LayoutParams sampleParams = new LinearLayout.LayoutParams(-1, dp(40));
-        sampleParams.topMargin = dp(2);
+        // Add a little breathing room between the dialog heading and the color sample.
+        sampleParams.topMargin = dp(6);
         panel.addView(sampleRow, sampleParams);
 
         String[] captions = {getString(R.string.settings_activity_text_245), getString(R.string.settings_activity_text_246), getString(R.string.settings_activity_text_247)};
@@ -1956,6 +1957,9 @@ screenHeader.setVisibility(View.GONE);
             captionRow.setOrientation(LinearLayout.HORIZONTAL);
             captionRow.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
             captionRow.setGravity(Gravity.CENTER_VERTICAL);
+            // Align both the right-side label and left-side value with the SeekBar's
+            // usable track area, which is inset by 12dp on each side.
+            captionRow.setPadding(dp(12), 0, dp(12), 0);
             TextView caption = textView(captions[i], 16, ON_SURFACE);
             captionRow.addView(caption, new LinearLayout.LayoutParams(0, dp(24), 1f));
             TextView value = textView("", 14, ACCENT);
