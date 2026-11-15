@@ -948,7 +948,7 @@ screenHeader.setVisibility(View.GONE);
         LinearLayout.LayoutParams settingIconParams =
                 new LinearLayout.LayoutParams(dp(30), dp(30));
         settingIconParams.rightMargin = dp(5);
-        header.addView(makeSettingIconBadge(key, dp(30)), settingIconParams);
+        header.addView(makeSettingIconBadge(key, label), settingIconParams);
 
         card.addView(header, new LinearLayout.LayoutParams(-1, -2));
         return card;
@@ -2244,7 +2244,7 @@ screenHeader.setVisibility(View.GONE);
         return image;
     }
 
-    private FrameLayout makeSettingIconBadge(String settingKey, int size) {
+    private FrameLayout makeSettingIconBadge(String settingKey, String settingLabel) {
         FrameLayout badge = new FrameLayout(this);
         badge.setBackground(roundOutline(ICON_SURFACE, dp(10), CARD_OUTLINE));
 
@@ -2253,7 +2253,7 @@ screenHeader.setVisibility(View.GONE);
         image.setColorFilter(ACCENT);
         image.setScaleType(android.widget.ImageView.ScaleType.FIT_CENTER);
         image.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-        image.setContentDescription(settingKey);
+        image.setContentDescription(settingLabel);
 
         int glyphSize = dp(22);
         badge.addView(image, new FrameLayout.LayoutParams(
