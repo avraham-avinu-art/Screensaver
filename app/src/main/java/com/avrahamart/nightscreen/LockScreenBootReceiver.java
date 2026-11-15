@@ -24,7 +24,8 @@ public final class LockScreenBootReceiver extends BroadcastReceiver {
         }
         boolean autoStartOnBoot = prefs.getBoolean("autoStartOnBoot", false);
         boolean monitorNeeded = prefs.getBoolean("autoStartOnDeviceLock", false)
-                || prefs.getBoolean("autoStartOnWake", false);
+                || prefs.getBoolean("autoStartOnWake", false)
+                || prefs.getBoolean("autoStartOnIdle", false);
         if (monitorNeeded) LockScreenMonitorService.sync(context);
 
         if (!Intent.ACTION_BOOT_COMPLETED.equals(action) || !autoStartOnBoot) return;

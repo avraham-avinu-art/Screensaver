@@ -76,7 +76,7 @@
             android:foregroundServiceType="specialUse">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="User-enabled monitoring of device lock state to activate the screensaver over the lock screen." />
+                android:value="User-enabled monitoring of device lock state and foreground-app usage to activate the screensaver." />
         </service>
 
         <receiver
@@ -124,20 +124,6 @@
             <intent-filter>
                 <action android:name="android.service.quicksettings.action.QS_TILE" />
             </intent-filter>
-        </service>
-
-        <service
-            android:name=".IdleScreensaverAccessibilityService"
-            android:label="@string/idle_accessibility_service_label"
-            android:description="@string/idle_accessibility_service_description"
-            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.accessibilityservice.AccessibilityService" />
-            </intent-filter>
-            <meta-data
-                android:name="android.accessibilityservice"
-                android:resource="@xml/idle_accessibility_service" />
         </service>
 
         <service

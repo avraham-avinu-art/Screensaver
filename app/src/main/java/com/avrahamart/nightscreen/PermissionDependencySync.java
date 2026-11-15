@@ -50,8 +50,7 @@ public final class PermissionDependencySync {
                         || !prefs.getBoolean("showPlayer", false));
         boolean disableIdleStart =
                 prefs.getBoolean("autoStartOnIdle", false)
-                        && (overlayRequired
-                        || !IdleScreensaverAccessibilityService.isEnabled(context));
+                        && (overlayRequired || !usageAccess);
 
         if (!disableLockStart && !disableChargeStart && !disableBootStart
                 && !disableWakeStart && !disablePlayer

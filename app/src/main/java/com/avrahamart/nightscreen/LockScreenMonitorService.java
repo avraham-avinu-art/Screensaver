@@ -44,6 +44,7 @@ public final class LockScreenMonitorService extends Service {
     private int latestStartId = 0;
     private String receiverFilterSignature;
     private AutoStartOnPowerReceiver lockReceiver;
+    private IdleScreensaverMonitor idleScreensaverMonitor;
 
     // Declared after the service state fields referenced by the callback.
     private final Runnable reconcileRetry = () -> {
@@ -99,7 +100,8 @@ public final class LockScreenMonitorService extends Service {
 
     private static boolean isMonitoringRequested(MonitorSettingsSnapshot snapshot) {
         return snapshot != null
-                && (snapshot.autoStartOnDeviceLock || snapshot.autoStartOnWake);
+                && (snapshot.autoStartOnDeviceLock || snapshot.autoStartOnWake
+                || snapshot.autoStartOnIdle);
     }
 
     @Override
@@ -178,6 +180,14 @@ public final class LockScreenMonitorService extends Service {
 
         monitorReady = true;
         lockMonitoringActive = true;
+        if (snapshot.autoStartOnIdle) {
+            if (idleScreensaverMonitor == null) {
+                idleScreensaverMonitor = new IdleScreensaverMonitor(this);
+            }
+            idleScreensaverMonitor.start();
+        } else if (idleScreensaverMonitor != null) {
+            idleScreensaverMonitor.stop();
+        }
         retryAttempt = 0;
         cancelReconcileRetry();
         return true;
@@ -216,6 +226,11 @@ public final class LockScreenMonitorService extends Service {
         if (wakeStart) filter.addAction(Intent.ACTION_SCREEN_ON);
         if (chargerFallback) filter.addAction(Intent.ACTION_POWER_CONNECTED);
 
+        if (filter.countActions() == 0) {
+            unregisterLockReceiver();
+            return true;
+        }
+
         try {
             if (Build.VERSION.SDK_INT >= 33) {
                 registerReceiver(replacement, filter, Context.RECEIVER_NOT_EXPORTED);
@@ -250,6 +265,7 @@ public final class LockScreenMonitorService extends Service {
         cancelReconcileRetry();
         cancelScheduledRestart();
         unregisterLockReceiver();
+        if (idleScreensaverMonitor != null) idleScreensaverMonitor.stop();
         monitorReady = false;
         lockMonitoringActive = false;
 
@@ -343,6 +359,7 @@ public final class LockScreenMonitorService extends Service {
         monitorReady = false;
         lockMonitoringActive = false;
         unregisterLockReceiver();
+        if (idleScreensaverMonitor != null) idleScreensaverMonitor.stop();
 
         boolean overlayGranted = Build.VERSION.SDK_INT < 29 || Settings.canDrawOverlays(this);
         if (requested && overlayGranted) {

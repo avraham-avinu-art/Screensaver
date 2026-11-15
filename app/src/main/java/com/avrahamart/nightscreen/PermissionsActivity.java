@@ -43,8 +43,6 @@ public class PermissionsActivity extends Activity {
     private Button usageButton;
     private Button overlayButton;
     private Button adminButton;
-    private TextView idleStatus;
-    private Button idleButton;
     private DevicePolicyManager devicePolicyManager;
     private ComponentName adminComponent;
 
@@ -117,7 +115,6 @@ public class PermissionsActivity extends Activity {
 
         addNotificationPermissionCard(cards);
         addUsageAccessPermissionCard(cards);
-        addIdleAccessibilityPermissionCard(cards);
         addOverlayPermissionCard(cards);
         addDeviceAdminPermissionCard(cards);
 
@@ -192,23 +189,6 @@ public class PermissionsActivity extends Activity {
                                 Toast.LENGTH_LONG).show();
                     }
                     openOverlayPermissionSettings();
-                });
-    }
-
-    private void addIdleAccessibilityPermissionCard(LinearLayout parent) {
-        LinearLayout card = makeCard(parent,
-                getString(R.string.permissions_activity_text_047),
-                getString(R.string.permissions_activity_text_048));
-        idleStatus = addStatus(card);
-        idleButton = addPermissionButton(card,
-                getString(R.string.permissions_activity_text_051), v -> {
-                    try {
-                        startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS));
-                    } catch (Throwable ignored) {
-                        AppToast.makeText(this,
-                                getString(R.string.permissions_activity_text_032),
-                                Toast.LENGTH_LONG).show();
-                    }
                 });
     }
 
@@ -336,17 +316,6 @@ public class PermissionsActivity extends Activity {
                 : getString(R.string.permissions_activity_text_020));
         adminButton.setEnabled(true);
 
-        boolean idleGranted = IdleScreensaverAccessibilityService.isEnabled(this);
-        if (idleStatus != null) {
-            idleStatus.setText(idleGranted
-                    ? getString(R.string.permissions_activity_text_049)
-                    : getString(R.string.permissions_activity_text_050));
-            idleStatus.setTextColor(idleGranted ? ACCENT : MUTED);
-        }
-        if (idleButton != null) {
-            idleButton.setText(getString(R.string.permissions_activity_text_051));
-            idleButton.setEnabled(true);
-        }
     }
 
     private boolean hasNotificationAccess() {

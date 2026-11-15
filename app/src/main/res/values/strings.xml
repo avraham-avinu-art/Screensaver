@@ -467,6 +467,4 @@
     <string name="permissions_activity_text_051" formatted="false">פתיחת הגדרות נגישות</string>
     <string name="permission_sync_text_007" formatted="false">ההפעלה בחוסר פעילות כובתה מפני שחסרה הרשאת נגישות או הרשאת תצוגה מעל אפליקציות.</string>
     <string name="permission_sync_text_008" formatted="false">הדלקה במעבר שיר כובתה מפני שחסרה גישה להתראות או הרשאת תצוגה מעל אפליקציות.</string>
-    <string name="idle_accessibility_service_label" formatted="false">זיהוי חוסר פעילות לשומר מסך</string>
-    <string name="idle_accessibility_service_description" formatted="false">מזהה נגיעות במסך ושינויים בחלונות לצורך הפעלה אוטומטית לאחר חוסר פעילות.</string>
 </resources>

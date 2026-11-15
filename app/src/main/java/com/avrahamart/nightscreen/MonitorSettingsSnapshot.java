@@ -23,6 +23,8 @@ final class MonitorSettingsSnapshot {
     final boolean autoStartOnBoot;
     final boolean autoStartOnWake;
     final boolean autoStartOnCharge;
+    final boolean autoStartOnIdle;
+    final int idleWaitSeconds;
     final boolean useAndroidDreamForCharging;
     final boolean autoStartOnlyWhenLocked;
     final boolean preventAutoStartDuringUse;
@@ -37,6 +39,8 @@ final class MonitorSettingsSnapshot {
         autoStartOnBoot = data.getBoolean("autoStartOnBoot", false);
         autoStartOnWake = data.getBoolean("autoStartOnWake", false);
         autoStartOnCharge = data.getBoolean("autoStartOnCharge", false);
+        autoStartOnIdle = data.getBoolean("autoStartOnIdle", false);
+        idleWaitSeconds = Math.max(30, Math.min(600, data.getInt("idleWaitSeconds", 30)));
         useAndroidDreamForCharging =
                 data.getBoolean("useAndroidDreamForCharging", false);
         autoStartOnlyWhenLocked = data.getBoolean("autoStartOnlyWhenLocked", false);
@@ -70,6 +74,9 @@ final class MonitorSettingsSnapshot {
                         prefs.getBoolean("autoStartOnWake", false));
                 data.putBoolean("autoStartOnCharge",
                         prefs.getBoolean("autoStartOnCharge", false));
+                data.putBoolean("autoStartOnIdle",
+                        prefs.getBoolean("autoStartOnIdle", false));
+                data.putInt("idleWaitSeconds", prefs.getInt("idleWaitSeconds", 30));
                 data.putBoolean("useAndroidDreamForCharging",
                         prefs.getBoolean("useAndroidDreamForCharging", false));
                 data.putBoolean("autoStartOnlyWhenLocked",
