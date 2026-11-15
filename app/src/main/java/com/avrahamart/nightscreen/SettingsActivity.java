@@ -641,21 +641,6 @@ screenHeader.setVisibility(View.GONE);
 
     private void showExcludedAppsDialog() {
         PackageManager pm = getPackageManager();
-        List<ApplicationInfo> applications;
-        try {
-            applications = new ArrayList<>(
-                    pm.getInstalledApplications(PackageManager.GET_META_DATA));
-        } catch (Throwable ignored) {
-            applications = new ArrayList<>();
-        }
-        applications.removeIf(info -> getPackageName().equals(info.packageName));
-        applications.sort((left, right) -> {
-            String leftName = String.valueOf(pm.getApplicationLabel(left));
-            String rightName = String.valueOf(pm.getApplicationLabel(right));
-            int byLabel = leftName.compareToIgnoreCase(rightName);
-            return byLabel != 0 ? byLabel : left.packageName.compareTo(right.packageName);
-        });
-        final List<ApplicationInfo> installedApplications = applications;
         Set<String> selected = new HashSet<>(
                 prefs.getStringSet("excludedForegroundPackages", Collections.emptySet()));
 
@@ -664,6 +649,7 @@ screenHeader.setVisibility(View.GONE);
         panel.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         panel.setPadding(dp(16), dp(14), dp(16), dp(14));
         panel.setBackground(roundOutline(CARD_SURFACE, dp(18), CARD_OUTLINE));
+
         TextView title = textView(getString(R.string.settings_activity_text_077), 19, ON_SURFACE);
         title.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD));
         title.setGravity(Gravity.CENTER);
@@ -682,82 +668,215 @@ screenHeader.setVisibility(View.GONE);
         searchParams.topMargin = dp(8);
         panel.addView(search, searchParams);
 
-        ScrollView scroll = new ScrollView(this);
-        scroll.setVerticalScrollBarEnabled(false);
-        LinearLayout rows = new LinearLayout(this);
-        rows.setOrientation(LinearLayout.VERTICAL);
-        rows.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        scroll.addView(rows, new ScrollView.LayoutParams(-1, -2));
-        LinearLayout.LayoutParams scrollParams = new LinearLayout.LayoutParams(-1, 0, 1f);
-        scrollParams.topMargin = dp(10);
-        scrollParams.bottomMargin = dp(10);
-        panel.addView(scroll, scrollParams);
+        LinearLayout filterRow = new LinearLayout(this);
+        filterRow.setOrientation(LinearLayout.HORIZONTAL);
+        filterRow.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        filterRow.setGravity(Gravity.CENTER_VERTICAL);
+        LinearLayout.LayoutParams filterParams = new LinearLayout.LayoutParams(-1, dp(38));
+        filterParams.topMargin = dp(9);
+        panel.addView(filterRow, filterParams);
 
-        Runnable renderRows = () -> {
-            rows.removeAllViews();
-            String query = search.getText() == null ? ""
-                    : search.getText().toString().trim().toLowerCase(Locale.ROOT);
-            int shown = 0;
-            for (ApplicationInfo app : installedApplications) {
-                String appLabel;
-                try { appLabel = String.valueOf(pm.getApplicationLabel(app)); }
-                catch (Throwable ignored) { appLabel = app.packageName; }
-                if (!query.isEmpty()
-                        && !appLabel.toLowerCase(Locale.ROOT).contains(query)
-                        && !app.packageName.toLowerCase(Locale.ROOT).contains(query)) continue;
-                LinearLayout row = new LinearLayout(this);
-                row.setOrientation(LinearLayout.HORIZONTAL);
-                row.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-                row.setGravity(Gravity.CENTER_VERTICAL);
-                row.setPadding(dp(8), dp(4), dp(8), dp(4));
-                row.setBackground(roundOutline(CONTROL_SURFACE, dp(9), CARD_OUTLINE));
-                LinearLayout.LayoutParams rowParams = new LinearLayout.LayoutParams(-1, dp(48));
-                rowParams.bottomMargin = dp(4);
-                rows.addView(row, rowParams);
+        String[] filterLabels = {"אפליקציות משתמש", "אפליקציות מערכת", "הכל"};
+        TextView[] filterButtons = new TextView[filterLabels.length];
+        final int[] activeFilter = {2};
+        for (int i = 0; i < filterLabels.length; i++) {
+            final int index = i;
+            TextView filter = textView(filterLabels[i], 13,
+                    index == activeFilter[0] ? Color.rgb(7, 31, 49) : ON_SURFACE);
+            filter.setGravity(Gravity.CENTER);
+            filter.setSingleLine(true);
+            filter.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+            filter.setPadding(dp(4), 0, dp(4), 0);
+            filter.setBackground(roundOutline(
+                    index == activeFilter[0] ? ACCENT : CONTROL_SURFACE,
+                    dp(9), index == activeFilter[0] ? ACCENT : OUTLINE));
+            filter.setClickable(true);
+            filter.setFocusable(true);
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, dp(34), 1f);
+            if (i > 0) params.rightMargin = dp(6);
+            filterRow.addView(filter, params);
+            filterButtons[i] = filter;
+        }
 
-                android.widget.ImageView icon = new android.widget.ImageView(this);
-                try { icon.setImageDrawable(pm.getApplicationIcon(app)); }
-                catch (Throwable ignored) {
-                    icon.setImageResource(android.R.drawable.sym_def_app_icon);
-                }
-                icon.setScaleType(android.widget.ImageView.ScaleType.FIT_CENTER);
-                row.addView(icon, new LinearLayout.LayoutParams(dp(30), dp(30)));
+        TextView loading = textView("טוען את רשימת האפליקציות…", 13, MUTED);
+        loading.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams loadingParams = new LinearLayout.LayoutParams(-1, dp(34));
+        loadingParams.topMargin = dp(4);
+        panel.addView(loading, loadingParams);
 
-                CheckBox check = new CheckBox(this);
-                check.setText(appLabel);
-                check.setTextSize(14);
-                check.setTextColor(ON_SURFACE);
-                check.setSingleLine(true);
-                check.setEllipsize(android.text.TextUtils.TruncateAt.END);
-                check.setButtonTintList(new ColorStateList(
-                        new int[][]{new int[]{android.R.attr.state_checked}, new int[]{}},
-                        new int[]{ACCENT, MUTED}));
-                check.setChecked(selected.contains(app.packageName));
-                LinearLayout.LayoutParams checkParams =
-                        new LinearLayout.LayoutParams(0, -1, 1f);
-                checkParams.rightMargin = dp(7);
-                row.addView(check, checkParams);
-                check.setOnCheckedChangeListener((button, isChecked) -> {
-                    if (isChecked) selected.add(app.packageName);
-                    else selected.remove(app.packageName);
-                });
-                row.setOnClickListener(v -> check.setChecked(!check.isChecked()));
-                shown++;
+        class PickerEntry {
+            final ApplicationInfo info;
+            final String packageName;
+            final String label;
+            final boolean systemApp;
+
+            PickerEntry(ApplicationInfo app, String appLabel) {
+                info = app;
+                packageName = app.packageName;
+                label = appLabel;
+                systemApp = (app.flags & (ApplicationInfo.FLAG_SYSTEM
+                        | ApplicationInfo.FLAG_UPDATED_SYSTEM_APP)) != 0;
             }
-            if (shown == 0) {
-                TextView empty = textView(getString(R.string.settings_activity_text_281), 14, MUTED);
-                empty.setGravity(Gravity.CENTER);
-                rows.addView(empty, new LinearLayout.LayoutParams(-1, dp(72)));
+        }
+        class RowHolder {
+            android.widget.ImageView icon;
+            CheckBox check;
+        }
+
+        ArrayList<PickerEntry> allEntries = new ArrayList<>();
+        ArrayList<PickerEntry> visibleEntries = new ArrayList<>();
+        java.util.concurrent.ConcurrentHashMap<String,
+                android.graphics.drawable.Drawable> iconCache = new java.util.concurrent.ConcurrentHashMap<>();
+        Set<String> iconsLoading = java.util.concurrent.ConcurrentHashMap.newKeySet();
+        java.util.concurrent.ExecutorService loader =
+                java.util.concurrent.Executors.newFixedThreadPool(2);
+        android.os.Handler mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+        java.util.concurrent.atomic.AtomicBoolean dismissed =
+                new java.util.concurrent.atomic.AtomicBoolean(false);
+        final boolean[] loadFinished = {false};
+
+        android.widget.BaseAdapter adapter = new android.widget.BaseAdapter() {
+            @Override public int getCount() { return visibleEntries.size(); }
+            @Override public PickerEntry getItem(int position) { return visibleEntries.get(position); }
+            @Override public long getItemId(int position) { return position; }
+
+            @Override public View getView(int position, View convertView,
+                                          android.view.ViewGroup parent) {
+                RowHolder holder;
+                if (convertView == null) {
+                    LinearLayout row = new LinearLayout(SettingsActivity.this);
+                    row.setOrientation(LinearLayout.HORIZONTAL);
+                    row.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+                    row.setGravity(Gravity.CENTER_VERTICAL);
+                    row.setPadding(dp(8), dp(4), dp(8), dp(4));
+                    row.setBackground(roundOutline(CONTROL_SURFACE, dp(9), CARD_OUTLINE));
+                    holder = new RowHolder();
+                    holder.icon = new android.widget.ImageView(SettingsActivity.this);
+                    holder.icon.setScaleType(android.widget.ImageView.ScaleType.FIT_CENTER);
+                    row.addView(holder.icon, new LinearLayout.LayoutParams(dp(30), dp(30)));
+                    holder.check = new CheckBox(SettingsActivity.this);
+                    holder.check.setTextSize(14);
+                    holder.check.setTextColor(ON_SURFACE);
+                    holder.check.setSingleLine(true);
+                    holder.check.setEllipsize(android.text.TextUtils.TruncateAt.END);
+                    holder.check.setButtonTintList(new ColorStateList(
+                            new int[][]{new int[]{android.R.attr.state_checked}, new int[]{}},
+                            new int[]{ACCENT, MUTED}));
+                    LinearLayout.LayoutParams checkParams =
+                            new LinearLayout.LayoutParams(0, -1, 1f);
+                    checkParams.rightMargin = dp(7);
+                    row.addView(holder.check, checkParams);
+                    row.setTag(holder);
+                    convertView = row;
+                } else {
+                    holder = (RowHolder) convertView.getTag();
+                }
+
+                PickerEntry entry = getItem(position);
+                holder.check.setOnCheckedChangeListener(null);
+                holder.check.setText(entry.label);
+                holder.check.setTag(entry.packageName);
+                holder.check.setChecked(selected.contains(entry.packageName));
+                holder.check.setOnCheckedChangeListener((button, checked) -> {
+                    String packageName = String.valueOf(button.getTag());
+                    if (checked) selected.add(packageName);
+                    else selected.remove(packageName);
+                });
+                RowHolder currentHolder = holder;
+                convertView.setOnClickListener(v ->
+                        currentHolder.check.setChecked(!currentHolder.check.isChecked()));
+
+                android.graphics.drawable.Drawable cached = iconCache.get(entry.packageName);
+                if (cached != null) {
+                    android.graphics.drawable.Drawable.ConstantState state = cached.getConstantState();
+                    holder.icon.setImageDrawable(state == null ? cached : state.newDrawable(getResources()));
+                } else {
+                    holder.icon.setImageResource(android.R.drawable.sym_def_app_icon);
+                    if (iconsLoading.add(entry.packageName)) {
+                        String packageName = entry.packageName;
+                        try {
+                            loader.execute(() -> {
+                                try {
+                                    android.graphics.drawable.Drawable drawable =
+                                            pm.getApplicationIcon(entry.info);
+                                    if (drawable != null) iconCache.put(packageName, drawable);
+                                } catch (Throwable ignored) {
+                                } finally {
+                                    iconsLoading.remove(packageName);
+                                }
+                                mainHandler.post(() -> {
+                                    if (!dismissed.get()) notifyDataSetChanged();
+                                });
+                            });
+                        } catch (java.util.concurrent.RejectedExecutionException ignored) {
+                            iconsLoading.remove(packageName);
+                        }
+                    }
+                }
+                return convertView;
             }
         };
-        renderRows.run();
+
+        FrameLayout listFrame = new FrameLayout(this);
+        android.widget.ListView list = new android.widget.ListView(this);
+        list.setAdapter(adapter);
+        list.setDivider(null);
+        list.setSelector(android.R.color.transparent);
+        list.setVerticalScrollBarEnabled(false);
+        list.setCacheColorHint(Color.TRANSPARENT);
+        list.setItemsCanFocus(false);
+        listFrame.addView(list, new FrameLayout.LayoutParams(-1, -1));
+
+        TextView empty = textView(getString(R.string.settings_activity_text_281), 14, MUTED);
+        empty.setGravity(Gravity.CENTER);
+        listFrame.addView(empty, new FrameLayout.LayoutParams(-1, -1));
+        list.setEmptyView(empty);
+
+        LinearLayout.LayoutParams listParams = new LinearLayout.LayoutParams(-1, 0, 1f);
+        listParams.topMargin = dp(3);
+        listParams.bottomMargin = dp(8);
+        panel.addView(listFrame, listParams);
+
+        Runnable updateFilterButtons = () -> {
+            for (int i = 0; i < filterButtons.length; i++) {
+                boolean active = i == activeFilter[0];
+                filterButtons[i].setTextColor(active ? Color.rgb(7, 31, 49) : ON_SURFACE);
+                filterButtons[i].setBackground(roundOutline(
+                        active ? ACCENT : CONTROL_SURFACE,
+                        dp(9), active ? ACCENT : OUTLINE));
+            }
+        };
+        Runnable applyFilters = () -> {
+            visibleEntries.clear();
+            String query = search.getText() == null ? ""
+                    : search.getText().toString().trim().toLowerCase(Locale.ROOT);
+            for (PickerEntry entry : allEntries) {
+                if (activeFilter[0] == 0 && entry.systemApp) continue;
+                if (activeFilter[0] == 1 && !entry.systemApp) continue;
+                if (!query.isEmpty()
+                        && !entry.label.toLowerCase(Locale.ROOT).contains(query)
+                        && !entry.packageName.toLowerCase(Locale.ROOT).contains(query)) continue;
+                visibleEntries.add(entry);
+            }
+            adapter.notifyDataSetChanged();
+            loading.setVisibility(loadFinished[0] ? View.GONE : View.VISIBLE);
+        };
+        for (int i = 0; i < filterButtons.length; i++) {
+            final int index = i;
+            filterButtons[i].setOnClickListener(v -> {
+                activeFilter[0] = index;
+                updateFilterButtons.run();
+                applyFilters.run();
+            });
+        }
         search.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
-                renderRows.run();
+                applyFilters.run();
             }
             @Override public void afterTextChanged(Editable s) { }
         });
+        updateFilterButtons.run();
 
         LinearLayout actions = new LinearLayout(this);
         actions.setOrientation(LinearLayout.HORIZONTAL);
@@ -787,6 +906,10 @@ screenHeader.setVisibility(View.GONE);
                     new HashSet<>(selected)).apply();
             dialog.dismiss();
         });
+        dialog.setOnDismissListener(ignored -> {
+            dismissed.set(true);
+            loader.shutdownNow();
+        });
         dialog.show();
         Window window = dialog.getWindow();
         if (window != null) {
@@ -795,6 +918,36 @@ screenHeader.setVisibility(View.GONE);
             window.setLayout(Math.min(dp(460), metrics.widthPixels - dp(32)),
                     Math.min(dp(560), metrics.heightPixels - dp(100)));
         }
+
+        // Package enumeration, sorting and icon loading run off the settings UI thread.
+        loader.execute(() -> {
+            ArrayList<PickerEntry> loaded = new ArrayList<>();
+            try {
+                List<ApplicationInfo> applications =
+                        pm.getInstalledApplications(PackageManager.GET_META_DATA);
+                for (ApplicationInfo app : applications) {
+                    if (dismissed.get() || getPackageName().equals(app.packageName)) continue;
+                    String appLabel;
+                    try { appLabel = String.valueOf(pm.getApplicationLabel(app)); }
+                    catch (Throwable ignored) { appLabel = app.packageName; }
+                    loaded.add(new PickerEntry(app, appLabel));
+                }
+                loaded.sort((left, right) -> {
+                    int byName = left.label.compareToIgnoreCase(right.label);
+                    return byName != 0 ? byName
+                            : left.packageName.compareTo(right.packageName);
+                });
+            } catch (Throwable ignored) {
+            }
+            mainHandler.post(() -> {
+                if (dismissed.get()) return;
+                allEntries.clear();
+                allEntries.addAll(loaded);
+                loadFinished[0] = true;
+                loading.setVisibility(View.GONE);
+                applyFilters.run();
+            });
+        });
     }
 
     private void buildAppearanceSettings() {
