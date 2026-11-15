@@ -773,8 +773,7 @@ screenHeader.setVisibility(View.GONE);
                 }
                 if ("autoStartOnDeviceLock".equals(key) || "autoStartOnBoot".equals(key)
                         || "autoStartOnWake".equals(key)
-                        || "autoStartOnCharge".equals(key)
-) {
+                        || "autoStartOnCharge".equals(key)) {
                     return getString(R.string.settings_activity_text_135);
                 }
                 return getString(R.string.settings_activity_text_136);
