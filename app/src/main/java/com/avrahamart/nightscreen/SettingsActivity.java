@@ -2006,7 +2006,8 @@ screenHeader.setVisibility(View.GONE);
                 new LinearLayout.LayoutParams(-1, dp(1));
         dividerParams.leftMargin = dp(13);
         dividerParams.rightMargin = dp(13);
-        dividerParams.topMargin = dp(2);
+        // Keep the same breathing room above separators as the other setting rows.
+        dividerParams.topMargin = dp(9);
         dividerParams.bottomMargin = dp(8);
         card.addView(divider, dividerParams);
 
@@ -2020,7 +2021,7 @@ screenHeader.setVisibility(View.GONE);
         LinearLayout.LayoutParams titleParams =
                 new LinearLayout.LayoutParams(-1, dp(25));
         titleParams.rightMargin = dp(42);
-        titleParams.bottomMargin = dp(4);
+        titleParams.bottomMargin = dp(8);
         card.addView(sectionTitle, titleParams);
 
         addNightModeHourRow(card, getString(R.string.settings_activity_text_268),
@@ -2036,9 +2037,10 @@ screenHeader.setVisibility(View.GONE);
         final int dropdownWidth = dropdownWidthForOptions(names);
 
         LinearLayout row = new LinearLayout(this);
-        // LTR child order places the selector on the left and its Hebrew label on the right.
+        // In RTL order, keep the label at its existing right edge and place
+        // the selector immediately to its left instead of at the far end.
         row.setOrientation(LinearLayout.HORIZONTAL);
-        row.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+        row.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         row.setGravity(Gravity.CENTER_VERTICAL);
 
         Spinner spinner = new Spinner(this);
@@ -2089,7 +2091,6 @@ screenHeader.setVisibility(View.GONE);
 
         LinearLayout.LayoutParams spinnerParams =
                 new LinearLayout.LayoutParams(visibleWidth, dp(40));
-        row.addView(spinnerContainer, spinnerParams);
 
         TextView rowLabel = textView(label, 15, ON_SURFACE);
         rowLabel.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
@@ -2098,9 +2099,12 @@ screenHeader.setVisibility(View.GONE);
         rowLabel.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
         rowLabel.setTextDirection(View.TEXT_DIRECTION_RTL);
         LinearLayout.LayoutParams labelParams =
-                new LinearLayout.LayoutParams(0, dp(40), 1f);
+                new LinearLayout.LayoutParams(-2, dp(40));
+        // The label remains anchored to the same right edge as before.
+        // Its left margin is the small gap to the selector beside it.
         labelParams.leftMargin = dp(9);
         row.addView(rowLabel, labelParams);
+        row.addView(spinnerContainer, spinnerParams);
 
         LinearLayout.LayoutParams rowParams =
                 new LinearLayout.LayoutParams(-1, dp(42));
@@ -2278,29 +2282,35 @@ screenHeader.setVisibility(View.GONE);
                         10, 14, 1, android.util.TypedValue.COMPLEX_UNIT_SP);
             }
             if ("clockDialStyle".equals(key)) {
-                LinearLayout previewContent = new LinearLayout(this);
-                previewContent.setOrientation(LinearLayout.VERTICAL);
-                previewContent.setGravity(Gravity.CENTER);
-                previewContent.setPadding(0, dp(3), 0, dp(2));
+                FrameLayout previewContent = new FrameLayout(this);
+                previewContent.setClipChildren(false);
+                previewContent.setClipToPadding(false);
+
                 AnalogClockView dialPreview = new AnalogClockView(this);
                 dialPreview.setTime(10, 10);
                 dialPreview.setColors(ON_SURFACE, CARD_SURFACE);
                 boolean enlargedNumbersPreview = "numbers_only".equals(values[i]);
-                // Keep the numbers-only preview faithful to its selected dial style.
-                // It is drawn at native resolution at the same enlarged diameter.
+                // Keep the native-resolution 90dp dial, while anchoring every
+                // option label to the same bottom baseline.
                 dialPreview.setDialStyle(values[i]);
                 int previewDiameter = enlargedNumbersPreview ? 90 : 60;
-                if (enlargedNumbersPreview) {
-                    previewContent.setClipChildren(false);
-                    previewContent.setClipToPadding(false);
-                }
-                previewContent.addView(dialPreview,
-                        new LinearLayout.LayoutParams(dp(previewDiameter),
-                                dp(previewDiameter)));
+                FrameLayout.LayoutParams dialParams =
+                        new FrameLayout.LayoutParams(dp(previewDiameter),
+                                dp(previewDiameter),
+                                Gravity.TOP | Gravity.CENTER_HORIZONTAL);
+                // Both dial sizes share the same center point; the larger dial
+                // extends upward so it does not push its label down.
+                dialParams.topMargin = enlargedNumbersPreview ? dp(-11) : dp(4);
+                previewContent.addView(dialPreview, dialParams);
+
                 option.setGravity(Gravity.CENTER);
                 option.setTextSize(12);
-                previewContent.addView(option,
-                        new LinearLayout.LayoutParams(-1, dp(22)));
+                FrameLayout.LayoutParams optionParams =
+                        new FrameLayout.LayoutParams(-1, dp(22),
+                                Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
+                optionParams.bottomMargin = dp(2);
+                previewContent.addView(option, optionParams);
+
                 tile.addView(previewContent, new FrameLayout.LayoutParams(-1, -1));
             } else {
                 tile.addView(option, new FrameLayout.LayoutParams(-1, -1));
