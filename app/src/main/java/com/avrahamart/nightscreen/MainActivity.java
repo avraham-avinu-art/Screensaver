@@ -1308,45 +1308,33 @@ public class MainActivity extends Activity {
         }
     }
 
-    private void applyTextAlignmentPreference() {
-        if (screenRootView == null) return;
-        String mode = getString("textAlignmentMode", "center");
-        int horizontalGravity;
-        int textAlignment;
-        int textDirection;
-        if ("rtl".equals(mode)) {
-            horizontalGravity = Gravity.RIGHT;
-            textAlignment = View.TEXT_ALIGNMENT_GRAVITY;
-            textDirection = View.TEXT_DIRECTION_RTL;
-        } else if ("ltr".equals(mode)) {
-            horizontalGravity = Gravity.LEFT;
-            textAlignment = View.TEXT_ALIGNMENT_GRAVITY;
-            textDirection = View.TEXT_DIRECTION_LTR;
-        } else {
-            horizontalGravity = Gravity.CENTER_HORIZONTAL;
-            textAlignment = View.TEXT_ALIGNMENT_CENTER;
-            textDirection = View.TEXT_DIRECTION_ANY_RTL;
-        }
-        applyTextAlignmentRecursively(
-                screenRootView, horizontalGravity, textAlignment, textDirection);
+    private int horizontalGravityForTextMode(String mode) {
+        if ("right".equals(mode)) return Gravity.RIGHT;
+        if ("left".equals(mode)) return Gravity.LEFT;
+        return Gravity.CENTER_HORIZONTAL;
     }
 
-    private void applyTextAlignmentRecursively(View target, int horizontalGravity,
-                                               int textAlignment, int textDirection) {
-        if (target instanceof TextView) {
-            TextView text = (TextView) target;
-            int verticalGravity = text.getGravity() & Gravity.VERTICAL_GRAVITY_MASK;
-            text.setGravity(verticalGravity | horizontalGravity);
-            text.setTextAlignment(textAlignment);
-            text.setTextDirection(textDirection);
-        }
-        if (target instanceof ViewGroup) {
-            ViewGroup group = (ViewGroup) target;
-            for (int i = 0; i < group.getChildCount(); i++) {
-                applyTextAlignmentRecursively(
-                        group.getChildAt(i), horizontalGravity, textAlignment, textDirection);
-            }
-        }
+    private void applyHorizontalTextGravity(TextView view, int horizontalGravity) {
+        if (view == null) return;
+        int verticalGravity = view.getGravity() & Gravity.VERTICAL_GRAVITY_MASK;
+        if (verticalGravity == 0) verticalGravity = Gravity.CENTER_VERTICAL;
+        view.setGravity(horizontalGravity | verticalGravity);
+    }
+
+    private int playerTextHorizontalGravity() {
+        return horizontalGravityForTextMode(getString("playerTextAlignment", "center"));
+    }
+
+    private void applySectionTextAlignmentPreferences() {
+        int clockGravity = horizontalGravityForTextMode(
+                getString("clockTextAlignment", "center"));
+        applyHorizontalTextGravity(timeText, clockGravity);
+        applyHorizontalTextGravity(gregorianText, clockGravity);
+        applyHorizontalTextGravity(hebrewText, clockGravity);
+
+        int playerGravity = playerTextHorizontalGravity();
+        applyHorizontalTextGravity(mediaTitle, playerGravity);
+        applyHorizontalTextGravity(mediaDetails, playerGravity);
     }
 
     private void applySettings() {
@@ -1650,7 +1638,7 @@ public class MainActivity extends Activity {
             }
         }
         updateClock();
-        applyTextAlignmentPreference();
+        applySectionTextAlignmentPreferences();
     }
 
     private int dateClockGapDp(int clockSize) {
@@ -3622,7 +3610,7 @@ public class MainActivity extends Activity {
             if (!value.isEmpty() && textWidth > available + dp(2)) {
                 // The title fits normally when short. Only overflowing titles
                 // become horizontally scrollable.
-                mediaTitle.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
+                mediaTitle.setGravity(playerTextHorizontalGravity() | Gravity.CENTER_VERTICAL);
                 mediaTitle.setTextDirection(View.TEXT_DIRECTION_FIRST_STRONG_RTL);
                 mediaTitle.setHorizontallyScrolling(true);
                 mediaTitle.setEllipsize(null);
@@ -3641,7 +3629,7 @@ public class MainActivity extends Activity {
                 titleMarqueeAnimator.setInterpolator(new android.view.animation.LinearInterpolator());
                 titleMarqueeAnimator.start();
             } else {
-                mediaTitle.setGravity(Gravity.CENTER);
+                mediaTitle.setGravity(playerTextHorizontalGravity() | Gravity.CENTER_VERTICAL);
                 mediaTitle.setTextDirection(View.TEXT_DIRECTION_FIRST_STRONG_RTL);
                 mediaTitle.setHorizontallyScrolling(false);
                 mediaTitle.setEllipsize(TextUtils.TruncateAt.END);
@@ -3666,7 +3654,7 @@ public class MainActivity extends Activity {
                             - mediaDetails.getPaddingRight());
             stopArtistMarquee();
             if (textWidth > available + dp(2)) {
-                mediaDetails.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
+                mediaDetails.setGravity(playerTextHorizontalGravity() | Gravity.CENTER_VERTICAL);
                 mediaDetails.setTextDirection(View.TEXT_DIRECTION_FIRST_STRONG_RTL);
                 mediaDetails.setHorizontallyScrolling(true);
                 mediaDetails.setEllipsize(null);
@@ -3685,7 +3673,7 @@ public class MainActivity extends Activity {
                         new android.view.animation.LinearInterpolator());
                 artistMarqueeAnimator.start();
             } else {
-                mediaDetails.setGravity(Gravity.CENTER);
+                mediaDetails.setGravity(playerTextHorizontalGravity() | Gravity.CENTER_VERTICAL);
                 mediaDetails.setHorizontallyScrolling(false);
                 mediaDetails.setEllipsize(TextUtils.TruncateAt.END);
                 mediaDetails.setSelected(false);

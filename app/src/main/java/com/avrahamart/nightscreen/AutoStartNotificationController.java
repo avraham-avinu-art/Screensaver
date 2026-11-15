@@ -18,7 +18,7 @@ import android.provider.Settings;
  * This class deliberately never posts a standalone notification.
  */
 public final class AutoStartNotificationController {
-    static final String CHANNEL_ID = "screensaver_lock_monitor_v5";
+    static final String CHANNEL_ID = "screensaver_lock_monitor_v6";
     static final int NOTIFICATION_ID = 6723;
 
     private AutoStartNotificationController() {
@@ -40,6 +40,8 @@ public final class AutoStartNotificationController {
         Notification.Builder builder = Build.VERSION.SDK_INT >= 26
                 ? new Notification.Builder(app, CHANNEL_ID)
                 : new Notification.Builder(app);
+        // Android requires a valid small icon for a foreground-service notification.
+        // IMPORTANCE_MIN suppresses the notification icon in the status bar.
         builder.setSmallIcon(R.drawable.ic_qs_screensaver)
                 .setLargeIcon(createApplicationIcon(app))
                 .setContentTitle("שירות ההפעלה האוטומטית פועל.")

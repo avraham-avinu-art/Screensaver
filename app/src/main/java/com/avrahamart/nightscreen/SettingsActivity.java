@@ -507,6 +507,9 @@ screenTitle.setText("הגדרות");
         addDiscreteSlider(content, "עובי הגופן",
                 new String[]{"דק", "רגיל", "מודגש", "עבה"},
                 new String[]{"-1", "0", "1", "2"}, "fontWeight");
+        addSegmentedChoices(content, "כיוון הטקסט",
+                new String[]{"מרכז", "ימין", "שמאל"},
+                new String[]{"center", "right", "left"}, "clockTextAlignment");
         addSegmentedChoices(content, "מיקום",
                 new String[]{"בראש המסך", "ברבע העליון", "במרכז המסך"},
                 new String[]{"top", "upper", "middle"}, "clockDatePosition");
@@ -613,7 +616,7 @@ screenTitle.setText("הגדרות");
     private void addExcludedAppsPicker(LinearLayout parent) {
         LinearLayout card = parent;
         TextView description = textView(
-                "אפשר לבחור אפליקציות שבהן שומר מסך לא יופעל אוטומטית. נדרשת הרשאת נתוני שימוש של Android.",
+                "אפשר לבחור אפליקציות שבהן שומר מסך לא יופעל אוטומטית.",
                 14, MUTED);
         description.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         description.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
@@ -625,7 +628,8 @@ screenTitle.setText("הגדרות");
         descriptionParams.leftMargin = dp(7);
         card.addView(description, descriptionParams);
         Button choose = makeActionButton("בחירת אפליקציות");
-        LinearLayout.LayoutParams buttonParams = new LinearLayout.LayoutParams(-1, dp(42));
+        LinearLayout.LayoutParams buttonParams = new LinearLayout.LayoutParams(-2, dp(42));
+        buttonParams.gravity = Gravity.CENTER_HORIZONTAL;
         buttonParams.topMargin = dp(8);
         card.addView(choose, buttonParams);
         choose.setOnClickListener(v -> {
@@ -739,9 +743,6 @@ screenTitle.setText("הגדרות");
         addColorChoices(content, "צבע הגופן",
                 new String[]{"לבן", "כחול עדין", "כסף", "אפור", "אפור בהיר"},
                 new String[]{"white", "blue", "silver", "gray", "light"}, "fontColor");
-        addSegmentedChoices(content, "סידור הטקסט במסך",
-                new String[]{"ממורכז", "מימין לשמאל", "משמאל לימין"},
-                new String[]{"center", "rtl", "ltr"}, "textAlignmentMode");
     }
 
     
@@ -759,6 +760,9 @@ screenTitle.setText("הגדרות");
         addSegmentedChoices(content, "מיקום הנגן",
                 new String[]{"ברבע התחתון", "בתחתית המסך"},
                 new String[]{"lower", "bottom"}, "playerPosition");
+        addSegmentedChoices(content, "כיוון הטקסט",
+                new String[]{"מרכז", "ימין", "שמאל"},
+                new String[]{"center", "right", "left"}, "playerTextAlignment");
         addLineSlider(content, "הזזה אופקית של הנגן", "playerHorizontalOffset", -20, 20);
         addCheck(content, "הצג מסגרת", "frameEnabled", false);
         addCheck(content, "תמונת האלבום כרקע פנימי", "frameUseAlbumArt",
@@ -813,7 +817,7 @@ screenTitle.setText("הגדרות");
         }
         addCheck(content, "מניעת הפעלה בזמן שימוש",
                 "preventAutoStartDuringUse", false);
-        addCheck(content, "הצגת סמל ההגדרות באופן קבוע",
+        addCheck(content, "סמל ההגדרות בתצוגה קבועה",
                 "settingsButtonAlwaysVisible", false);
     }
 
@@ -842,8 +846,7 @@ screenTitle.setText("הגדרות");
                 return "שומר מסך במצב טעינה";
             case CATEGORY_APPEARANCE:
                         if ("screenBackgroundColor".equals(key) || "screenBrightness".equals(key)
-                        || "backgroundStyle".equals(key)
-                        || "textAlignmentMode".equals(key)) {
+                        || "backgroundStyle".equals(key)) {
                     return "התאמת מראה המסך";
                 }
                 return "גופן וצבע הטקסט";
@@ -855,6 +858,7 @@ screenTitle.setText("הגדרות");
                 }
                 return "הצגת הנגן";
             case CATEGORY_ADVANCED:
+                if ("useAndroidDreamForCharging".equals(key)) return "הפעלה אוטומטית בטעינה";
                 if ("settingsButtonAlwaysVisible".equals(key)) return "סמל ההגדרות";
                 if ("nightModeEnabled".equals(key) || "nightModeStartHour".equals(key)
                         || "nightModeEndHour".equals(key)) return "מצב לילה";
@@ -1025,10 +1029,11 @@ screenTitle.setText("הגדרות");
         if ("clockDateSize".equals(key)) return "בחירת גודל התצוגה של השעון והתאריך";
         if ("clockDisplayMode".equals(key)) return "בחירה בין תצוגת שעה דיגיטלית לבין שעון אנלוגי עם מחוגים";
         if ("clockDialStyle".equals(key)) return "בחירת עיצוב השעון האנלוגי";
-        if ("textAlignmentMode".equals(key)) return "בחירת אופן היישור של כל הטקסט במסך";
+        if ("clockTextAlignment".equals(key)) return "בחירת יישור הטקסט בתוך אזור השעון והתאריך";
+        if ("playerTextAlignment".equals(key)) return "בחירת יישור שם האמן ושם השיר בתוך אזור הנגן";
         if ("autoStartOnlyWhenLocked".equals(key)) return "הגבלת כל ההפעלות האוטומטיות כך שיפעלו רק כשהמכשיר נעול";
         if ("preventAutoStartDuringUse".equals(key)) return "מניעת הפעלה אוטומטית כאשר אפליקציה אחרת נמצאת בחזית";
-        if ("pauseWhenExcludedAppActive".equals(key)) return "השהיית ההפעלה האוטומטית כאשר אפליקציה שנבחרה להחרגה נמצאת בחזית";
+        if ("pauseWhenExcludedAppActive".equals(key)) return "השהיית ההפעלה האוטומטית כאשר אפליקציה שנבחרה נמצאת בחזית";
         if ("fontWeight".equals(key)) return "בחירת עובי גופן השעון והתאריך";
         if ("clockDatePosition".equals(key)) return "בחירת מיקום הצגת השעון והתאריך במסך";
         if ("screenSaverDuration".equals(key)) return "בחירת משך זמן הצגת השומר מסך";
@@ -1043,6 +1048,7 @@ screenTitle.setText("הגדרות");
         if ("screenBrightness".equals(key)) return "התאמת בהירות התצוגה של שומר המסך";
         if ("fontFamily".equals(key)) return "בחירת סוג הגופן שיוצג במסך";
         if ("fontColor".equals(key)) return "בחירת צבע הגופנים והפריטים המופיעים במסך";
+        if ("settingsButtonAlwaysVisible".equals(key)) return "בחירה בתצוגה קבועה של סמל ההגדרות, ללא הפעלת הגדרה זו הסמל יהיה מוסתר, ומוצג רק בנגיעה במסך למשך מספר שניות.";
         if ("playerDisplayMode".equals(key)) return "הצגת נגן המערכת בזמן שהוא פועל";
         if ("showPlayerOnlyAtStart".equals(key)) return "הצגת הנגן רק בתחילת כל שיר";
         if ("showDetails".equals(key)) return "כשמופיע בפרטי השיר את שם האמן, הצגת שם האמן מעל שם השיר";
@@ -1498,6 +1504,8 @@ screenTitle.setText("הגדרות");
     private void addLineSlider(LinearLayout parent, String label, String key,
                                int minValue, int maxValue) {
         LinearLayout card = addSettingCard(parent, label, key);
+        card.setClipChildren(false);
+        card.setClipToPadding(false);
 
         LinearLayout resetRow = new LinearLayout(this);
         resetRow.setOrientation(LinearLayout.HORIZONTAL);
@@ -1513,17 +1521,15 @@ screenTitle.setText("הגדרות");
         reset.setFocusable(true);
         reset.setContentDescription("איפוס " + label + " לברירת המחדל");
         resetRow.addView(reset, new LinearLayout.LayoutParams(-2, dp(32)));
-        LinearLayout.LayoutParams resetParams = new LinearLayout.LayoutParams(-1, dp(38));
-        resetParams.topMargin = dp(10);
-        resetParams.bottomMargin = dp(4);
-        card.addView(resetRow, resetParams);
-
         LinearLayout adjustmentRow = new LinearLayout(this);
         adjustmentRow.setOrientation(LinearLayout.HORIZONTAL);
         adjustmentRow.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         adjustmentRow.setGravity(Gravity.CENTER_VERTICAL);
+        adjustmentRow.setPadding(dp(8), 0, dp(8), 0);
+        adjustmentRow.setClipChildren(false);
+        adjustmentRow.setClipToPadding(false);
 
-        TextView left = textView("שמאלה", 12, MUTED);
+        TextView left = textView("שמאלה", 14, MUTED);
         left.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
         left.setSingleLine(true);
         LinearLayout.LayoutParams leftParams = new LinearLayout.LayoutParams(-2, dp(34));
@@ -1537,7 +1543,7 @@ screenTitle.setText("הגדרות");
         seekBar.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         seekBar.setContentDescription(label);
         seekBar.setMinimumHeight(dp(44));
-        seekBar.setPadding(dp(4), 0, dp(4), 0);
+        seekBar.setPadding(dp(10), 0, dp(10), 0);
         if (Build.VERSION.SDK_INT >= 21) {
             seekBar.setProgressTintList(ColorStateList.valueOf(ACCENT));
             seekBar.setThumbTintList(ColorStateList.valueOf(ON_SURFACE));
@@ -1546,7 +1552,7 @@ screenTitle.setText("הגדרות");
         LinearLayout.LayoutParams seekParams = new LinearLayout.LayoutParams(0, dp(46), 1f);
         adjustmentRow.addView(seekBar, seekParams);
 
-        TextView right = textView("ימינה", 12, MUTED);
+        TextView right = textView("ימינה", 14, MUTED);
         right.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         right.setSingleLine(true);
         LinearLayout.LayoutParams rightParams = new LinearLayout.LayoutParams(-2, dp(34));
@@ -1556,6 +1562,11 @@ screenTitle.setText("הגדרות");
         LinearLayout.LayoutParams adjustmentParams = new LinearLayout.LayoutParams(-1, dp(46));
         adjustmentParams.topMargin = dp(2);
         card.addView(adjustmentRow, adjustmentParams);
+
+        LinearLayout.LayoutParams resetParams = new LinearLayout.LayoutParams(-1, dp(38));
+        resetParams.topMargin = dp(6);
+        resetParams.bottomMargin = 0;
+        card.addView(resetRow, resetParams);
 
         Runnable updateReset = () -> {
             int value = seekBar.getProgress() + minValue;
@@ -1857,11 +1868,13 @@ screenTitle.setText("הגדרות");
                 "screenBackgroundColor".equals(key));
         final ColorSwatchView selectedCustomSwatch = customColorSwatch;
 
-        final TextView customCaption = textView("מותאם אישית", 11,
+        final TextView customCaption = textView("בחירת צבע מותאם אישית", 12,
                 selectedInitially < 0 ? ACCENT : MUTED);
         customCaption.setGravity(Gravity.CENTER);
         customCaption.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-        customCaption.setSingleLine(true);
+        customCaption.setSingleLine(false);
+        customCaption.setMaxLines(2);
+        customCaption.setEllipsize(null);
         customCaption.setIncludeFontPadding(false);
         customCaption.setTypeface(Typeface.create("sans-serif-medium",
                 selectedInitially < 0 ? Typeface.BOLD : Typeface.NORMAL));
@@ -1937,7 +1950,7 @@ screenTitle.setText("הגדרות");
         customColorItem.addView(selectedCustomSwatch,
                 new LinearLayout.LayoutParams(dp(38), dp(38)));
         customColorItem.addView(customCaption,
-                new LinearLayout.LayoutParams(-1, dp(22)));
+                new LinearLayout.LayoutParams(-1, dp(34)));
         customColorItem.setClickable(true);
         customColorItem.setFocusable(true);
         customColorItem.setOnClickListener(v -> showCustomColorDialog(
@@ -2337,7 +2350,6 @@ screenTitle.setText("הגדרות");
         if ("autoStartOnlyWhenLocked".equals(key)) return "lock-play";
         if ("preventAutoStartDuringUse".equals(key)) return "activity-history";
         if ("pauseWhenExcludedAppActive".equals(key)) return "activity-history";
-        if ("textAlignmentMode".equals(key)) return "position-arrows";
         if ("autoStartOnDeviceLock".equals(key)) return "lock-play";
         if ("autoStartOnBoot".equals(key)) return "power";
         if ("autoStartOnWake".equals(key)) return "screen-wake";
