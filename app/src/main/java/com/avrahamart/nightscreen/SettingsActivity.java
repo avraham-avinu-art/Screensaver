@@ -3468,6 +3468,12 @@ screenHeader.setVisibility(View.GONE);
         return circle;
     }
 
+    private GradientDrawable dashboardButtonOutline(int color, int radius, int strokeColor) {
+        GradientDrawable bg = pillBackground(color, radius);
+        bg.setStroke(dp(2), strokeColor);
+        return bg;
+    }
+
     private int colorValue(String value) {
         if (value != null && value.startsWith("#")) {
             try { return Color.parseColor(value); }
