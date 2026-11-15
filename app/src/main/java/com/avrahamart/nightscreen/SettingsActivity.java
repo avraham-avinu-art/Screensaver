@@ -954,7 +954,7 @@ screenHeader.setVisibility(View.GONE);
         LinearLayout.LayoutParams settingIconParams =
                 new LinearLayout.LayoutParams(dp(30), dp(30));
         settingIconParams.rightMargin = dp(5);
-        header.addView(makeIconBadge(iconForSetting(key), dp(30)), settingIconParams);
+        header.addView(makeSettingIconBadge(key, dp(30)), settingIconParams);
 
         card.addView(header, new LinearLayout.LayoutParams(-1, -2));
         return card;
@@ -2274,20 +2274,6 @@ screenHeader.setVisibility(View.GONE);
         }
     }
 
-    private String iconForSetting(String key) {
-        // Each persisted setting key has exactly one independently drawn vector resource.
-        StringBuilder iconName = new StringBuilder("setting-");
-        for (int i = 0; i < key.length(); i++) {
-            char character = key.charAt(i);
-            if (Character.isUpperCase(character)) {
-                iconName.append('-').append(Character.toLowerCase(character));
-            } else {
-                iconName.append(character);
-            }
-        }
-        return iconName.toString();
-    }
-
     private View makeIconGlyph(String iconName, int tint) {
         int resourceId;
         if ("activity-history".equals(iconName)) {
@@ -2330,6 +2316,23 @@ screenHeader.setVisibility(View.GONE);
         FrameLayout.LayoutParams graphicParams =
                 new FrameLayout.LayoutParams(glyphSize, glyphSize, Gravity.CENTER);
         badge.addView(graphic, graphicParams);
+        return badge;
+    }
+
+    private FrameLayout makeSettingIconBadge(String settingKey, int size) {
+        FrameLayout badge = new FrameLayout(this);
+        badge.setBackground(roundOutline(ICON_SURFACE, dp(10), CARD_OUTLINE));
+
+        android.widget.ImageView image = new android.widget.ImageView(this);
+        image.setImageResource(SettingIconRegistry.drawableForKey(settingKey));
+        image.setColorFilter(ACCENT);
+        image.setScaleType(android.widget.ImageView.ScaleType.FIT_CENTER);
+        image.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+        image.setContentDescription(settingKey);
+
+        int glyphSize = dp(22);
+        badge.addView(image, new FrameLayout.LayoutParams(
+                glyphSize, glyphSize, Gravity.CENTER));
         return badge;
     }
 
