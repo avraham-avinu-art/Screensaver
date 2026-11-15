@@ -1936,14 +1936,6 @@ screenHeader.setVisibility(View.GONE);
         sampleParams.topMargin = dp(2);
         panel.addView(sampleRow, sampleParams);
 
-        View separator = new View(this);
-        separator.setBackgroundColor(CARD_OUTLINE);
-        LinearLayout.LayoutParams separatorParams =
-                new LinearLayout.LayoutParams(-1, dp(1));
-        separatorParams.topMargin = dp(3);
-        separatorParams.bottomMargin = dp(3);
-        panel.addView(separator, separatorParams);
-
         String[] captions = {getString(R.string.settings_activity_text_245), getString(R.string.settings_activity_text_246), getString(R.string.settings_activity_text_247)};
         int[] maxes = {359, 100, 100};
 
