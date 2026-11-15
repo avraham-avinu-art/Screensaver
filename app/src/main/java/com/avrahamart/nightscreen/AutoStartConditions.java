@@ -67,27 +67,51 @@ final class AutoStartConditions {
             return false;
         }
 
+        return !shouldBlockForForegroundApps(
+                foregroundPackages,
+                context.getPackageName(),
+                getHomePackage(context),
+                blockDuringAnyAppUse,
+                blockForSelectedApps,
+                selectedApps);
+    }
+
+    /**
+     * Pure decision helper shared with regression tests. A true result means
+     * that the pending automatic activation must be rejected.
+     */
+    static boolean shouldBlockForForegroundApps(
+            Set<String> foregroundPackages,
+            String appPackage,
+            String launcherPackage,
+            boolean blockDuringAnyAppUse,
+            boolean blockForSelectedApps,
+            Set<String> selectedApps) {
+        boolean selectedFilterActive =
+                blockForSelectedApps && selectedApps != null && !selectedApps.isEmpty();
+        if (!blockDuringAnyAppUse && !selectedFilterActive) return false;
+        if (foregroundPackages == null) return true;
+
         if (blockDuringAnyAppUse) {
-            String launcherPackage = getHomePackage(context);
             for (String packageName : foregroundPackages) {
                 if (packageName == null
                         || packageName.isEmpty()
-                        || context.getPackageName().equals(packageName)
+                        || packageName.equals(appPackage)
                         || packageName.equals(launcherPackage)
                         || "com.android.systemui".equals(packageName)
                         || "android".equals(packageName)) {
                     continue;
                 }
-                return false;
+                return true;
             }
         }
 
         if (selectedFilterActive) {
             for (String packageName : selectedApps) {
-                if (foregroundPackages.contains(packageName)) return false;
+                if (foregroundPackages.contains(packageName)) return true;
             }
         }
-        return true;
+        return false;
     }
 
     static boolean isDeviceLocked(Context context) {
