@@ -159,7 +159,7 @@ private LinearLayout clockDateCard;
         headerTitleBlock.setGravity(Gravity.CENTER);
         headerTitleBlock.setPadding(0, 0, 0, 0);
 
-        screenTitle = textView("הגדרות", 27, ON_SURFACE);
+        screenTitle = textView(getString(R.string.settings_activity_text_001), 27, ON_SURFACE);
         screenTitle.setIncludeFontPadding(false);
         screenTitle.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
         screenTitle.setLetterSpacing(-0.015f);
@@ -168,7 +168,7 @@ private LinearLayout clockDateCard;
         screenTitle.setTextDirection(View.TEXT_DIRECTION_RTL);
         headerTitleBlock.addView(screenTitle, new LinearLayout.LayoutParams(-1, -2));
 
-        screenSubtitle = textView("התאמה אישית של שומר מסך", 16, MUTED);
+        screenSubtitle = textView(getString(R.string.settings_activity_text_002), 16, MUTED);
         screenSubtitle.setIncludeFontPadding(false);
         screenSubtitle.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         screenSubtitle.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
@@ -270,8 +270,8 @@ if (content != null) {
         currentSettingsGroup = null;
         currentSettingsGroupParent = null;
         currentSettingsGroupTitle = null;
-screenTitle.setText("הגדרות");
-        screenSubtitle.setText("התאמה אישית של שומר מסך");
+screenTitle.setText(getString(R.string.settings_activity_text_001));
+        screenSubtitle.setText(getString(R.string.settings_activity_text_002));
 
         screenHeader.setVisibility(View.VISIBLE);
         // The dashboard uses only the right-aligned "הגדרות" title.
@@ -286,20 +286,20 @@ screenTitle.setText("הגדרות");
         screenSubtitle.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         screenSubtitle.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
 
-        addDashboardButton("הפעלה והתנהגות",
-                "הגדרת הזמנים ואפשרויות ההפעלה",
+        addDashboardButton(getString(R.string.settings_activity_text_003),
+                getString(R.string.settings_activity_text_004),
                 "power-category", CATEGORY_ACTIVITY);
-        addDashboardButton("מראה ועיצוב",
-                "התאמת גופנים צבעים ובהירות",
+        addDashboardButton(getString(R.string.settings_activity_text_005),
+                getString(R.string.settings_activity_text_006),
                 "palette", CATEGORY_APPEARANCE);
-        addDashboardButton("שעון ותאריך",
-                "התאמת תצוגת השעה והתאריך",
+        addDashboardButton(getString(R.string.settings_activity_text_007),
+                getString(R.string.settings_activity_text_008),
                 "calendar-clock", CATEGORY_CLOCK_DATE);
-        addDashboardButton("נגן מדיה",
-                "הצגת והתאמת נגן המערכת",
+        addDashboardButton(getString(R.string.settings_activity_text_009),
+                getString(R.string.settings_activity_text_010),
                 "music-note", CATEGORY_PLAYER);
-        addDashboardButton("הגדרות מתקדמות",
-                "כלים מתקדמים וחיסכון בסוללה",
+        addDashboardButton(getString(R.string.settings_activity_text_011),
+                getString(R.string.settings_activity_text_012),
                 "tune", CATEGORY_ADVANCED);
 
         addDashboardNavigation();
@@ -336,9 +336,9 @@ screenTitle.setText("הגדרות");
     }
 
     private void addDashboardNavigation() {
-        addDashboardNavigationButton("ניהול הרשאות", "shield-alert",
+        addDashboardNavigationButton(getString(R.string.settings_activity_text_013), "shield-alert",
                 () -> startActivity(new Intent(this, PermissionsActivity.class)));
-        addDashboardNavigationButton("מדריך שימוש", "book-open",
+        addDashboardNavigationButton(getString(R.string.settings_activity_text_014), "book-open",
                 () -> startActivity(new Intent(this, GuideActivity.class)));
     }
 
@@ -480,47 +480,47 @@ screenTitle.setText("הגדרות");
 
     
     private void buildClockDateSettings() {
-        addCheck(content, "תאריך עברי", "showHebrew", true);
+        addCheck(content, getString(R.string.settings_activity_text_015), "showHebrew", true);
         String[] hebrewDateFormats = {"plain", "yearArticle", "monthBet", "monthBetYearArticle"};
-        addSpinner(content, "תבנית התאריך העברי",
+        addSpinner(content, getString(R.string.settings_activity_text_016),
                 currentHebrewDateSamples(), hebrewDateFormats, "hebrewDateFormat");
-        addCheck(content, "תאריך לועזי", "showGregorian", true);
+        addCheck(content, getString(R.string.settings_activity_text_017), "showGregorian", true);
         String[] gregorianDateFormats = {
                 "dd.MM.yyyy", "dd.MM.yy", "dd/MM/yy",
-                "dd/MM/yyyy", "yyyy/MM/dd", "d 'ב'MMMM yyyy"
+                "dd/MM/yyyy", "yyyy/MM/dd", getString(R.string.settings_activity_text_018)
         };
-        addSpinner(content, "תבנית התאריך הלועזי",
+        addSpinner(content, getString(R.string.settings_activity_text_019),
                 currentGregorianDateSamples(gregorianDateFormats),
                 gregorianDateFormats, "gregorianDateFormat");
-        addSegmentedChoices(content, "תצוגת שעה",
-                new String[]{"24 שעות", "12 שעות"},
+        addSegmentedChoices(content, getString(R.string.settings_activity_text_020),
+                new String[]{getString(R.string.settings_activity_text_021), getString(R.string.settings_activity_text_022)},
                 new String[]{"24", "12"}, "timeFormat");
-        addSegmentedChoices(content, "סוג השעון",
-                new String[]{"דיגיטלי", "אנלוגי"},
+        addSegmentedChoices(content, getString(R.string.settings_activity_text_023),
+                new String[]{getString(R.string.settings_activity_text_024), getString(R.string.settings_activity_text_025)},
                 new String[]{"digital", "analog"}, "clockDisplayMode");
-        addSegmentedChoices(content, "עיצוב לוח השעון",
-                new String[]{"מספרים בלבד", "קווים בלבד", "קווים ומספרים"},
+        addSegmentedChoices(content, getString(R.string.settings_activity_text_026),
+                new String[]{getString(R.string.settings_activity_text_027), getString(R.string.settings_activity_text_028), getString(R.string.settings_activity_text_029)},
                 new String[]{"numbers_only", "lines_only", "lines_numbers"}, "clockDialStyle");
-        addDiscreteSlider(content, "גודל",
-                new String[]{"קטן", "בינוני", "רגיל", "גדול", "ענק"},
+        addDiscreteSlider(content, getString(R.string.settings_activity_text_030),
+                new String[]{getString(R.string.settings_activity_text_031), getString(R.string.settings_activity_text_032), getString(R.string.settings_activity_text_033), getString(R.string.settings_activity_text_034), getString(R.string.settings_activity_text_035)},
                 new String[]{"60", "72", "84", "96", "108"}, "clockDateSize");
-        addDiscreteSlider(content, "עובי הגופן",
-                new String[]{"דק", "רגיל", "מודגש", "עבה"},
+        addDiscreteSlider(content, getString(R.string.settings_activity_text_036),
+                new String[]{getString(R.string.settings_activity_text_037), getString(R.string.settings_activity_text_033), getString(R.string.settings_activity_text_038), getString(R.string.settings_activity_text_039)},
                 new String[]{"-1", "0", "1", "2"}, "fontWeight");
-        addSegmentedChoices(content, "כיוון הטקסט",
-                new String[]{"ימין", "מרכז", "שמאל"},
+        addSegmentedChoices(content, getString(R.string.settings_activity_text_040),
+                new String[]{getString(R.string.settings_activity_text_041), getString(R.string.settings_activity_text_042), getString(R.string.settings_activity_text_043)},
                 new String[]{"right", "center", "left"}, "clockTextAlignment");
-        addSegmentedChoices(content, "מיקום",
-                new String[]{"בראש המסך", "ברבע העליון", "במרכז המסך"},
+        addSegmentedChoices(content, getString(R.string.settings_activity_text_044),
+                new String[]{getString(R.string.settings_activity_text_045), getString(R.string.settings_activity_text_046), getString(R.string.settings_activity_text_047)},
                 new String[]{"top", "upper", "middle"}, "clockDatePosition");
-        addLineSlider(content, "הזזה אופקית", "clockHorizontalOffset", -20, 20);
+        addLineSlider(content, getString(R.string.settings_activity_text_048), "clockHorizontalOffset", -20, 20);
     }
 
     private String[] currentGregorianDateSamples(String[] patterns) {
         Calendar today = Calendar.getInstance();
         String[] samples = new String[patterns.length];
         for (int i = 0; i < patterns.length; i++) {
-            Locale locale = "d 'ב'MMMM yyyy".equals(patterns[i])
+            Locale locale = getString(R.string.settings_activity_text_018).equals(patterns[i])
                     ? new Locale("he", "IL") : Locale.US;
             SimpleDateFormat formatter = new SimpleDateFormat(patterns[i], locale);
             formatter.setTimeZone(today.getTimeZone());
@@ -551,9 +551,9 @@ screenTitle.setText("הגדרות");
 
     private String formatHebrewDateSample(String rawDate, String format) {
         String normalized = rawDate
-                .replace("מרחשוון", "חשוון")
-                .replace("מרחשון", "חשוון")
-                .replace("חשון", "חשוון")
+                .replace(getString(R.string.settings_activity_text_049), getString(R.string.settings_activity_text_050))
+                .replace(getString(R.string.settings_activity_text_051), getString(R.string.settings_activity_text_050))
+                .replace(getString(R.string.settings_activity_text_052), getString(R.string.settings_activity_text_050))
                 .replace("׳", "'")
                 .replace("״", "\"")
                 .replace("’", "'")
@@ -566,10 +566,10 @@ screenTitle.setText("הגדרות");
         String month = normalized.substring(firstSpace + 1, lastSpace);
         String year = normalized.substring(lastSpace + 1);
         if ("monthBet".equals(format) || "monthBetYearArticle".equals(format)) {
-            month = "ב" + month;
+            month = getString(R.string.settings_activity_text_053) + month;
         }
         if ("yearArticle".equals(format) || "monthBetYearArticle".equals(format)) {
-            year = "ה" + year;
+            year = getString(R.string.settings_activity_text_054) + year;
         }
         return day + " " + month + " " + year;
     }
@@ -577,7 +577,7 @@ screenTitle.setText("הגדרות");
     private void addActivityHelpHeaderButton() {
         // The information button belongs to the page title bar, at its upper-left.
         FrameLayout button = new FrameLayout(this);
-        button.setContentDescription("הסבר על הגדרות זמני הפעילות");
+        button.setContentDescription(getString(R.string.settings_activity_text_055));
         button.setClickable(true);
         button.setFocusable(true);
         button.setBackgroundColor(Color.TRANSPARENT);
@@ -595,27 +595,27 @@ screenTitle.setText("הגדרות");
     }
 
     private void buildActivitySettings() {
-        LinearLayout durationCard = addSegmentedChoices(content, "זמן מסך",
-                new String[]{"לפי המכשיר", "1 דק'", "5 דק'", "ללא כיבוי"},
+        LinearLayout durationCard = addSegmentedChoices(content, getString(R.string.settings_activity_text_056),
+                new String[]{getString(R.string.settings_activity_text_057), getString(R.string.settings_activity_text_058), getString(R.string.settings_activity_text_059), getString(R.string.settings_activity_text_060)},
                 new String[]{"device", "1", "5", "0"}, "screenSaverDuration");
         addActivityCapabilityNotice(durationCard);
-        addCheck(content, "מניעת נעילה בזמן פעילות", "preventLockWhileActive", false);
-        addCheck(content, "המשך הצגה במסך נעילה", "continueOnLockScreen", false);
-        addCheck(content, "הפעלה אוטומטית בנעילה", "autoStartOnDeviceLock", false);
-        addCheck(content, "הפעלה אוטומטית בהדלקה", "autoStartOnBoot", false);
-        addCheck(content, "הפעלה אוטומטית בהתעוררות", "autoStartOnWake", false);
-        addCheck(content, "הפעלה אוטומטית בטעינה", "autoStartOnCharge", false);
-        addCheck(content, "רק כשהמכשיר נעול", "autoStartOnlyWhenLocked", false);
-        addCheck(content, "ללא כיבוי בטעינה", "noShutdownWhileCharging", false);
-        addSegmentedChoices(content, "תצוגת סוללה בטעינה",
-                new String[]{"ללא", "אחוזים", "סמל", "סמל ואחוזים"},
+        addCheck(content, getString(R.string.settings_activity_text_061), "preventLockWhileActive", false);
+        addCheck(content, getString(R.string.settings_activity_text_062), "continueOnLockScreen", false);
+        addCheck(content, getString(R.string.settings_activity_text_063), "autoStartOnDeviceLock", false);
+        addCheck(content, getString(R.string.settings_activity_text_064), "autoStartOnBoot", false);
+        addCheck(content, getString(R.string.settings_activity_text_065), "autoStartOnWake", false);
+        addCheck(content, getString(R.string.settings_activity_text_066), "autoStartOnCharge", false);
+        addCheck(content, getString(R.string.settings_activity_text_067), "autoStartOnlyWhenLocked", false);
+        addCheck(content, getString(R.string.settings_activity_text_068), "noShutdownWhileCharging", false);
+        addSegmentedChoices(content, getString(R.string.settings_activity_text_069),
+                new String[]{getString(R.string.settings_activity_text_070), getString(R.string.settings_activity_text_071), getString(R.string.settings_activity_text_072), getString(R.string.settings_activity_text_073)},
                 new String[]{"off", "percent", "icon", "icon_percent"},
                 "chargingBatteryDisplayMode");
     }
 
     private void addExcludedAppsPicker(LinearLayout parent) {
         LinearLayout card = parent;
-        Button choose = makeActionButton("בחירת אפליקציות");
+        Button choose = makeActionButton(getString(R.string.settings_activity_text_074));
         LinearLayout.LayoutParams buttonParams = new LinearLayout.LayoutParams(-2, dp(42));
         buttonParams.gravity = Gravity.CENTER_HORIZONTAL;
         buttonParams.topMargin = dp(14);
@@ -623,12 +623,12 @@ screenTitle.setText("הגדרות");
         choose.setOnClickListener(v -> {
             if (!hasUsageAccess()) {
                 AppToast.makeText(this,
-                        "כדי לזהות אפליקציה פעילה, יש לאפשר לשומר מסך גישה לנתוני שימוש במסך הבא.",
+                        getString(R.string.settings_activity_text_075),
                         Toast.LENGTH_LONG).show();
                 try {
                     startActivity(new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS));
                 } catch (Throwable ignored) {
-                    AppToast.makeText(this, "הגדרת נתוני שימוש אינה זמינה במכשיר זה.",
+                    AppToast.makeText(this, getString(R.string.settings_activity_text_076),
                             Toast.LENGTH_LONG).show();
                 }
                 return;
@@ -687,11 +687,11 @@ screenTitle.setText("הגדרות");
         }
 
         AlertDialog dialog = new AlertDialog.Builder(this)
-                .setTitle("אפליקציות מוחרגות")
+                .setTitle(getString(R.string.settings_activity_text_077))
                 .setMultiChoiceItems(names.toArray(new String[0]), checked,
                         (d, which, isChecked) -> checked[which] = isChecked)
-                .setNegativeButton("ביטול", null)
-                .setPositiveButton("שמירה", (d, which) -> {
+                .setNegativeButton(getString(R.string.settings_activity_text_078), null)
+                .setPositiveButton(getString(R.string.settings_activity_text_079), (d, which) -> {
                     Set<String> updated = new HashSet<>();
                     for (int i = 0; i < packages.size(); i++) {
                         if (checked[i]) updated.add(packages.get(i));
@@ -704,20 +704,20 @@ screenTitle.setText("הגדרות");
 
     
     private void buildAppearanceSettings() {
-        addColorChoices(content, "צבע המסך",
-                new String[]{"שחור", "כחול", "כחול כהה", "טורקיז",
-                        "אפור פחם", "ירוק יער", "כחול עמוק", "אפור אבן"},
+        addColorChoices(content, getString(R.string.settings_activity_text_080),
+                new String[]{getString(R.string.settings_activity_text_081), getString(R.string.settings_activity_text_082), getString(R.string.settings_activity_text_083), getString(R.string.settings_activity_text_084),
+                        getString(R.string.settings_activity_text_085), getString(R.string.settings_activity_text_086), getString(R.string.settings_activity_text_087), getString(R.string.settings_activity_text_088)},
                 new String[]{"#000000", "#142438", "#091321", "#12313A",
                         "#252B33", "#20362E", "#193740", "#303943"},
                 "screenBackgroundColor");
-        addSegmentedChoices(content, "סגנון הרקע",
-                new String[]{"אחיד", "מעבר צבע", "זוהר עדין", "הצללה"},
+        addSegmentedChoices(content, getString(R.string.settings_activity_text_089),
+                new String[]{getString(R.string.settings_activity_text_090), getString(R.string.settings_activity_text_091), getString(R.string.settings_activity_text_092), getString(R.string.settings_activity_text_093)},
                 new String[]{"solid", "gradient", "glow", "vignette"}, "backgroundStyle");
-        addDiscreteSlider(content, "בהירות המסך",
-                new String[]{"לפי המכשיר", "25%", "50%", "75%", "100%"},
+        addDiscreteSlider(content, getString(R.string.settings_activity_text_094),
+                new String[]{getString(R.string.settings_activity_text_057), "25%", "50%", "75%", "100%"},
                 new String[]{"-1", "25", "50", "75", "100"}, "screenBrightness");
-        addSpinner(content, "סוג הגופן",
-                new String[]{"ברירת מחדל", "DL Adva", "Keter Aram Tsova", "Shofar",
+        addSpinner(content, getString(R.string.settings_activity_text_095),
+                new String[]{getString(R.string.settings_activity_text_096), "DL Adva", "Keter Aram Tsova", "Shofar",
                         "Gveret Levin", "Yehuda CLM", "Stam Ashkenaz", "DL Apollo Black",
                         "DL Normador", "Ozrad CLM Bold", "Haim FB Black", "Coming Soon",
                         "Short Stack"},
@@ -728,41 +728,41 @@ screenTitle.setText("הגדרות");
                         "custom:DL Normador.TTF", "custom:OzradCLM-Bold.otf",
                         "custom:fmhaimblack.ttf", "custom:ComingSoon.ttf",
                         "custom:ShortStack-Regular.ttf"}, "fontFamily");
-        addColorChoices(content, "צבע הגופן",
-                new String[]{"לבן", "כחול עדין", "כסף", "אפור", "אפור בהיר"},
+        addColorChoices(content, getString(R.string.settings_activity_text_097),
+                new String[]{getString(R.string.settings_activity_text_098), getString(R.string.settings_activity_text_099), getString(R.string.settings_activity_text_100), getString(R.string.settings_activity_text_101), getString(R.string.settings_activity_text_102)},
                 new String[]{"white", "blue", "silver", "gray", "light"}, "fontColor");
     }
 
     
     private void buildPlayerSettings() {
-        addSegmentedChoices(content, "הפעלת הנגן",
-                new String[]{"כבוי", "פועל", "פועל בתחילת שיר"},
+        addSegmentedChoices(content, getString(R.string.settings_activity_text_103),
+                new String[]{getString(R.string.settings_activity_text_104), getString(R.string.settings_activity_text_105), getString(R.string.settings_activity_text_106)},
                 new String[]{"off", "on", "start"}, "playerDisplayMode");
-        addCheck(content, "פרטי האמן", "showDetails", getBool("showDetails", true));
-        addSegmentedChoices(content, "הצגת שורת מיקום ופקדי הנגן",
-                new String[]{"כבוי", "פועל", "פועל בתחילת שיר"},
+        addCheck(content, getString(R.string.settings_activity_text_107), "showDetails", getBool("showDetails", true));
+        addSegmentedChoices(content, getString(R.string.settings_activity_text_108),
+                new String[]{getString(R.string.settings_activity_text_104), getString(R.string.settings_activity_text_105), getString(R.string.settings_activity_text_106)},
                 new String[]{"off", "on", "start"}, "playerControlsDisplayMode");
-        addDiscreteSlider(content, "גודל הנגן",
-                new String[]{"קטן", "בינוני", "גדול", "ענק"},
+        addDiscreteSlider(content, getString(R.string.settings_activity_text_109),
+                new String[]{getString(R.string.settings_activity_text_031), getString(R.string.settings_activity_text_032), getString(R.string.settings_activity_text_034), getString(R.string.settings_activity_text_035)},
                 new String[]{"14", "17", "20", "23"}, "playerSize");
-        addSegmentedChoices(content, "מיקום הנגן",
-                new String[]{"ברבע התחתון", "בתחתית המסך"},
+        addSegmentedChoices(content, getString(R.string.settings_activity_text_110),
+                new String[]{getString(R.string.settings_activity_text_111), getString(R.string.settings_activity_text_112)},
                 new String[]{"lower", "bottom"}, "playerPosition");
-        addSegmentedChoices(content, "כיוון הטקסט",
-                new String[]{"ימין", "מרכז", "שמאל"},
+        addSegmentedChoices(content, getString(R.string.settings_activity_text_040),
+                new String[]{getString(R.string.settings_activity_text_041), getString(R.string.settings_activity_text_042), getString(R.string.settings_activity_text_043)},
                 new String[]{"right", "center", "left"}, "playerTextAlignment");
-        addLineSlider(content, "הזזה אופקית של הנגן", "playerHorizontalOffset", -20, 20);
-        addCheck(content, "הצג מסגרת", "frameEnabled", false);
-        addCheck(content, "תמונת האלבום כרקע פנימי", "frameUseAlbumArt",
+        addLineSlider(content, getString(R.string.settings_activity_text_113), "playerHorizontalOffset", -20, 20);
+        addCheck(content, getString(R.string.settings_activity_text_114), "frameEnabled", false);
+        addCheck(content, getString(R.string.settings_activity_text_115), "frameUseAlbumArt",
                 getBool("frameUseAlbumArt", true));
-        addColorChoices(content, "צבע מסגרת",
-                new String[]{"לבן", "כחול עדין", "כסף", "אפור", "אפור בהיר"},
+        addColorChoices(content, getString(R.string.settings_activity_text_116),
+                new String[]{getString(R.string.settings_activity_text_098), getString(R.string.settings_activity_text_099), getString(R.string.settings_activity_text_100), getString(R.string.settings_activity_text_101), getString(R.string.settings_activity_text_102)},
                 new String[]{"white", "blue", "silver", "gray", "light"}, "frameColor");
-        addDiscreteSlider(content, "עובי מסגרת",
-                new String[]{"דק", "רגיל", "עבה"},
+        addDiscreteSlider(content, getString(R.string.settings_activity_text_117),
+                new String[]{getString(R.string.settings_activity_text_037), getString(R.string.settings_activity_text_033), getString(R.string.settings_activity_text_039)},
                 new String[]{"1", "2", "3"}, "frameWidth");
-        addDiscreteSlider(content, "עיגול פינות",
-                new String[]{"ישר", "עדין", "מעוגל"},
+        addDiscreteSlider(content, getString(R.string.settings_activity_text_118),
+                new String[]{getString(R.string.settings_activity_text_119), getString(R.string.settings_activity_text_120), getString(R.string.settings_activity_text_121)},
                 new String[]{"0", "10", "20"}, "frameRadius");
     }
 
@@ -774,27 +774,27 @@ screenTitle.setText("הגדרות");
         if ("system".equals(getString("timeFormat", "24"))) {
             prefs.edit().putString("timeFormat", "24").apply();
         }
-        addCheck(content, "מצב לילה אוטומטי", "nightModeEnabled", false);
+        addCheck(content, getString(R.string.settings_activity_text_122), "nightModeEnabled", false);
         String[] hourNames = new String[24];
         String[] hourValues = new String[24];
         for (int hour = 0; hour < 24; hour++) {
             hourNames[hour] = String.format(Locale.US, "%02d:00", hour);
             hourValues[hour] = String.valueOf(hour);
         }
-        addSpinner(content, "שעת התחלת מצב לילה", hourNames, hourValues, "nightModeStartHour");
-        addSpinner(content, "שעת סיום מצב לילה", hourNames, hourValues, "nightModeEndHour");
+        addSpinner(content, getString(R.string.settings_activity_text_123), hourNames, hourValues, "nightModeStartHour");
+        addSpinner(content, getString(R.string.settings_activity_text_124), hourNames, hourValues, "nightModeEndHour");
 
-        addCheck(content, "הגנה אוטומטית כשהסוללה מתרוקנת",
+        addCheck(content, getString(R.string.settings_activity_text_125),
                 "batteryProtectionEnabled", false);
-        addDiscreteSlider(content, "סף סוללה להפעלת ההגנה",
+        addDiscreteSlider(content, getString(R.string.settings_activity_text_126),
                 new String[]{"10%", "15%", "20%", "25%", "30%"},
                 new String[]{"10", "15", "20", "25", "30"},
                 "batteryProtectionThreshold");
 
-        addCheck(content, "הגדרת הפעלה אוטומטית בטעינה דרך הגדרות אנדרואיד",
+        addCheck(content, getString(R.string.settings_activity_text_127),
                 "useAndroidDreamForCharging", getBool("useAndroidDreamForCharging", false));
 
-        addCheck(content, "השהיה באפליקציות מוחרגות",
+        addCheck(content, getString(R.string.settings_activity_text_128),
                 "pauseWhenExcludedAppActive", false);
         if (currentSettingsGroup != null && currentSettingsGroup.getChildCount() > 1) {
             View exclusionCard = currentSettingsGroup.getChildAt(
@@ -803,9 +803,9 @@ screenTitle.setText("הגדרות");
                 addExcludedAppsPicker((LinearLayout) exclusionCard);
             }
         }
-        addCheck(content, "מניעת הפעלה בזמן שימוש",
+        addCheck(content, getString(R.string.settings_activity_text_129),
                 "preventAutoStartDuringUse", false);
-        addCheck(content, "סמל ההגדרות בתצוגה קבועה",
+        addCheck(content, getString(R.string.settings_activity_text_130),
                 "settingsButtonAlwaysVisible", false);
     }
 
@@ -813,52 +813,52 @@ screenTitle.setText("הגדרות");
         switch (currentCategory) {
             case CATEGORY_CLOCK_DATE:
                 if ("timeFormat".equals(key) || "clockDisplayMode".equals(key)
-                        || "clockDialStyle".equals(key)) return "תצוגת השעה";
+                        || "clockDialStyle".equals(key)) return getString(R.string.settings_activity_text_131);
                 if ("showHebrew".equals(key) || "showGregorian".equals(key)
                         || "hebrewDateFormat".equals(key) || "gregorianDateFormat".equals(key)) {
-                    return "הצגת תאריכים";
+                    return getString(R.string.settings_activity_text_132);
                 }
-                return "התאמת השעון והתאריך";
+                return getString(R.string.settings_activity_text_133);
             case CATEGORY_ACTIVITY:
                 if ("screenSaverDuration".equals(key)
                         || "preventLockWhileActive".equals(key)
                         || "continueOnLockScreen".equals(key)) {
-                    return "הגדרת זמני הפעילות";
+                    return getString(R.string.settings_activity_text_134);
                 }
                 if ("autoStartOnDeviceLock".equals(key) || "autoStartOnBoot".equals(key)
                         || "autoStartOnWake".equals(key)
                         || "autoStartOnCharge".equals(key)
                         || "autoStartOnlyWhenLocked".equals(key)) {
-                    return "הפעלות אוטומטיות";
+                    return getString(R.string.settings_activity_text_135);
                 }
-                return "שומר מסך במצב טעינה";
+                return getString(R.string.settings_activity_text_136);
             case CATEGORY_APPEARANCE:
                         if ("screenBackgroundColor".equals(key) || "screenBrightness".equals(key)
                         || "backgroundStyle".equals(key)) {
-                    return "התאמת מראה המסך";
+                    return getString(R.string.settings_activity_text_137);
                 }
-                return "גופן וצבע הטקסט";
+                return getString(R.string.settings_activity_text_138);
             case CATEGORY_PLAYER:
                 if ("frameEnabled".equals(key) || "frameUseAlbumArt".equals(key)
                         || "frameColor".equals(key) || "frameWidth".equals(key)
                         || "frameRadius".equals(key)) {
-                    return "מסגרת לנגן";
+                    return getString(R.string.settings_activity_text_139);
                 }
-                return "הצגת הנגן";
+                return getString(R.string.settings_activity_text_140);
             case CATEGORY_ADVANCED:
-                if ("useAndroidDreamForCharging".equals(key)) return "הפעלה אוטומטית בטעינה";
-                if ("settingsButtonAlwaysVisible".equals(key)) return "סמל ההגדרות";
+                if ("useAndroidDreamForCharging".equals(key)) return getString(R.string.settings_activity_text_066);
+                if ("settingsButtonAlwaysVisible".equals(key)) return getString(R.string.settings_activity_text_141);
                 if ("nightModeEnabled".equals(key) || "nightModeStartHour".equals(key)
-                        || "nightModeEndHour".equals(key)) return "מצב לילה";
+                        || "nightModeEndHour".equals(key)) return getString(R.string.settings_activity_text_142);
                 if ("batteryProtectionEnabled".equals(key)
-                        || "batteryProtectionThreshold".equals(key)) return "הגנה על הסוללה";
+                        || "batteryProtectionThreshold".equals(key)) return getString(R.string.settings_activity_text_143);
                 if ("pauseWhenExcludedAppActive".equals(key)
                         || "preventAutoStartDuringUse".equals(key)) {
-                    return "השהיית הפעלה אוטומטית";
+                    return getString(R.string.settings_activity_text_144);
                 }
-                return "הגדרות מתקדמות";
+                return getString(R.string.settings_activity_text_011);
             default:
-                return "הגדרות";
+                return getString(R.string.settings_activity_text_001);
         }
     }
 
@@ -880,7 +880,7 @@ screenTitle.setText("הגדרות");
 
         if (showActivityInfo) {
             FrameLayout infoButton = new FrameLayout(this);
-            infoButton.setContentDescription("הסבר על הגדרות זמני הפעילות");
+            infoButton.setContentDescription(getString(R.string.settings_activity_text_055));
             infoButton.setClickable(true);
             infoButton.setFocusable(true);
             infoButton.setBackgroundColor(Color.TRANSPARENT);
@@ -939,7 +939,7 @@ screenTitle.setText("הגדרות");
             currentSettingsGroupTitle = groupTitle;
             addSettingsGroupHeading(currentSettingsGroup, groupTitle,
                     currentCategory == CATEGORY_ACTIVITY
-                            && "הגדרת זמני הפעילות".equals(groupTitle));
+                            && getString(R.string.settings_activity_text_134).equals(groupTitle));
         } else if (currentSettingsGroup.getChildCount() > 1) {
             View divider = new View(this);
             divider.setBackgroundColor(Color.rgb(54, 78, 102));
@@ -1010,55 +1010,55 @@ screenTitle.setText("הגדרות");
     }
 
     private String settingDescription(String key) {
-        if ("showHebrew".equals(key)) return "הצגת התאריך העברי לצד השעה";
-        if ("showGregorian".equals(key)) return "הצגת התאריך הלועזי לצד השעה";
-        if ("hebrewDateFormat".equals(key)) return "בחירת תבנית התצוגה של התאריך העברי";
-        if ("gregorianDateFormat".equals(key)) return "בחירת תבנית התצוגה של התאריך הלועזי";
-        if ("clockDateSize".equals(key)) return "בחירת גודל התצוגה של השעון והתאריך";
-        if ("clockDisplayMode".equals(key)) return "בחירה בין תצוגת שעה דיגיטלית לבין שעון אנלוגי עם מחוגים";
-        if ("clockDialStyle".equals(key)) return "בחירת עיצוב השעון האנלוגי";
-        if ("clockTextAlignment".equals(key)) return "בחירת יישור הטקסט בתוך אזור השעון והתאריך";
-        if ("playerTextAlignment".equals(key)) return "בחירת יישור שם האמן ושם השיר בתוך אזור הנגן";
-        if ("autoStartOnlyWhenLocked".equals(key)) return "הגבלת כל ההפעלות האוטומטיות כך שיפעלו רק כשהמכשיר נעול";
-        if ("preventAutoStartDuringUse".equals(key)) return "מניעת הפעלה אוטומטית כאשר אפליקציה אחרת נמצאת בחזית";
-        if ("pauseWhenExcludedAppActive".equals(key)) return "השהיית ההפעלה האוטומטית כאשר אפליקציה שנבחרה נמצאת בחזית";
-        if ("fontWeight".equals(key)) return "בחירת עובי גופן השעון והתאריך";
-        if ("clockDatePosition".equals(key)) return "בחירת מיקום הצגת השעון והתאריך במסך";
-        if ("screenSaverDuration".equals(key)) return "בחירת משך זמן הצגת השומר מסך";
-        if ("preventLockWhileActive".equals(key)) return "מניעת נעילת המכשיר למשך כל זמן הפעילות שמוגדר לשומר מסך";
-        if ("continueOnLockScreen".equals(key)) return "השארת השומר מסך על מסך הנעילה גם לאחר כיבוי המסך בסיום הפעילות";
-        if ("autoStartOnDeviceLock".equals(key)) return "הפעלת שומר מסך באופן אוטומטי בעת נעילת המכשיר";
-        if ("autoStartOnBoot".equals(key)) return "הפעלת שומר מסך באופן אוטומטי לאחר הפעלת המכשיר";
-        if ("autoStartOnWake".equals(key)) return "הפעלת השומר מסך באופן אוטומטי לאחר יציאה משינה עמוקה של המכשיר";
-        if ("autoStartOnCharge".equals(key)) return "הפעלת השומר מסך אוטומטית בחיבור המכשיר לטעינה";
-        if ("noShutdownWhileCharging".equals(key)) return "השארת השומר מסך פועל כל עוד המכשיר מחובר לטעינה";
-        if ("screenBackgroundColor".equals(key)) return "בחירת צבע הרקע של שומר המסך";
-        if ("screenBrightness".equals(key)) return "התאמת בהירות התצוגה של שומר המסך";
-        if ("fontFamily".equals(key)) return "בחירת סוג הגופן שיוצג במסך";
-        if ("fontColor".equals(key)) return "בחירת צבע הגופנים והפריטים המופיעים במסך";
-        if ("settingsButtonAlwaysVisible".equals(key)) return "בחירה בתצוגה קבועה של סמל ההגדרות, ללא הפעלת הגדרה זו הסמל יהיה מוסתר, ומוצג רק בנגיעה במסך למשך מספר שניות.";
-        if ("playerDisplayMode".equals(key)) return "הצגת נגן המערכת בזמן שהוא פועל";
-        if ("showPlayerOnlyAtStart".equals(key)) return "הצגת הנגן רק בתחילת כל שיר";
-        if ("showDetails".equals(key)) return "כשמופיע בפרטי השיר את שם האמן, הצגת שם האמן מעל שם השיר";
-        if ("playerControlsDisplayMode".equals(key)) return "בחירת אופן הצגת שורת המיקום, זמני השיר ולחצני השליטה: תמיד, בתחילת כל שיר או כבוי";
-        if ("chargingBatteryDisplayMode".equals(key)) return "בחירת האופן שבו תוצג רמת הסוללה כל עוד המכשיר מחובר לטעינה";
-        if ("clockHorizontalOffset".equals(key)) return "הזזת כל תצוגת השעון והתאריך ימינה או שמאלה";
-        if ("playerHorizontalOffset".equals(key)) return "הזזת הנגן ימינה או שמאלה";
-        if ("backgroundStyle".equals(key)) return "בחירת אופן הצגת צבע הרקע";
-        if ("nightModeEnabled".equals(key)) return "הפחתת בהירות מסך השומר מסך בשעות שנבחרו, בלי לשנות את בהירות המכשיר";
-        if ("nightModeStartHour".equals(key)) return "השעה שבה מצב לילה אוטומטי מתחיל";
-        if ("nightModeEndHour".equals(key)) return "השעה שבה מצב לילה אוטומטי מסתיים";
-        if ("timeFormat".equals(key)) return "בחירת תצוגת שעה בת 12 או 24 שעות";
-        if ("batteryProtectionEnabled".equals(key)) return "הפחתת בהירות המסך באופן אוטומטי כשהסוללה יורדת מתחת לסף שנבחר";
-        if ("useAndroidDreamForCharging".equals(key)) return "קובע באיזה מסלול תפעל ההפעלה האוטומטית בטעינה: במסלול הרגיל תופעל האפליקציה ישירות, ובמסלול החלופי יופעל שומר המסך של Android. בשני המסלולים תוצג פעילות שומר המסך המלאה.";
-        if ("batteryProtectionThreshold".equals(key)) return "מתחת לאחוז שנבחר תופעל הפחתת בהירות, כל עוד המכשיר אינו בטעינה";
-        if ("playerSize".equals(key)) return "בחירת גודל התצוגה של הנגן";
-        if ("playerPosition".equals(key)) return "בחירת מיקום הצגת הנגן במסך";
-        if ("frameEnabled".equals(key)) return "הצגת הנגן בתוך חלונית ממוסגרת";
-        if ("frameUseAlbumArt".equals(key)) return "הצגת תמונת האלבום כרקע פנימי בתוך מסגרת הנגן בלבד";
-        if ("frameColor".equals(key)) return "בחירת צבע המסגרת סביב הנגן";
-        if ("frameWidth".equals(key)) return "בחירת עובי קו המסגרת";
-        if ("frameRadius".equals(key)) return "בחירת מידת עיגול פינות המסגרת";
+        if ("showHebrew".equals(key)) return getString(R.string.settings_activity_text_145);
+        if ("showGregorian".equals(key)) return getString(R.string.settings_activity_text_146);
+        if ("hebrewDateFormat".equals(key)) return getString(R.string.settings_activity_text_147);
+        if ("gregorianDateFormat".equals(key)) return getString(R.string.settings_activity_text_148);
+        if ("clockDateSize".equals(key)) return getString(R.string.settings_activity_text_149);
+        if ("clockDisplayMode".equals(key)) return getString(R.string.settings_activity_text_150);
+        if ("clockDialStyle".equals(key)) return getString(R.string.settings_activity_text_151);
+        if ("clockTextAlignment".equals(key)) return getString(R.string.settings_activity_text_152);
+        if ("playerTextAlignment".equals(key)) return getString(R.string.settings_activity_text_153);
+        if ("autoStartOnlyWhenLocked".equals(key)) return getString(R.string.settings_activity_text_154);
+        if ("preventAutoStartDuringUse".equals(key)) return getString(R.string.settings_activity_text_155);
+        if ("pauseWhenExcludedAppActive".equals(key)) return getString(R.string.settings_activity_text_156);
+        if ("fontWeight".equals(key)) return getString(R.string.settings_activity_text_157);
+        if ("clockDatePosition".equals(key)) return getString(R.string.settings_activity_text_158);
+        if ("screenSaverDuration".equals(key)) return getString(R.string.settings_activity_text_159);
+        if ("preventLockWhileActive".equals(key)) return getString(R.string.settings_activity_text_160);
+        if ("continueOnLockScreen".equals(key)) return getString(R.string.settings_activity_text_161);
+        if ("autoStartOnDeviceLock".equals(key)) return getString(R.string.settings_activity_text_162);
+        if ("autoStartOnBoot".equals(key)) return getString(R.string.settings_activity_text_163);
+        if ("autoStartOnWake".equals(key)) return getString(R.string.settings_activity_text_164);
+        if ("autoStartOnCharge".equals(key)) return getString(R.string.settings_activity_text_165);
+        if ("noShutdownWhileCharging".equals(key)) return getString(R.string.settings_activity_text_166);
+        if ("screenBackgroundColor".equals(key)) return getString(R.string.settings_activity_text_167);
+        if ("screenBrightness".equals(key)) return getString(R.string.settings_activity_text_168);
+        if ("fontFamily".equals(key)) return getString(R.string.settings_activity_text_169);
+        if ("fontColor".equals(key)) return getString(R.string.settings_activity_text_170);
+        if ("settingsButtonAlwaysVisible".equals(key)) return getString(R.string.settings_activity_text_171);
+        if ("playerDisplayMode".equals(key)) return getString(R.string.settings_activity_text_172);
+        if ("showPlayerOnlyAtStart".equals(key)) return getString(R.string.settings_activity_text_173);
+        if ("showDetails".equals(key)) return getString(R.string.settings_activity_text_174);
+        if ("playerControlsDisplayMode".equals(key)) return getString(R.string.settings_activity_text_175);
+        if ("chargingBatteryDisplayMode".equals(key)) return getString(R.string.settings_activity_text_176);
+        if ("clockHorizontalOffset".equals(key)) return getString(R.string.settings_activity_text_177);
+        if ("playerHorizontalOffset".equals(key)) return getString(R.string.settings_activity_text_178);
+        if ("backgroundStyle".equals(key)) return getString(R.string.settings_activity_text_179);
+        if ("nightModeEnabled".equals(key)) return getString(R.string.settings_activity_text_180);
+        if ("nightModeStartHour".equals(key)) return getString(R.string.settings_activity_text_181);
+        if ("nightModeEndHour".equals(key)) return getString(R.string.settings_activity_text_182);
+        if ("timeFormat".equals(key)) return getString(R.string.settings_activity_text_183);
+        if ("batteryProtectionEnabled".equals(key)) return getString(R.string.settings_activity_text_184);
+        if ("useAndroidDreamForCharging".equals(key)) return getString(R.string.settings_activity_text_185);
+        if ("batteryProtectionThreshold".equals(key)) return getString(R.string.settings_activity_text_186);
+        if ("playerSize".equals(key)) return getString(R.string.settings_activity_text_187);
+        if ("playerPosition".equals(key)) return getString(R.string.settings_activity_text_188);
+        if ("frameEnabled".equals(key)) return getString(R.string.settings_activity_text_189);
+        if ("frameUseAlbumArt".equals(key)) return getString(R.string.settings_activity_text_190);
+        if ("frameColor".equals(key)) return getString(R.string.settings_activity_text_191);
+        if ("frameWidth".equals(key)) return getString(R.string.settings_activity_text_192);
+        if ("frameRadius".equals(key)) return getString(R.string.settings_activity_text_193);
         return "";
     }
 
@@ -1108,33 +1108,33 @@ screenTitle.setText("הגדרות");
 
     private void showActivityTimeHelpDialog() {
         String help =
-                "זמן פעילות\n"
-                + "ההגדרה קובעת כמה זמן שומר מסך יוצג, או האם משך התצוגה ינוהל על ידי המכשיר.\n"
-                + "• לפי המכשיר - אין לאפליקציה טיימר סיום עצמאי. שומר מסך נשאר מוצג עד שהמכשיר מכבה את המסך לפי ההגדרות שלו. אם המסך אינו נכבה אוטומטית, שומר מסך ימשיך להופיע ברציפות.\n"
-                + "• 1 דק' / 5 דק' - שומר מסך יורד מהמסך בתום הזמן שנבחר. אם זמן כיבוי המסך של Android ארוך יותר, המסך עצמו עשוי להישאר דולק עד לכיבוי המערכת.\n"
-                + "• ללא כיבוי - האפליקציה מונעת כיבוי מסך אוטומטי ומשאירה את שומר מסך מוצג ברציפות, עד ליציאה יזומה או לשינוי ההגדרה.\n\n"
-                + "מניעת נעילה בזמן פעילות\n"
-                + "ההגדרה קובעת האם Android רשאי להציג את מסך הנעילה מעל שומר מסך בזמן שהתצוגה פעילה.\n"
-                + "• כשההגדרה פעילה - האפליקציה מונעת את הופעת מסך הנעילה מעל שומר מסך במהלך זמן הפעילות.\n"
-                + "• כשההגדרה כבויה - Android רשאי להציג את מסך הנעילה כרגיל, ושומר מסך יכול להופיע מעליו.\n\n"
-                + "המשך הצגה במסך נעילה\n"
-                + "• ההגדרה קובעת אם שומר מסך יישאר פעיל ויופיע שוב מעל מסך הנעילה לאחר שהמסך נכבה והופעל מחדש.\n"
-                + "• במצב לפי המכשיר, כיבוי המסך על ידי המערכת מסיים את מחזור התצוגה; כשההגדרה פעילה שומר מסך יופיע שוב בהפעלה הבאה.\n"
-                + "• בבחירת 1 דק' או 5 דק', ההמשך יתאפשר רק אם המסך אכן כבה עד למועד סיום זמן הפעילות. אם זמן הכיבוי של המכשיר ארוך יותר, שומר מסך ייסגר בתום הזמן ולא ימתין לכיבוי מאוחר.\n"
-                + "• במכשיר שאין בו מסך נעילה, להגדרה זו אין משמעות מעשית.\n\n"
-                + "הפעלה אוטומטית בנעילה\n"
-                + "• ההגדרה מפעילה את שומר מסך אוטומטית כאשר המכשיר ננעל, גם בנעילה יזומה וגם בנעילה אוטומטית, גם אם שומר מסך לא היה פעיל קודם.\n"
-                + "• כשההגדרה כבויה - נעילת המכשיר לבדה לא מפעילה את שומר מסך.\n"
-                + "• לצורך ההפעלה האוטומטית בנעילה, האפליקציה מציגה התראה קבועה ושקטה שאינה מופיעה במסך הנעילה.\n\n"
-                + "הפעלה אוטומטית בהדלקה\n"
-                + "• כשההגדרה פעילה, שומר מסך נפתח אוטומטית לאחר אתחול מלא של המכשיר, לאחר ש-Android מאפשר להפעיל את האפליקציה.\n"
-                + "• כשההגדרה כבויה, אתחול המכשיר אינו מפעיל את שומר מסך.\n\n"
-                + "הפעלה אוטומטית בהתעוררות\n"
-                + "• כשההגדרה פעילה, שומר מסך נפתח כשהמסך נדלק מחדש לאחר שהיה כבוי.\n"
-                + "• כשההגדרה כבויה, הדלקת המסך אינה מפעילה את שומר מסך.\n\n"                + "הרשאות שמשפיעות על התנהגות האפליקציה\n"
-                + "• הצגה מעל אפליקציות אחרות - נדרשת להפעלה אוטומטית ברקע בחלק מגרסאות Android. אם ההרשאה נשללת, ההגדרות התלויות בה יכובו אוטומטית.\n"
-                + "• גישה להתראות - נדרשת להצגת נגן המדיה. אם ההרשאה נשללת, הצגת הנגן תכובה אוטומטית.\n"
-                + "• הרשאת מנהל מכשיר - מאפשרת לאפליקציה לבקש נעילה מיידית בסיום זמן פעילות מוגדר. היא אינה נדרשת להצגת שומר מסך עצמו ואינה מבטיחה כיבוי פיזי של התצוגה בכל סוגי המכשירים.";
+                getString(R.string.settings_activity_text_194)
+                + getString(R.string.settings_activity_text_195)
+                + getString(R.string.settings_activity_text_196)
+                + getString(R.string.settings_activity_text_197)
+                + getString(R.string.settings_activity_text_198)
+                + getString(R.string.settings_activity_text_199)
+                + getString(R.string.settings_activity_text_200)
+                + getString(R.string.settings_activity_text_201)
+                + getString(R.string.settings_activity_text_202)
+                + getString(R.string.settings_activity_text_203)
+                + getString(R.string.settings_activity_text_204)
+                + getString(R.string.settings_activity_text_205)
+                + getString(R.string.settings_activity_text_206)
+                + getString(R.string.settings_activity_text_207)
+                + getString(R.string.settings_activity_text_208)
+                + getString(R.string.settings_activity_text_209)
+                + getString(R.string.settings_activity_text_210)
+                + getString(R.string.settings_activity_text_211)
+                + getString(R.string.settings_activity_text_212)
+                + getString(R.string.settings_activity_text_213)
+                + getString(R.string.settings_activity_text_214)
+                + getString(R.string.settings_activity_text_215)
+                + getString(R.string.settings_activity_text_216)
+                + getString(R.string.settings_activity_text_217)                + getString(R.string.settings_activity_text_218)
+                + getString(R.string.settings_activity_text_219)
+                + getString(R.string.settings_activity_text_220)
+                + getString(R.string.settings_activity_text_221);
 
         AlertDialog dialog = new AlertDialog.Builder(this).create();
 
@@ -1181,14 +1181,14 @@ screenTitle.setText("הגדרות");
         // Extra spacing between the icon and title block.
         titleBlock.setPadding(0, 0, 0, 0);
 
-        TextView title = textView("הגדרת זמני הפעילות", 20, ON_SURFACE);
+        TextView title = textView(getString(R.string.settings_activity_text_134), 20, ON_SURFACE);
         title.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         title.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         title.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
         title.setIncludeFontPadding(false);
         titleBlock.addView(title, new LinearLayout.LayoutParams(-1, -2));
 
-        TextView subtitle = textView("הסבר קצר להבנת האפשרויות", 14, MUTED);
+        TextView subtitle = textView(getString(R.string.settings_activity_text_222), 14, MUTED);
         subtitle.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         subtitle.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
         subtitle.setIncludeFontPadding(false);
@@ -1225,13 +1225,13 @@ screenTitle.setText("הגדרות");
             int lineEnd = styledHelp.length();
 
             boolean sectionHeading =
-                    line.equals("זמן פעילות")
-                    || line.equals("מניעת נעילה בזמן פעילות")
-                    || line.equals("המשך הצגה במסך הנעילה")
-                    || line.equals("הפעלה אוטומטית בנעילה")
-                    || line.equals("הפעלה אוטומטית בהדלקה")
-                    || line.equals("הפעלה אוטומטית בהתעוררות")
-                    || line.equals("הרשאות שמשפיעות על התנהגות האפליקציה");
+                    line.equals(getString(R.string.settings_activity_text_223))
+                    || line.equals(getString(R.string.settings_activity_text_061))
+                    || line.equals(getString(R.string.settings_activity_text_224))
+                    || line.equals(getString(R.string.settings_activity_text_063))
+                    || line.equals(getString(R.string.settings_activity_text_064))
+                    || line.equals(getString(R.string.settings_activity_text_065))
+                    || line.equals(getString(R.string.settings_activity_text_225));
 
             if (sectionHeading) {
                 styledHelp.setSpan(new ForegroundColorSpan(ACCENT), lineStart, lineEnd,
@@ -1258,7 +1258,7 @@ screenTitle.setText("הגדרות");
         scrollContent.addView(message, new LinearLayout.LayoutParams(-1, -2));
 
         Button close = new Button(this);
-        close.setText("הבנתי");
+        close.setText(getString(R.string.settings_activity_text_226));
         close.setAllCaps(false);
         close.setTextSize(15);
         close.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
@@ -1277,7 +1277,7 @@ screenTitle.setText("הגדרות");
         scroll.addView(scrollContent, new ScrollView.LayoutParams(-1, -2));
 
         FrameLayout closeX = new FrameLayout(this);
-        closeX.setContentDescription("סגירת חלונית ההסבר");
+        closeX.setContentDescription(getString(R.string.settings_activity_text_227));
         closeX.setBackgroundColor(Color.TRANSPARENT);
         closeX.setClickable(true);
         closeX.setFocusable(true);
@@ -1374,7 +1374,7 @@ screenTitle.setText("הגדרות");
                         prefs.edit().putBoolean(key, false).apply();
                         toggle.setChecked(false);
                         AppToast.makeText(this,
-                                "הגדרות שומר המסך של Android אינן זמינות במכשיר זה.",
+                                getString(R.string.settings_activity_text_228),
                                 Toast.LENGTH_LONG).show();
                     }
                 } else if (getBool("autoStartOnCharge", false)
@@ -1388,13 +1388,13 @@ screenTitle.setText("הגדרות");
                 if (checked && getBool("useAndroidDreamForCharging", false)) {
                     openingSystemSettingsForAutoStart = true;
                     AppToast.makeText(this,
-                            "כדי להפעיל שומר מסך בטעינה דרך Android, בחר במסך הבא את שומר מסך והגדר הפעלה בזמן טעינה.",
+                            getString(R.string.settings_activity_text_229),
                             Toast.LENGTH_LONG).show();
                     try {
                         startActivity(new Intent(Settings.ACTION_DREAM_SETTINGS));
                     } catch (Throwable ignored) {
                         AppToast.makeText(this,
-                                "לא ניתן לפתוח את הגדרות שומר המסך של Android. בחר שם את שומר מסך והגדר הפעלה בזמן טעינה.",
+                                getString(R.string.settings_activity_text_230),
                                 Toast.LENGTH_LONG).show();
                     }
                 }
@@ -1437,7 +1437,7 @@ screenTitle.setText("הגדרות");
                 if (checked && Build.VERSION.SDK_INT >= 29
                         && !Settings.canDrawOverlays(this)) {
                     AppToast.makeText(this,
-                            "כדי לאפשר הפעלה אוטומטית לאחר אתחול או התעוררות, יש לאפשר לשומר מסך הצגה מעל אפליקציות אחרות.",
+                            getString(R.string.settings_activity_text_231),
                             Toast.LENGTH_LONG).show();
                     if (openOverlayPermissionSettings()) {
                         openingSystemSettingsForAutoStart = true;
@@ -1462,7 +1462,7 @@ screenTitle.setText("הגדרות");
                 prefs.edit().putBoolean(key, false).apply();
                 toggle.setChecked(false);
                 AppToast.makeText(this,
-                        "כדי לזהות אפליקציה פעילה בחזית, יש לאפשר תחילה הרשאת נתוני שימוש.",
+                        getString(R.string.settings_activity_text_232),
                         Toast.LENGTH_LONG).show();
                 try {
                     startActivity(new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS));
@@ -1500,14 +1500,14 @@ screenTitle.setText("הגדרות");
         resetRow.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         resetRow.setGravity(Gravity.CENTER_HORIZONTAL);
 
-        TextView reset = textView("איפוס לברירת מחדל", 13, ON_SURFACE);
+        TextView reset = textView(getString(R.string.settings_activity_text_233), 13, ON_SURFACE);
         reset.setGravity(Gravity.CENTER);
         reset.setIncludeFontPadding(false);
         reset.setPadding(dp(12), dp(5), dp(12), dp(5));
         reset.setBackground(roundOutline(CONTROL_SURFACE, dp(9), OUTLINE));
         reset.setClickable(true);
         reset.setFocusable(true);
-        reset.setContentDescription("איפוס " + label + " לברירת המחדל");
+        reset.setContentDescription(getString(R.string.settings_activity_text_234) + label + getString(R.string.settings_activity_text_235));
         resetRow.addView(reset, new LinearLayout.LayoutParams(-2, dp(32)));
         LinearLayout adjustmentRow = new LinearLayout(this);
         adjustmentRow.setOrientation(LinearLayout.HORIZONTAL);
@@ -1517,7 +1517,7 @@ screenTitle.setText("הגדרות");
         adjustmentRow.setClipChildren(false);
         adjustmentRow.setClipToPadding(false);
 
-        TextView left = textView("שמאלה", 14, MUTED);
+        TextView left = textView(getString(R.string.settings_activity_text_236), 14, MUTED);
         left.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
         left.setSingleLine(true);
         LinearLayout.LayoutParams leftParams = new LinearLayout.LayoutParams(-2, dp(34));
@@ -1540,7 +1540,7 @@ screenTitle.setText("הגדרות");
         LinearLayout.LayoutParams seekParams = new LinearLayout.LayoutParams(0, dp(46), 1f);
         adjustmentRow.addView(seekBar, seekParams);
 
-        TextView right = textView("ימינה", 14, MUTED);
+        TextView right = textView(getString(R.string.settings_activity_text_237), 14, MUTED);
         right.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         right.setSingleLine(true);
         LinearLayout.LayoutParams rightParams = new LinearLayout.LayoutParams(-2, dp(34));
@@ -1794,9 +1794,9 @@ screenTitle.setText("הגדרות");
         boolean keyguardObserved = prefs.getBoolean("screenLockObserved", true);
 
         if (keyguardObservationKnown && !keyguardObserved) {
-            notices.add("בבדיקה האחרונה לא זוהה מסך נעילה בפועל. לכן ההגדרות הקשורות לנעילה ולהצגת שומר מסך במסך הנעילה עשויות שלא להיות רלוונטיות למכשיר זה.");
+            notices.add(getString(R.string.settings_activity_text_238));
         } else if (automotive) {
-            notices.add("זוהתה במכשיר תמיכה ב־Android Automotive. בחלק ממערכות המולטימדיה אין מסך נעילה רגיל, ולכן הגדרות הקשורות לנעילה עשויות שלא להיות רלוונטיות.");
+            notices.add(getString(R.string.settings_activity_text_239));
         }
 
         String duration = getString("screenSaverDuration", "device");
@@ -1809,11 +1809,11 @@ screenTitle.setText("הגדרות");
             }
             long requestedMs = "1".equals(duration) ? 60_000L : 300_000L;
             if (timeoutMs <= 0L) {
-                notices.add("לא ניתן לזהות את זמן כיבוי המסך שהוגדר במכשיר. בסיום זמן הפעילות שומר מסך ייסגר, אך כיבוי התצוגה נשאר באחריות Android.");
+                notices.add(getString(R.string.settings_activity_text_240));
             } else if (timeoutMs >= Integer.MAX_VALUE - 1000L) {
-                notices.add("לא זוהה במכשיר כיבוי מסך אוטומטי. בבחירת 1 דק' או 5 דק' שומר מסך ייסגר בתום הזמן, אך המסך עצמו עשוי להישאר דולק.");
+                notices.add(getString(R.string.settings_activity_text_241));
             } else if (timeoutMs > requestedMs) {
-                notices.add("זמן כיבוי המסך שמוגדר במכשיר ארוך מזמן הפעילות שבחרת. בסיום הזמן שומר מסך ייסגר, אך המסך עשוי להישאר דולק עד ש־Android יכבה אותו.");
+                notices.add(getString(R.string.settings_activity_text_242));
             }
         }
 
@@ -1857,7 +1857,7 @@ screenTitle.setText("הגדרות");
         final ColorSwatchView selectedCustomSwatch = customColorSwatch;
 
         // The custom-color label stays neutral in every selection state.
-        final TextView customCaption = textView("בחירת צבע מותאם אישית", 13, MUTED);
+        final TextView customCaption = textView(getString(R.string.settings_activity_text_243), 13, MUTED);
         customCaption.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         customCaption.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
         customCaption.setSingleLine(true);
@@ -2001,7 +2001,7 @@ screenTitle.setText("הגדרות");
         panel.setPadding(dp(14), dp(9), dp(14), dp(9));
         panel.setBackground(roundOutline(CARD_SURFACE, dp(18), CARD_OUTLINE));
 
-        TextView heading = textView("בחירת צבע מותאם אישית", 20, ON_SURFACE);
+        TextView heading = textView(getString(R.string.settings_activity_text_243), 20, ON_SURFACE);
         heading.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD));
         heading.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         panel.addView(heading, new LinearLayout.LayoutParams(-1, dp(30)));
@@ -2010,7 +2010,7 @@ screenTitle.setText("הגדרות");
         sampleRow.setOrientation(LinearLayout.HORIZONTAL);
         sampleRow.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         sampleRow.setGravity(Gravity.CENTER_VERTICAL);
-        TextView sampleHint = textView("כוון את המחוונים עד לקבלת הגוון הרצוי", 15, MUTED);
+        TextView sampleHint = textView(getString(R.string.settings_activity_text_244), 15, MUTED);
         sampleHint.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         sampleRow.addView(sampleHint, new LinearLayout.LayoutParams(0, dp(42), 1f));
         View colorPreview = new View(this);
@@ -2031,7 +2031,7 @@ screenTitle.setText("הגדרות");
         separatorParams.bottomMargin = dp(3);
         panel.addView(separator, separatorParams);
 
-        String[] captions = {"גוון", "רוויה", "בהירות"};
+        String[] captions = {getString(R.string.settings_activity_text_245), getString(R.string.settings_activity_text_246), getString(R.string.settings_activity_text_247)};
         int[] maxes = {359, 100, 100};
 
         Runnable updateSwatch = () -> {
@@ -2090,13 +2090,13 @@ screenTitle.setText("הגדרות");
         actions.setOrientation(LinearLayout.HORIZONTAL);
         actions.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         actions.setGravity(Gravity.CENTER_VERTICAL);
-        TextView save = textView("שמירה", 16, Color.rgb(7, 31, 49));
+        TextView save = textView(getString(R.string.settings_activity_text_079), 16, Color.rgb(7, 31, 49));
         save.setGravity(Gravity.CENTER);
         save.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD));
         save.setBackground(roundOutline(ACCENT, dp(10), ACCENT));
         save.setClickable(true);
         save.setFocusable(true);
-        TextView cancel = textView("ביטול", 16, ON_SURFACE);
+        TextView cancel = textView(getString(R.string.settings_activity_text_078), 16, ON_SURFACE);
         cancel.setGravity(Gravity.CENTER);
         cancel.setBackground(roundOutline(CONTROL_SURFACE, dp(10), OUTLINE));
         cancel.setClickable(true);
@@ -2194,7 +2194,7 @@ screenTitle.setText("הגדרות");
         if (grantResults.length == 0
                 || grantResults[0] != android.content.pm.PackageManager.PERMISSION_GRANTED) {
             AppToast.makeText(this,
-                    "ההפעלה האוטומטית יכולה לפעול, אך ההתראה המתמשכת לא תופיע במגירת ההתראות ללא הרשאת התראות.",
+                    getString(R.string.settings_activity_text_248),
                     Toast.LENGTH_LONG).show();
         }
     }
@@ -2202,7 +2202,7 @@ screenTitle.setText("הגדרות");
     private void requestPlayerNotificationAccessIfNeeded() {
         if (hasNotificationAccess()) return;
         AppToast.makeText(this,
-                "כדי להציג את הנגן, צריך לאפשר לשומר מסך גישה להתראות במסך הבא. בחר את \"שומר מסך\" והפעל את ההרשאה.",
+                getString(R.string.settings_activity_text_249),
                 Toast.LENGTH_LONG).show();
         if (!openNotificationAccessSettings()) {
             prefs.edit()
@@ -2228,7 +2228,7 @@ screenTitle.setText("הגדרות");
             showPlayerToggle.setChecked(false);
         }
         AppToast.makeText(this,
-                "הצגת הנגן נשארה כבויה מפני שלא ניתנה הרשאת גישה להתראות.",
+                getString(R.string.settings_activity_text_250),
                 Toast.LENGTH_LONG).show();
         if (currentCategory == CATEGORY_PLAYER) showCategory(CATEGORY_PLAYER);
     }
@@ -2238,7 +2238,7 @@ screenTitle.setText("הגדרות");
                 || Build.VERSION.SDK_INT < 29 || Settings.canDrawOverlays(this)) return;
 
         AppToast.makeText(this,
-                "כדי לאפשר הפעלה אוטומטית בטעינה, בחר במסך הבא את \"שומר מסך\" ואפשר \"הצגה מעל אפליקציות אחרות\".",
+                getString(R.string.settings_activity_text_251),
                 Toast.LENGTH_LONG).show();
         if (!openOverlayPermissionSettings()) {
             prefs.edit().putBoolean("autoStartOverlayPermissionPending", false)
@@ -2260,7 +2260,7 @@ screenTitle.setText("הגדרות");
             autoStartOnChargeToggle.setChecked(false);
         }
         AppToast.makeText(this,
-                "המתג \"הפעלה אוטומטית בטעינה\" נשאר כבוי מפני שלא ניתנה הרשאת \"הצגה מעל אפליקציות אחרות\".",
+                getString(R.string.settings_activity_text_252),
                 Toast.LENGTH_LONG).show();
     }
 
@@ -2268,7 +2268,7 @@ screenTitle.setText("הגדרות");
         if (Build.VERSION.SDK_INT < 29 || Settings.canDrawOverlays(this)) return;
 
         AppToast.makeText(this,
-                "כדי לאפשר הפעלה אוטומטית בנעילה, אפשר במסך הבא לשומר מסך את ההרשאה \"הצגה מעל אפליקציות אחרות\".",
+                getString(R.string.settings_activity_text_253),
                 Toast.LENGTH_LONG).show();
         if (!openOverlayPermissionSettings()) {
             prefs.edit().putBoolean("autoStartOnLockOverlayPermissionPending", false)
@@ -2290,7 +2290,7 @@ screenTitle.setText("הגדרות");
             autoStartOnDeviceLockToggle.setChecked(false);
         }
         AppToast.makeText(this,
-                "ההפעלה האוטומטית בנעילת המכשיר נשארה כבויה מפני שלא ניתנה הרשאת \"הצגה מעל אפליקציות אחרות\".",
+                getString(R.string.settings_activity_text_254),
                 Toast.LENGTH_LONG).show();
     }
 
@@ -2743,11 +2743,11 @@ screenTitle.setText("הגדרות");
     }
 
     private LinearLayout addNotificationAccessCard(LinearLayout parent) {
-        LinearLayout card = addCard(parent, "הרשאת גישה להתראות");
+        LinearLayout card = addCard(parent, getString(R.string.settings_activity_text_255));
         card.setPadding(dp(8), dp(9), dp(12), dp(15));
         setPermissionCardHeadingTypeface(card);
         TextView message = textView(
-                "כדי להציג את נגן המערכת, יש לאפשר גישה להתראות.",
+                getString(R.string.settings_activity_text_256),
                 15, ON_SURFACE);
         message.setGravity(Gravity.CENTER);
         message.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
@@ -2760,7 +2760,7 @@ screenTitle.setText("הגדרות");
         messageParams.bottomMargin = 0;
         card.addView(message, messageParams);
 
-        Button grant = makeActionButton("פתיחת הגדרות הרשאה");
+        Button grant = makeActionButton(getString(R.string.settings_activity_text_257));
         LinearLayout.LayoutParams params =
                 new LinearLayout.LayoutParams(-2, dp(44));
         params.gravity = Gravity.CENTER_HORIZONTAL;
@@ -2771,12 +2771,12 @@ screenTitle.setText("הגדרות");
     }
 
     private LinearLayout addOverlayPermissionCard(LinearLayout parent) {
-        LinearLayout card = addCard(parent, "הרשאת תצוגה על אפליקציות");
+        LinearLayout card = addCard(parent, getString(R.string.settings_activity_text_258));
         card.setPadding(dp(8), dp(9), dp(12), dp(15));
         setPermissionCardHeadingTypeface(card);
 
         TextView message = textView(
-                "ההרשאה מאפשרת הפעלה אוטומטית של שומר המסך בחיבור לטעינה.",
+                getString(R.string.settings_activity_text_259),
                 15, ON_SURFACE);
         message.setGravity(Gravity.CENTER);
         message.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
@@ -2795,7 +2795,7 @@ screenTitle.setText("הגדרות");
         statusParams.topMargin = dp(7);
         card.addView(overlayPermissionStatus, statusParams);
 
-        overlayPermissionButton = makeActionButton("פתיחת הגדרות הרשאה");
+        overlayPermissionButton = makeActionButton(getString(R.string.settings_activity_text_257));
         LinearLayout.LayoutParams buttonParams =
                 new LinearLayout.LayoutParams(-2, dp(44));
         buttonParams.gravity = Gravity.CENTER_HORIZONTAL;
@@ -2823,13 +2823,13 @@ screenTitle.setText("הגדרות");
                 || getBool("autoStartOnWake", false);
         overlayPermissionStatus.setText(granted
                 ? (autoStartEnabled
-                    ? "ההרשאה פעילה — ההפעלה האוטומטית זמינה."
-                    : "ההרשאה ניתנה, אך ההפעלה האוטומטית כבויה.")
-                : "נדרשת הרשאה להפעלה אוטומטית.");
+                    ? getString(R.string.settings_activity_text_260)
+                    : getString(R.string.settings_activity_text_261))
+                : getString(R.string.settings_activity_text_262));
         overlayPermissionStatus.setTextColor(granted ? ACCENT : MUTED);
         overlayPermissionButton.setText(granted
-                ? "ההרשאה פעילה"
-                : "פתיחת הגדרות הרשאה");
+                ? getString(R.string.settings_activity_text_263)
+                : getString(R.string.settings_activity_text_257));
         overlayPermissionButton.setEnabled(!granted);
         overlayPermissionButton.setAlpha(granted ? 0.65f : 1f);
     }
@@ -2845,7 +2845,7 @@ screenTitle.setText("הגדרות");
             return true;
         } catch (Throwable ex) {
             AppToast.makeText(this,
-                    "לא ניתן לפתוח את הגדרת ההרשאה. פתח בהגדרות Android את \"הצגה מעל אפליקציות אחרות\".",
+                    getString(R.string.settings_activity_text_264),
                     Toast.LENGTH_LONG).show();
             return false;
         }
@@ -2912,10 +2912,10 @@ screenTitle.setText("הגדרות");
             startActivity(new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS));
             return true;
         } catch (ActivityNotFoundException ignored) {
-            AppToast.makeText(this, "לא ניתן לפתוח את הגדרות ההתראות במכשיר.",
+            AppToast.makeText(this, getString(R.string.settings_activity_text_265),
                     Toast.LENGTH_LONG).show();
         } catch (Throwable ignored) {
-            AppToast.makeText(this, "לא ניתן לפתוח את הגדרות ההתראות במכשיר.",
+            AppToast.makeText(this, getString(R.string.settings_activity_text_265),
                     Toast.LENGTH_LONG).show();
         }
         return false;
@@ -2926,12 +2926,12 @@ screenTitle.setText("הגדרות");
                 || screenLockAdminButton == null) return;
         boolean active = isScreenLockAdminActive();
         screenLockAdminStatus.setText(active
-                ? "הרשאה פעילה — המכשיר יינעל בסיום הזמן."
-                : "ההרשאה עדיין לא ניתנה, כיבוי המסך תלוי בהגדרות המכשיר.");
+                ? getString(R.string.settings_activity_text_266)
+                : getString(R.string.settings_activity_text_267));
         screenLockAdminStatus.setTextColor(active ? ACCENT : MUTED);
         screenLockAdminButton.setText(active
-                ? "הרשאת מנהל מכשיר פעילה"
-                : "הפעל הרשאת מנהל מכשיר");
+                ? getString(R.string.settings_activity_text_268)
+                : getString(R.string.settings_activity_text_269));
         screenLockAdminButton.setEnabled(!active);
         screenLockAdminButton.setAlpha(active ? 0.65f : 1f);
     }
@@ -2963,11 +2963,11 @@ screenTitle.setText("הגדרות");
             intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN,
                     screenLockAdminComponent);
             intent.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION,
-                    "ההרשאה מאפשרת לנעול את המכשיר בכל מצב בסיום הזמן שנבחר.\n"
-                    + "ללא ההרשאה, כיבוי המסך לא יהיה לפני הזמן המוגדר במכשיר.");
+                    getString(R.string.settings_activity_text_270)
+                    + getString(R.string.settings_activity_text_271));
             startActivityForResult(intent, REQUEST_ENABLE_SCREEN_LOCK_ADMIN);
         } catch (Throwable ex) {
-            AppToast.makeText(this, "לא ניתן לפתוח את בקשת הרשאת מנהל המכשיר.",
+            AppToast.makeText(this, getString(R.string.settings_activity_text_272),
                     Toast.LENGTH_LONG).show();
         }
     }
@@ -2978,7 +2978,7 @@ screenTitle.setText("הגדרות");
         if (requestCode == REQUEST_ENABLE_SCREEN_LOCK_ADMIN) {
             updateScreenLockAdminCard();
             if (isScreenLockAdminActive()) {
-                AppToast.makeText(this, "הרשאת נעילת המסך הופעלה.",
+                AppToast.makeText(this, getString(R.string.settings_activity_text_273),
                         Toast.LENGTH_LONG).show();
             }
         }
