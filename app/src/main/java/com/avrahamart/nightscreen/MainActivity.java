@@ -181,7 +181,7 @@ public class MainActivity extends Activity {
 
     private TextView gregorianText;
     private TextView hebrewText;
-    private final int dateTextColor = Color.rgb(220, 220, 220);
+    private final int dateTextColor = Color.WHITE;
     private SharedPreferences prefs;
     private ImageView settingsButton;
     private FrameLayout settingsButtonHitArea;
@@ -1017,7 +1017,19 @@ public class MainActivity extends Activity {
                 getBool("chargeActivationMethodDefaultV1Applied", false);
         SharedPreferences.Editor e = prefs.edit();
 
-        e.putInt("fontColor", getInt("fontColor", dateTextColor));
+        // Migrate the previous implicit light-gray default to the requested white default.
+        // Explicitly selected colors other than the old default remain unchanged.
+        boolean applyFontColorDefaultMigration =
+                !getBool("fontColorWhiteDefaultMigrationV1Applied", false);
+        int legacyFontColorDefault = Color.rgb(220, 220, 220);
+        int initialFontColor = getInt("fontColor", legacyFontColorDefault);
+        if (applyFontColorDefaultMigration) {
+            if (!prefs.contains("fontColor") || initialFontColor == legacyFontColorDefault) {
+                initialFontColor = Color.WHITE;
+            }
+            e.putBoolean("fontColorWhiteDefaultMigrationV1Applied", true);
+        }
+        e.putInt("fontColor", initialFontColor);
         e.putInt("screenBackgroundColor", getInt("screenBackgroundColor", Color.BLACK));
         e.putInt("screenBrightness", getInt("screenBrightness", -1));
         e.remove("deviceLockStartConsumed")

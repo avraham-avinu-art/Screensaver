@@ -2226,16 +2226,21 @@ screenHeader.setVisibility(View.GONE);
     }
 
     private View makeIconGlyph(String iconName, int tint) {
-        String resourceName = "icon_" + iconName.replace('-', '_');
-        int resourceId = getResources().getIdentifier(
-                resourceName, "drawable", getPackageName());
-        if (resourceId == 0) {
-            throw new IllegalStateException("Missing UI glyph resource: " + resourceName);
+        int resourceId;
+        if ("activity-history".equals(iconName)) {
+            resourceId = R.drawable.ic_settings_activity_history;
+        } else {
+            String resourceName = "icon_" + iconName.replace('-', '_');
+            resourceId = getResources().getIdentifier(
+                    resourceName, "drawable", getPackageName());
+            if (resourceId == 0) {
+                throw new IllegalStateException("Missing UI glyph resource: " + resourceName);
+            }
         }
 
         android.widget.ImageView image = new android.widget.ImageView(this);
         image.setImageResource(resourceId);
-        if (!"close-circle".equals(iconName)) {
+        if (!"lock-play".equals(iconName) && !"close-circle".equals(iconName)) {
             image.setColorFilter(tint);
         }
         image.setScaleType(android.widget.ImageView.ScaleType.FIT_CENTER);
@@ -2245,23 +2250,26 @@ screenHeader.setVisibility(View.GONE);
     }
 
     private FrameLayout makeSettingIconBadge(String settingKey, String settingLabel) {
+        String iconName = SettingIconRegistry.iconNameForKey(settingKey);
         FrameLayout badge = new FrameLayout(this);
         badge.setBackground(roundOutline(ICON_SURFACE, dp(10), CARD_OUTLINE));
 
-        android.widget.ImageView image = new android.widget.ImageView(this);
-        image.setImageResource(SettingIconRegistry.drawableForKey(settingKey));
-        image.setColorFilter(ACCENT);
-        image.setScaleType(android.widget.ImageView.ScaleType.FIT_CENTER);
-        image.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-        image.setContentDescription(settingLabel);
-
-        int glyphSize = dp(22);
-        badge.addView(image, new FrameLayout.LayoutParams(
-                glyphSize, glyphSize, Gravity.CENTER));
+        View graphic = makeIconGlyph(iconName, ACCENT);
+        int glyphSize = "progress-time-digital".equals(iconName) ? dp(27)
+                : "bold".equals(iconName) ? dp(24)
+                : "phone-charging".equals(iconName) ? dp(24)
+                : "power-off".equals(iconName) ? dp(19)
+                : ("history".equals(iconName) || "panel-bottom".equals(iconName)) ? dp(24)
+                : "position-arrows".equals(iconName) ? dp(27)
+                : "gregorian-date".equals(iconName) ? dp(25)
+                : dp(22);
+        FrameLayout.LayoutParams graphicParams =
+                new FrameLayout.LayoutParams(glyphSize, glyphSize, Gravity.CENTER);
+        badge.addView(graphic, graphicParams);
+        graphic.setContentDescription(settingLabel);
         return badge;
     }
 
-    
     private void addSpinner(LinearLayout parent, String label, String[] names,
                             String[] values, String key) {
         LinearLayout card = addSettingCard(parent, label, key);
@@ -2465,7 +2473,7 @@ screenHeader.setVisibility(View.GONE);
         if ("fontColor".equals(key) || "frameColor".equals(key)
                 || "screenBackgroundColor".equals(key)) {
             if (!prefs.contains(key)) {
-                return "screenBackgroundColor".equals(key) ? 0 : -1;
+                return "screenBackgroundColor".equals(key) || "fontColor".equals(key) ? 0 : -1;
             }
             int stored = getInt(key, colorValue(values[0]));
             for (int i = 0; i < values.length; i++) {
