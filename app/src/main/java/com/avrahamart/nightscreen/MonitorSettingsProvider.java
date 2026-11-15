@@ -8,6 +8,10 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Set;
+
 /**
  * Single-process access point for the few preferences read by services that
  * run in Android's isolated :lockmonitor and :notifications processes.
@@ -48,6 +52,13 @@ public final class MonitorSettingsProvider extends ContentProvider {
                     prefs.getBoolean("autoStartOnlyWhenLocked", false));
             result.putBoolean("preventAutoStartDuringUse",
                     prefs.getBoolean("preventAutoStartDuringUse", false));
+            result.putBoolean("pauseWhenExcludedAppActive",
+                    prefs.getBoolean("pauseWhenExcludedAppActive", false));
+            Set<String> selectedApps = prefs.getStringSet(
+                    "excludedForegroundPackages", Collections.emptySet());
+            result.putStringArrayList("excludedForegroundPackages",
+                    new ArrayList<>(selectedApps == null
+                            ? Collections.emptySet() : selectedApps));
             result.putBoolean("wakeOnTrackChange",
                     prefs.getBoolean("wakeOnTrackChange", false));
             result.putBoolean("showPlayer",
