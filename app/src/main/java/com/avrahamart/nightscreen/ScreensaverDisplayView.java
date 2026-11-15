@@ -384,7 +384,13 @@ public final class ScreensaverDisplayView extends LinearLayout {
         }
     }
 
-    private final Runnable hideSettingsButtonRunnable = () -> setSettingsButtonVisible(false);
+    private void hideSettingsButton() {
+        if (settingsButtonHitArea != null) {
+            settingsButtonHitArea.setVisibility(View.INVISIBLE);
+        }
+    }
+
+    private final Runnable hideSettingsButtonRunnable = this::hideSettingsButton;
 
     private boolean getBool(String key, boolean def) {
         return prefs == null ? def : prefs.getBoolean(key, def);
