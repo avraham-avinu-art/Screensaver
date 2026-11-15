@@ -566,9 +566,6 @@ screenHeader.setVisibility(View.GONE);
                 new String[]{"30", "60", "120", "300", "600"}, "idleWaitSeconds");
         addCheck(content, getString(R.string.settings_activity_text_068), "noShutdownWhileCharging", false);
         addCheck(content, getString(R.string.settings_activity_text_266), "wakeOnTrackChange", false);
-        addDiscreteSlider(content, getString(R.string.settings_activity_text_267),
-                new String[]{"5 שניות", "10 שניות", "15 שניות", "30 שניות"},
-                new String[]{"5", "10", "15", "30"}, "trackChangeWakeSeconds");
         addSegmentedChoices(content, getString(R.string.settings_activity_text_069),
                 new String[]{getString(R.string.settings_activity_text_070), getString(R.string.settings_activity_text_071), getString(R.string.settings_activity_text_072), getString(R.string.settings_activity_text_073)},
                 new String[]{"off", "percent", "icon", "icon_percent"},
@@ -833,6 +830,9 @@ screenHeader.setVisibility(View.GONE);
 
     
     private void buildAdvancedSettings() {
+        if (!prefs.contains("playerStartDurationSeconds")) {
+            prefs.edit().putInt("playerStartDurationSeconds", 6).apply();
+        }
         if (!prefs.contains("batteryProtectionThreshold")) {
             prefs.edit().putInt("batteryProtectionThreshold", 20).apply();
         }
@@ -850,6 +850,10 @@ screenHeader.setVisibility(View.GONE);
                 hourNames, hourValues, "nightModeStartHour");
         addInlineHourSelector(content, getString(R.string.settings_activity_text_269),
                 hourNames, hourValues, "nightModeEndHour");
+
+        addDiscreteSlider(content, getString(R.string.settings_activity_text_284),
+                new String[]{"3 שניות", "6 שניות", "10 שניות", "15 שניות"},
+                new String[]{"3", "6", "10", "15"}, "playerStartDurationSeconds");
 
         addCheck(content, getString(R.string.settings_activity_text_125),
                 "batteryProtectionEnabled", false);
@@ -916,6 +920,9 @@ screenHeader.setVisibility(View.GONE);
                 }
                 return getString(R.string.settings_activity_text_140);
             case CATEGORY_ADVANCED:
+                if ("playerStartDurationSeconds".equals(key)) {
+                    return getString(R.string.settings_activity_text_140);
+                }
                 if ("useAndroidDreamForCharging".equals(key)) return getString(R.string.settings_activity_text_066);
                 if ("settingsButtonAlwaysVisible".equals(key)) return getString(R.string.settings_activity_text_141);
                 if ("nightModeEnabled".equals(key) || "nightModeStartHour".equals(key)
@@ -1107,6 +1114,9 @@ screenHeader.setVisibility(View.GONE);
         if ("autoStartOnCharge".equals(key)) return getString(R.string.settings_activity_text_165);
         if ("wakeOnTrackChange".equals(key)) return getString(R.string.settings_activity_text_274);
         if ("autoStartOnIdle".equals(key)) return getString(R.string.settings_activity_text_275);
+        if ("playerStartDurationSeconds".equals(key)) {
+            return getString(R.string.settings_activity_text_285);
+        }
         if ("noShutdownWhileCharging".equals(key)) return getString(R.string.settings_activity_text_166);
         if ("screenBackgroundColor".equals(key)) return getString(R.string.settings_activity_text_167);
         if ("screenBrightness".equals(key)) return getString(R.string.settings_activity_text_168);
@@ -2454,7 +2464,7 @@ screenHeader.setVisibility(View.GONE);
                     || "playerHorizontalOffset".equals(key)
                     || "batteryProtectionThreshold".equals(key)
                     || "nightModeStartHour".equals(key) || "nightModeEndHour".equals(key)
-                    || "trackChangeWakeSeconds".equals(key) || "idleWaitSeconds".equals(key)
+                    || "playerStartDurationSeconds".equals(key) || "idleWaitSeconds".equals(key)
                     || "playerSize".equals(key) || "frameWidth".equals(key)
                     || "frameRadius".equals(key) || "screenBrightness".equals(key)) {
                 editor.putInt(key, Integer.parseInt(value));
@@ -2803,7 +2813,7 @@ screenHeader.setVisibility(View.GONE);
                 || "playerHorizontalOffset".equals(key)
                 || "batteryProtectionThreshold".equals(key)
                 || "nightModeStartHour".equals(key) || "nightModeEndHour".equals(key)
-                || "trackChangeWakeSeconds".equals(key) || "idleWaitSeconds".equals(key)
+                || "playerStartDurationSeconds".equals(key) || "idleWaitSeconds".equals(key)
                 || "playerSize".equals(key) || "frameWidth".equals(key)
                 || "frameRadius".equals(key) || "screenBrightness".equals(key)) {
             int fallback = "clockDateSize".equals(key) ? 84
