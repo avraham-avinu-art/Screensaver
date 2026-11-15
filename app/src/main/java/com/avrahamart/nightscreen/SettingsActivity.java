@@ -618,6 +618,7 @@ screenTitle.setText("הגדרות");
         Button choose = makeActionButton("בחירת אפליקציות");
         LinearLayout.LayoutParams buttonParams = new LinearLayout.LayoutParams(-2, dp(42));
         buttonParams.gravity = Gravity.CENTER_HORIZONTAL;
+        buttonParams.topMargin = dp(8);
         card.addView(choose, buttonParams);
         choose.setOnClickListener(v -> {
             if (!hasUsageAccess()) {
