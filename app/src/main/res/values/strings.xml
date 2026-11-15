@@ -442,7 +442,7 @@
 
     <string name="settings_activity_text_266" formatted="false">הדלקה במעבר שיר</string>
     <string name="settings_activity_text_268" formatted="false">מהשעה:</string>
-    <string name="settings_activity_text_269" formatted="false">עד שעה:</string>
+    <string name="settings_activity_text_269" formatted="false">עד השעה:</string>
     <string name="settings_activity_text_270" formatted="false">הפעלה בחוסר פעילות</string>
     <string name="settings_activity_text_271" formatted="false">זמן חוסר פעילות</string>
     <string name="settings_activity_text_272" formatted="false">מעירה את המסך ומציגה את שומר המסך בכל מעבר שיר בזמן טעינה, כאשר המסך כבוי. נדרש להפעיל את נגן המדיה.</string>
