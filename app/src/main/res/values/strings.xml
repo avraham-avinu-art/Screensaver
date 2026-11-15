@@ -447,4 +447,9 @@
     <string name="tile_service_text_002" formatted="false">הפעלה או סיום של שומר המסך</string>
     <string name="battery_indicator_text_001" formatted="false">תצוגת סוללה בטעינה</string>
     <string name="analog_clock_text_001" formatted="false">שעון אנלוגי</string>
+    <string name="app_name" formatted="false">שומר מסך</string>
+    <string name="settings_activity_label" formatted="false">הגדרות</string>
+    <string name="permissions_activity_label" formatted="false">הרשאות</string>
+    <string name="guide_activity_label" formatted="false">מדריך שימוש</string>
+    <string name="notification_listener_service_label" formatted="false">Night Screen</string>
 </resources>

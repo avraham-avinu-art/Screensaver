@@ -13,7 +13,7 @@
     <application
         android:name=".NightScreenApplication"
         android:allowBackup="false"
-        android:label="שומר מסך" android:icon="@drawable/ic_launcher"
+        android:label="@string/app_name" android:icon="@drawable/ic_launcher"
         android:theme="@style/AppTheme"
         android:supportsRtl="true">
         <provider
@@ -23,17 +23,17 @@
 
         <activity
             android:name=".SettingsActivity"
-            android:label="הגדרות"
+            android:label="@string/settings_activity_label"
             android:exported="false"
             android:screenOrientation="unspecified" />
         <activity
             android:name=".PermissionsActivity"
-            android:label="הרשאות"
+            android:label="@string/permissions_activity_label"
             android:exported="false"
             android:screenOrientation="unspecified" />
         <activity
             android:name=".GuideActivity"
-            android:label="מדריך שימוש"
+            android:label="@string/guide_activity_label"
             android:exported="false"
             android:screenOrientation="unspecified" />
         <activity
@@ -48,7 +48,7 @@
 
         <receiver
             android:name=".ScreenLockAdminReceiver"
-            android:label="שומר מסך"
+            android:label="@string/app_name"
             android:description="@string/screen_lock_admin_description"
             android:permission="android.permission.BIND_DEVICE_ADMIN"
             android:exported="true">
@@ -63,7 +63,7 @@
         <service
             android:name=".LockScreenMonitorService"
             android:process=":lockmonitor"
-            android:label="שומר מסך"
+            android:label="@string/app_name"
             android:exported="false"
             android:stopWithTask="false"
             android:foregroundServiceType="specialUse">
@@ -95,7 +95,7 @@
 
         <service
             android:name=".ScreensaverDreamService"
-            android:label="שומר מסך"
+            android:label="@string/app_name"
             android:icon="@drawable/ic_launcher"
             android:exported="true"
             android:permission="android.permission.BIND_DREAM_SERVICE">
@@ -110,7 +110,7 @@
 
         <service
             android:name=".ScreensaverTileService"
-            android:label="שומר מסך"
+            android:label="@string/app_name"
             android:icon="@drawable/ic_qs_screensaver"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
             android:exported="true">
@@ -122,7 +122,7 @@
         <service
             android:name=".SystemMediaNotificationListener"
             android:process=":notifications"
-            android:label="Night Screen"
+            android:label="@string/notification_listener_service_label"
             android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
             android:exported="false">
             <intent-filter>
