@@ -677,7 +677,6 @@ public class MainActivity extends Activity {
         hebrewText.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         hebrewText.setGravity(Gravity.CENTER);
         hebrewText.setTextDirection(View.TEXT_DIRECTION_ANY_RTL);
-        hebrewText.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         hebrewText.setIncludeFontPadding(false);
         clockTextColumn.addView(hebrewText,
                 new LinearLayout.LayoutParams(-1, initialDateHeight));
@@ -1350,6 +1349,9 @@ public class MainActivity extends Activity {
         if (view == null) return;
         int verticalGravity = view.getGravity() & Gravity.VERTICAL_GRAVITY_MASK;
         if (verticalGravity == 0) verticalGravity = Gravity.CENTER_VERTICAL;
+        // Explicit textAlignment values override gravity. Force gravity-based
+        // alignment so the selected left/center/right option is actually applied.
+        view.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
         view.setGravity(horizontalGravity | verticalGravity);
     }
 
@@ -1364,7 +1366,10 @@ public class MainActivity extends Activity {
             CharSequence value = row.getText();
             if (value == null || value.length() == 0) continue;
             float measured = row.getPaint().measureText(value, 0, value.length());
-            measured += row.getPaddingLeft() + row.getPaddingRight() + dp(2);
+            // Leave a symmetric 32dp alignment gutter around the widest row.
+            // This makes all rows, including the widest one, visibly respond to
+            // left/center/right without moving the centered text column itself.
+            measured += row.getPaddingLeft() + row.getPaddingRight() + dp(32);
             widest = Math.max(widest, measured);
         }
         return Math.max(dp(1), Math.min(Math.max(dp(1), maxWidth),
