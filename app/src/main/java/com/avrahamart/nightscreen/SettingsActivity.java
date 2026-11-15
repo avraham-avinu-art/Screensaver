@@ -2091,13 +2091,14 @@ screenHeader.setVisibility(View.GONE);
                 AnalogClockView dialPreview = new AnalogClockView(this);
                 dialPreview.setTime(10, 10);
                 dialPreview.setColors(ON_SURFACE, CARD_SURFACE);
-                dialPreview.setDialStyle(values[i]);
-                int previewDiameter = 60;
-                if ("numbers_only".equals(values[i])) {
+                boolean replaceNumbersPreview = "numbers_only".equals(values[i]);
+                // The numbers-only choice uses a separate, full-resolution hand-clock
+                // preview. Draw it at its final size rather than scaling a smaller View.
+                dialPreview.setDialStyle(replaceNumbersPreview ? "lines_numbers" : values[i]);
+                int previewDiameter = replaceNumbersPreview ? 90 : 60;
+                if (replaceNumbersPreview) {
                     previewContent.setClipChildren(false);
                     previewContent.setClipToPadding(false);
-                    dialPreview.setScaleX(1.5f);
-                    dialPreview.setScaleY(1.5f);
                 }
                 previewContent.addView(dialPreview,
                         new LinearLayout.LayoutParams(dp(previewDiameter),
