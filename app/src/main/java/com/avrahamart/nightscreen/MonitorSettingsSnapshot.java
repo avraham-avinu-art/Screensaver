@@ -30,7 +30,7 @@ final class MonitorSettingsSnapshot {
     final Set<String> excludedForegroundPackages;
     final boolean wakeOnTrackChange;
     final boolean showPlayer;
-    final int trackChangeWakeSeconds;
+    final int playerStartDurationSeconds;
     final boolean deviceLockActivationConsumed;
 
     private MonitorSettingsSnapshot(Bundle data) {
@@ -51,7 +51,8 @@ final class MonitorSettingsSnapshot {
                 : Collections.unmodifiableSet(new HashSet<>(selectedApps));
         wakeOnTrackChange = data.getBoolean("wakeOnTrackChange", false);
         showPlayer = data.getBoolean("showPlayer", false);
-        trackChangeWakeSeconds = data.getInt("trackChangeWakeSeconds", 5);
+        playerStartDurationSeconds = PlayerStartDuration.normalize(
+                data.getInt("playerStartDurationSeconds", 6));
         deviceLockActivationConsumed =
                 data.getBoolean("deviceLockActivationConsumed", false);
     }
@@ -88,8 +89,8 @@ final class MonitorSettingsSnapshot {
                 data.putBoolean("wakeOnTrackChange",
                         prefs.getBoolean("wakeOnTrackChange", false));
                 data.putBoolean("showPlayer", prefs.getBoolean("showPlayer", false));
-                data.putInt("trackChangeWakeSeconds",
-                        prefs.getInt("trackChangeWakeSeconds", 5));
+                data.putInt("playerStartDurationSeconds",
+                        prefs.getInt("playerStartDurationSeconds", 6));
                 data.putBoolean("deviceLockActivationConsumed",
                         prefs.getBoolean("deviceLockActivationConsumed", false));
             } else {
