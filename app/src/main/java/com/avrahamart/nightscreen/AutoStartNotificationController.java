@@ -62,7 +62,8 @@ public final class AutoStartNotificationController {
         builder.setSmallIcon(R.drawable.ic_notification_transparent)
                 .setLargeIcon(createApplicationIcon(app))
                 .setContentTitle(title)
-                .setContentText(message)
+                // Leave contentText unset so the collapsed system template is one line.
+                // The full explanatory message remains available when the notification expands.
                 .setStyle(new Notification.BigTextStyle().bigText(message))
                 // Tapping the notification body does not open Settings or cancel the service.
                 .setCategory(Notification.CATEGORY_SERVICE)
