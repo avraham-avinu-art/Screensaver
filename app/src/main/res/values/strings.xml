@@ -472,7 +472,7 @@
     <string name="settings_activity_text_287" formatted="false">אפליקציות מערכת</string>
     <string name="settings_activity_text_288" formatted="false">טוען את רשימת האפליקציות…</string>
     <string name="settings_activity_text_289" formatted="false">הגדרת שעות מצב לילה</string>
-    <string name="settings_activity_text_290" formatted="false">איפוס כל ההגדרות</string>
+    <string name="settings_activity_text_290" formatted="false">איפוס ההגדרות</string>
     <string name="settings_activity_text_291" formatted="false">איפוס</string>
     <string name="settings_activity_text_292" formatted="false">האם אתה בטוח שברצונך לאפס את כל הגדרות האפליקציה בחזרה לברירות המחדל?</string>
     <string name="settings_activity_text_293" formatted="false">אישור</string>
@@ -497,5 +497,6 @@
     <string name="settings_activity_text_312" formatted="false">75%</string>
     <string name="settings_activity_text_313" formatted="false">100%</string>
     <string name="settings_activity_text_314" formatted="false">מחזירה את כל הגדרות האפליקציה לברירות המחדל. הרשאות והגדרות Android אינן משתנות.</string>
+    <string name="settings_activity_text_315" formatted="false">החזרה לברירות המחדל</string>
 
 </resources>
