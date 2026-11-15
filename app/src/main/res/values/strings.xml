@@ -79,7 +79,7 @@
     <string name="settings_activity_text_074" formatted="false">בחירת אפליקציות</string>
     <string name="settings_activity_text_075" formatted="false">כדי לזהות אפליקציה פעילה, יש לאפשר לשומר מסך גישה לנתוני שימוש במסך הבא.</string>
     <string name="settings_activity_text_076" formatted="false">הגדרת נתוני שימוש אינה זמינה במכשיר זה.</string>
-    <string name="settings_activity_text_077" formatted="false">אפליקציות מוחרגות</string>
+    <string name="settings_activity_text_077" formatted="false">בחירת אפליקציות לחסימת הפעלה</string>
     <string name="settings_activity_text_078" formatted="false">ביטול</string>
     <string name="settings_activity_text_079" formatted="false">שמירה</string>
     <string name="settings_activity_text_080" formatted="false">צבע המסך</string>
@@ -130,8 +130,8 @@
     <string name="settings_activity_text_125" formatted="false">הגנה אוטומטית כשהסוללה מתרוקנת</string>
     <string name="settings_activity_text_126" formatted="false">סף סוללה להפעלת ההגנה</string>
     <string name="settings_activity_text_127" formatted="false">הגדרת הפעלה אוטומטית בטעינה דרך הגדרות אנדרואיד</string>
-    <string name="settings_activity_text_128" formatted="false">השהיית שומר מסך באפליקציות נבחרות</string>
-    <string name="settings_activity_text_129" formatted="false">מניעת הפעלה אוטומטית בזמן שימוש באפליקציה</string>
+    <string name="settings_activity_text_128" formatted="false">מניעת הפעלה אוטומטית באפליקציות נבחרות</string>
+    <string name="settings_activity_text_129" formatted="false">מניעת הפעלה אוטומטית בזמן שימוש באפליקציות</string>
     <string name="settings_activity_text_130" formatted="false">סמל ההגדרות בתצוגה קבועה</string>
     <string name="settings_activity_text_131" formatted="false">תצוגת השעה</string>
     <string name="settings_activity_text_132" formatted="false">הצגת תאריכים</string>
@@ -146,7 +146,7 @@
     <string name="settings_activity_text_141" formatted="false">סמל ההגדרות</string>
     <string name="settings_activity_text_142" formatted="false">מצב לילה</string>
     <string name="settings_activity_text_143" formatted="false">הגנה על הסוללה</string>
-    <string name="settings_activity_text_144" formatted="false">השהיית הפעלה אוטומטית</string>
+    <string name="settings_activity_text_144" formatted="false">הגדרות למניעת הפעלה אוטומטית</string>
     <string name="settings_activity_text_145" formatted="false">הצגת התאריך העברי לצד השעה</string>
     <string name="settings_activity_text_146" formatted="false">הצגת התאריך הלועזי לצד השעה</string>
     <string name="settings_activity_text_147" formatted="false">בחירת תבנית התצוגה של התאריך העברי</string>
@@ -157,8 +157,8 @@
     <string name="settings_activity_text_152" formatted="false">בחירת יישור הטקסט בתוך אזור השעון והתאריך</string>
     <string name="settings_activity_text_153" formatted="false">בחירת יישור שם האמן ושם השיר בתוך אזור הנגן</string>
     <string name="settings_activity_text_154" formatted="false">הגבלת כל ההפעלות האוטומטיות כך שיפעלו רק כשהמכשיר נעול</string>
-    <string name="settings_activity_text_155" formatted="false">חוסמת מראש הפעלה אוטומטית כל עוד אפליקציה אחרת פתוחה בחזית.</string>
-    <string name="settings_activity_text_156" formatted="false">אם שומר המסך כבר הופעל ואפליקציה שבחרת נמצאת בחזית, הוא ייסגר ולא יכסה אותה.</string>
+    <string name="settings_activity_text_155" formatted="false">חוסמת מראש הפעלה אוטומטית בכל פעם שאפליקציה אחרת נמצאת בחזית, ללא תלות בזהות האפליקציה.</string>
+    <string name="settings_activity_text_156" formatted="false">חוסמת מראש הפעלה אוטומטית רק כאשר אחת מהאפליקציות שסומנו ברשימה נמצאת בחזית.</string>
     <string name="settings_activity_text_157" formatted="false">בחירת עובי גופן השעון והתאריך</string>
     <string name="settings_activity_text_158" formatted="false">בחירת מיקום הצגת השעון והתאריך במסך</string>
     <string name="settings_activity_text_159" formatted="false">בחירת משך זמן הצגת השומר מסך</string>
@@ -298,7 +298,7 @@
     <string name="permissions_activity_text_006" formatted="false">כדי לשנות או לבטל את ההרשאה, שנה במסך הבא את גישת ההתראות של שומר מסך.</string>
     <string name="permissions_activity_text_007" formatted="false">כדי להציג את הנגן, צריך לאפשר לשומר מסך גישה להתראות במסך הבא. בחר את \"שומר מסך\" והפעל את ההרשאה.</string>
     <string name="permissions_activity_text_008" formatted="false">הרשאת גישה לנתוני שימוש</string>
-    <string name="permissions_activity_text_009" formatted="false">נדרשת לזיהוי אפליקציה שנמצאת בחזית: היא מאפשרת לחסום מראש הפעלה אוטומטית בזמן שימוש באפליקציה אחרת, או לסגור את שומר המסך רק כאשר אפליקציה שבחרת נמצאת בחזית.</string>
+    <string name="permissions_activity_text_009" formatted="false">נדרשת לזיהוי האפליקציה שנמצאת בחזית, כדי לחסום מראש הפעלה אוטומטית בהתאם להגדרה הכללית או לרשימת האפליקציות שנבחרו.</string>
     <string name="permissions_activity_text_010" formatted="false">הפעל הרשאת גישה לנתוני שימוש</string>
     <string name="permissions_activity_text_011" formatted="false">כדי לשנות או לבטל את ההרשאה, שנה במסך הבא את גישת נתוני השימוש של שומר מסך.</string>
     <string name="permissions_activity_text_012" formatted="false">כדי לזהות אפליקציה פעילה בחזית המסך, בחר במסך הבא את „שומר מסך” ואפשר גישה לנתוני שימוש.</string>
