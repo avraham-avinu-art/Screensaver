@@ -34,9 +34,10 @@ public final class ScreensaverDreamService extends DreamService {
     private AnalogClockView analogClock;
     private View clockBlock;
     private int clockLineHeightPx;
+    private boolean dreamActive;
     private final Runnable clockTick = new Runnable() {
         @Override public void run() {
-            if (!isDreaming()) return;
+            if (!dreamActive) return;
             updateClock();
             handler.postDelayed(this, 1000L);
         }
@@ -56,18 +57,21 @@ public final class ScreensaverDreamService extends DreamService {
     @Override
     public void onDreamingStarted() {
         super.onDreamingStarted();
+        dreamActive = true;
         handler.removeCallbacks(clockTick);
         handler.post(clockTick);
     }
 
     @Override
     public void onDreamingStopped() {
+        dreamActive = false;
         handler.removeCallbacks(clockTick);
         super.onDreamingStopped();
     }
 
     @Override
     public void onDetachedFromWindow() {
+        dreamActive = false;
         handler.removeCallbacks(clockTick);
         super.onDetachedFromWindow();
     }
