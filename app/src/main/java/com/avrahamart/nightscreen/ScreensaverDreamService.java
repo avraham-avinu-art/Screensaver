@@ -18,6 +18,7 @@ import android.provider.Settings;
 import android.service.dreams.DreamService;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
+import android.view.View;
 
 import java.util.List;
 
@@ -65,6 +66,7 @@ public final class ScreensaverDreamService extends DreamService {
         setInteractive(true);
         setFullscreen(true);
         setScreenBright(true);
+        hideSystemUi();
 
         displayView = new ScreensaverDisplayView(this, prefs,
                 new ScreensaverDisplayView.Actions() {
@@ -97,6 +99,7 @@ public final class ScreensaverDreamService extends DreamService {
         });
 
         setContentView(displayView);
+        hideSystemUi();
         displayView.applySettings(getWindow(), false, null);
         displayView.updateClock();
 
@@ -115,6 +118,7 @@ public final class ScreensaverDreamService extends DreamService {
     @Override
     public void onDreamingStarted() {
         super.onDreamingStarted();
+        hideSystemUi();
         dreamActive = true;
         if (prefs != null && preferenceListener != null) {
             prefs.registerOnSharedPreferenceChangeListener(preferenceListener);
@@ -148,6 +152,19 @@ public final class ScreensaverDreamService extends DreamService {
         }
         displayView = null;
         super.onDetachedFromWindow();
+    }
+
+    private void hideSystemUi() {
+        try {
+            getWindow().getDecorView().setSystemUiVisibility(
+                    View.SYSTEM_UI_FLAG_FULLSCREEN
+                            | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                            | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                            | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                            | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                            | View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
+        } catch (Throwable ignored) {
+        }
     }
 
     private void openSettings() {

@@ -595,9 +595,62 @@ public class MainActivity extends Activity {
         super.onDestroy();
     }
 
-    private void buildUi() {,        displayView = new ScreensaverDisplayView(this, prefs,,                new ScreensaverDisplayView.Actions() {,                    @Override public void onOpenSettings() { showSettings(); },                    @Override public void onPlayPause() { sendPlayPause(); },                    @Override public void onPrevious() { sendPrevious(); },                    @Override public void onNext() { sendNext(); },                    @Override public void onSeekProgress(int progress) {,                        try {,                            if (mediaController == null || currentMediaDurationMs <= 0L) return;,                            mediaController.getTransportControls().seekTo(,                                    currentMediaDurationMs * progress / 1000L);,                        } catch (Throwable ignored) { },                    },                });,,        // The Activity owns lifecycle and input policy; all visible screensaver,        // content is created by the shared renderer used by Android Dream as well.,        screenRootView = displayView;,        stageView = displayView.stageView;,        clockBlockView = displayView.clockBlockView;,        mediaHolderView = displayView.mediaHolderView;,        timeText = displayView.timeText;,        analogClockView = displayView.analogClockView;,        clockTextColumn = displayView.clockTextColumn;,        chargingBatteryView = displayView.chargingBatteryView;,        gregorianText = displayView.gregorianText;,        hebrewText = displayView.hebrewText;,        settingsButton = displayView.settingsButton;,        settingsButtonHitArea = displayView.settingsButtonHitArea;,        mediaMirror = displayView.mediaMirror;,        playerTextColumn = displayView.playerTextColumn;,        mediaTitle = displayView.mediaTitle;,        mediaDetails = displayView.mediaDetails;,        mediaProgressText = displayView.mediaProgressText;,        mediaCurrentText = displayView.mediaCurrentText;,        mediaTotalText = displayView.mediaTotalText;,        mediaProgressRow = displayView.mediaProgressRow;,        mediaSeekBar = displayView.mediaSeekBar;,        mediaControlsHolder = displayView.mediaControlsHolder;,        mediaPlayPause = displayView.mediaPlayPause;,        mediaPrev = displayView.mediaPrev;,        mediaNext = displayView.mediaNext;,        mediaProgressBaseWidth = displayView.mediaProgressBaseWidth;,,        setContentView(displayView);,        displayView.post(() -> {,            displayView.applySettings(getWindow(),,                    mediaController != null && hasUsableMediaSession(mediaController),,                    currentAlbumArt);,            displayView.updateScreenPositions();,        });,    }
+    private void buildUi() {
+        displayView = new ScreensaverDisplayView(this, prefs,
+                new ScreensaverDisplayView.Actions() {
+                    @Override public void onOpenSettings() { showSettings(); }
+                    @Override public void onPlayPause() { sendPlayPause(); }
+                    @Override public void onPrevious() { sendPrevious(); }
+                    @Override public void onNext() { sendNext(); }
+                    @Override public void onSeekProgress(int progress) {
+                        try {
+                            if (mediaController == null || currentMediaDurationMs <= 0L) return;
+                            mediaController.getTransportControls().seekTo(
+                                    currentMediaDurationMs * progress / 1000L);
+                        } catch (Throwable ignored) { }
+                    }
+                });
 
-    private void updateScreenPositions(FrameLayout stage, View clockBlock, View mediaHolder) {,        if (displayView != null) displayView.updateScreenPositions();,    }
+        // Both activation paths now use this single shared visual component.
+        screenRootView = displayView;
+        stageView = displayView.stageView;
+        clockBlockView = displayView.clockBlockView;
+        mediaHolderView = displayView.mediaHolderView;
+        timeText = displayView.timeText;
+        analogClockView = displayView.analogClockView;
+        clockTextColumn = displayView.clockTextColumn;
+        chargingBatteryView = displayView.chargingBatteryView;
+        gregorianText = displayView.gregorianText;
+        hebrewText = displayView.hebrewText;
+        settingsButton = displayView.settingsButton;
+        settingsButtonHitArea = displayView.settingsButtonHitArea;
+        mediaMirror = displayView.mediaMirror;
+        playerTextColumn = displayView.playerTextColumn;
+        mediaTitle = displayView.mediaTitle;
+        mediaDetails = displayView.mediaDetails;
+        mediaProgressText = displayView.mediaProgressText;
+        mediaCurrentText = displayView.mediaCurrentText;
+        mediaTotalText = displayView.mediaTotalText;
+        mediaProgressRow = displayView.mediaProgressRow;
+        mediaSeekBar = displayView.mediaSeekBar;
+        mediaControlsHolder = displayView.mediaControlsHolder;
+        mediaPlayPause = displayView.mediaPlayPause;
+        mediaPrev = displayView.mediaPrev;
+        mediaNext = displayView.mediaNext;
+        mediaProgressBaseWidth = displayView.mediaProgressBaseWidth;
+
+        setContentView(displayView);
+        displayView.post(() -> {
+            displayView.applySettings(getWindow(),
+                    mediaController != null && hasUsableMediaSession(mediaController),
+                    currentAlbumArt);
+            displayView.updateScreenPositions();
+        });
+    }
+
+    private void updateScreenPositions(FrameLayout stage, View clockBlock, View mediaHolder) {
+        if (displayView != null) displayView.updateScreenPositions();
+    }
 
     private void translateCenteredChildrenToOffset(
             ViewGroup container, int availableWidth, float offsetFraction) {
@@ -1158,13 +1211,25 @@ public class MainActivity extends Activity {
                 (int) Math.ceil(widest)));
     }
 
-    private void updateClockTextColumnWidth() {,        if (displayView != null) displayView.updateClockTextColumnWidth();,    }
+    private void updateClockTextColumnWidth() {
+        if (displayView != null) displayView.updateClockTextColumnWidth();
+    }
 
-    private void updatePlayerTextColumnWidth() {,        if (displayView != null) displayView.updatePlayerTextColumnWidth();,    }
+    private void updatePlayerTextColumnWidth() {
+        if (displayView != null) displayView.updatePlayerTextColumnWidth();
+    }
 
-    private void applySectionTextAlignmentPreferences() {,        if (displayView != null) displayView.applySectionTextAlignmentPreferences();,    }
+    private void applySectionTextAlignmentPreferences() {
+        if (displayView != null) displayView.applySectionTextAlignmentPreferences();
+    }
 
-    private void applySettings() {,        if (displayView != null) {,            displayView.applySettings(getWindow(),,                    mediaController != null && hasUsableMediaSession(mediaController),,                    currentAlbumArt);,        },    }
+    private void applySettings() {
+        if (displayView != null) {
+            displayView.applySettings(getWindow(),
+                    mediaController != null && hasUsableMediaSession(mediaController),
+                    currentAlbumArt);
+        }
+    }
 
     private int dateClockGapDp(int clockSize) {
         // Used only for the initial layout before the selected font has been measured.
@@ -1383,7 +1448,9 @@ public class MainActivity extends Activity {
         return hour >= start || hour < end;
     }
 
-    private void applyScreenAppearance() {,        if (displayView != null) displayView.applyScreenAppearance(getWindow());,    }
+    private void applyScreenAppearance() {
+        if (displayView != null) displayView.applyScreenAppearance(getWindow());
+    }
 
     
     private static final class CenterCropBitmapDrawable
@@ -1444,7 +1511,9 @@ public class MainActivity extends Activity {
         }
     }
 
-    private void applyMediaFrame(boolean hasActiveSong) {,        if (displayView != null) displayView.applyMediaFrame(hasActiveSong, currentAlbumArt);,    }
+    private void applyMediaFrame(boolean hasActiveSong) {
+        if (displayView != null) displayView.applyMediaFrame(hasActiveSong, currentAlbumArt);
+    }
 
     private void scheduleAutoOff() {
         scheduleAutoOff(false);
@@ -2112,11 +2181,17 @@ public class MainActivity extends Activity {
     }
 
     
-    private void updateChargingBatteryDisplay() {,        if (displayView != null) displayView.updateChargingBatteryDisplay();,    }
+    private void updateChargingBatteryDisplay() {
+        if (displayView != null) displayView.updateChargingBatteryDisplay();
+    }
 
-    private void updateClockBlockHeightForChargingIndicator() {,        if (displayView != null) displayView.updateClockBlockHeightForChargingIndicator();,    }
+    private void updateClockBlockHeightForChargingIndicator() {
+        if (displayView != null) displayView.updateClockBlockHeightForChargingIndicator();
+    }
 
-    private void updateClock() {,        if (displayView != null) displayView.updateClock();,    }
+    private void updateClock() {
+        if (displayView != null) displayView.updateClock();
+    }
 
     private String formattedGregorianDateValue() {
         String pattern = getString("gregorianDateFormat", "dd.MM.yyyy");
@@ -2793,7 +2868,9 @@ public class MainActivity extends Activity {
         }
     }
 
-    private void setProgressRowVisible(boolean visible) {,        if (displayView != null) displayView.setProgressRowVisible(visible);,    }
+    private void setProgressRowVisible(boolean visible) {
+        if (displayView != null) displayView.setProgressRowVisible(visible);
+    }
 
     private boolean hasNotificationAccess() {
         ComponentName component = new ComponentName(
@@ -2875,13 +2952,21 @@ public class MainActivity extends Activity {
         return value;
     }
 
-    private void updateTitleMarqueeIfNeeded() {,        if (displayView != null) displayView.updateTitleMarqueeIfNeeded();,    }
+    private void updateTitleMarqueeIfNeeded() {
+        if (displayView != null) displayView.updateTitleMarqueeIfNeeded();
+    }
 
-    private void updateArtistMarqueeIfNeeded() {,        if (displayView != null) displayView.updateArtistMarqueeIfNeeded();,    }
+    private void updateArtistMarqueeIfNeeded() {
+        if (displayView != null) displayView.updateArtistMarqueeIfNeeded();
+    }
 
-    private void stopArtistMarquee() {,        if (displayView != null) displayView.stopArtistMarquee();,    }
+    private void stopArtistMarquee() {
+        if (displayView != null) displayView.stopArtistMarquee();
+    }
 
-    private void stopTitleMarquee() {,        if (displayView != null) displayView.stopTitleMarquee();,    }
+    private void stopTitleMarquee() {
+        if (displayView != null) displayView.stopTitleMarquee();
+    }
 
     private void sendPlayPause() {
         try {
