@@ -1131,9 +1131,10 @@ screenHeader.setVisibility(View.GONE);
         LinearLayout card = addSettingCard(parent,
                 getString(R.string.settings_activity_text_290), "resetAllSettings");
         Button resetButton = makeActionButton(getString(R.string.settings_activity_text_291));
+        resetButton.setBackground(roundOutline(ACCENT, dp(12), ACCENT));
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-2, dp(42));
         params.gravity = Gravity.CENTER_HORIZONTAL;
-        params.topMargin = dp(4);
+        params.topMargin = dp(14);
         card.addView(resetButton, params);
         resetButton.setOnClickListener(v -> showResetAllSettingsConfirmation());
     }
@@ -1443,6 +1444,7 @@ screenHeader.setVisibility(View.GONE);
     }
 
     private String settingDescription(String key) {
+        if ("resetAllSettings".equals(key)) return getString(R.string.settings_activity_text_314);
         if ("showHebrew".equals(key)) return getString(R.string.settings_activity_text_145);
         if ("showGregorian".equals(key)) return getString(R.string.settings_activity_text_146);
         if ("hebrewDateFormat".equals(key)) return getString(R.string.settings_activity_text_147);
