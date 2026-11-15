@@ -31,11 +31,14 @@ public final class AutoStartNotificationController {
                 (NotificationManager) app.getSystemService(Context.NOTIFICATION_SERVICE);
         if (manager != null) createChannel(manager);
 
-        Intent cancelService = new Intent(app, CancelAutoStartServiceReceiver.class);
+        Intent openSettings = new Intent(app, SettingsActivity.class);
+        openSettings.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                | Intent.FLAG_ACTIVITY_CLEAR_TOP
+                | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         int pendingFlags = PendingIntent.FLAG_UPDATE_CURRENT;
         if (Build.VERSION.SDK_INT >= 23) pendingFlags |= PendingIntent.FLAG_IMMUTABLE;
-        PendingIntent cancelIntent = PendingIntent.getBroadcast(
-                app, NOTIFICATION_ID, cancelService, pendingFlags);
+        PendingIntent settingsIntent = PendingIntent.getActivity(
+                app, NOTIFICATION_ID, openSettings, pendingFlags);
 
         Notification.Builder builder = Build.VERSION.SDK_INT >= 26
                 ? new Notification.Builder(app, CHANNEL_ID)
@@ -47,8 +50,8 @@ public final class AutoStartNotificationController {
                 .setContentTitle("שירות ההפעלה האוטומטית פועל.")
                 .setContentText(null)
                 .setStyle(new Notification.BigTextStyle()
-                        .bigText("לחץ לביטול השירות."))
-                .setContentIntent(cancelIntent)
+                        .bigText("לחץ למעבר להגדרות."))
+                .setContentIntent(settingsIntent)
                 .setCategory(Notification.CATEGORY_SERVICE)
                 .setOngoing(true)
                 .setOnlyAlertOnce(true)
