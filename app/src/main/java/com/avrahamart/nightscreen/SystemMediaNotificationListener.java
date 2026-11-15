@@ -230,6 +230,9 @@ public class SystemMediaNotificationListener extends NotificationListenerService
     private void wakeForTrackChange() {
         MonitorSettingsSnapshot settings = MonitorSettingsSnapshot.read(this);
         if (settings == null || !settings.wakeOnTrackChange || !settings.showPlayer) return;
+        // Track-change wake is an automatic activation too: apply the same
+        // foreground-app exclusions before waking the display or launching.
+        if (!AutoStartConditions.canActivate(this, settings)) return;
         if (android.os.Build.VERSION.SDK_INT >= 29 && !android.provider.Settings.canDrawOverlays(this)) {
             return;
         }
