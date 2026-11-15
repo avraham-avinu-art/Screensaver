@@ -496,5 +496,6 @@
     <string name="settings_activity_text_311" formatted="false">50%</string>
     <string name="settings_activity_text_312" formatted="false">75%</string>
     <string name="settings_activity_text_313" formatted="false">100%</string>
+    <string name="settings_activity_text_314" formatted="false">מחזירה את כל הגדרות האפליקציה לברירות המחדל. הרשאות והגדרות Android אינן משתנות.</string>
 
 </resources>
