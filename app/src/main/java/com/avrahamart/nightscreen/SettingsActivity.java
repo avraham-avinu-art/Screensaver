@@ -1941,16 +1941,22 @@ screenTitle.setText("הגדרות");
         LinearLayout customColorRow = new LinearLayout(this);
         customColorRow.setOrientation(LinearLayout.HORIZONTAL);
         customColorRow.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        customColorRow.setGravity(Gravity.TOP);
+        customColorRow.setGravity(Gravity.CENTER_VERTICAL);
 
         LinearLayout customColorItem = new LinearLayout(this);
-        customColorItem.setOrientation(LinearLayout.VERTICAL);
-        customColorItem.setGravity(Gravity.CENTER);
-        customColorItem.setPadding(dp(1), dp(2), dp(1), 0);
+        customColorItem.setOrientation(LinearLayout.HORIZONTAL);
+        customColorItem.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        customColorItem.setGravity(Gravity.CENTER_VERTICAL);
+        customColorItem.setPadding(0, dp(2), 0, 0);
         customColorItem.addView(selectedCustomSwatch,
                 new LinearLayout.LayoutParams(dp(38), dp(38)));
-        customColorItem.addView(customCaption,
-                new LinearLayout.LayoutParams(-1, dp(34)));
+        customCaption.setSingleLine(true);
+        customCaption.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        customCaption.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
+        LinearLayout.LayoutParams customCaptionParams =
+                new LinearLayout.LayoutParams(-2, dp(38));
+        customCaptionParams.rightMargin = dp(8);
+        customColorItem.addView(customCaption, customCaptionParams);
         customColorItem.setClickable(true);
         customColorItem.setFocusable(true);
         customColorItem.setOnClickListener(v -> showCustomColorDialog(
@@ -1967,12 +1973,10 @@ screenTitle.setText("הגדרות");
                             "sans-serif-medium", Typeface.BOLD));
                 }));
         customColorRow.addView(customColorItem,
-                new LinearLayout.LayoutParams(0, -2, 1f));
-        for (int i = 1; i < columnsPerRow; i++) {
-            View spacer = new View(this);
-            customColorRow.addView(spacer,
-                    new LinearLayout.LayoutParams(0, dp(62), 1f));
-        }
+                new LinearLayout.LayoutParams(-2, dp(42)));
+        View remainingSpace = new View(this);
+        customColorRow.addView(remainingSpace,
+                new LinearLayout.LayoutParams(0, dp(42), 1f));
         LinearLayout.LayoutParams customColorParams =
                 new LinearLayout.LayoutParams(-1, -2);
         customColorParams.topMargin = dp(4);
