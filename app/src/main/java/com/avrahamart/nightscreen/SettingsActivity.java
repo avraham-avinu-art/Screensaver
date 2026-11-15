@@ -2323,54 +2323,104 @@ screenTitle.setText("הגדרות");
         }
     }
 
-    private String iconForCard(String title) {
-        if ("תצוגה במסך".equals(title)) return "monitor";
-        if ("שומר מסך בזמן טעינה".equals(title)) return "android-charge";
-        if ("עיצוב".equals(title)) return "palette";
-        if ("תצוגת שעון ותאריך".equals(title)) return "clock";
-        if ("תצוגת הנגן".equals(title)) return "music";
-        if ("מסגרת לנגן".equals(title)) return "frame";
-        if ("הרשאת גישה להתראות".equals(title)) return "bell";
-        if ("הרשאת תצוגה על אפליקציות".equals(title)) return "auto-start";
-        if ("הרשאת מנהל מכשיר".equals(title)) return "shield";
-        return "settings";
-    }
-
     private String iconForSetting(String key) {
-        if ("showHebrew".equals(key) || "dateDisplayMode".equals(key)) return "hebrew-date";
-        if ("showGregorian".equals(key)) return "gregorian-date";
-        if ("showPlayer".equals(key) || "playerDisplayMode".equals(key)) return "media-toggle";
-        if ("screenSaverDuration".equals(key)) return "activity-history";
-        if ("preventLockWhileActive".equals(key)) return "power-off";
-        if ("autoStartOnCharge".equals(key)) return "usb";
-        if ("autoStartOnlyWhenLocked".equals(key)) return "lock-play";
-        if ("preventAutoStartDuringUse".equals(key)) return "activity-history";
-        if ("pauseWhenExcludedAppActive".equals(key)) return "activity-history";
-        if ("autoStartOnDeviceLock".equals(key)) return "lock-play";
-        if ("autoStartOnBoot".equals(key)) return "power";
-        if ("autoStartOnWake".equals(key)) return "screen-wake";
-        if ("continueOnLockScreen".equals(key)) return "shield";
-        if ("noShutdownWhileCharging".equals(key)) return "phone-charging";
-        if ("screenBackgroundColor".equals(key)) return "palette";
-        if ("screenBrightness".equals(key)) return "sun-dim";
-        if ("fontColor".equals(key)) return "paint-roller";
-        if ("fontWeight".equals(key)) return "bold";
-        if ("fontFamily".equals(key)) return "font-family";
-        if ("clockDateSize".equals(key)) return "clock-size";
-        if ("clockDisplayMode".equals(key)) return "clock";
-        if ("clockDialStyle".equals(key)) return "clock-dial";
-        if ("clockDatePosition".equals(key)) return "position-arrows";
-        if ("showPlayerOnlyAtStart".equals(key)) return "circle-play";
-        if ("showDetails".equals(key)) return "artist";
-        if ("playerControlsDisplayMode".equals(key)) return "progress-time-digital";
-        if ("chargingBatteryDisplayMode".equals(key)) return "battery-medium";
-        if ("playerSize".equals(key)) return "player-size-resize";
-        if ("playerPosition".equals(key)) return "panel-bottom";
-        if ("frameEnabled".equals(key)) return "frame-dashed";
-        if ("frameColor".equals(key)) return "pipette";
-        if ("frameWidth".equals(key)) return "border-width";
-        if ("frameRadius".equals(key)) return "corners";
-        return "settings";
+        switch (key) {
+            case "showHebrew":
+            case "dateDisplayMode":
+            case "hebrewDateFormat":
+                return "hebrew-date";
+            case "showGregorian":
+            case "gregorianDateFormat":
+                return "gregorian-date";
+            case "timeFormat":
+                return "progress-time-digital";
+            case "showPlayer":
+            case "playerDisplayMode":
+                return "media-toggle";
+            case "screenSaverDuration":
+                return "activity-history";
+            case "preventLockWhileActive":
+                return "power-off";
+            case "autoStartOnCharge":
+            case "useAndroidDreamForCharging":
+                return "android-charge";
+            case "autoStartOnlyWhenLocked":
+            case "autoStartOnDeviceLock":
+                return "lock-play";
+            case "preventAutoStartDuringUse":
+                return "app-block";
+            case "pauseWhenExcludedAppActive":
+                return "apps-pause";
+            case "autoStartOnBoot":
+                return "power";
+            case "autoStartOnWake":
+                return "screen-wake";
+            case "continueOnLockScreen":
+                return "shield";
+            case "noShutdownWhileCharging":
+                return "phone-charging";
+            case "screenBackgroundColor":
+                return "palette";
+            case "backgroundStyle":
+                return "layers";
+            case "screenBrightness":
+                return "sun-dim";
+            case "fontColor":
+                return "paint-roller";
+            case "fontWeight":
+                return "bold";
+            case "fontFamily":
+                return "font-family";
+            case "clockDateSize":
+                return "clock-size";
+            case "clockDisplayMode":
+                return "clock";
+            case "clockDialStyle":
+                return "clock-dial";
+            case "clockTextAlignment":
+            case "playerTextAlignment":
+                return "text-alignment";
+            case "clockDatePosition":
+                return "position-arrows";
+            case "clockHorizontalOffset":
+            case "playerHorizontalOffset":
+                return "horizontal-arrows";
+            case "showPlayerOnlyAtStart":
+                return "circle-play";
+            case "showDetails":
+                return "artist";
+            case "playerControlsDisplayMode":
+                return "progress-time-digital";
+            case "chargingBatteryDisplayMode":
+            case "batteryProtectionThreshold":
+                return "battery-percent";
+            case "playerSize":
+                return "player-size-resize";
+            case "playerPosition":
+                return "panel-bottom";
+            case "frameEnabled":
+                return "frame-dashed";
+            case "frameUseAlbumArt":
+                return "album-art";
+            case "frameColor":
+                return "pipette";
+            case "frameWidth":
+                return "border-width";
+            case "frameRadius":
+                return "corners";
+            case "nightModeEnabled":
+                return "moon";
+            case "nightModeStartHour":
+                return "clock-start";
+            case "nightModeEndHour":
+                return "clock-end";
+            case "batteryProtectionEnabled":
+                return "battery-shield";
+            case "settingsButtonAlwaysVisible":
+                return "settings";
+            default:
+                return "settings";
+        }
     }
 
     private View makeIconGlyph(String iconName, int tint) {
