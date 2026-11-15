@@ -1982,6 +1982,15 @@ screenHeader.setVisibility(View.GONE);
             }
 
             
+            // Re-enabling any of the automatic-start modes also clears the
+            // temporary pause selected from the persistent notification.
+            // Check the persisted value after permission validation above so a
+            // rejected toggle cannot accidentally resume automatic activation.
+            if (AutoStartConditions.shouldResumeAfterAutoStartSettingEnabled(
+                    isAutoStartSetting(key), checked && getBool(key, false))) {
+                AutoStartPauseReceiver.resumeIfPaused(this);
+            }
+
             NightScreenApplication.syncChargerReceiver(this);
 
             // Do not open two Android permission/settings screens at the same time.
