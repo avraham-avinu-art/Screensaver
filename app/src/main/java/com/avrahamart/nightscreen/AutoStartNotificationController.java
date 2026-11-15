@@ -86,7 +86,7 @@ public final class AutoStartNotificationController {
     static void createChannel(Context context) {
         NotificationManager manager =
                 (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-        if (manager != null) createChannel(manager);
+        if (manager != null) createChannel(context, manager);
     }
 
     private static void createChannel(Context context, NotificationManager manager) {
