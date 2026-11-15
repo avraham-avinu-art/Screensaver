@@ -1891,6 +1891,15 @@ screenHeader.setVisibility(View.GONE);
         return dot;
     }
 
+    private GradientDrawable makeCustomColorPreview(int color) {
+        GradientDrawable preview = new GradientDrawable();
+        preview.setShape(GradientDrawable.RECTANGLE);
+        preview.setColor(color);
+        preview.setCornerRadius(dp(7));
+        preview.setStroke(dp(1), Color.rgb(145, 170, 196));
+        return preview;
+    }
+
     
     private void showCustomColorDialog(String key, View preview, Runnable onSaved) {
         int current = getInt(key,
@@ -1914,13 +1923,13 @@ screenHeader.setVisibility(View.GONE);
         LinearLayout sampleRow = new LinearLayout(this);
         sampleRow.setOrientation(LinearLayout.HORIZONTAL);
         sampleRow.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        sampleRow.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        sampleRow.setGravity(Gravity.CENTER_VERTICAL);
         View colorPreview = new View(this);
         LinearLayout.LayoutParams previewParams =
-                new LinearLayout.LayoutParams(dp(44), dp(44));
-        colorPreview.setBackground(makeCustomColorDot(current));
+                new LinearLayout.LayoutParams(-1, dp(34));
+        colorPreview.setBackground(makeCustomColorPreview(current));
         sampleRow.addView(colorPreview, previewParams);
-        LinearLayout.LayoutParams sampleParams = new LinearLayout.LayoutParams(-1, dp(48));
+        LinearLayout.LayoutParams sampleParams = new LinearLayout.LayoutParams(-1, dp(40));
         sampleParams.topMargin = dp(2);
         panel.addView(sampleRow, sampleParams);
 
@@ -1937,7 +1946,7 @@ screenHeader.setVisibility(View.GONE);
 
         Runnable updateSwatch = () -> {
             int selected = Color.HSVToColor(hsv);
-            colorPreview.setBackground(makeCustomColorDot(selected));
+            colorPreview.setBackground(makeCustomColorPreview(selected));
         };
 
         for (int i = 0; i < captions.length; i++) {
