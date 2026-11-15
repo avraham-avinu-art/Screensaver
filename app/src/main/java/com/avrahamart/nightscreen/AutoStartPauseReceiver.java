@@ -25,6 +25,21 @@ public final class AutoStartPauseReceiver extends BroadcastReceiver {
             return;
         }
 
+        setPaused(context, paused);
+    }
+
+    /**
+     * Clears the temporary notification pause when an automatic-start setting
+     * is enabled again. Returns false when no pause needed to be cleared.
+     */
+    static boolean resumeIfPaused(Context context) {
+        SharedPreferences prefs =
+                context.getSharedPreferences("settings", Context.MODE_PRIVATE);
+        if (!prefs.getBoolean("autoStartPaused", false)) return false;
+        return setPaused(context, false);
+    }
+
+    private static boolean setPaused(Context context, boolean paused) {
         SharedPreferences prefs =
                 context.getSharedPreferences("settings", Context.MODE_PRIVATE);
         boolean saved = prefs.edit()
@@ -33,7 +48,7 @@ public final class AutoStartPauseReceiver extends BroadcastReceiver {
         if (!saved) {
             android.util.Log.e("NightScreenAutoStart",
                     "Unable to save the temporary automatic-start pause state.");
-            return;
+            return false;
         }
 
         // A resumed monitor begins with a fresh lock cycle. No stored user
@@ -42,5 +57,6 @@ public final class AutoStartPauseReceiver extends BroadcastReceiver {
         MonitorSettingsSnapshot.setSuppressNextDeviceLockScreenOff(context, false);
         NightScreenApplication.syncChargerReceiver(context);
         LockScreenMonitorService.sync(context);
+        return true;
     }
 }
