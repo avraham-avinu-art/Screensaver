@@ -1125,7 +1125,6 @@ screenHeader.setVisibility(View.GONE);
         LinearLayout card = addSettingCard(parent,
                 getString(R.string.settings_activity_text_290), "resetAllSettings");
         Button resetButton = makeActionButton(getString(R.string.settings_activity_text_291));
-        resetButton.setBackground(roundOutline(ACCENT, dp(12), ACCENT));
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-2, dp(42));
         params.gravity = Gravity.CENTER_HORIZONTAL;
         params.topMargin = dp(4);
@@ -1214,11 +1213,14 @@ screenHeader.setVisibility(View.GONE);
         }
         LockScreenMonitorService.sync(this);
         NightScreenApplication.syncChargerReceiver(this);
+        AppToast.makeText(this, getString(R.string.settings_activity_text_294),
+                Toast.LENGTH_SHORT).show();
 
+        // Clear the existing MainActivity instance and create a fresh one so
+        // initSettings() writes the application's complete defaults again.
         Intent restart = new Intent(this, MainActivity.class);
-        restart.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        restart.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(restart);
-        finish();
     }
 
     private String settingsGroupTitleFor(String key) {

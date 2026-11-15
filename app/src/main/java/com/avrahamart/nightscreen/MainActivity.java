@@ -2161,30 +2161,6 @@ public class MainActivity extends Activity {
         return super.onKeyUp(keyCode, event);
     }
 
-    private void revealSystemBarsForSettings() {
-        android.view.Window window = getWindow();
-        window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN);
-        int settingsSurface = Color.rgb(9, 19, 33);
-        window.setStatusBarColor(settingsSurface);
-        window.setNavigationBarColor(settingsSurface);
-        if (Build.VERSION.SDK_INT >= 29) {
-            window.setStatusBarContrastEnforced(false);
-            window.setNavigationBarContrastEnforced(false);
-        }
-        View decor = window.getDecorView();
-        decor.setSystemUiVisibility(0);
-        if (Build.VERSION.SDK_INT >= 30) {
-            android.view.WindowInsetsController controller = decor.getWindowInsetsController();
-            if (controller != null) {
-                controller.setSystemBarsBehavior(
-                        android.view.WindowInsetsController.BEHAVIOR_DEFAULT);
-                controller.show(android.view.WindowInsets.Type.statusBars()
-                        | android.view.WindowInsets.Type.navigationBars()
-                        | android.view.WindowInsets.Type.captionBar());
-            }
-        }
-    }
-
     private void showSettings() {
         if (settingsDialogOpen) return;
         if (prefs == null) initSettings();
@@ -2193,7 +2169,6 @@ public class MainActivity extends Activity {
         settingsOpenedElapsedRealtime = SystemClock.elapsedRealtime();
         handler.removeCallbacks(autoOffRunnable);
         try {
-            revealSystemBarsForSettings();
             startActivity(new Intent(this, SettingsActivity.class));
             overridePendingTransition(0, 0);
         } catch (Throwable t) {
