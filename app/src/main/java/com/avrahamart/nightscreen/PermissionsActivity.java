@@ -133,7 +133,7 @@ public class PermissionsActivity extends Activity {
 
     private void addNotificationPermissionCard(LinearLayout parent) {
         LinearLayout card = makeCard(parent, "הרשאת גישה להתראות",
-                "כדי להציג את נגן המערכת, יש לאפשר גישה להתראות.");
+                "ההרשאה מאפשרת להציג את נגן המערכת, ונדרשת גם להפעלת שומר המסך באמצעות הגדרת ההפעלה האוטומטית בטעינה דרך הגדרות Android.");
         notificationStatus = addStatus(card);
         notificationButton = addPermissionButton(card,
                 "הפעל הרשאת גישה להתראות", v -> {
