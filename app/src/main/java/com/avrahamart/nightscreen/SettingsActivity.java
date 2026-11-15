@@ -508,8 +508,8 @@ screenTitle.setText("הגדרות");
                 new String[]{"דק", "רגיל", "מודגש", "עבה"},
                 new String[]{"-1", "0", "1", "2"}, "fontWeight");
         addSegmentedChoices(content, "כיוון הטקסט",
-                new String[]{"מרכז", "ימין", "שמאל"},
-                new String[]{"center", "right", "left"}, "clockTextAlignment");
+                new String[]{"ימין", "מרכז", "שמאל"},
+                new String[]{"right", "center", "left"}, "clockTextAlignment");
         addSegmentedChoices(content, "מיקום",
                 new String[]{"בראש המסך", "ברבע העליון", "במרכז המסך"},
                 new String[]{"top", "upper", "middle"}, "clockDatePosition");
@@ -761,8 +761,8 @@ screenTitle.setText("הגדרות");
                 new String[]{"ברבע התחתון", "בתחתית המסך"},
                 new String[]{"lower", "bottom"}, "playerPosition");
         addSegmentedChoices(content, "כיוון הטקסט",
-                new String[]{"מרכז", "ימין", "שמאל"},
-                new String[]{"center", "right", "left"}, "playerTextAlignment");
+                new String[]{"ימין", "מרכז", "שמאל"},
+                new String[]{"right", "center", "left"}, "playerTextAlignment");
         addLineSlider(content, "הזזה אופקית של הנגן", "playerHorizontalOffset", -20, 20);
         addCheck(content, "הצג מסגרת", "frameEnabled", false);
         addCheck(content, "תמונת האלבום כרקע פנימי", "frameUseAlbumArt",

@@ -187,6 +187,7 @@ public class MainActivity extends Activity {
 
     private TextView timeText;
     private AnalogClockView analogClockView;
+    private LinearLayout clockTextColumn;
     private View screenRootView;
     private BatteryChargeIndicatorView chargingBatteryView;
 
@@ -248,6 +249,7 @@ public class MainActivity extends Activity {
 
     private LinearLayout mediaSetup;
     private LinearLayout mediaMirror;
+    private LinearLayout playerTextColumn;
     private TextView mediaTitle;
     private Bitmap currentAlbumArt;
     private ImageView mediaPlayPause;
@@ -643,12 +645,22 @@ public class MainActivity extends Activity {
         timeText.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
         timeText.setGravity(Gravity.CENTER);
         timeText.setIncludeFontPadding(false);
-        clockBlock.addView(timeText, new LinearLayout.LayoutParams(-1, initialClockHeight));
 
         analogClockView = new AnalogClockView(this);
         analogClockView.setVisibility(View.GONE);
-        clockBlock.addView(analogClockView,
-                new LinearLayout.LayoutParams(dp(120), dp(120)));
+        LinearLayout.LayoutParams analogInitialParams =
+                new LinearLayout.LayoutParams(dp(120), dp(120));
+        analogInitialParams.gravity = Gravity.CENTER_HORIZONTAL;
+        clockBlock.addView(analogClockView, analogInitialParams);
+
+        clockTextColumn = new LinearLayout(this);
+        clockTextColumn.setOrientation(LinearLayout.VERTICAL);
+        clockTextColumn.setGravity(Gravity.TOP | Gravity.CENTER_HORIZONTAL);
+        clockTextColumn.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+        clockTextColumn.setClipChildren(false);
+        clockTextColumn.setClipToPadding(false);
+        clockTextColumn.addView(timeText,
+                new LinearLayout.LayoutParams(-1, initialClockHeight));
 
         gregorianText = clockDateTextView("", 22, dateTextColor);
         gregorianText.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
@@ -659,7 +671,7 @@ public class MainActivity extends Activity {
         LinearLayout.LayoutParams gregorianParams =
                 new LinearLayout.LayoutParams(-1, initialDateHeight);
         gregorianParams.topMargin = dp(dateClockGapDp(initialClockSize));
-        clockBlock.addView(gregorianText, gregorianParams);
+        clockTextColumn.addView(gregorianText, gregorianParams);
 
         hebrewText = clockDateTextView("", 22, dateTextColor);
         hebrewText.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
@@ -667,7 +679,13 @@ public class MainActivity extends Activity {
         hebrewText.setTextDirection(View.TEXT_DIRECTION_ANY_RTL);
         hebrewText.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         hebrewText.setIncludeFontPadding(false);
-        clockBlock.addView(hebrewText, new LinearLayout.LayoutParams(-1, initialDateHeight));
+        clockTextColumn.addView(hebrewText,
+                new LinearLayout.LayoutParams(-1, initialDateHeight));
+
+        LinearLayout.LayoutParams clockColumnParams =
+                new LinearLayout.LayoutParams(-2, -2);
+        clockColumnParams.gravity = Gravity.CENTER_HORIZONTAL;
+        clockBlock.addView(clockTextColumn, clockColumnParams);
 
         chargingBatteryView = new BatteryChargeIndicatorView(this);
         chargingBatteryView.setVisibility(View.GONE);
@@ -721,6 +739,7 @@ public class MainActivity extends Activity {
                         (LinearLayout.LayoutParams) mediaMirror.getLayoutParams();
                 mirrorParams.width = Math.min(dp(760), Math.max(dp(1), w - dp(20)));
                 mediaMirror.setLayoutParams(mirrorParams);
+                updatePlayerTextColumnWidth();
             }
             if (mediaSeekBar != null && mediaSeekBar.getLayoutParams() instanceof LinearLayout.LayoutParams) {
                 LinearLayout.LayoutParams seekParams =
@@ -936,13 +955,26 @@ public class MainActivity extends Activity {
         totalParams.leftMargin = dp(4);
         mediaProgressRow.addView(mediaTotalText, totalParams);
 
-        // Artist first and song title immediately below it, followed by progress.
+        // Artist first and song title immediately below it. Both rows share one
+        // content-width column so their selected alignment is relative to each other.
+        playerTextColumn = new LinearLayout(this);
+        playerTextColumn.setOrientation(LinearLayout.VERTICAL);
+        playerTextColumn.setGravity(Gravity.TOP | Gravity.CENTER_HORIZONTAL);
+        playerTextColumn.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+        playerTextColumn.setClipChildren(false);
+        playerTextColumn.setClipToPadding(false);
+
         LinearLayout.LayoutParams detailsParams = new LinearLayout.LayoutParams(-1, dp(30));
-        mediaMirror.addView(mediaDetails, detailsParams);
+        playerTextColumn.addView(mediaDetails, detailsParams);
 
         LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(-1, dp(30));
         titleParams.topMargin = dp(0);
-        mediaMirror.addView(mediaTitle, titleParams);
+        playerTextColumn.addView(mediaTitle, titleParams);
+
+        LinearLayout.LayoutParams playerTextColumnParams =
+                new LinearLayout.LayoutParams(-2, -2);
+        playerTextColumnParams.gravity = Gravity.CENTER_HORIZONTAL;
+        mediaMirror.addView(playerTextColumn, playerTextColumnParams);
 
         LinearLayout.LayoutParams progressParams = new LinearLayout.LayoutParams(-1, dp(28));
         progressParams.topMargin = dp(0);
@@ -1325,16 +1357,73 @@ public class MainActivity extends Activity {
         return horizontalGravityForTextMode(getString("playerTextAlignment", "center"));
     }
 
+    private int measuredTextColumnWidth(TextView[] rows, int maxWidth) {
+        float widest = 0f;
+        for (TextView row : rows) {
+            if (row == null || row.getVisibility() != View.VISIBLE) continue;
+            CharSequence value = row.getText();
+            if (value == null || value.length() == 0) continue;
+            float measured = row.getPaint().measureText(value, 0, value.length());
+            measured += row.getPaddingLeft() + row.getPaddingRight() + dp(2);
+            widest = Math.max(widest, measured);
+        }
+        return Math.max(dp(1), Math.min(Math.max(dp(1), maxWidth),
+                (int) Math.ceil(widest)));
+    }
+
+    private void updateClockTextColumnWidth() {
+        if (clockTextColumn == null) return;
+        int screenWidth = stageView != null && stageView.getWidth() > 0
+                ? stageView.getWidth()
+                : getResources().getDisplayMetrics().widthPixels;
+        int available = Math.max(dp(1), screenWidth - dp(24));
+        int width = measuredTextColumnWidth(
+                new TextView[]{timeText, gregorianText, hebrewText}, available);
+        ViewGroup.LayoutParams raw = clockTextColumn.getLayoutParams();
+        if (raw instanceof LinearLayout.LayoutParams) {
+            LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) raw;
+            if (params.width != width) {
+                params.width = width;
+                clockTextColumn.setLayoutParams(params);
+            }
+        }
+    }
+
+    private void updatePlayerTextColumnWidth() {
+        if (playerTextColumn == null || mediaMirror == null) return;
+        int available = mediaMirror.getWidth();
+        if (available <= 0) {
+            available = Math.min(dp(760),
+                    Math.max(dp(1), getResources().getDisplayMetrics().widthPixels - dp(20)));
+        }
+        int width = measuredTextColumnWidth(
+                new TextView[]{mediaDetails, mediaTitle}, available);
+        ViewGroup.LayoutParams raw = playerTextColumn.getLayoutParams();
+        if (raw instanceof LinearLayout.LayoutParams) {
+            LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) raw;
+            if (params.width != width) {
+                params.width = width;
+                playerTextColumn.setLayoutParams(params);
+                playerTextColumn.post(() -> {
+                    updateTitleMarqueeIfNeeded();
+                    updateArtistMarqueeIfNeeded();
+                });
+            }
+        }
+    }
+
     private void applySectionTextAlignmentPreferences() {
         int clockGravity = horizontalGravityForTextMode(
                 getString("clockTextAlignment", "center"));
         applyHorizontalTextGravity(timeText, clockGravity);
         applyHorizontalTextGravity(gregorianText, clockGravity);
         applyHorizontalTextGravity(hebrewText, clockGravity);
+        updateClockTextColumnWidth();
 
         int playerGravity = playerTextHorizontalGravity();
         applyHorizontalTextGravity(mediaTitle, playerGravity);
         applyHorizontalTextGravity(mediaDetails, playerGravity);
+        updatePlayerTextColumnWidth();
     }
 
     private void applySettings() {
@@ -1484,7 +1573,7 @@ public class MainActivity extends Activity {
         hp.topMargin = showHebrew ? hebrewTopMargin : 0;
         hebrewText.setLayoutParams(hp);
 
-        View clockParent = (View) timeText.getParent();
+        View clockParent = clockBlockView;
         if (clockParent instanceof LinearLayout) {
             LinearLayout cb = (LinearLayout) clockParent;
             FrameLayout.LayoutParams cp = (FrameLayout.LayoutParams) cb.getLayoutParams();
@@ -2774,6 +2863,7 @@ public class MainActivity extends Activity {
             lastFormattedHebrewDateKey = hebrewDateKey;
             lastFormattedHebrewDateFormat = selectedHebrewDateFormat;
         }
+        updateClockTextColumnWidth();
     }
 
     private String formattedGregorianDateValue() {
@@ -3105,7 +3195,6 @@ public class MainActivity extends Activity {
             if (titleChanged) {
                 stopTitleMarquee();
                 mediaTitle.setText(title);
-                mediaTitle.post(() -> updateTitleMarqueeIfNeeded());
             }
             mediaTitle.setVisibility(View.VISIBLE);
             lastTitle = title;
@@ -3161,8 +3250,12 @@ public class MainActivity extends Activity {
                 mediaDetails.setText(lastArtist);
             }
             mediaDetails.setVisibility(showDetails && !lastArtist.isEmpty() ? View.VISIBLE : View.GONE);
-            if (artistChanged && showDetails && !lastArtist.isEmpty()) {
-                mediaDetails.post(() -> updateArtistMarqueeIfNeeded());
+            updatePlayerTextColumnWidth();
+            if (titleChanged || artistChanged) {
+                playerTextColumn.post(() -> {
+                    updateTitleMarqueeIfNeeded();
+                    updateArtistMarqueeIfNeeded();
+                });
             }
             boolean controlsVisible = arePlayerControlsVisible();
             if (!controlsVisible) {
