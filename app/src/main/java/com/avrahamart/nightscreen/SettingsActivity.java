@@ -1987,7 +1987,8 @@ screenHeader.setVisibility(View.GONE);
             // Check the persisted value after permission validation above so a
             // rejected toggle cannot accidentally resume automatic activation.
             if (AutoStartConditions.shouldResumeAfterAutoStartSettingEnabled(
-                    isAutoStartSetting(key), checked && getBool(key, false))) {
+                    isAutoStartSetting(key) || "wakeOnTrackChange".equals(key),
+                    checked && getBool(key, false))) {
                 AutoStartPauseReceiver.resumeIfPaused(this);
             }
 
