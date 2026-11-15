@@ -550,7 +550,6 @@ screenHeader.setVisibility(View.GONE);
         addCheck(content, getString(R.string.settings_activity_text_064), "autoStartOnBoot", false);
         addCheck(content, getString(R.string.settings_activity_text_065), "autoStartOnWake", false);
         addCheck(content, getString(R.string.settings_activity_text_066), "autoStartOnCharge", false);
-        addCheck(content, getString(R.string.settings_activity_text_067), "autoStartOnlyWhenLocked", false);
         addCheck(content, getString(R.string.settings_activity_text_068), "noShutdownWhileCharging", false);
         addSegmentedChoices(content, getString(R.string.settings_activity_text_069),
                 new String[]{getString(R.string.settings_activity_text_070), getString(R.string.settings_activity_text_071), getString(R.string.settings_activity_text_072), getString(R.string.settings_activity_text_073)},
@@ -750,6 +749,8 @@ screenHeader.setVisibility(View.GONE);
         }
         addCheck(content, getString(R.string.settings_activity_text_129),
                 "preventAutoStartDuringUse", false);
+        addCheck(content, getString(R.string.settings_activity_text_067),
+                "autoStartOnlyWhenLocked", false);
         addCheck(content, getString(R.string.settings_activity_text_130),
                 "settingsButtonAlwaysVisible", false);
     }
@@ -773,7 +774,7 @@ screenHeader.setVisibility(View.GONE);
                 if ("autoStartOnDeviceLock".equals(key) || "autoStartOnBoot".equals(key)
                         || "autoStartOnWake".equals(key)
                         || "autoStartOnCharge".equals(key)
-                        || "autoStartOnlyWhenLocked".equals(key)) {
+) {
                     return getString(R.string.settings_activity_text_135);
                 }
                 return getString(R.string.settings_activity_text_136);
@@ -798,7 +799,8 @@ screenHeader.setVisibility(View.GONE);
                 if ("batteryProtectionEnabled".equals(key)
                         || "batteryProtectionThreshold".equals(key)) return getString(R.string.settings_activity_text_143);
                 if ("pauseWhenExcludedAppActive".equals(key)
-                        || "preventAutoStartDuringUse".equals(key)) {
+                        || "preventAutoStartDuringUse".equals(key)
+                        || "autoStartOnlyWhenLocked".equals(key)) {
                     return getString(R.string.settings_activity_text_144);
                 }
                 return getString(R.string.settings_activity_text_011);
