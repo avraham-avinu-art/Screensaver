@@ -3470,7 +3470,7 @@ screenHeader.setVisibility(View.GONE);
 
     private GradientDrawable dashboardButtonOutline(int color, int radius, int strokeColor) {
         GradientDrawable bg = pillBackground(color, radius);
-        bg.setStroke(dp(2), strokeColor);
+        bg.setStroke(dp(1), strokeColor);
         return bg;
     }
 
