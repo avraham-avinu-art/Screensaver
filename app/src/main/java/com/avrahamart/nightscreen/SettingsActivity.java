@@ -137,7 +137,7 @@ public class SettingsActivity extends Activity {
                         | android.view.WindowInsets.Type.navigationBars();
                 android.graphics.Insets bars = initialInsets.getInsetsIgnoringVisibility(barsType);
                 initialTopInset = Math.max(initialTopInset, bars.top);
-                initialBottomInset = Math.max(initialBottomInset, bars.bottom);
+                initialBottomInset = bars.bottom;
             } catch (Throwable ignored) {
                 // Stable resource dimensions remain available as a fallback.
             }
