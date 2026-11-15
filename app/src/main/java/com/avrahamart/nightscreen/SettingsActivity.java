@@ -2682,7 +2682,9 @@ screenTitle.setText("הגדרות");
                 if (parse(values[i], Integer.MIN_VALUE) == stored) return i;
             }
         } else {
-            String stored = getString(key, values[0]);
+            String defaultValue = ("clockTextAlignment".equals(key)
+                    || "playerTextAlignment".equals(key)) ? "center" : values[0];
+            String stored = getString(key, defaultValue);
             for (int i = 0; i < values.length; i++) {
                 if (values[i].equals(stored)) return i;
             }
