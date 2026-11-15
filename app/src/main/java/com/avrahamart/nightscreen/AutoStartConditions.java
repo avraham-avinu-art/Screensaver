@@ -64,6 +64,12 @@ final class AutoStartConditions {
                 && existingConditions.areSatisfied();
     }
 
+    /** A successfully re-enabled automatic-start setting clears the temporary pause. */
+    static boolean shouldResumeAfterAutoStartSettingEnabled(
+            boolean isAutoStartSetting, boolean settingEnabled) {
+        return isAutoStartSetting && settingEnabled;
+    }
+
     private static boolean canActivate(
             Context context,
             boolean onlyWhenLocked,
