@@ -499,7 +499,7 @@ screenTitle.setText("הגדרות");
                 new String[]{"דיגיטלי", "אנלוגי"},
                 new String[]{"digital", "analog"}, "clockDisplayMode");
         addSegmentedChoices(content, "עיצוב לוח השעון",
-                new String[]{"מספרים ללא קווים", "קווים בלבד", "קווים ומספרים"},
+                new String[]{"מספרים בלבד", "קווים בלבד", "קווים ומספרים"},
                 new String[]{"numbers_only", "lines_only", "lines_numbers"}, "clockDialStyle");
         addDiscreteSlider(content, "גודל",
                 new String[]{"קטן", "בינוני", "רגיל", "גדול", "ענק"},
