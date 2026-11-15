@@ -626,6 +626,7 @@ screenHeader.setVisibility(View.GONE);
             int byLabel = leftName.compareToIgnoreCase(rightName);
             return byLabel != 0 ? byLabel : left.packageName.compareTo(right.packageName);
         });
+        final List<ApplicationInfo> installedApplications = applications;
         Set<String> selected = new HashSet<>(
                 prefs.getStringSet("excludedForegroundPackages", Collections.emptySet()));
 
@@ -668,7 +669,7 @@ screenHeader.setVisibility(View.GONE);
             String query = search.getText() == null ? ""
                     : search.getText().toString().trim().toLowerCase(Locale.ROOT);
             int shown = 0;
-            for (ApplicationInfo app : applications) {
+            for (ApplicationInfo app : installedApplications) {
                 String appLabel;
                 try { appLabel = String.valueOf(pm.getApplicationLabel(app)); }
                 catch (Throwable ignored) { appLabel = app.packageName; }
