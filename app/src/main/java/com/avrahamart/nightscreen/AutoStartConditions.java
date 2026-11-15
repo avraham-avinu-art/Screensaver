@@ -11,6 +11,9 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.os.Build;
 import android.os.SystemClock;
+
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -18,20 +21,74 @@ import java.util.Set;
 
 /** Shared gate for every automatic activation entry point. */
 final class AutoStartConditions {
+    private static final long USAGE_LOOKBACK_MS = 24L * 60L * 60L * 1000L;
+
     private AutoStartConditions() { }
 
     static boolean canActivate(Context context, MonitorSettingsSnapshot settings) {
         if (settings == null) return false;
-        if (settings.autoStartOnlyWhenLocked && !isDeviceLocked(context)) return false;
-        return !settings.preventAutoStartDuringUse || !isAnotherAppInForeground(context);
+        return canActivate(
+                context,
+                settings.autoStartOnlyWhenLocked,
+                settings.preventAutoStartDuringUse,
+                settings.preventAutoStartForSelectedApps,
+                settings.excludedForegroundPackages);
     }
 
     static boolean canActivate(Context context, SharedPreferences prefs) {
         if (prefs == null) return true;
-        if (prefs.getBoolean("autoStartOnlyWhenLocked", false)
-                && !isDeviceLocked(context)) return false;
-        return !prefs.getBoolean("preventAutoStartDuringUse", false)
-                || !isAnotherAppInForeground(context);
+        Set<String> selectedApps = prefs.getStringSet(
+                "excludedForegroundPackages", Collections.emptySet());
+        return canActivate(
+                context,
+                prefs.getBoolean("autoStartOnlyWhenLocked", false),
+                prefs.getBoolean("preventAutoStartDuringUse", false),
+                prefs.getBoolean("pauseWhenExcludedAppActive", false),
+                selectedApps == null ? Collections.emptySet() : selectedApps);
+    }
+
+    private static boolean canActivate(
+            Context context,
+            boolean onlyWhenLocked,
+            boolean blockDuringAnyAppUse,
+            boolean blockForSelectedApps,
+            Set<String> selectedApps) {
+        if (onlyWhenLocked && !isDeviceLocked(context)) return false;
+
+        boolean selectedFilterActive =
+                blockForSelectedApps && selectedApps != null && !selectedApps.isEmpty();
+        if (!blockDuringAnyAppUse && !selectedFilterActive) return true;
+
+        // Both protections are evaluated before launch. The all-apps option blocks
+        // any non-launcher app; the selected-apps option blocks only package names
+        // explicitly chosen by the user. No Activity is closed after launch.
+        Set<String> foregroundPackages = getForegroundPackages(context);
+        if (foregroundPackages == null) {
+            // Fail closed when Usage Access cannot reliably identify the foreground app.
+            return false;
+        }
+
+        if (blockDuringAnyAppUse) {
+            String launcherPackage = getHomePackage(context);
+            for (String packageName : foregroundPackages) {
+                if (packageName == null
+                        || packageName.isEmpty()
+                        || context.getPackageName().equals(packageName)
+                        || packageName.equals(launcherPackage)
+                        || "com.android.systemui".equals(packageName)
+                        || "android".equals(packageName)) {
+                    continue;
+                }
+                return false;
+            }
+        }
+
+        if (selectedFilterActive) {
+            for (String packageName : selectedApps) {
+                if (foregroundPackages.contains(packageName)) return false;
+            }
+        }
+        return true;
     }
 
     static boolean isDeviceLocked(Context context) {
@@ -41,29 +98,24 @@ final class AutoStartConditions {
     }
 
     /**
-     * Reconstructs currently-resumed activities from UsageEvents. This is a
-     * single synchronous query at activation time, not a polling loop or delay.
-     * The launcher and this app are excluded; a non-launcher foreground app
-     * blocks the automatic start.
+     * Returns packages with at least one resumed activity according to UsageEvents.
+     * A null result means the foreground state could not be determined.
      */
-    static boolean isAnotherAppInForeground(Context context) {
-        // When the user enables this protection but revokes Usage Access,
-        // fail closed instead of launching and interrupting active use.
-        if (!hasUsageAccess(context)) return true;
+    private static Set<String> getForegroundPackages(Context context) {
+        if (!hasUsageAccess(context)) return null;
 
         UsageStatsManager usage =
                 (UsageStatsManager) context.getSystemService(Context.USAGE_STATS_SERVICE);
-        if (usage == null) return true;
+        if (usage == null) return null;
 
         long now = System.currentTimeMillis();
         long bootTime = now - SystemClock.elapsedRealtime();
-        long begin = Math.max(bootTime, now - 24L * 60L * 60L * 1000L);
+        long begin = Math.max(bootTime, now - USAGE_LOOKBACK_MS);
 
         try {
             UsageEvents events = usage.queryEvents(begin, now);
-            if (events == null) return true;
+            if (events == null) return null;
 
-            String launcherPackage = getHomePackage(context);
             Map<String, Set<String>> resumedByPackage = new HashMap<>();
             UsageEvents.Event event = new UsageEvents.Event();
 
@@ -107,21 +159,16 @@ final class AutoStartConditions {
                 }
             }
 
+            Set<String> foregroundPackages = new HashSet<>();
             for (Map.Entry<String, Set<String>> entry : resumedByPackage.entrySet()) {
-                String packageName = entry.getKey();
-                if (entry.getValue().isEmpty()
-                        || context.getPackageName().equals(packageName)
-                        || packageName.equals(launcherPackage)
-                        || "com.android.systemui".equals(packageName)
-                        || "android".equals(packageName)) continue;
-                return true;
+                if (!entry.getValue().isEmpty()) foregroundPackages.add(entry.getKey());
             }
+            return foregroundPackages;
         } catch (Throwable error) {
             android.util.Log.w("NightScreenAutoStart",
-                    "Could not identify the foreground app from usage events.", error);
-            return true;
+                    "Could not identify foreground apps from usage events.", error);
+            return null;
         }
-        return false;
     }
 
     private static boolean hasUsageAccess(Context context) {
