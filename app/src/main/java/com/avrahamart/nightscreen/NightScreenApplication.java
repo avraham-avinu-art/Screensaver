@@ -59,6 +59,7 @@ public final class NightScreenApplication extends Application {
         boolean notificationAccess = hasNotificationAccess(this);
         MonitorSettingsSnapshot snapshot = MonitorSettingsSnapshot.read(this);
         boolean chargingEnabled = snapshot != null && snapshot.autoStartOnCharge;
+        boolean autoStartPaused = snapshot != null && snapshot.autoStartPaused;
         boolean lockMonitorEnabled = snapshot != null
                 && (snapshot.autoStartOnDeviceLock || snapshot.autoStartOnWake);
 
@@ -76,7 +77,8 @@ public final class NightScreenApplication extends Application {
 
         // Use the UI process only when no already-persistent process can listen.
         return packageName.equals(processName)
-                && chargingEnabled && !notificationAccess && !lockMonitorEnabled;
+                && chargingEnabled && !notificationAccess && !lockMonitorEnabled
+                && !autoStartPaused;
     }
 
     static boolean hasNotificationAccess(android.content.Context context) {

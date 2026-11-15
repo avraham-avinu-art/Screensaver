@@ -71,6 +71,10 @@ public final class ScreensaverDreamService extends DreamService {
     public void onAttachedToWindow() {
         super.onAttachedToWindow();
         prefs = getSharedPreferences("settings", MODE_PRIVATE);
+        if (prefs.getBoolean("autoStartPaused", false)) {
+            finish();
+            return;
+        }
         setInteractive(true);
         setFullscreen(true);
         setScreenBright(true);
@@ -131,6 +135,11 @@ public final class ScreensaverDreamService extends DreamService {
     @Override
     public void onDreamingStarted() {
         super.onDreamingStarted();
+        if (prefs != null && prefs.getBoolean("autoStartPaused", false)) {
+            // Android Dream activation is also automatic; end it while paused.
+            finish();
+            return;
+        }
         hideSystemUi();
         dreamActive = true;
         if (prefs != null && preferenceListener != null) {

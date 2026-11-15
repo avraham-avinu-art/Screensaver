@@ -171,6 +171,18 @@ public final class LockScreenMonitorService extends Service {
             return false;
         }
 
+        // Keep the foreground notification alive so the user can resume later,
+        // but unregister every event monitor while global auto-start is paused.
+        if (snapshot.autoStartPaused) {
+            unregisterLockReceiver();
+            if (idleScreensaverMonitor != null) idleScreensaverMonitor.stop();
+            monitorReady = false;
+            lockMonitoringActive = false;
+            retryAttempt = 0;
+            cancelReconcileRetry();
+            return true;
+        }
+
         if (!updateLockReceiverRegistration(snapshot)) {
             monitorReady = false;
             lockMonitoringActive = false;

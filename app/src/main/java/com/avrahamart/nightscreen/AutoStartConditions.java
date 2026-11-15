@@ -26,24 +26,42 @@ final class AutoStartConditions {
 
     static boolean canActivate(Context context, MonitorSettingsSnapshot settings) {
         if (settings == null) return false;
-        return canActivate(
-                context,
-                settings.autoStartOnlyWhenLocked,
-                settings.preventAutoStartDuringUse,
-                settings.preventAutoStartForSelectedApps,
-                settings.excludedForegroundPackages);
+        return shouldAllowAutomaticActivation(settings.autoStartPaused,
+                () -> canActivate(
+                        context,
+                        settings.autoStartOnlyWhenLocked,
+                        settings.preventAutoStartDuringUse,
+                        settings.preventAutoStartForSelectedApps,
+                        settings.excludedForegroundPackages));
     }
 
     static boolean canActivate(Context context, SharedPreferences prefs) {
         if (prefs == null) return true;
-        Set<String> selectedApps = prefs.getStringSet(
-                "excludedForegroundPackages", Collections.emptySet());
-        return canActivate(
-                context,
-                prefs.getBoolean("autoStartOnlyWhenLocked", false),
-                prefs.getBoolean("preventAutoStartDuringUse", false),
-                prefs.getBoolean("pauseWhenExcludedAppActive", false),
-                selectedApps == null ? Collections.emptySet() : selectedApps);
+        return shouldAllowAutomaticActivation(
+                prefs.getBoolean("autoStartPaused", false),
+                () -> {
+                    Set<String> selectedApps = prefs.getStringSet(
+                            "excludedForegroundPackages", Collections.emptySet());
+                    return canActivate(
+                            context,
+                            prefs.getBoolean("autoStartOnlyWhenLocked", false),
+                            prefs.getBoolean("preventAutoStartDuringUse", false),
+                            prefs.getBoolean("pauseWhenExcludedAppActive", false),
+                            selectedApps == null ? Collections.emptySet() : selectedApps);
+                });
+    }
+
+    @FunctionalInterface
+    interface ExistingActivationConditions {
+        boolean areSatisfied();
+    }
+
+    /** Evaluates the existing activation rules only while global auto-start is not paused. */
+    static boolean shouldAllowAutomaticActivation(
+            boolean autoStartPaused, ExistingActivationConditions existingConditions) {
+        return !autoStartPaused
+                && existingConditions != null
+                && existingConditions.areSatisfied();
     }
 
     private static boolean canActivate(

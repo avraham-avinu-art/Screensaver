@@ -30,27 +30,41 @@ public final class AutoStartNotificationController {
                 (NotificationManager) app.getSystemService(Context.NOTIFICATION_SERVICE);
         if (manager != null) createChannel(context, manager);
 
-        Intent openSettings = new Intent(app, SettingsActivity.class);
-        openSettings.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
-                | Intent.FLAG_ACTIVITY_CLEAR_TOP
-                | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        MonitorSettingsSnapshot snapshot = MonitorSettingsSnapshot.read(app);
+        boolean paused = snapshot != null && snapshot.autoStartPaused;
+        String title = context.getString(paused
+                ? R.string.auto_start_notification_text_005
+                : R.string.auto_start_notification_text_001);
+        String message = context.getString(paused
+                ? R.string.auto_start_notification_text_006
+                : R.string.auto_start_notification_text_002);
+        String actionLabel = context.getString(paused
+                ? R.string.auto_start_notification_text_008
+                : R.string.auto_start_notification_text_007);
+
+        Intent toggleIntent = new Intent(app, AutoStartPauseReceiver.class)
+                .setAction(paused
+                        ? AutoStartPauseReceiver.ACTION_RESUME
+                        : AutoStartPauseReceiver.ACTION_PAUSE)
+                .setPackage(app.getPackageName());
+        int requestCode = paused ? NOTIFICATION_ID + 2 : NOTIFICATION_ID + 1;
         int pendingFlags = PendingIntent.FLAG_UPDATE_CURRENT;
         if (Build.VERSION.SDK_INT >= 23) pendingFlags |= PendingIntent.FLAG_IMMUTABLE;
-        PendingIntent settingsIntent = PendingIntent.getActivity(
-                app, NOTIFICATION_ID, openSettings, pendingFlags);
+        PendingIntent togglePendingIntent = PendingIntent.getBroadcast(
+                app, requestCode, toggleIntent, pendingFlags);
 
         Notification.Builder builder = Build.VERSION.SDK_INT >= 26
                 ? new Notification.Builder(app, CHANNEL_ID)
                 : new Notification.Builder(app);
-        // Android requires a valid small icon for a foreground-service notification.
-        // IMPORTANCE_MIN suppresses the notification icon in the status bar.
-        builder.setSmallIcon(R.drawable.ic_qs_screensaver)
+        // The service still requires a valid small icon, but its fully transparent
+        // artwork keeps the status-bar slot visually empty. The large app icon
+        // remains visible inside the notification shade.
+        builder.setSmallIcon(R.drawable.ic_notification_transparent)
                 .setLargeIcon(createApplicationIcon(app))
-                .setContentTitle(context.getString(R.string.auto_start_notification_text_001))
-                .setContentText(null)
-                .setStyle(new Notification.BigTextStyle()
-                        .bigText(context.getString(R.string.auto_start_notification_text_002)))
-                .setContentIntent(settingsIntent)
+                .setContentTitle(title)
+                .setContentText(message)
+                .setStyle(new Notification.BigTextStyle().bigText(message))
+                // Tapping the notification body does not open Settings or cancel the service.
                 .setCategory(Notification.CATEGORY_SERVICE)
                 .setOngoing(true)
                 .setOnlyAlertOnce(true)
@@ -59,7 +73,10 @@ public final class AutoStartNotificationController {
                 .setPriority(Notification.PRIORITY_MIN)
                 .setSound(null)
                 .setVibrate(new long[0])
-                .setDefaults(0);
+                .setDefaults(0)
+                .addAction(paused ? android.R.drawable.ic_media_play
+                                : android.R.drawable.ic_media_pause,
+                        actionLabel, togglePendingIntent);
 
         Notification notification = builder.build();
         notification.flags |= Notification.FLAG_ONGOING_EVENT | Notification.FLAG_NO_CLEAR;

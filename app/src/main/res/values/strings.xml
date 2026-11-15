@@ -417,10 +417,14 @@
     <string name="guide_activity_text_078" formatted="false">אם המסך נשאר דולק אחרי סיום 1 דק\' או 5 דק\', בדוק את זמן כיבוי המסך בהגדרות Android. סגירת שומר מסך וכיבוי התצוגה הן פעולות נפרדות. </string>
     <string name="guide_activity_text_079" formatted="false">ההודעה שמופיעה בכרטיס \"זמן פעילות\" במסך \"הפעלה והתנהגות\" מסבירה כאשר זמן הכיבוי במכשיר ארוך יותר מהזמן שנבחר.</string>
     <!-- AutoStartNotificationController: persistent service notification -->
-    <string name="auto_start_notification_text_001" formatted="false">שירות ההפעלה האוטומטית פועל.</string>
-    <string name="auto_start_notification_text_002" formatted="false">לחץ לביטול השירות.</string>
+    <string name="auto_start_notification_text_001" formatted="false">ההפעלה האוטומטית פעילה.</string>
+    <string name="auto_start_notification_text_002" formatted="false">אפשר להשהות זמנית את ההפעלה האוטומטית בלי לשנות את ההגדרות.</string>
     <string name="auto_start_notification_text_003" formatted="false">הפעלה אוטומטית של שומר מסך</string>
     <string name="auto_start_notification_text_004" formatted="false">התראה מתמשכת לשירות ההפעלה האוטומטית</string>
+    <string name="auto_start_notification_text_005" formatted="false">ההפעלה האוטומטית מושהית.</string>
+    <string name="auto_start_notification_text_006" formatted="false">כל ההגדרות נשמרו. הפעלה מחדש תחזיר את הפעילות לפי ההגדרות הקיימות.</string>
+    <string name="auto_start_notification_text_007" formatted="false">השהיה</string>
+    <string name="auto_start_notification_text_008" formatted="false">הפעלה מחדש</string>
     <!-- PermissionDependencySync: notifications shown when dependent features are disabled -->
     <string name="permission_sync_text_001" formatted="false">ההפעלה האוטומטית בנעילה כובתה מפני שהרשאת ההצגה מעל אפליקציות אחרות בוטלה.</string>
     <string name="permission_sync_text_002" formatted="false">ההפעלה האוטומטית בטעינה כובתה מפני שהרשאת ההצגה מעל אפליקציות אחרות בוטלה.</string>

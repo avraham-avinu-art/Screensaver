@@ -73,6 +73,22 @@ public final class AutoStartConditionsTest {
                 null, false, false, Collections.emptySet()));
     }
 
+    @Test
+    public void globalPauseBlocksAutomaticStartWithoutEvaluatingOtherConditions() {
+        final boolean[] evaluated = {false};
+        assertFalse(AutoStartConditions.shouldAllowAutomaticActivation(true, () -> {
+            evaluated[0] = true;
+            return true;
+        }));
+        assertFalse(evaluated[0]);
+    }
+
+    @Test
+    public void resumingRestoresTheExistingAutomaticStartRules() {
+        assertTrue(AutoStartConditions.shouldAllowAutomaticActivation(false, () -> true));
+        assertFalse(AutoStartConditions.shouldAllowAutomaticActivation(false, () -> false));
+    }
+
     private static boolean blocks(Set<String> foreground,
                                   boolean global,
                                   boolean selected,

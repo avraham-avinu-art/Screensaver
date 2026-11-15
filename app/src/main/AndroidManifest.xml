@@ -89,6 +89,11 @@
             android:enabled="true"
             android:exported="false" />
 
+        <receiver
+            android:name=".AutoStartPauseReceiver"
+            android:enabled="true"
+            android:exported="false" />
+
 
         <receiver
             android:name=".LockScreenBootReceiver"
