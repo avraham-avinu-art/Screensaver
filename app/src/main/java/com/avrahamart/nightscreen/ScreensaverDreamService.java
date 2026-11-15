@@ -44,8 +44,12 @@ public final class ScreensaverDreamService extends DreamService {
     private boolean dreamActive;
 
     private String lastTrackIdentity;
-    private boolean introWindowVisible;
-    private long introWindowDeadline;
+    private boolean playerIntroWindowVisible;
+    private long playerIntroWindowDeadline;
+    private boolean controlsIntroWindowVisible;
+    private long controlsIntroWindowDeadline;
+    private boolean lastPlayerIntroOnlySetting;
+    private String lastPlayerControlsDisplayMode = "on";
     private long currentMediaDurationMs;
     private boolean lastPlaybackActive;
     private boolean lastControlsIntroOnly;
@@ -54,6 +58,10 @@ public final class ScreensaverDreamService extends DreamService {
         @Override public void run() {
             if (!dreamActive || displayView == null) return;
             displayView.updateClock();
+            displayView.applyScreenAppearance(getWindow());
+            if (mediaController != null && hasExpiredIntroWindow()) {
+                renderMedia(mediaController);
+            }
             updateMediaProgress();
             handler.postDelayed(this, 1000L);
         }
@@ -107,8 +115,13 @@ public final class ScreensaverDreamService extends DreamService {
             if (!dreamActive || displayView == null) return;
             displayView.applySettings(getWindow(), hasUsableMediaSession(mediaController),
                     currentArtwork());
+            if ("showPlayer".equals(key)) {
+                if (getBool("showPlayer", false)) registerActiveSessionsListener();
+                else unregisterActiveSessionsListener();
+            }
             if ("showPlayer".equals(key) || "showPlayerOnlyAtStart".equals(key)
                     || "playerControlsDisplayMode".equals(key)
+                    || "playerStartDurationSeconds".equals(key)
                     || "showDetails".equals(key)) {
                 refreshMedia(true);
             }
@@ -306,8 +319,7 @@ public final class ScreensaverDreamService extends DreamService {
         }
         for (MediaController item : sessions) {
             PlaybackState state = item.getPlaybackState();
-            if (state != null && state.getState() == PlaybackState.STATE_PAUSED
-                    && hasMetadataTitle(item.getMetadata())) return item;
+            if (state != null && state.getState() == PlaybackState.STATE_PAUSED) return item;
         }
         for (MediaController item : sessions) {
             if (hasMetadataTitle(item.getMetadata())) return item;
@@ -376,8 +388,12 @@ public final class ScreensaverDreamService extends DreamService {
         mediaCallback = null;
         currentMediaDurationMs = 0L;
         lastTrackIdentity = null;
-        introWindowVisible = false;
-        introWindowDeadline = 0L;
+        lastTrackPositionMs = -1L;
+        lastPlaybackActive = false;
+        playerIntroWindowVisible = false;
+        playerIntroWindowDeadline = 0L;
+        controlsIntroWindowVisible = false;
+        controlsIntroWindowDeadline = 0L;
     }
 
     private void renderMedia(MediaController selected) {
@@ -429,20 +445,25 @@ public final class ScreensaverDreamService extends DreamService {
         String mediaId = metadata == null ? null
                 : metadata.getString(MediaMetadata.METADATA_KEY_MEDIA_ID);
         String identity = mediaId != null && !mediaId.trim().isEmpty()
-                ? "id:" + mediaId.trim() : "title:" + title.trim();
+                ? "id:" + mediaId.trim()
+                : (!getString(R.string.main_activity_text_027).equals(title)
+                        && !title.trim().isEmpty() ? "title:" + title.trim() : "");
         boolean playing = playback == PlaybackState.STATE_PLAYING
                 || playback == PlaybackState.STATE_BUFFERING;
-        updateIntroWindow(identity, playing, position);
+        if (!identity.isEmpty()) {
+            updateIntroWindows(identity, playing, position);
+        } else {
+            lastPlaybackActive = playing;
+        }
 
         boolean introOnly = getBool("showPlayerOnlyAtStart", false);
-        boolean playerVisible = !introOnly || isIntroWindowOpen();
+        boolean playerVisible = !introOnly || isPlayerIntroWindowOpen();
         displayView.setMediaText(title, artist, getBool("showDetails", true) && !artist.isEmpty());
         displayView.setMediaArtwork(currentArtwork(), true);
         displayView.setPlayerVisible(playerVisible);
 
         String controlsMode = getString("playerControlsDisplayMode", "on");
-        boolean controlsVisible = "on".equals(controlsMode)
-                || ("start".equals(controlsMode) && isIntroWindowOpen());
+        boolean controlsVisible = arePlayerControlsVisible();
         long actions = state.getActions();
         displayView.setMediaControls(playerVisible && controlsVisible,
                 playback == PlaybackState.STATE_PLAYING,
@@ -456,7 +477,7 @@ public final class ScreensaverDreamService extends DreamService {
         }
     }
 
-    private void updateIntroWindow(String identity, boolean playbackActive, long positionMs) {
+    private void updateIntroWindows(String identity, boolean playbackActive, long positionMs) {
         long windowMs = PlayerStartDuration.millis(getInt("playerStartDurationSeconds", 6));
         boolean first = lastTrackIdentity == null;
         boolean changed = !first && !identity.equals(lastTrackIdentity);
@@ -464,37 +485,92 @@ public final class ScreensaverDreamService extends DreamService {
                 && lastTrackPositionMs > windowMs
                 && positionMs < windowMs
                 && lastTrackPositionMs - positionMs > 5000L;
-        boolean began = playbackActive && !lastPlaybackActive;
+        boolean playbackJustStarted = playbackActive && !lastPlaybackActive;
         boolean introOnly = getBool("showPlayerOnlyAtStart", false);
-        boolean controlsAtStart = "start".equals(getString("playerControlsDisplayMode", "on"));
-        boolean introNeeded = introOnly || controlsAtStart;
+        boolean introOnlyJustEnabled = introOnly && !lastPlayerIntroOnlySetting;
+        String controlsMode = getString("playerControlsDisplayMode", "on");
+        boolean controlsModeJustEnabled = "start".equals(controlsMode)
+                && !"start".equals(lastPlayerControlsDisplayMode);
 
-        if (!introNeeded) {
-            introWindowVisible = false;
-            introWindowDeadline = 0L;
-        } else if (playbackActive && (first || changed || restarted || began)
+        if (!introOnly) {
+            playerIntroWindowVisible = false;
+            playerIntroWindowDeadline = 0L;
+        } else if (playbackActive && (changed || restarted)) {
+            startPlayerIntroWindow(windowMs);
+        } else if (playbackActive
+                && (first || playbackJustStarted || introOnlyJustEnabled)
                 && positionMs < windowMs) {
-            introWindowVisible = true;
-            introWindowDeadline = android.os.SystemClock.elapsedRealtime()
-                    + Math.max(1L, windowMs - positionMs);
+            startPlayerIntroWindow(windowMs - Math.max(0L, positionMs));
+        }
+
+        if (!"start".equals(controlsMode)) {
+            controlsIntroWindowVisible = !"off".equals(controlsMode);
+            controlsIntroWindowDeadline = 0L;
+        } else if (playbackActive
+                && (changed || restarted || first || playbackJustStarted || controlsModeJustEnabled)) {
+            if (positionMs < windowMs) {
+                startControlsIntroWindow(windowMs - Math.max(0L, positionMs));
+            } else {
+                controlsIntroWindowVisible = false;
+                controlsIntroWindowDeadline = 0L;
+            }
         }
 
         lastTrackIdentity = identity;
         lastTrackPositionMs = positionMs;
         lastPlaybackActive = playbackActive;
+        lastPlayerIntroOnlySetting = introOnly;
+        lastPlayerControlsDisplayMode = controlsMode;
 
-        if (introWindowVisible && !isIntroWindowOpen()) {
-            introWindowVisible = false;
-            introWindowDeadline = 0L;
+        long now = android.os.SystemClock.elapsedRealtime();
+        if (playerIntroWindowVisible && playerIntroWindowDeadline > 0L
+                && now >= playerIntroWindowDeadline) {
+            playerIntroWindowVisible = false;
+            playerIntroWindowDeadline = 0L;
+        }
+        if (controlsIntroWindowVisible && controlsIntroWindowDeadline > 0L
+                && now >= controlsIntroWindowDeadline) {
+            controlsIntroWindowVisible = false;
+            controlsIntroWindowDeadline = 0L;
         }
     }
 
-    private long lastTrackPositionMs = -1L;
-
-    private boolean isIntroWindowOpen() {
-        return introWindowVisible
-                && android.os.SystemClock.elapsedRealtime() < introWindowDeadline;
+    private void startPlayerIntroWindow(long durationMs) {
+        if (!getBool("showPlayerOnlyAtStart", false)) return;
+        playerIntroWindowVisible = true;
+        playerIntroWindowDeadline = android.os.SystemClock.elapsedRealtime()
+                + Math.max(1L, durationMs);
     }
+
+    private void startControlsIntroWindow(long durationMs) {
+        if (!"start".equals(getString("playerControlsDisplayMode", "on"))) return;
+        controlsIntroWindowVisible = true;
+        controlsIntroWindowDeadline = android.os.SystemClock.elapsedRealtime()
+                + Math.max(1L, durationMs);
+    }
+
+    private boolean isPlayerIntroWindowOpen() {
+        return playerIntroWindowVisible
+                && android.os.SystemClock.elapsedRealtime() < playerIntroWindowDeadline;
+    }
+
+    private boolean arePlayerControlsVisible() {
+        String mode = getString("playerControlsDisplayMode", "on");
+        if ("off".equals(mode)) return false;
+        if (!"start".equals(mode)) return true;
+        return controlsIntroWindowVisible
+                && android.os.SystemClock.elapsedRealtime() < controlsIntroWindowDeadline;
+    }
+
+    private boolean hasExpiredIntroWindow() {
+        long now = android.os.SystemClock.elapsedRealtime();
+        return (playerIntroWindowVisible && playerIntroWindowDeadline > 0L
+                    && now >= playerIntroWindowDeadline)
+                || (controlsIntroWindowVisible && controlsIntroWindowDeadline > 0L
+                    && now >= controlsIntroWindowDeadline);
+    }
+
+    private long lastTrackPositionMs = -1L;
 
     private void updateMediaProgress() {
         if (displayView == null || mediaController == null || currentMediaDurationMs <= 0L) return;
