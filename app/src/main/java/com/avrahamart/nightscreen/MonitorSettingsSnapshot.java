@@ -21,6 +21,9 @@ final class MonitorSettingsSnapshot {
     final boolean useAndroidDreamForCharging;
     final boolean autoStartOnlyWhenLocked;
     final boolean preventAutoStartDuringUse;
+    final boolean wakeOnTrackChange;
+    final boolean showPlayer;
+    final int trackChangeWakeSeconds;
     final boolean deviceLockActivationConsumed;
 
     private MonitorSettingsSnapshot(Bundle data) {
@@ -32,6 +35,9 @@ final class MonitorSettingsSnapshot {
                 data.getBoolean("useAndroidDreamForCharging", false);
         autoStartOnlyWhenLocked = data.getBoolean("autoStartOnlyWhenLocked", false);
         preventAutoStartDuringUse = data.getBoolean("preventAutoStartDuringUse", false);
+        wakeOnTrackChange = data.getBoolean("wakeOnTrackChange", false);
+        showPlayer = data.getBoolean("showPlayer", false);
+        trackChangeWakeSeconds = data.getInt("trackChangeWakeSeconds", 5);
         deviceLockActivationConsumed =
                 data.getBoolean("deviceLockActivationConsumed", false);
     }
@@ -58,6 +64,11 @@ final class MonitorSettingsSnapshot {
                         prefs.getBoolean("autoStartOnlyWhenLocked", false));
                 data.putBoolean("preventAutoStartDuringUse",
                         prefs.getBoolean("preventAutoStartDuringUse", false));
+                data.putBoolean("wakeOnTrackChange",
+                        prefs.getBoolean("wakeOnTrackChange", false));
+                data.putBoolean("showPlayer", prefs.getBoolean("showPlayer", false));
+                data.putInt("trackChangeWakeSeconds",
+                        prefs.getInt("trackChangeWakeSeconds", 5));
                 data.putBoolean("deviceLockActivationConsumed",
                         prefs.getBoolean("deviceLockActivationConsumed", false));
             } else {
@@ -69,6 +80,32 @@ final class MonitorSettingsSnapshot {
             android.util.Log.e("NightScreenAutoStart",
                     "Unable to read automatic-start settings.", error);
             return null;
+        }
+    }
+
+    static void setSuppressNextDeviceLockScreenOff(Context context, boolean enabled) {
+        try {
+            Bundle extras = new Bundle();
+            extras.putBoolean("enabled", enabled);
+            context.getContentResolver().call(
+                    URI, MonitorSettingsProvider.METHOD_SET_SCREEN_OFF_SUPPRESS,
+                    null, extras);
+        } catch (Throwable error) {
+            android.util.Log.e("NightScreenAutoStart",
+                    "Unable to update the screen-off suppression marker.", error);
+        }
+    }
+
+    static boolean claimSuppressNextDeviceLockScreenOff(Context context) {
+        try {
+            Bundle result = context.getContentResolver().call(
+                    URI, MonitorSettingsProvider.METHOD_CLAIM_SCREEN_OFF_SUPPRESS,
+                    null, null);
+            return result != null && result.getBoolean("suppressed", false);
+        } catch (Throwable error) {
+            android.util.Log.e("NightScreenAutoStart",
+                    "Unable to consume the screen-off suppression marker.", error);
+            return false;
         }
     }
 

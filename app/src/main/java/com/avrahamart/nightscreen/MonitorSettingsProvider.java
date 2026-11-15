@@ -17,6 +17,8 @@ public final class MonitorSettingsProvider extends ContentProvider {
     static final String METHOD_READ = "readAutoStartSettings";
     static final String METHOD_CLAIM_LOCK = "claimDeviceLockActivation";
     static final String METHOD_RESET_LOCK = "resetDeviceLockActivation";
+    static final String METHOD_SET_SCREEN_OFF_SUPPRESS = "setScreenOffAutoStartSuppress";
+    static final String METHOD_CLAIM_SCREEN_OFF_SUPPRESS = "claimScreenOffAutoStartSuppress";
     private static final Object LOCK_MUTEX = new Object();
 
     @Override
@@ -46,6 +48,12 @@ public final class MonitorSettingsProvider extends ContentProvider {
                     prefs.getBoolean("autoStartOnlyWhenLocked", false));
             result.putBoolean("preventAutoStartDuringUse",
                     prefs.getBoolean("preventAutoStartDuringUse", false));
+            result.putBoolean("wakeOnTrackChange",
+                    prefs.getBoolean("wakeOnTrackChange", false));
+            result.putBoolean("showPlayer",
+                    prefs.getBoolean("showPlayer", false));
+            result.putInt("trackChangeWakeSeconds",
+                    prefs.getInt("trackChangeWakeSeconds", 5));
             result.putBoolean("deviceLockActivationConsumed",
                     prefs.getBoolean("deviceLockActivationConsumed", false));
             return result;
@@ -68,6 +76,25 @@ public final class MonitorSettingsProvider extends ContentProvider {
                         .putBoolean("deviceLockActivationConsumed", false)
                         .commit();
                 return resultBoolean("saved", saved);
+            }
+        }
+
+        if (METHOD_SET_SCREEN_OFF_SUPPRESS.equals(method)) {
+            boolean enabled = extras != null && extras.getBoolean("enabled", false);
+            boolean saved = prefs.edit()
+                    .putBoolean("suppressNextDeviceLockScreenOff", enabled)
+                    .commit();
+            return resultBoolean("saved", saved);
+        }
+
+        if (METHOD_CLAIM_SCREEN_OFF_SUPPRESS.equals(method)) {
+            synchronized (LOCK_MUTEX) {
+                boolean pending = prefs.getBoolean("suppressNextDeviceLockScreenOff", false);
+                if (!pending) return resultBoolean("suppressed", false);
+                boolean saved = prefs.edit()
+                        .remove("suppressNextDeviceLockScreenOff")
+                        .commit();
+                return resultBoolean("suppressed", saved);
             }
         }
 

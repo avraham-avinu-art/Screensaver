@@ -33,6 +33,7 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
         SharedPreferences prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE);
         if (Intent.ACTION_USER_PRESENT.equals(action)) {
             MonitorSettingsSnapshot.resetDeviceLockActivation(context);
+            MonitorSettingsSnapshot.setSuppressNextDeviceLockScreenOff(context, false);
             prefs.edit().remove("deepSleepScreenOffElapsed")
                     .remove("deepSleepScreenOffUptime").apply();
             return;
@@ -47,6 +48,9 @@ public final class AutoStartOnPowerReceiver extends BroadcastReceiver {
                     .putLong("deepSleepScreenOffElapsed", SystemClock.elapsedRealtime())
                     .putLong("deepSleepScreenOffUptime", SystemClock.uptimeMillis())
                     .commit();
+            if (MonitorSettingsSnapshot.claimSuppressNextDeviceLockScreenOff(context)) {
+                return;
+            }
         }
 
         MonitorSettingsSnapshot settings = MonitorSettingsSnapshot.read(context);

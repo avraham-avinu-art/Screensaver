@@ -65,9 +65,10 @@ public final class BatteryChargeIndicatorView extends View {
             float textWidth = dp(48f);
             float groupWidth = iconWidth + gap + textWidth;
             float left = (getWidth() - groupWidth) * 0.5f;
-            drawBattery(canvas, left, centerY - dp(7f), iconWidth, dp(14f));
-            drawPercent(canvas, left + iconWidth + gap + textWidth * 0.5f,
-                    centerY);
+            // In RTL, the battery symbol sits immediately to the right of the percentage.
+            drawPercent(canvas, left + textWidth * 0.5f, centerY);
+            drawBattery(canvas, left + textWidth + dp(3f),
+                    centerY - dp(7f), iconWidth, dp(14f));
         }
     }
 

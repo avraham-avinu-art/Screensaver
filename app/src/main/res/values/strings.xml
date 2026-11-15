@@ -130,8 +130,8 @@
     <string name="settings_activity_text_125" formatted="false">הגנה אוטומטית כשהסוללה מתרוקנת</string>
     <string name="settings_activity_text_126" formatted="false">סף סוללה להפעלת ההגנה</string>
     <string name="settings_activity_text_127" formatted="false">הגדרת הפעלה אוטומטית בטעינה דרך הגדרות אנדרואיד</string>
-    <string name="settings_activity_text_128" formatted="false">השהיה באפליקציות מוחרגות</string>
-    <string name="settings_activity_text_129" formatted="false">מניעת הפעלה בזמן שימוש</string>
+    <string name="settings_activity_text_128" formatted="false">השהיית שומר מסך באפליקציות נבחרות</string>
+    <string name="settings_activity_text_129" formatted="false">מניעת הפעלה אוטומטית בזמן שימוש באפליקציה</string>
     <string name="settings_activity_text_130" formatted="false">סמל ההגדרות בתצוגה קבועה</string>
     <string name="settings_activity_text_131" formatted="false">תצוגת השעה</string>
     <string name="settings_activity_text_132" formatted="false">הצגת תאריכים</string>
@@ -157,8 +157,8 @@
     <string name="settings_activity_text_152" formatted="false">בחירת יישור הטקסט בתוך אזור השעון והתאריך</string>
     <string name="settings_activity_text_153" formatted="false">בחירת יישור שם האמן ושם השיר בתוך אזור הנגן</string>
     <string name="settings_activity_text_154" formatted="false">הגבלת כל ההפעלות האוטומטיות כך שיפעלו רק כשהמכשיר נעול</string>
-    <string name="settings_activity_text_155" formatted="false">מניעת הפעלה אוטומטית כאשר אפליקציה אחרת נמצאת בחזית</string>
-    <string name="settings_activity_text_156" formatted="false">השהיית ההפעלה האוטומטית כאשר אפליקציה שנבחרה נמצאת בחזית</string>
+    <string name="settings_activity_text_155" formatted="false">חוסמת מראש הפעלה אוטומטית כל עוד אפליקציה אחרת פתוחה בחזית.</string>
+    <string name="settings_activity_text_156" formatted="false">אם שומר המסך כבר הופעל ואפליקציה שבחרת נמצאת בחזית, הוא ייסגר ולא יכסה אותה.</string>
     <string name="settings_activity_text_157" formatted="false">בחירת עובי גופן השעון והתאריך</string>
     <string name="settings_activity_text_158" formatted="false">בחירת מיקום הצגת השעון והתאריך במסך</string>
     <string name="settings_activity_text_159" formatted="false">בחירת משך זמן הצגת השומר מסך</string>
@@ -298,12 +298,12 @@
     <string name="permissions_activity_text_006" formatted="false">כדי לשנות או לבטל את ההרשאה, שנה במסך הבא את גישת ההתראות של שומר מסך.</string>
     <string name="permissions_activity_text_007" formatted="false">כדי להציג את הנגן, צריך לאפשר לשומר מסך גישה להתראות במסך הבא. בחר את \"שומר מסך\" והפעל את ההרשאה.</string>
     <string name="permissions_activity_text_008" formatted="false">הרשאת גישה לנתוני שימוש</string>
-    <string name="permissions_activity_text_009" formatted="false">ההרשאה מאפשרת לזהות איזו אפליקציה פעילה בחזית המסך, ונדרשת להפעלת ההגדרה „מניעת הפעלה בזמן שימוש”.</string>
+    <string name="permissions_activity_text_009" formatted="false">נדרשת לזיהוי אפליקציה שנמצאת בחזית: היא מאפשרת לחסום מראש הפעלה אוטומטית בזמן שימוש באפליקציה אחרת, או לסגור את שומר המסך רק כאשר אפליקציה שבחרת נמצאת בחזית.</string>
     <string name="permissions_activity_text_010" formatted="false">הפעל הרשאת גישה לנתוני שימוש</string>
     <string name="permissions_activity_text_011" formatted="false">כדי לשנות או לבטל את ההרשאה, שנה במסך הבא את גישת נתוני השימוש של שומר מסך.</string>
     <string name="permissions_activity_text_012" formatted="false">כדי לזהות אפליקציה פעילה בחזית המסך, בחר במסך הבא את „שומר מסך” ואפשר גישה לנתוני שימוש.</string>
     <string name="permissions_activity_text_013" formatted="false">הרשאת תצוגה על אפליקציות</string>
-    <string name="permissions_activity_text_014" formatted="false">ההרשאה נדרשת להפעלה אוטומטית בטעינה, בנעילה, בהפעלת המכשיר ובהתעוררות ממצב שינה.</string>
+    <string name="permissions_activity_text_014" formatted="false">ההרשאה נדרשת להפעלה אוטומטית בטעינה, בנעילה, בהפעלת המכשיר ובהתעוררות ממצב שינה. היא נדרשת גם להדלקת המסך במעבר שיר ולהפעלה לאחר חוסר פעילות, משום שההפעלות מתבצעות כשהאפליקציה ברקע.</string>
     <string name="permissions_activity_text_015" formatted="false">הפעל הרשאת הצגה מעל אפליקציות</string>
     <string name="permissions_activity_text_016" formatted="false">כדי לשנות או לבטל את ההרשאה, שנה במסך הבא את הגדרת ההצגה מעל אפליקציות אחרות עבור שומר מסך.</string>
     <string name="permissions_activity_text_017" formatted="false">כדי לאפשר הפעלה אוטומטית, בחר במסך הבא את \"שומר מסך\" ואפשר \"הצגה מעל אפליקציות אחרות\".</string>
@@ -439,4 +439,33 @@
     <string name="permissions_activity_label" formatted="false">הרשאות</string>
     <string name="guide_activity_label" formatted="false">מדריך שימוש</string>
     <string name="notification_listener_service_label" formatted="false">Night Screen</string>
+
+    <string name="settings_activity_text_266" formatted="false">הדלקה במעבר שיר</string>
+    <string name="settings_activity_text_267" formatted="false">משך הצגת השומר מסך</string>
+    <string name="settings_activity_text_268" formatted="false">מהשעה:</string>
+    <string name="settings_activity_text_269" formatted="false">עד שעה:</string>
+    <string name="settings_activity_text_270" formatted="false">הפעלה בחוסר פעילות</string>
+    <string name="settings_activity_text_271" formatted="false">זמן חוסר פעילות</string>
+    <string name="settings_activity_text_272" formatted="false">מעירה את המסך ומציגה את שומר המסך בכל מעבר שיר בזמן טעינה, כאשר המסך כבוי. נדרש להפעיל את נגן המדיה.</string>
+    <string name="settings_activity_text_273" formatted="false">מפעילה את שומר המסך לאחר שלא זוהתה נגיעה במסך במשך הזמן שנבחר, ורק כאשר מסך הבית פתוח.</string>
+    <string name="settings_activity_text_274" formatted="false">מחייבת הצגת נגן מדיה פעיל והרשאת גישה להתראות.</string>
+    <string name="settings_activity_text_275" formatted="false">דורשת הפעלת שירות הנגישות של שומר מסך כדי לזהות נגיעות ושינויים בחלונות.</string>
+    <string name="settings_activity_text_276" formatted="false">ההפעלה דרך Android עדיין אינה פעילה או ששומר מסך זה אינו נבחר בהגדרות המערכת. פתח את הגדרות שומר המסך של Android, הפעל אותו, בחר בשומר המסך של האפליקציה והגדר הפעלה בזמן טעינה.</string>
+    <string name="settings_activity_text_277" formatted="false">כדי להדליק את המסך במעבר שיר, יש להפעיל תחילה את הצגת נגן המדיה.</string>
+    <string name="settings_activity_text_278" formatted="false">כדי לזהות מעבר שיר, יש לאפשר תחילה גישה להתראות.</string>
+    <string name="settings_activity_text_279" formatted="false">כדי לזהות חוסר פעילות, יש להפעיל את שירות הנגישות של שומר מסך במסך הבא.</string>
+    <string name="settings_activity_text_280" formatted="false">חיפוש אפליקציה או חבילה</string>
+    <string name="settings_activity_text_281" formatted="false">לא נמצאו אפליקציות מתאימות.</string>
+    <string name="settings_activity_text_282" formatted="false">כדי להפעיל תכונה אוטומטית כשהאפליקציה ברקע, יש לאפשר לשומר מסך הרשאת תצוגה מעל אפליקציות אחרות.</string>
+    <string name="settings_activity_text_283" formatted="false">לא ניתן לפתוח את הגדרות ההרשאה. פתח בהגדרות Android את „הצגה מעל אפליקציות אחרות”.</string>
+
+    <string name="permissions_activity_text_047" formatted="false">שירות נגישות לזיהוי חוסר פעילות</string>
+    <string name="permissions_activity_text_048" formatted="false">השירות מזהה נגיעות במסך ומעברים בין חלונות כדי להפעיל את שומר המסך לאחר פרק הזמן שנבחר, ורק כאשר מסך הבית נמצא בחזית. הוא אינו קורא תוכן של חלונות ואינו מבצע פעולות במכשיר.</string>
+    <string name="permissions_activity_text_049" formatted="false">פעיל</string>
+    <string name="permissions_activity_text_050" formatted="false">לא פעיל</string>
+    <string name="permissions_activity_text_051" formatted="false">פתיחת הגדרות נגישות</string>
+    <string name="permission_sync_text_007" formatted="false">ההפעלה בחוסר פעילות כובתה מפני שחסרה הרשאת נגישות או הרשאת תצוגה מעל אפליקציות.</string>
+    <string name="permission_sync_text_008" formatted="false">הדלקה במעבר שיר כובתה מפני שחסרה גישה להתראות או הרשאת תצוגה מעל אפליקציות.</string>
+    <string name="idle_accessibility_service_label" formatted="false">זיהוי חוסר פעילות לשומר מסך</string>
+    <string name="idle_accessibility_service_description" formatted="false">מזהה נגיעות במסך ושינויים בחלונות לצורך הפעלה אוטומטית לאחר חוסר פעילות.</string>
 </resources>

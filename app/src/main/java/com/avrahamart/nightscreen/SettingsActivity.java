@@ -33,6 +33,12 @@ import android.view.Window;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.EditText;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
@@ -79,6 +85,8 @@ public class SettingsActivity extends Activity {
     private Switch autoStartOnDeviceLockToggle;
     private Switch autoStartOnBootToggle;
     private Switch autoStartOnWakeToggle;
+    private Switch wakeOnTrackChangeToggle;
+    private Switch autoStartOnIdleToggle;
     private TextView activityCapabilityNotice;
 
 
@@ -104,6 +112,7 @@ public class SettingsActivity extends Activity {
         LockBehaviorPreferences.isPreventionEnabled(this);
 
         Window window = getWindow();
+        window.setWindowAnimations(0);
         window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN);
         window.setStatusBarColor(SURFACE);
         window.setNavigationBarColor(SURFACE);
@@ -225,6 +234,7 @@ if (content != null) {
             refreshPermissionDependentToggles();
             LockScreenMonitorService.sync(this);
             NightScreenApplication.syncChargerReceiver(this);
+            syncAndroidDreamChargeSetting();
             ensureAutoStartNotificationPermission();
             updateDeviceCapabilityNotice();
         }
@@ -550,7 +560,15 @@ screenHeader.setVisibility(View.GONE);
         addCheck(content, getString(R.string.settings_activity_text_064), "autoStartOnBoot", false);
         addCheck(content, getString(R.string.settings_activity_text_065), "autoStartOnWake", false);
         addCheck(content, getString(R.string.settings_activity_text_066), "autoStartOnCharge", false);
+        addCheck(content, getString(R.string.settings_activity_text_270), "autoStartOnIdle", false);
+        addDiscreteSlider(content, getString(R.string.settings_activity_text_271),
+                new String[]{"חצי דק׳", "1 דק׳", "2 דק׳", "5 דק׳", "10 דק׳"},
+                new String[]{"30", "60", "120", "300", "600"}, "idleWaitSeconds");
         addCheck(content, getString(R.string.settings_activity_text_068), "noShutdownWhileCharging", false);
+        addCheck(content, getString(R.string.settings_activity_text_266), "wakeOnTrackChange", false);
+        addDiscreteSlider(content, getString(R.string.settings_activity_text_267),
+                new String[]{"5 שניות", "10 שניות", "15 שניות", "30 שניות"},
+                new String[]{"5", "10", "15", "30"}, "trackChangeWakeSeconds");
         addSegmentedChoices(content, getString(R.string.settings_activity_text_069),
                 new String[]{getString(R.string.settings_activity_text_070), getString(R.string.settings_activity_text_071), getString(R.string.settings_activity_text_072), getString(R.string.settings_activity_text_073)},
                 new String[]{"off", "percent", "icon", "icon_percent"},
@@ -593,60 +611,162 @@ screenHeader.setVisibility(View.GONE);
     }
 
     private void showExcludedAppsDialog() {
-        Intent launcher = new Intent(Intent.ACTION_MAIN);
-        launcher.addCategory(Intent.CATEGORY_LAUNCHER);
-        List<android.content.pm.ResolveInfo> resolved =
-                getPackageManager().queryIntentActivities(launcher, 0);
-        java.util.Map<String, CharSequence> labels = new java.util.TreeMap<>(
-                (left, right) -> {
-                    try {
-                        return getPackageManager().getApplicationLabel(
-                                getPackageManager().getApplicationInfo(left, 0)).toString()
-                                .compareToIgnoreCase(getPackageManager().getApplicationLabel(
-                                getPackageManager().getApplicationInfo(right, 0)).toString());
-                    } catch (Throwable ignored) {
-                        return left.compareToIgnoreCase(right);
-                    }
-                });
-        for (android.content.pm.ResolveInfo info : resolved) {
-            if (info.activityInfo == null) continue;
-            String packageName = info.activityInfo.packageName;
-            if (getPackageName().equals(packageName)) continue;
-            try {
-                CharSequence label = info.loadLabel(getPackageManager());
-                labels.put(packageName, label == null ? packageName : label);
-            } catch (Throwable ignored) {
-                labels.put(packageName, packageName);
-            }
+        PackageManager pm = getPackageManager();
+        List<ApplicationInfo> applications;
+        try {
+            applications = new ArrayList<>(
+                    pm.getInstalledApplications(PackageManager.GET_META_DATA));
+        } catch (Throwable ignored) {
+            applications = new ArrayList<>();
         }
-
-        List<String> packages = new ArrayList<>(labels.keySet());
-        List<String> names = new ArrayList<>();
-        boolean[] checked = new boolean[packages.size()];
+        applications.removeIf(info -> getPackageName().equals(info.packageName));
+        applications.sort((left, right) -> {
+            String leftName = String.valueOf(pm.getApplicationLabel(left));
+            String rightName = String.valueOf(pm.getApplicationLabel(right));
+            int byLabel = leftName.compareToIgnoreCase(rightName);
+            return byLabel != 0 ? byLabel : left.packageName.compareTo(right.packageName);
+        });
         Set<String> selected = new HashSet<>(
                 prefs.getStringSet("excludedForegroundPackages", Collections.emptySet()));
-        for (int i = 0; i < packages.size(); i++) {
-            names.add(String.valueOf(labels.get(packages.get(i))));
-            checked[i] = selected.contains(packages.get(i));
-        }
 
-        AlertDialog dialog = new AlertDialog.Builder(this)
-                .setTitle(getString(R.string.settings_activity_text_077))
-                .setMultiChoiceItems(names.toArray(new String[0]), checked,
-                        (d, which, isChecked) -> checked[which] = isChecked)
-                .setNegativeButton(getString(R.string.settings_activity_text_078), null)
-                .setPositiveButton(getString(R.string.settings_activity_text_079), (d, which) -> {
-                    Set<String> updated = new HashSet<>();
-                    for (int i = 0; i < packages.size(); i++) {
-                        if (checked[i]) updated.add(packages.get(i));
-                    }
-                    prefs.edit().putStringSet("excludedForegroundPackages", updated).apply();
-                })
-                .create();
+        LinearLayout panel = new LinearLayout(this);
+        panel.setOrientation(LinearLayout.VERTICAL);
+        panel.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        panel.setPadding(dp(16), dp(14), dp(16), dp(14));
+        panel.setBackground(roundOutline(CARD_SURFACE, dp(18), CARD_OUTLINE));
+        TextView title = textView(getString(R.string.settings_activity_text_077), 19, ON_SURFACE);
+        title.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD));
+        title.setGravity(Gravity.CENTER);
+        title.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        panel.addView(title, new LinearLayout.LayoutParams(-1, dp(34)));
+
+        EditText search = new EditText(this);
+        search.setSingleLine(true);
+        search.setTextSize(15);
+        search.setTextColor(ON_SURFACE);
+        search.setHintTextColor(MUTED);
+        search.setHint(getString(R.string.settings_activity_text_280));
+        search.setPadding(dp(12), 0, dp(12), 0);
+        search.setBackground(roundOutline(CONTROL_SURFACE, dp(10), OUTLINE));
+        LinearLayout.LayoutParams searchParams = new LinearLayout.LayoutParams(-1, dp(42));
+        searchParams.topMargin = dp(8);
+        panel.addView(search, searchParams);
+
+        ScrollView scroll = new ScrollView(this);
+        scroll.setVerticalScrollBarEnabled(false);
+        LinearLayout rows = new LinearLayout(this);
+        rows.setOrientation(LinearLayout.VERTICAL);
+        rows.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        scroll.addView(rows, new ScrollView.LayoutParams(-1, -2));
+        LinearLayout.LayoutParams scrollParams = new LinearLayout.LayoutParams(-1, 0, 1f);
+        scrollParams.topMargin = dp(10);
+        scrollParams.bottomMargin = dp(10);
+        panel.addView(scroll, scrollParams);
+
+        Runnable renderRows = () -> {
+            rows.removeAllViews();
+            String query = search.getText() == null ? ""
+                    : search.getText().toString().trim().toLowerCase(Locale.ROOT);
+            int shown = 0;
+            for (ApplicationInfo app : applications) {
+                String appLabel;
+                try { appLabel = String.valueOf(pm.getApplicationLabel(app)); }
+                catch (Throwable ignored) { appLabel = app.packageName; }
+                if (!query.isEmpty()
+                        && !appLabel.toLowerCase(Locale.ROOT).contains(query)
+                        && !app.packageName.toLowerCase(Locale.ROOT).contains(query)) continue;
+                LinearLayout row = new LinearLayout(this);
+                row.setOrientation(LinearLayout.HORIZONTAL);
+                row.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+                row.setGravity(Gravity.CENTER_VERTICAL);
+                row.setPadding(dp(8), dp(4), dp(8), dp(4));
+                row.setBackground(roundOutline(CONTROL_SURFACE, dp(9), CARD_OUTLINE));
+                LinearLayout.LayoutParams rowParams = new LinearLayout.LayoutParams(-1, dp(48));
+                rowParams.bottomMargin = dp(4);
+                rows.addView(row, rowParams);
+
+                android.widget.ImageView icon = new android.widget.ImageView(this);
+                try { icon.setImageDrawable(pm.getApplicationIcon(app)); }
+                catch (Throwable ignored) {
+                    icon.setImageResource(android.R.drawable.sym_def_app_icon);
+                }
+                icon.setScaleType(android.widget.ImageView.ScaleType.FIT_CENTER);
+                row.addView(icon, new LinearLayout.LayoutParams(dp(30), dp(30)));
+
+                CheckBox check = new CheckBox(this);
+                check.setText(appLabel);
+                check.setTextSize(14);
+                check.setTextColor(ON_SURFACE);
+                check.setSingleLine(true);
+                check.setEllipsize(android.text.TextUtils.TruncateAt.END);
+                check.setButtonTintList(new ColorStateList(
+                        new int[][]{new int[]{android.R.attr.state_checked}, new int[]{}},
+                        new int[]{ACCENT, MUTED}));
+                check.setChecked(selected.contains(app.packageName));
+                LinearLayout.LayoutParams checkParams =
+                        new LinearLayout.LayoutParams(0, -1, 1f);
+                checkParams.rightMargin = dp(7);
+                row.addView(check, checkParams);
+                check.setOnCheckedChangeListener((button, isChecked) -> {
+                    if (isChecked) selected.add(app.packageName);
+                    else selected.remove(app.packageName);
+                });
+                row.setOnClickListener(v -> check.setChecked(!check.isChecked()));
+                shown++;
+            }
+            if (shown == 0) {
+                TextView empty = textView(getString(R.string.settings_activity_text_281), 14, MUTED);
+                empty.setGravity(Gravity.CENTER);
+                rows.addView(empty, new LinearLayout.LayoutParams(-1, dp(72)));
+            }
+        };
+        renderRows.run();
+        search.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                renderRows.run();
+            }
+            @Override public void afterTextChanged(Editable s) { }
+        });
+
+        LinearLayout actions = new LinearLayout(this);
+        actions.setOrientation(LinearLayout.HORIZONTAL);
+        actions.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        actions.setGravity(Gravity.CENTER_VERTICAL);
+        TextView save = textView(getString(R.string.settings_activity_text_079), 15,
+                Color.rgb(7, 31, 49));
+        save.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD));
+        save.setGravity(Gravity.CENTER);
+        save.setBackground(roundOutline(ACCENT, dp(10), ACCENT));
+        save.setClickable(true);
+        TextView cancel = textView(getString(R.string.settings_activity_text_078), 15, ON_SURFACE);
+        cancel.setGravity(Gravity.CENTER);
+        cancel.setBackground(roundOutline(CONTROL_SURFACE, dp(10), OUTLINE));
+        cancel.setClickable(true);
+        LinearLayout.LayoutParams buttonParams = new LinearLayout.LayoutParams(0, dp(42), 1f);
+        actions.addView(save, buttonParams);
+        LinearLayout.LayoutParams cancelParams = new LinearLayout.LayoutParams(0, dp(42), 1f);
+        cancelParams.rightMargin = dp(8);
+        actions.addView(cancel, cancelParams);
+        panel.addView(actions, new LinearLayout.LayoutParams(-1, dp(42)));
+
+        AlertDialog dialog = new AlertDialog.Builder(this).setView(panel).create();
+        cancel.setOnClickListener(v -> dialog.dismiss());
+        save.setOnClickListener(v -> {
+            prefs.edit().putStringSet("excludedForegroundPackages",
+                    new HashSet<>(selected)).apply();
+            dialog.dismiss();
+        });
         dialog.show();
+        Window window = dialog.getWindow();
+        if (window != null) {
+            window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            android.util.DisplayMetrics metrics = getResources().getDisplayMetrics();
+            window.setLayout(Math.min(dp(460), metrics.widthPixels - dp(32)),
+                    Math.min(dp(560), metrics.heightPixels - dp(100)));
+        }
     }
 
-    
     private void buildAppearanceSettings() {
         addColorChoices(content, getString(R.string.settings_activity_text_080),
                 new String[]{getString(R.string.settings_activity_text_081), getString(R.string.settings_activity_text_082), getString(R.string.settings_activity_text_083), getString(R.string.settings_activity_text_084),
@@ -725,8 +845,10 @@ screenHeader.setVisibility(View.GONE);
             hourNames[hour] = String.format(Locale.US, "%02d:00", hour);
             hourValues[hour] = String.valueOf(hour);
         }
-        addSpinner(content, getString(R.string.settings_activity_text_123), hourNames, hourValues, "nightModeStartHour");
-        addSpinner(content, getString(R.string.settings_activity_text_124), hourNames, hourValues, "nightModeEndHour");
+        addInlineHourSelector(content, getString(R.string.settings_activity_text_268),
+                hourNames, hourValues, "nightModeStartHour");
+        addInlineHourSelector(content, getString(R.string.settings_activity_text_269),
+                hourNames, hourValues, "nightModeEndHour");
 
         addCheck(content, getString(R.string.settings_activity_text_125),
                 "batteryProtectionEnabled", false);
@@ -738,6 +860,8 @@ screenHeader.setVisibility(View.GONE);
         addCheck(content, getString(R.string.settings_activity_text_127),
                 "useAndroidDreamForCharging", getBool("useAndroidDreamForCharging", false));
 
+        addCheck(content, getString(R.string.settings_activity_text_129),
+                "preventAutoStartDuringUse", false);
         addCheck(content, getString(R.string.settings_activity_text_128),
                 "pauseWhenExcludedAppActive", false);
         if (currentSettingsGroup != null && currentSettingsGroup.getChildCount() > 1) {
@@ -747,8 +871,6 @@ screenHeader.setVisibility(View.GONE);
                 addExcludedAppsPicker((LinearLayout) exclusionCard);
             }
         }
-        addCheck(content, getString(R.string.settings_activity_text_129),
-                "preventAutoStartDuringUse", false);
         addCheck(content, getString(R.string.settings_activity_text_067),
                 "autoStartOnlyWhenLocked", false);
         addCheck(content, getString(R.string.settings_activity_text_130),
@@ -773,7 +895,9 @@ screenHeader.setVisibility(View.GONE);
                 }
                 if ("autoStartOnDeviceLock".equals(key) || "autoStartOnBoot".equals(key)
                         || "autoStartOnWake".equals(key)
-                        || "autoStartOnCharge".equals(key)) {
+                        || "autoStartOnCharge".equals(key)
+                        || "autoStartOnIdle".equals(key)
+                        || "idleWaitSeconds".equals(key)) {
                     return getString(R.string.settings_activity_text_135);
                 }
                 return getString(R.string.settings_activity_text_136);
@@ -968,6 +1092,9 @@ screenHeader.setVisibility(View.GONE);
         if ("autoStartOnlyWhenLocked".equals(key)) return getString(R.string.settings_activity_text_154);
         if ("preventAutoStartDuringUse".equals(key)) return getString(R.string.settings_activity_text_155);
         if ("pauseWhenExcludedAppActive".equals(key)) return getString(R.string.settings_activity_text_156);
+        if ("nightModeStartHour".equals(key) || "nightModeEndHour".equals(key)) return "";
+        if ("wakeOnTrackChange".equals(key)) return getString(R.string.settings_activity_text_272);
+        if ("autoStartOnIdle".equals(key)) return getString(R.string.settings_activity_text_273);
         if ("fontWeight".equals(key)) return getString(R.string.settings_activity_text_157);
         if ("clockDatePosition".equals(key)) return getString(R.string.settings_activity_text_158);
         if ("screenSaverDuration".equals(key)) return getString(R.string.settings_activity_text_159);
@@ -977,6 +1104,8 @@ screenHeader.setVisibility(View.GONE);
         if ("autoStartOnBoot".equals(key)) return getString(R.string.settings_activity_text_163);
         if ("autoStartOnWake".equals(key)) return getString(R.string.settings_activity_text_164);
         if ("autoStartOnCharge".equals(key)) return getString(R.string.settings_activity_text_165);
+        if ("wakeOnTrackChange".equals(key)) return getString(R.string.settings_activity_text_274);
+        if ("autoStartOnIdle".equals(key)) return getString(R.string.settings_activity_text_275);
         if ("noShutdownWhileCharging".equals(key)) return getString(R.string.settings_activity_text_166);
         if ("screenBackgroundColor".equals(key)) return getString(R.string.settings_activity_text_167);
         if ("screenBrightness".equals(key)) return getString(R.string.settings_activity_text_168);
@@ -1238,6 +1367,8 @@ screenHeader.setVisibility(View.GONE);
         if ("autoStartOnDeviceLock".equals(key)) autoStartOnDeviceLockToggle = toggle;
         if ("autoStartOnBoot".equals(key)) autoStartOnBootToggle = toggle;
         if ("autoStartOnWake".equals(key)) autoStartOnWakeToggle = toggle;
+        if ("wakeOnTrackChange".equals(key)) wakeOnTrackChangeToggle = toggle;
+        if ("autoStartOnIdle".equals(key)) autoStartOnIdleToggle = toggle;
         toggle.setChecked(getBool(key, defaultValue));
         if (Build.VERSION.SDK_INT >= 21) {
             toggle.setThumbTintList(new ColorStateList(
@@ -1288,10 +1419,13 @@ screenHeader.setVisibility(View.GONE);
                     requestChargerOverlayPermission();
                 }
             } else if ("autoStartOnCharge".equals(key)) {
-                if (checked && getBool("useAndroidDreamForCharging", false)) {
+                if (checked && getBool("useAndroidDreamForCharging", false)
+                        && !AndroidDreamSettings.isReadyForCharging(this)) {
+                    prefs.edit().putBoolean("autoStartOnCharge", false).apply();
+                    toggle.setChecked(false);
                     openingSystemSettingsForAutoStart = true;
                     AppToast.makeText(this,
-                            getString(R.string.settings_activity_text_229),
+                            getString(R.string.settings_activity_text_276),
                             Toast.LENGTH_LONG).show();
                     try {
                         startActivity(new Intent(Settings.ACTION_DREAM_SETTINGS));
@@ -1352,12 +1486,59 @@ screenHeader.setVisibility(View.GONE);
                 // Keep the same persistent notification for every enabled mode.
                 // Actual event subscriptions remain independently gated.
                 LockScreenMonitorService.sync(this);
+            } else if ("wakeOnTrackChange".equals(key)) {
+                if (checked && !getBool("showPlayer", false)) {
+                    prefs.edit().putBoolean(key, false).apply();
+                    toggle.setChecked(false);
+                    AppToast.makeText(this,
+                            getString(R.string.settings_activity_text_277),
+                            Toast.LENGTH_LONG).show();
+                } else if (checked && !hasNotificationAccess()) {
+                    prefs.edit().putBoolean(key, false).apply();
+                    toggle.setChecked(false);
+                    AppToast.makeText(this,
+                            getString(R.string.settings_activity_text_278),
+                            Toast.LENGTH_LONG).show();
+                    openNotificationAccessSettings();
+                } else if (checked && !hasBackgroundActivityStartPermission()) {
+                    prefs.edit().putBoolean(key, false).apply();
+                    toggle.setChecked(false);
+                    AppToast.makeText(this,
+                            getString(R.string.settings_activity_text_282),
+                            Toast.LENGTH_LONG).show();
+                    openBackgroundActivityStartPermissionSettings();
+                }
+            } else if ("autoStartOnIdle".equals(key)) {
+                if (checked && !isIdleAccessibilityEnabled()) {
+                    prefs.edit().putBoolean(key, false).apply();
+                    toggle.setChecked(false);
+                    openingSystemSettingsForAutoStart = true;
+                    AppToast.makeText(this,
+                            getString(R.string.settings_activity_text_279),
+                            Toast.LENGTH_LONG).show();
+                    try { startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)); }
+                    catch (Throwable ignored) { }
+                } else if (checked && !hasBackgroundActivityStartPermission()) {
+                    prefs.edit().putBoolean(key, false).apply();
+                    toggle.setChecked(false);
+                    openingSystemSettingsForAutoStart = true;
+                    AppToast.makeText(this,
+                            getString(R.string.settings_activity_text_282),
+                            Toast.LENGTH_LONG).show();
+                    openBackgroundActivityStartPermissionSettings();
+                }
             } else if ("showPlayer".equals(key)) {
                 if (checked && !hasNotificationAccess()) {
                     prefs.edit().putBoolean("showPlayerPermissionPending", true).apply();
                     requestPlayerNotificationAccessIfNeeded();
                 } else {
                     prefs.edit().putBoolean("showPlayerPermissionPending", false).apply();
+                }
+                if (!checked && getBool("wakeOnTrackChange", false)) {
+                    prefs.edit().putBoolean("wakeOnTrackChange", false).apply();
+                    if (wakeOnTrackChangeToggle != null) {
+                        wakeOnTrackChangeToggle.setChecked(false);
+                    }
                 }
             } else if (("pauseWhenExcludedAppActive".equals(key)
                     || "preventAutoStartDuringUse".equals(key))
@@ -1509,7 +1690,7 @@ screenHeader.setVisibility(View.GONE);
         final int[] responsiveTextWidths = new int[names.length];
         final int[] responsiveExpandedWidths = new int[names.length];
         int initial = selectedIndex(key, values);
-        int optionTileHeight = "clockDialStyle".equals(key) ? 116 : 37;
+        int optionTileHeight = "clockDialStyle".equals(key) ? 92 : 37;
 
         for (int i = 0; i < names.length; i++) {
             final int index = i;
@@ -1546,7 +1727,7 @@ screenHeader.setVisibility(View.GONE);
                 dialPreview.setColors(ON_SURFACE, CARD_SURFACE);
                 dialPreview.setDialStyle(values[i]);
                 previewContent.addView(dialPreview,
-                        new LinearLayout.LayoutParams(dp(84), dp(84)));
+                        new LinearLayout.LayoutParams(dp(60), dp(60)));
                 option.setGravity(Gravity.CENTER);
                 option.setTextSize(12);
                 previewContent.addView(option,
@@ -1860,10 +2041,20 @@ screenHeader.setVisibility(View.GONE);
                 });
         customColorCell.setClickable(true);
         customColorCell.setFocusable(true);
+        customColorCell.setClipChildren(false);
+        customColorCell.setClipToPadding(false);
         customColorCell.setOnClickListener(v -> openCustomColorPicker.run());
         customCaption.setClickable(true);
         customCaption.setFocusable(true);
+        customCaption.setContentDescription(getString(R.string.settings_activity_text_243));
         customCaption.setOnClickListener(v -> openCustomColorPicker.run());
+        // The label is positioned left of the swatch and extends outside the narrow swatch
+        // cell; make the full custom-color row a direct hit target as well.
+        customColorRow.setClickable(true);
+        customColorRow.setFocusable(true);
+        customColorRow.setClipChildren(false);
+        customColorRow.setClipToPadding(false);
+        customColorRow.setOnClickListener(v -> openCustomColorPicker.run());
 
         customColorRow.addView(customColorCell,
                 new LinearLayout.LayoutParams(0, dp(42), 1f));
@@ -2068,13 +2259,50 @@ screenHeader.setVisibility(View.GONE);
         if (autoStartOnWakeToggle != null) {
             autoStartOnWakeToggle.setChecked(getBool("autoStartOnWake", false));
         }
+        if (wakeOnTrackChangeToggle != null) {
+            wakeOnTrackChangeToggle.setChecked(getBool("wakeOnTrackChange", false));
+        }
+        if (autoStartOnIdleToggle != null) {
+            autoStartOnIdleToggle.setChecked(getBool("autoStartOnIdle", false));
+        }
     }
 
     private boolean isAutoStartSetting(String key) {
         return "autoStartOnCharge".equals(key)
                 || "autoStartOnDeviceLock".equals(key)
                 || "autoStartOnBoot".equals(key)
-                || "autoStartOnWake".equals(key);
+                || "autoStartOnWake".equals(key)
+                || "autoStartOnIdle".equals(key);
+    }
+
+    private void syncAndroidDreamChargeSetting() {
+        if (!getBool("useAndroidDreamForCharging", false)
+                || !getBool("autoStartOnCharge", false)
+                || AndroidDreamSettings.isReadyForCharging(this)) return;
+        prefs.edit().putBoolean("autoStartOnCharge", false).apply();
+        if (autoStartOnChargeToggle != null) autoStartOnChargeToggle.setChecked(false);
+        LockScreenMonitorService.sync(this);
+        NightScreenApplication.syncChargerReceiver(this);
+    }
+
+    private boolean isIdleAccessibilityEnabled() {
+        return IdleScreensaverAccessibilityService.isEnabled(this);
+    }
+
+    private boolean hasBackgroundActivityStartPermission() {
+        return Build.VERSION.SDK_INT < 29 || Settings.canDrawOverlays(this);
+    }
+
+    private void openBackgroundActivityStartPermissionSettings() {
+        try {
+            Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                    android.net.Uri.parse("package:" + getPackageName()));
+            startActivity(intent);
+        } catch (Throwable error) {
+            AppToast.makeText(this,
+                    getString(R.string.settings_activity_text_283),
+                    Toast.LENGTH_LONG).show();
+        }
     }
 
     /**
@@ -2225,6 +2453,7 @@ screenHeader.setVisibility(View.GONE);
                     || "playerHorizontalOffset".equals(key)
                     || "batteryProtectionThreshold".equals(key)
                     || "nightModeStartHour".equals(key) || "nightModeEndHour".equals(key)
+                    || "trackChangeWakeSeconds".equals(key) || "idleWaitSeconds".equals(key)
                     || "playerSize".equals(key) || "frameWidth".equals(key)
                     || "frameRadius".equals(key) || "screenBrightness".equals(key)) {
                 editor.putInt(key, Integer.parseInt(value));
@@ -2280,6 +2509,82 @@ screenHeader.setVisibility(View.GONE);
         badge.addView(graphic, graphicParams);
         graphic.setContentDescription(settingLabel);
         return badge;
+    }
+
+    private void addInlineHourSelector(LinearLayout parent, String label,
+                                       String[] names, String[] values, String key) {
+        LinearLayout card = addSettingCard(parent, label, key);
+        LinearLayout header = (LinearLayout) card.getChildAt(0);
+        header.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        if (header.getChildCount() > 1) header.removeViewAt(header.getChildCount() - 1);
+        LinearLayout textBlock = (LinearLayout) header.getChildAt(0);
+        if (textBlock.getChildCount() > 1) textBlock.removeViewAt(1);
+        TextView title = (TextView) textBlock.getChildAt(0);
+        title.setText(label);
+        title.setTextSize(15);
+        title.setSingleLine(true);
+        LinearLayout.LayoutParams textParams =
+                (LinearLayout.LayoutParams) textBlock.getLayoutParams();
+        textParams.width = 0;
+        textParams.weight = 1f;
+        textParams.rightMargin = dp(6);
+        textBlock.setLayoutParams(textParams);
+
+        int selected = selectedIndex(key, values);
+        Spinner spinner = new Spinner(this);
+        spinner.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        spinner.setContentDescription(label);
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>(
+                this, android.R.layout.simple_spinner_item, names) {
+            @Override public View getView(int position, View convertView,
+                                          android.view.ViewGroup parent) {
+                TextView view = convertView instanceof TextView
+                        ? (TextView) convertView : new TextView(SettingsActivity.this);
+                view.setText(names[position]);
+                styleSpinnerText(view, true, false);
+                return view;
+            }
+            @Override public View getDropDownView(int position, View convertView,
+                                                  android.view.ViewGroup parent) {
+                TextView view = new TextView(SettingsActivity.this);
+                view.setText(names[position]);
+                styleDropdownOptionText(view, position == selectedIndex(key, values));
+                view.setLayoutParams(new android.widget.AbsListView.LayoutParams(-1, dp(39)));
+                return view;
+            }
+        };
+        spinner.setAdapter(adapter);
+        spinner.setPadding(dp(4), 0, dp(4), 0);
+        spinner.setBackgroundColor(Color.TRANSPARENT);
+        spinner.setDropDownWidth(dp(128));
+        spinner.setSelection(selected, false);
+
+        FrameLayout selector = new FrameLayout(this);
+        selector.setBackground(roundOutline(ACCENT, dp(10), ACCENT));
+        selector.addView(spinner, new FrameLayout.LayoutParams(-1, -1));
+        View chevron = makeIconGlyph("chevron", Color.rgb(7, 31, 49));
+        FrameLayout.LayoutParams chevronParams =
+                new FrameLayout.LayoutParams(dp(16), dp(16),
+                        Gravity.LEFT | Gravity.CENTER_VERTICAL);
+        chevronParams.leftMargin = dp(5);
+        selector.addView(chevron, chevronParams);
+        header.addView(selector, new LinearLayout.LayoutParams(dp(112), dp(40)));
+
+        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            private boolean initialSelectionPending = true;
+            private int lastPosition = selected;
+            @Override public void onItemSelected(AdapterView<?> parentView, View view,
+                                                 int position, long id) {
+                if (initialSelectionPending) {
+                    initialSelectionPending = false;
+                    return;
+                }
+                if (position == lastPosition) return;
+                lastPosition = position;
+                persistOption(key, values[position]);
+            }
+            @Override public void onNothingSelected(AdapterView<?> parentView) { }
+        });
     }
 
     private void addSpinner(LinearLayout parent, String label, String[] names,
@@ -2497,6 +2802,7 @@ screenHeader.setVisibility(View.GONE);
                 || "playerHorizontalOffset".equals(key)
                 || "batteryProtectionThreshold".equals(key)
                 || "nightModeStartHour".equals(key) || "nightModeEndHour".equals(key)
+                || "trackChangeWakeSeconds".equals(key) || "idleWaitSeconds".equals(key)
                 || "playerSize".equals(key) || "frameWidth".equals(key)
                 || "frameRadius".equals(key) || "screenBrightness".equals(key)) {
             int fallback = "clockDateSize".equals(key) ? 84

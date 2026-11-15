@@ -31,8 +31,9 @@ public final class PermissionDependencySync {
                 prefs.getBoolean("autoStartOnDeviceLock", false) && overlayRequired;
         boolean disableChargeStart =
                 prefs.getBoolean("autoStartOnCharge", false)
-                        && !prefs.getBoolean("useAndroidDreamForCharging", false)
-                        && overlayRequired;
+                        && (prefs.getBoolean("useAndroidDreamForCharging", false)
+                        ? !AndroidDreamSettings.isReadyForCharging(context)
+                        : overlayRequired);
         boolean disableBootStart =
                 prefs.getBoolean("autoStartOnBoot", false) && overlayRequired;
         boolean disableWakeStart =
@@ -43,10 +44,19 @@ public final class PermissionDependencySync {
                 prefs.getBoolean("preventAutoStartDuringUse", false) && !usageAccess;
         boolean disableExcludedApps =
                 prefs.getBoolean("pauseWhenExcludedAppActive", false) && !usageAccess;
+        boolean disableTrackWake =
+                prefs.getBoolean("wakeOnTrackChange", false)
+                        && (overlayRequired || !notificationAccess
+                        || !prefs.getBoolean("showPlayer", false));
+        boolean disableIdleStart =
+                prefs.getBoolean("autoStartOnIdle", false)
+                        && (overlayRequired
+                        || !IdleScreensaverAccessibilityService.isEnabled(context));
 
         if (!disableLockStart && !disableChargeStart && !disableBootStart
                 && !disableWakeStart && !disablePlayer
-                && !disableUseProtection && !disableExcludedApps) return "";
+                && !disableUseProtection && !disableExcludedApps
+                && !disableIdleStart && !disableTrackWake) return "";
 
         SharedPreferences.Editor editor = prefs.edit();
         if (disableLockStart) editor.putBoolean("autoStartOnDeviceLock", false)
@@ -59,6 +69,9 @@ public final class PermissionDependencySync {
                 .putBoolean("showPlayerPermissionPending", false);
         if (disableUseProtection) editor.putBoolean("preventAutoStartDuringUse", false);
         if (disableExcludedApps) editor.putBoolean("pauseWhenExcludedAppActive", false);
+        if (disableIdleStart) editor.putBoolean("autoStartOnIdle", false);
+        if (disableTrackWake) editor.putBoolean("wakeOnTrackChange", false);
+        if (disablePlayer) editor.putBoolean("wakeOnTrackChange", false);
         editor.apply();
         if (disableLockStart) {
             MonitorSettingsSnapshot.resetDeviceLockActivation(context);
@@ -89,6 +102,12 @@ public final class PermissionDependencySync {
         }
         if (disableUseProtection || disableExcludedApps) {
             messages.add(context.getString(R.string.permission_sync_text_006));
+        }
+        if (disableIdleStart) {
+            messages.add(context.getString(R.string.permission_sync_text_007));
+        }
+        if (disableTrackWake) {
+            messages.add(context.getString(R.string.permission_sync_text_008));
         }
         return android.text.TextUtils.join("\n", messages);
     }

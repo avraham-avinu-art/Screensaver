@@ -74,6 +74,12 @@ public class MainActivity extends Activity {
             "com.avrahamart.nightscreen.EXTRA_OPENED_BY_WAKE";
     public static final String EXTRA_OPENED_BY_BOOT =
             "com.avrahamart.nightscreen.EXTRA_OPENED_BY_BOOT";
+    public static final String EXTRA_OPENED_BY_TRACK_CHANGE =
+            "com.avrahamart.nightscreen.EXTRA_OPENED_BY_TRACK_CHANGE";
+    public static final String EXTRA_OPENED_BY_IDLE =
+            "com.avrahamart.nightscreen.EXTRA_OPENED_BY_IDLE";
+    public static final String EXTRA_TRACK_CHANGE_WAKE_SECONDS =
+            "com.avrahamart.nightscreen.EXTRA_TRACK_CHANGE_WAKE_SECONDS";
     public static final String ACTION_FINISH_FROM_TILE =
             "com.screensaver.action.FINISH_FROM_TILE";
     private static volatile boolean mainActivityResumed = false;
@@ -332,6 +338,7 @@ public class MainActivity extends Activity {
             applyChargingLaunchFlags(getIntent());
             applyDeviceLockLaunchFlags(getIntent());
             applyWakeLaunchFlags(getIntent());
+            applyTrackChangeLaunchFlags(getIntent());
             applyPreventLockWhileActivePreference();
             hideSystemUi();
             buildUi();
@@ -372,12 +379,15 @@ public class MainActivity extends Activity {
         if (intent != null && (intent.getBooleanExtra(EXTRA_OPENED_BY_CHARGER, false)
                 || intent.getBooleanExtra(EXTRA_OPENED_BY_DEVICE_LOCK, false)
                 || intent.getBooleanExtra(EXTRA_OPENED_BY_WAKE, false)
-                || intent.getBooleanExtra(EXTRA_OPENED_BY_BOOT, false))) {
+                || intent.getBooleanExtra(EXTRA_OPENED_BY_BOOT, false)
+                || intent.getBooleanExtra(EXTRA_OPENED_BY_TRACK_CHANGE, false)
+                || intent.getBooleanExtra(EXTRA_OPENED_BY_IDLE, false))) {
             waitingForScreenWakeAfterActivityEnd = false;
             lockScreenContinuationArmed = false;
             applyChargingLaunchFlags(intent);
             applyDeviceLockLaunchFlags(intent);
             applyWakeLaunchFlags(intent);
+            applyTrackChangeLaunchFlags(intent);
             applyPreventLockWhileActivePreference();
             hideSystemUi();
             scheduleAutoOff(true);
@@ -401,6 +411,15 @@ public class MainActivity extends Activity {
 
     private void applyWakeLaunchFlags(Intent intent) {
         if (intent == null || !intent.getBooleanExtra(EXTRA_OPENED_BY_WAKE, false)) return;
+        if (Build.VERSION.SDK_INT >= 27) setTurnScreenOn(true);
+        getWindow().addFlags(
+                android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
+                        | android.view.WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON);
+    }
+
+    private void applyTrackChangeLaunchFlags(Intent intent) {
+        if (intent == null
+                || !intent.getBooleanExtra(EXTRA_OPENED_BY_TRACK_CHANGE, false)) return;
         if (Build.VERSION.SDK_INT >= 27) setTurnScreenOn(true);
         getWindow().addFlags(
                 android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
@@ -448,7 +467,9 @@ public class MainActivity extends Activity {
         boolean openedByDeviceLock = getIntent() != null
                 && getIntent().getBooleanExtra(EXTRA_OPENED_BY_DEVICE_LOCK, false);
         boolean openedByDeepWake = getIntent() != null
-                && getIntent().getBooleanExtra(EXTRA_OPENED_BY_WAKE, false);
+                && (getIntent().getBooleanExtra(EXTRA_OPENED_BY_WAKE, false)
+                || getIntent().getBooleanExtra(EXTRA_OPENED_BY_TRACK_CHANGE, false)
+                || getIntent().getBooleanExtra(EXTRA_OPENED_BY_IDLE, false));
         if (!getBool("continueOnLockScreen", false)) {
             lockScreenContinuationArmed = false;
         }
@@ -680,10 +701,12 @@ public class MainActivity extends Activity {
 
         chargingBatteryView = new BatteryChargeIndicatorView(this);
         chargingBatteryView.setVisibility(View.GONE);
-        LinearLayout.LayoutParams chargingBatteryParams =
-                new LinearLayout.LayoutParams(-2, dp(28));
-        chargingBatteryParams.topMargin = dp(5);
-        clockBlock.addView(chargingBatteryView, chargingBatteryParams);
+        FrameLayout.LayoutParams chargingBatteryParams =
+                new FrameLayout.LayoutParams(-2, dp(28),
+                        Gravity.TOP | Gravity.RIGHT);
+        chargingBatteryParams.rightMargin = dp(12);
+        chargingBatteryParams.topMargin = dp(12);
+        stage.addView(chargingBatteryView, chargingBatteryParams);
 
         int initialClockBlockHeight = initialClockHeight + initialDateHeight * 2
                 + dp(dateClockGapDp(initialClockSize)) + dp(2);
@@ -1487,8 +1510,11 @@ public class MainActivity extends Activity {
 
         int effectiveClockSize = effectiveClockDateSize(fontFamily, clockDateSize);
         boolean analogClock = "analog".equals(getString("clockDisplayMode", "digital"));
-        int analogClockDiameter = Math.max(dp(144),
-                dp(Math.round(effectiveClockSize * 1.95f)));
+        String analogDialStyle = getString("clockDialStyle", "classic");
+        float analogSizeMultiplier = "numbers_only".equals(analogDialStyle)
+                ? 2.50f : 2.25f;
+        int analogClockDiameter = Math.max(dp(170),
+                dp(Math.round(effectiveClockSize * analogSizeMultiplier)));
         if (analogClockView != null) {
             analogClockView.setDialStyle(getString("clockDialStyle", "classic"));
             analogClockView.setColors(color, getScreenBackgroundColor());
@@ -1540,7 +1566,7 @@ public class MainActivity extends Activity {
         int gregorianTopMargin = 0;
         int hebrewTopMargin = 0;
         if (showGregorian) {
-            gregorianTopMargin = analogClock ? clockToDateGapPx
+            gregorianTopMargin = analogClock ? 0
                     : visualGapMarginPx(
                             timeText, clockH, "0123456789:00",
                             gregorianText, gregorianH, getString(R.string.main_activity_text_008),
@@ -1553,7 +1579,7 @@ public class MainActivity extends Activity {
                         hebrewText, hebrewH, getString(R.string.main_activity_text_009),
                         dateToDateGapPx);
             } else if (analogClock) {
-                hebrewTopMargin = clockToDateGapPx;
+                hebrewTopMargin = 0;
             } else {
                 hebrewTopMargin = visualGapMarginPx(
                         timeText, clockH, "0123456789:00",
@@ -1583,11 +1609,7 @@ public class MainActivity extends Activity {
                     + (showHebrew ? hebrewH : 0);
             int visibleMargins = (showGregorian ? gregorianTopMargin : 0)
                     + (showHebrew ? hebrewTopMargin : 0);
-            int batteryRowHeight = chargingBatteryView != null
-                    && chargingBatteryView.getVisibility() == View.VISIBLE ? dp(28) : 0;
-            int batteryRowMargin = batteryRowHeight > 0 ? dp(5) : 0;
             cp.height = clockH + dateRowsHeight + visibleMargins
-                    + batteryRowHeight + batteryRowMargin
                     + (visibleDates > 0 ? dp(2) : 0);
             cb.setLayoutParams(cp);
             cb.requestLayout();
@@ -2114,6 +2136,22 @@ public class MainActivity extends Activity {
         if (settingsDialogOpen && !restartCountdown) {
             return;
         }
+        Intent launchIntent = getIntent();
+        if (launchIntent != null
+                && launchIntent.getBooleanExtra(EXTRA_OPENED_BY_TRACK_CHANGE, false)) {
+            int seconds = launchIntent.getIntExtra(EXTRA_TRACK_CHANGE_WAKE_SECONDS, 10);
+            long durationMs = Math.max(1, Math.min(60, seconds)) * 1000L;
+            if (restartCountdown || activityDeadlineElapsedRealtime <= 0L) {
+                activityDeadlineElapsedRealtime = SystemClock.elapsedRealtime() + durationMs;
+            }
+            long remaining = activityDeadlineElapsedRealtime - SystemClock.elapsedRealtime();
+            if (remaining <= 0L) {
+                exitApplicationAtSelectedTime();
+            } else {
+                handler.postDelayed(autoOffRunnable, remaining);
+            }
+            return;
+        }
         String value = getString("screenSaverDuration", "device");
         boolean settingChanged = !value.equals(lastScheduledDurationValue);
         if (settingChanged) {
@@ -2262,6 +2300,14 @@ public class MainActivity extends Activity {
         if (isFinishing()) return;
         handler.removeCallbacks(autoOffRunnable);
         handler.removeCallbacks(screenOnReleaseRunnable);
+        if (getIntent() != null
+                && getIntent().getBooleanExtra(EXTRA_OPENED_BY_TRACK_CHANGE, false)) {
+            activityDeadlineElapsedRealtime = 0L;
+            waitingForScreenWakeAfterActivityEnd = false;
+            lockScreenContinuationArmed = false;
+            finish();
+            return;
+        }
 
         long selectedDeadline = activityDeadlineElapsedRealtime;
         String durationValue = getString("screenSaverDuration", "device");
@@ -2725,6 +2771,7 @@ public class MainActivity extends Activity {
         handler.removeCallbacks(autoOffRunnable);
         try {
             startActivity(new Intent(this, SettingsActivity.class));
+            overridePendingTransition(0, 0);
         } catch (Throwable t) {
             settingsDialogOpen = false;
             settingsOpenedElapsedRealtime = 0L;
