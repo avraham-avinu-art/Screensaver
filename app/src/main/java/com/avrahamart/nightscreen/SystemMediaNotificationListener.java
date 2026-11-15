@@ -261,8 +261,6 @@ public class SystemMediaNotificationListener extends NotificationListenerService
                 | Intent.FLAG_ACTIVITY_CLEAR_TOP
                 | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         launch.putExtra(MainActivity.EXTRA_OPENED_BY_TRACK_CHANGE, true);
-        launch.putExtra(MainActivity.EXTRA_TRACK_CHANGE_WAKE_SECONDS,
-                Math.max(1, Math.min(60, settings.trackChangeWakeSeconds)));
         try {
             startActivity(launch);
         } catch (Throwable error) {
