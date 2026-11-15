@@ -386,7 +386,7 @@ screenTitle.setText(getString(R.string.settings_activity_text_001));
                 ? title : title + ". " + description);
 
         FrameLayout iconBadge = new FrameLayout(this);
-        iconBadge.setBackground(roundOutline(ICON_SURFACE, dp(24), ACCENT));
+        iconBadge.setBackground(circleOutline(ICON_SURFACE, ACCENT));
         View glyph = makeIconGlyph(iconName, ACCENT);
         glyph.setTranslationX(0f);
         glyph.setTranslationY(0f);
@@ -3458,6 +3458,14 @@ screenHeader.setVisibility(View.GONE);
         GradientDrawable bg = pillBackground(color, radius);
         bg.setStroke(dp(1), strokeColor);
         return bg;
+    }
+
+    private GradientDrawable circleOutline(int color, int strokeColor) {
+        GradientDrawable circle = new GradientDrawable();
+        circle.setShape(GradientDrawable.OVAL);
+        circle.setColor(color);
+        circle.setStroke(dp(2), strokeColor);
+        return circle;
     }
 
     private int colorValue(String value) {
