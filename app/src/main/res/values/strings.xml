@@ -441,7 +441,6 @@
     <string name="notification_listener_service_label" formatted="false">Night Screen</string>
 
     <string name="settings_activity_text_266" formatted="false">הדלקה במעבר שיר</string>
-    <string name="settings_activity_text_267" formatted="false">משך הצגת השומר מסך</string>
     <string name="settings_activity_text_268" formatted="false">מהשעה:</string>
     <string name="settings_activity_text_269" formatted="false">עד שעה:</string>
     <string name="settings_activity_text_270" formatted="false">הפעלה בחוסר פעילות</string>
@@ -458,6 +457,8 @@
     <string name="settings_activity_text_281" formatted="false">לא נמצאו אפליקציות מתאימות.</string>
     <string name="settings_activity_text_282" formatted="false">כדי להפעיל תכונה אוטומטית כשהאפליקציה ברקע, יש לאפשר לשומר מסך הרשאת תצוגה מעל אפליקציות אחרות.</string>
     <string name="settings_activity_text_283" formatted="false">לא ניתן לפתוח את הגדרות ההרשאה. פתח בהגדרות Android את „הצגה מעל אפליקציות אחרות”.</string>
+    <string name="settings_activity_text_284" formatted="false">משך הצגה בתחילת שיר</string>
+    <string name="settings_activity_text_285" formatted="false">קובע את משך הצגת פרטי הנגן ופקדי הנגן בתחילת שיר, וגם את משך הדלקת המסך והצגת שומר המסך במעבר שיר.</string>
 
     <string name="permissions_activity_text_047" formatted="false">שירות נגישות לזיהוי חוסר פעילות</string>
     <string name="permissions_activity_text_048" formatted="false">השירות מזהה נגיעות במסך ומעברים בין חלונות כדי להפעיל את שומר המסך לאחר פרק הזמן שנבחר, ורק כאשר מסך הבית נמצא בחזית. הוא אינו קורא תוכן של חלונות ואינו מבצע פעולות במכשיר.</string>
