@@ -1140,56 +1140,107 @@ screenHeader.setVisibility(View.GONE);
     }
 
     private void showResetAllSettingsConfirmation() {
+        AlertDialog dialog = new AlertDialog.Builder(this).create();
+
         LinearLayout panel = new LinearLayout(this);
         panel.setOrientation(LinearLayout.VERTICAL);
         panel.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        panel.setPadding(dp(20), dp(18), dp(20), dp(16));
-        panel.setBackground(roundOutline(CARD_SURFACE, dp(18), CARD_OUTLINE));
+        panel.setTextDirection(View.TEXT_DIRECTION_RTL);
+        panel.setPadding(dp(18), dp(14), dp(18), dp(13));
+        panel.setBackground(roundOutline(CARD_SURFACE, dp(22), CARD_OUTLINE));
+        if (Build.VERSION.SDK_INT >= 21) panel.setElevation(dp(3));
 
-        TextView title = textView(getString(R.string.settings_activity_text_290), 19, ON_SURFACE);
-        title.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD));
-        title.setGravity(Gravity.CENTER);
-        title.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-        panel.addView(title, new LinearLayout.LayoutParams(-1, dp(32)));
+        LinearLayout heading = new LinearLayout(this);
+        heading.setOrientation(LinearLayout.HORIZONTAL);
+        heading.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        heading.setGravity(Gravity.CENTER_VERTICAL);
+
+        FrameLayout iconShell = new FrameLayout(this);
+        iconShell.setBackgroundColor(Color.TRANSPARENT);
+        View resetIcon = makeIconGlyph("setting-reset-all", ACCENT);
+        iconShell.addView(resetIcon,
+                new FrameLayout.LayoutParams(dp(32), dp(32), Gravity.CENTER));
+        heading.addView(iconShell, new LinearLayout.LayoutParams(dp(46), dp(46)));
+
+        LinearLayout titleBlock = new LinearLayout(this);
+        titleBlock.setOrientation(LinearLayout.VERTICAL);
+        titleBlock.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        titleBlock.setGravity(Gravity.CENTER_VERTICAL);
+
+        TextView title = textView(
+                getString(R.string.settings_activity_text_290), 20, ON_SURFACE);
+        title.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        title.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        title.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
+        title.setIncludeFontPadding(false);
+        titleBlock.addView(title, new LinearLayout.LayoutParams(-1, -2));
+
+        TextView subtitle = textView(
+                getString(R.string.settings_activity_text_315), 14, MUTED);
+        subtitle.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        subtitle.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
+        subtitle.setIncludeFontPadding(false);
+        titleBlock.addView(subtitle, new LinearLayout.LayoutParams(-1, -2));
+
+        LinearLayout.LayoutParams titleBlockParams =
+                new LinearLayout.LayoutParams(0, -2, 1f);
+        titleBlockParams.rightMargin = dp(1);
+        heading.addView(titleBlock, titleBlockParams);
+        panel.addView(heading, new LinearLayout.LayoutParams(-1, -2));
+
+        View divider = new View(this);
+        divider.setBackgroundColor(CARD_OUTLINE);
+        LinearLayout.LayoutParams dividerParams =
+                new LinearLayout.LayoutParams(-1, dp(1));
+        dividerParams.topMargin = dp(9);
+        dividerParams.bottomMargin = dp(10);
+        panel.addView(divider, dividerParams);
 
         TextView message = textView(
                 getString(R.string.settings_activity_text_292), 15, ON_SURFACE);
-        message.setGravity(Gravity.CENTER);
-        message.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        message.setGravity(Gravity.RIGHT | Gravity.TOP);
+        message.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
         message.setTextDirection(View.TEXT_DIRECTION_RTL);
-        message.setPadding(dp(4), dp(8), dp(4), dp(8));
+        message.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
+        message.setLineSpacing(dp(3), 1.0f);
+        message.setPadding(dp(2), dp(2), dp(2), dp(4));
         panel.addView(message, new LinearLayout.LayoutParams(-1, -2));
 
         LinearLayout actions = new LinearLayout(this);
         actions.setOrientation(LinearLayout.HORIZONTAL);
         actions.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         actions.setGravity(Gravity.CENTER_VERTICAL);
-        LinearLayout.LayoutParams actionsParams =
-                new LinearLayout.LayoutParams(-1, dp(44));
-        actionsParams.topMargin = dp(10);
+        actions.setPadding(dp(12), 0, dp(12), 0);
 
         TextView confirm = textView(
-                getString(R.string.settings_activity_text_293), 15, Color.rgb(7, 31, 49));
-        confirm.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD));
+                getString(R.string.settings_activity_text_293), 16, Color.rgb(7, 31, 49));
         confirm.setGravity(Gravity.CENTER);
+        confirm.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD));
         confirm.setBackground(roundOutline(ACCENT, dp(10), ACCENT));
         confirm.setClickable(true);
         confirm.setFocusable(true);
-        actions.addView(confirm, new LinearLayout.LayoutParams(0, dp(42), 1f));
 
         TextView cancel = textView(
-                getString(R.string.settings_activity_text_078), 15, ON_SURFACE);
+                getString(R.string.settings_activity_text_078), 16, ON_SURFACE);
         cancel.setGravity(Gravity.CENTER);
         cancel.setBackground(roundOutline(CONTROL_SURFACE, dp(10), OUTLINE));
         cancel.setClickable(true);
         cancel.setFocusable(true);
+
+        LinearLayout.LayoutParams actionButtonParams =
+                new LinearLayout.LayoutParams(0, dp(40), 1f);
+        actions.addView(confirm, actionButtonParams);
         LinearLayout.LayoutParams cancelParams =
-                new LinearLayout.LayoutParams(0, dp(42), 1f);
-        cancelParams.rightMargin = dp(8);
+                new LinearLayout.LayoutParams(0, dp(40), 1f);
+        cancelParams.rightMargin = dp(9);
         actions.addView(cancel, cancelParams);
+
+        LinearLayout.LayoutParams actionsParams =
+                new LinearLayout.LayoutParams(-1, dp(40));
+        actionsParams.topMargin = dp(10);
         panel.addView(actions, actionsParams);
 
-        AlertDialog dialog = new AlertDialog.Builder(this).setView(panel).create();
+        dialog.setView(panel);
         confirm.setOnClickListener(v -> {
             dialog.dismiss();
             resetAllApplicationSettings();
@@ -1198,11 +1249,18 @@ screenHeader.setVisibility(View.GONE);
         dialog.setCancelable(true);
         dialog.setCanceledOnTouchOutside(true);
         dialog.show();
+
         Window window = dialog.getWindow();
         if (window != null) {
             window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-            int width = Math.min(dp(430), getResources().getDisplayMetrics().widthPixels - dp(32));
-            window.setLayout(width, -2);
+            window.addFlags(android.view.WindowManager.LayoutParams.FLAG_DIM_BEHIND);
+            android.util.DisplayMetrics metrics = getResources().getDisplayMetrics();
+            android.view.WindowManager.LayoutParams windowParams = window.getAttributes();
+            windowParams.width = Math.min(dp(430), metrics.widthPixels - dp(32));
+            windowParams.height = android.view.WindowManager.LayoutParams.WRAP_CONTENT;
+            windowParams.gravity = Gravity.CENTER;
+            windowParams.dimAmount = 0.62f;
+            window.setAttributes(windowParams);
         }
     }
 
