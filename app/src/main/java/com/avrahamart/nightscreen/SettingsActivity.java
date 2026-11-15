@@ -2226,23 +2226,16 @@ screenHeader.setVisibility(View.GONE);
     }
 
     private View makeIconGlyph(String iconName, int tint) {
-        int resourceId;
-        if ("activity-history".equals(iconName)) {
-            // The APK's original _N resource is the dedicated activity-time/history glyph.
-            resourceId = R.drawable.ic_settings_activity_history;
-        } else {
-            String resourceName = "icon_" + iconName.replace('-', '_');
-            resourceId = getResources().getIdentifier(resourceName, "drawable", getPackageName());
-            if (resourceId == 0 && iconName.startsWith("setting-")) {
-                throw new IllegalStateException("Missing dedicated setting icon: " + resourceName);
-            }
-            if (resourceId == 0) resourceId = R.drawable.icon_settings;
+        String resourceName = "icon_" + iconName.replace('-', '_');
+        int resourceId = getResources().getIdentifier(
+                resourceName, "drawable", getPackageName());
+        if (resourceId == 0) {
+            throw new IllegalStateException("Missing UI glyph resource: " + resourceName);
         }
+
         android.widget.ImageView image = new android.widget.ImageView(this);
         image.setImageResource(resourceId);
-        // These two symbols contain separate foreground/background colors.
-        // A whole-image tint would erase the play mark and the close X.
-        if (!"lock-play".equals(iconName) && !"close-circle".equals(iconName)) {
+        if (!"close-circle".equals(iconName)) {
             image.setColorFilter(tint);
         }
         image.setScaleType(android.widget.ImageView.ScaleType.FIT_CENTER);
@@ -2251,7 +2244,6 @@ screenHeader.setVisibility(View.GONE);
         return image;
     }
 
-    
     private FrameLayout makeSettingIconBadge(String settingKey, int size) {
         FrameLayout badge = new FrameLayout(this);
         badge.setBackground(roundOutline(ICON_SURFACE, dp(10), CARD_OUTLINE));
