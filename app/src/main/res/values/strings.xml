@@ -467,4 +467,34 @@
     <string name="permissions_activity_text_051" formatted="false">פתיחת הגדרות נגישות</string>
     <string name="permission_sync_text_007" formatted="false">ההפעלה בחוסר פעילות כובתה מפני שחסרה הרשאת נתוני שימוש או הרשאת תצוגה מעל אפליקציות.</string>
     <string name="permission_sync_text_008" formatted="false">הדלקה במעבר שיר כובתה מפני שחסרה גישה להתראות או הרשאת תצוגה מעל אפליקציות.</string>
+
+    <string name="settings_activity_text_286" formatted="false">אפליקציות משתמש</string>
+    <string name="settings_activity_text_287" formatted="false">אפליקציות מערכת</string>
+    <string name="settings_activity_text_288" formatted="false">טוען את רשימת האפליקציות…</string>
+    <string name="settings_activity_text_289" formatted="false">הגדרת שעות מצב לילה</string>
+    <string name="settings_activity_text_290" formatted="false">איפוס כל ההגדרות</string>
+    <string name="settings_activity_text_291" formatted="false">איפוס</string>
+    <string name="settings_activity_text_292" formatted="false">האם אתה בטוח שברצונך לאפס את כל הגדרות האפליקציה בחזרה לברירות המחדל?</string>
+    <string name="settings_activity_text_293" formatted="false">אישור</string>
+    <string name="settings_activity_text_294" formatted="false">ההגדרות אופסו לברירת המחדל.</string>
+    <string name="settings_activity_text_295" formatted="false">לא ניתן לאפס את ההגדרות. נסה שוב.</string>
+    <string name="settings_activity_text_296" formatted="false">חצי דק׳</string>
+    <string name="settings_activity_text_297" formatted="false">1 דק׳</string>
+    <string name="settings_activity_text_298" formatted="false">2 דק׳</string>
+    <string name="settings_activity_text_299" formatted="false">5 דק׳</string>
+    <string name="settings_activity_text_300" formatted="false">10 דק׳</string>
+    <string name="settings_activity_text_301" formatted="false">3 שניות</string>
+    <string name="settings_activity_text_302" formatted="false">6 שניות</string>
+    <string name="settings_activity_text_303" formatted="false">10 שניות</string>
+    <string name="settings_activity_text_304" formatted="false">15 שניות</string>
+    <string name="settings_activity_text_305" formatted="false">10%</string>
+    <string name="settings_activity_text_306" formatted="false">15%</string>
+    <string name="settings_activity_text_307" formatted="false">20%</string>
+    <string name="settings_activity_text_308" formatted="false">25%</string>
+    <string name="settings_activity_text_309" formatted="false">30%</string>
+    <string name="settings_activity_text_310" formatted="false">25%</string>
+    <string name="settings_activity_text_311" formatted="false">50%</string>
+    <string name="settings_activity_text_312" formatted="false">75%</string>
+    <string name="settings_activity_text_313" formatted="false">100%</string>
+
 </resources>

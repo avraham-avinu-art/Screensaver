@@ -58,7 +58,8 @@ final class SettingIconRegistry {
             "playerHorizontalOffset",
             "screenBackgroundColor",
             "fontColor",
-            "frameColor"
+            "frameColor",
+            "resetAllSettings"
     };
 
     private SettingIconRegistry() {
@@ -122,6 +123,7 @@ final class SettingIconRegistry {
             case "screenBackgroundColor": return "palette";
             case "fontColor": return "paint-roller";
             case "frameColor": return "pipette";
+            case "resetAllSettings": return "setting-reset-all";
             default:
                 throw new IllegalArgumentException("Unknown setting key: " + key);
         }

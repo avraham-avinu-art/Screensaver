@@ -61,15 +61,22 @@ public final class BatteryChargeIndicatorView extends View {
                     centerY - dp(7f), dp(25f), dp(14f));
         } else if ("icon_percent".equals(mode)) {
             float iconWidth = dp(25f);
-            float gap = dp(6f);
-            float textWidth = dp(48f);
-            float groupWidth = iconWidth + gap + textWidth;
+            float textWidth = measurePercentTextWidth();
+            float groupWidth = iconWidth + textWidth;
             float left = (getWidth() - groupWidth) * 0.5f;
-            // In RTL, the battery symbol sits immediately to the right of the percentage.
+            // The ink bounds of the percentage touch the left edge of the battery outline.
             drawPercent(canvas, left + textWidth * 0.5f, centerY);
-            drawBattery(canvas, left + textWidth + dp(3f),
+            drawBattery(canvas, left + textWidth,
                     centerY - dp(7f), iconWidth, dp(14f));
         }
+    }
+
+    private float measurePercentTextWidth() {
+        paint.setStyle(Paint.Style.FILL);
+        paint.setTextSize(dp(14f));
+        paint.setTypeface(android.graphics.Typeface.create(
+                "sans-serif-medium", android.graphics.Typeface.NORMAL));
+        return paint.measureText(level + "%");
     }
 
     private void drawPercent(Canvas canvas, float x, float baselineCenterY) {

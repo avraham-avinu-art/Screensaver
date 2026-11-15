@@ -27,8 +27,8 @@ public final class SettingIconRegistryTest {
             }
         }
 
-        assertEquals(52, keys.length);
-        assertEquals(20, newSettingIcons.size());
+        assertEquals(53, keys.length);
+        assertEquals(21, newSettingIcons.size());
         assertEquals("hebrew-date", SettingIconRegistry.iconNameForKey("showHebrew"));
         assertEquals("paint-roller", SettingIconRegistry.iconNameForKey("fontColor"));
         assertEquals("activity-history",
@@ -43,6 +43,8 @@ public final class SettingIconRegistryTest {
                 SettingIconRegistry.iconNameForKey("idleWaitSeconds"));
         assertEquals("setting-player-start-duration",
                 SettingIconRegistry.iconNameForKey("playerStartDurationSeconds"));
+        assertEquals("setting-reset-all",
+                SettingIconRegistry.iconNameForKey("resetAllSettings"));
     }
 
     @Test(expected = IllegalArgumentException.class)

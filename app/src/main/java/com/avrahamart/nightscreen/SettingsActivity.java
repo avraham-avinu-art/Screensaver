@@ -39,6 +39,7 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
@@ -53,6 +54,7 @@ import com.kosherjava.zmanim.hebrewcalendar.JewishDate;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.text.Collator;
 import java.util.Locale;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -120,24 +122,26 @@ public class SettingsActivity extends Activity {
             window.setStatusBarContrastEnforced(false);
             window.setNavigationBarContrastEnforced(false);
         }
-        // Apply system-bar space before the first content frame to prevent a later layout jump.
-        int initialTopInset = 0;
-        int initialBottomInset = 0;
+        // Keep the system-bar layout space stable from the first frame. Using
+        // insetsIgnoringVisibility prevents the content from moving when Android
+        // finishes revealing bars after the Activity transition.
+        window.getDecorView().setSystemUiVisibility(0);
+        int initialTopInset = systemBarDimension("status_bar_height", dp(24));
+        int initialBottomInset = systemBarDimension("navigation_bar_height", dp(24));
         if (Build.VERSION.SDK_INT >= 30) {
             window.setDecorFitsSystemWindows(false);
             try {
                 android.view.WindowMetrics metrics = getWindowManager().getCurrentWindowMetrics();
                 android.view.WindowInsets initialInsets = metrics.getWindowInsets();
-                android.graphics.Insets bars = initialInsets.getInsets(
-                        android.view.WindowInsets.Type.statusBars()
-                                | android.view.WindowInsets.Type.navigationBars());
-                initialTopInset = bars.top;
-                initialBottomInset = bars.bottom;
+                int barsType = android.view.WindowInsets.Type.statusBars()
+                        | android.view.WindowInsets.Type.navigationBars();
+                android.graphics.Insets bars = initialInsets.getInsetsIgnoringVisibility(barsType);
+                initialTopInset = Math.max(initialTopInset, bars.top);
+                initialBottomInset = Math.max(initialBottomInset, bars.bottom);
             } catch (Throwable ignored) {
-                // The insets listener below remains a fallback for unusual window managers.
+                // Stable resource dimensions remain available as a fallback.
             }
         }
-        window.getDecorView().setSystemUiVisibility(0);
 
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
@@ -150,11 +154,11 @@ public class SettingsActivity extends Activity {
                 dp(10), initialBottomInset);
         if (Build.VERSION.SDK_INT >= 30) {
             root.setOnApplyWindowInsetsListener((view, insets) -> {
-                android.graphics.Insets systemBars = insets.getInsets(
+                android.graphics.Insets systemBars = insets.getInsetsIgnoringVisibility(
                         android.view.WindowInsets.Type.statusBars()
                                 | android.view.WindowInsets.Type.navigationBars());
-                view.setPadding(dp(10), dp(2) + systemBars.top,
-                        dp(10), systemBars.bottom);
+                view.setPadding(dp(10), dp(2) + Math.max(initialTopInset, systemBars.top),
+                        dp(10), Math.max(initialBottomInset, systemBars.bottom));
                 // Prevent the ScrollView and its children from applying the
                 // same system-bar insets a second time.
                 android.view.WindowInsets.Builder builder =
@@ -254,7 +258,10 @@ public class SettingsActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
-if (content != null) {
+        if (content != null) {
+            // The Android-owned Dream selection is authoritative for the charging
+            // route. Synchronize it before dependency validation and UI refresh.
+            syncAndroidDreamChargeSetting();
             handlePlayerPermissionResult();
             handleChargerPermissionResult();
             handleLockStartPermissionResult();
@@ -266,7 +273,6 @@ if (content != null) {
             refreshPermissionDependentToggles();
             LockScreenMonitorService.sync(this);
             NightScreenApplication.syncChargerReceiver(this);
-            syncAndroidDreamChargeSetting();
             ensureAutoStartNotificationPermission();
             updateDeviceCapabilityNotice();
         }
@@ -594,7 +600,11 @@ screenHeader.setVisibility(View.GONE);
         addCheck(content, getString(R.string.settings_activity_text_066), "autoStartOnCharge", false);
         addCheck(content, getString(R.string.settings_activity_text_270), "autoStartOnIdle", false);
         addDiscreteSlider(content, getString(R.string.settings_activity_text_271),
-                new String[]{"חצי דק׳", "1 דק׳", "2 דק׳", "5 דק׳", "10 דק׳"},
+                new String[]{getString(R.string.settings_activity_text_296),
+                        getString(R.string.settings_activity_text_297),
+                        getString(R.string.settings_activity_text_298),
+                        getString(R.string.settings_activity_text_299),
+                        getString(R.string.settings_activity_text_300)},
                 new String[]{"30", "60", "120", "300", "600"}, "idleWaitSeconds");
         addCheck(content, getString(R.string.settings_activity_text_068), "noShutdownWhileCharging", false);
         addSegmentedChoices(content, getString(R.string.settings_activity_text_069),
@@ -607,6 +617,7 @@ screenHeader.setVisibility(View.GONE);
     private void addExcludedAppsPicker(LinearLayout parent) {
         LinearLayout card = parent;
         Button choose = makeActionButton(getString(R.string.settings_activity_text_074));
+        choose.setBackground(roundOutline(ACCENT, dp(12), ACCENT));
         LinearLayout.LayoutParams buttonParams = new LinearLayout.LayoutParams(-2, dp(42));
         buttonParams.gravity = Gravity.CENTER_HORIZONTAL;
         buttonParams.topMargin = dp(14);
@@ -637,6 +648,20 @@ screenHeader.setVisibility(View.GONE);
         } catch (Throwable ignored) {
             return false;
         }
+    }
+
+    private static int appNameSortGroup(String label) {
+        if (label == null) return 2;
+        for (int offset = 0; offset < label.length();) {
+            int codePoint = label.codePointAt(offset);
+            offset += Character.charCount(codePoint);
+            if (!Character.isLetter(codePoint)) continue;
+            Character.UnicodeScript script = Character.UnicodeScript.of(codePoint);
+            if (script == Character.UnicodeScript.HEBREW) return 0;
+            if (script == Character.UnicodeScript.LATIN) return 1;
+            return 2;
+        }
+        return 2;
     }
 
     private void showExcludedAppsDialog() {
@@ -676,9 +701,12 @@ screenHeader.setVisibility(View.GONE);
         filterParams.topMargin = dp(9);
         panel.addView(filterRow, filterParams);
 
-        String[] filterLabels = {"אפליקציות משתמש", "אפליקציות מערכת", "הכל"};
+        String[] filterLabels = {
+                getString(R.string.settings_activity_text_286),
+                getString(R.string.settings_activity_text_287)
+        };
         TextView[] filterButtons = new TextView[filterLabels.length];
-        final int[] activeFilter = {2};
+        final int[] activeFilter = {0};
         for (int i = 0; i < filterLabels.length; i++) {
             final int index = i;
             TextView filter = textView(filterLabels[i], 13,
@@ -698,7 +726,7 @@ screenHeader.setVisibility(View.GONE);
             filterButtons[i] = filter;
         }
 
-        TextView loading = textView("טוען את רשימת האפליקציות…", 13, MUTED);
+        TextView loading = textView(getString(R.string.settings_activity_text_288), 13, MUTED);
         loading.setGravity(Gravity.CENTER);
         LinearLayout.LayoutParams loadingParams = new LinearLayout.LayoutParams(-1, dp(34));
         loadingParams.topMargin = dp(4);
@@ -923,17 +951,31 @@ screenHeader.setVisibility(View.GONE);
         loader.execute(() -> {
             ArrayList<PickerEntry> loaded = new ArrayList<>();
             try {
-                List<ApplicationInfo> applications =
-                        pm.getInstalledApplications(PackageManager.GET_META_DATA);
-                for (ApplicationInfo app : applications) {
-                    if (dismissed.get() || getPackageName().equals(app.packageName)) continue;
+                Intent launcherIntent = new Intent(Intent.ACTION_MAIN);
+                launcherIntent.addCategory(Intent.CATEGORY_LAUNCHER);
+                List<ResolveInfo> launchActivities =
+                        pm.queryIntentActivities(launcherIntent, PackageManager.MATCH_DEFAULT_ONLY);
+                Set<String> includedPackages = new HashSet<>();
+                for (ResolveInfo launchActivity : launchActivities) {
+                    if (dismissed.get() || launchActivity.activityInfo == null
+                            || !launchActivity.activityInfo.exported
+                            || !launchActivity.activityInfo.enabled) continue;
+                    ApplicationInfo app = launchActivity.activityInfo.applicationInfo;
+                    if (app == null || !app.enabled || getPackageName().equals(app.packageName)
+                            || !includedPackages.add(app.packageName)) continue;
                     String appLabel;
                     try { appLabel = String.valueOf(pm.getApplicationLabel(app)); }
                     catch (Throwable ignored) { appLabel = app.packageName; }
                     loaded.add(new PickerEntry(app, appLabel));
                 }
+                Collator hebrewCollator = Collator.getInstance(new Locale("he", "IL"));
+                Collator latinCollator = Collator.getInstance(Locale.US);
                 loaded.sort((left, right) -> {
-                    int byName = left.label.compareToIgnoreCase(right.label);
+                    int leftGroup = appNameSortGroup(left.label);
+                    int rightGroup = appNameSortGroup(right.label);
+                    if (leftGroup != rightGroup) return Integer.compare(leftGroup, rightGroup);
+                    Collator collator = leftGroup == 0 ? hebrewCollator : latinCollator;
+                    int byName = collator.compare(left.label, right.label);
                     return byName != 0 ? byName
                             : left.packageName.compareTo(right.packageName);
                 });
@@ -961,7 +1003,11 @@ screenHeader.setVisibility(View.GONE);
                 new String[]{getString(R.string.settings_activity_text_090), getString(R.string.settings_activity_text_091), getString(R.string.settings_activity_text_092), getString(R.string.settings_activity_text_093)},
                 new String[]{"solid", "gradient", "glow", "vignette"}, "backgroundStyle");
         addDiscreteSlider(content, getString(R.string.settings_activity_text_094),
-                new String[]{getString(R.string.settings_activity_text_057), "25%", "50%", "75%", "100%"},
+                new String[]{getString(R.string.settings_activity_text_057),
+                        getString(R.string.settings_activity_text_310),
+                        getString(R.string.settings_activity_text_311),
+                        getString(R.string.settings_activity_text_312),
+                        getString(R.string.settings_activity_text_313)},
                 new String[]{"-1", "25", "50", "75", "100"}, "screenBrightness");
         addSpinner(content, getString(R.string.settings_activity_text_095),
                 new String[]{getString(R.string.settings_activity_text_096), "DL Adva", "Keter Aram Tsova", "Shofar",
@@ -1037,13 +1083,20 @@ screenHeader.setVisibility(View.GONE);
                 hourNames, hourValues, "nightModeEndHour");
 
         addDiscreteSlider(content, getString(R.string.settings_activity_text_284),
-                new String[]{"3 שניות", "6 שניות", "10 שניות", "15 שניות"},
+                new String[]{getString(R.string.settings_activity_text_301),
+                        getString(R.string.settings_activity_text_302),
+                        getString(R.string.settings_activity_text_303),
+                        getString(R.string.settings_activity_text_304)},
                 new String[]{"3", "6", "10", "15"}, "playerStartDurationSeconds");
 
         addCheck(content, getString(R.string.settings_activity_text_125),
                 "batteryProtectionEnabled", false);
         addDiscreteSlider(content, getString(R.string.settings_activity_text_126),
-                new String[]{"10%", "15%", "20%", "25%", "30%"},
+                new String[]{getString(R.string.settings_activity_text_305),
+                        getString(R.string.settings_activity_text_306),
+                        getString(R.string.settings_activity_text_307),
+                        getString(R.string.settings_activity_text_308),
+                        getString(R.string.settings_activity_text_309)},
                 new String[]{"10", "15", "20", "25", "30"},
                 "batteryProtectionThreshold");
 
@@ -1065,6 +1118,107 @@ screenHeader.setVisibility(View.GONE);
         }
         addCheck(content, getString(R.string.settings_activity_text_130),
                 "settingsButtonAlwaysVisible", false);
+        addResetAllSettingsControl(content);
+    }
+
+    private void addResetAllSettingsControl(LinearLayout parent) {
+        LinearLayout card = addSettingCard(parent,
+                getString(R.string.settings_activity_text_290), "resetAllSettings");
+        Button resetButton = makeActionButton(getString(R.string.settings_activity_text_291));
+        resetButton.setBackground(roundOutline(ACCENT, dp(12), ACCENT));
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-2, dp(42));
+        params.gravity = Gravity.CENTER_HORIZONTAL;
+        params.topMargin = dp(4);
+        card.addView(resetButton, params);
+        resetButton.setOnClickListener(v -> showResetAllSettingsConfirmation());
+    }
+
+    private void showResetAllSettingsConfirmation() {
+        LinearLayout panel = new LinearLayout(this);
+        panel.setOrientation(LinearLayout.VERTICAL);
+        panel.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        panel.setPadding(dp(20), dp(18), dp(20), dp(16));
+        panel.setBackground(roundOutline(CARD_SURFACE, dp(18), CARD_OUTLINE));
+
+        TextView title = textView(getString(R.string.settings_activity_text_290), 19, ON_SURFACE);
+        title.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD));
+        title.setGravity(Gravity.CENTER);
+        title.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        panel.addView(title, new LinearLayout.LayoutParams(-1, dp(32)));
+
+        TextView message = textView(
+                getString(R.string.settings_activity_text_292), 15, ON_SURFACE);
+        message.setGravity(Gravity.CENTER);
+        message.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        message.setTextDirection(View.TEXT_DIRECTION_RTL);
+        message.setPadding(dp(4), dp(8), dp(4), dp(8));
+        panel.addView(message, new LinearLayout.LayoutParams(-1, -2));
+
+        LinearLayout actions = new LinearLayout(this);
+        actions.setOrientation(LinearLayout.HORIZONTAL);
+        actions.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        actions.setGravity(Gravity.CENTER_VERTICAL);
+        LinearLayout.LayoutParams actionsParams =
+                new LinearLayout.LayoutParams(-1, dp(44));
+        actionsParams.topMargin = dp(10);
+
+        TextView confirm = textView(
+                getString(R.string.settings_activity_text_293), 15, Color.rgb(7, 31, 49));
+        confirm.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD));
+        confirm.setGravity(Gravity.CENTER);
+        confirm.setBackground(roundOutline(ACCENT, dp(10), ACCENT));
+        confirm.setClickable(true);
+        confirm.setFocusable(true);
+        actions.addView(confirm, new LinearLayout.LayoutParams(0, dp(42), 1f));
+
+        TextView cancel = textView(
+                getString(R.string.settings_activity_text_078), 15, ON_SURFACE);
+        cancel.setGravity(Gravity.CENTER);
+        cancel.setBackground(roundOutline(CONTROL_SURFACE, dp(10), OUTLINE));
+        cancel.setClickable(true);
+        cancel.setFocusable(true);
+        LinearLayout.LayoutParams cancelParams =
+                new LinearLayout.LayoutParams(0, dp(42), 1f);
+        cancelParams.rightMargin = dp(8);
+        actions.addView(cancel, cancelParams);
+        panel.addView(actions, actionsParams);
+
+        AlertDialog dialog = new AlertDialog.Builder(this).setView(panel).create();
+        confirm.setOnClickListener(v -> {
+            dialog.dismiss();
+            resetAllApplicationSettings();
+        });
+        cancel.setOnClickListener(v -> dialog.dismiss());
+        dialog.setCancelable(true);
+        dialog.setCanceledOnTouchOutside(true);
+        dialog.show();
+        Window window = dialog.getWindow();
+        if (window != null) {
+            window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            int width = Math.min(dp(430), getResources().getDisplayMetrics().widthPixels - dp(32));
+            window.setLayout(width, -2);
+        }
+    }
+
+    private void resetAllApplicationSettings() {
+        boolean cleared;
+        try {
+            cleared = prefs.edit().clear().commit();
+        } catch (Throwable ignored) {
+            cleared = false;
+        }
+        if (!cleared) {
+            AppToast.makeText(this, getString(R.string.settings_activity_text_295),
+                    Toast.LENGTH_LONG).show();
+            return;
+        }
+        LockScreenMonitorService.sync(this);
+        NightScreenApplication.syncChargerReceiver(this);
+
+        Intent restart = new Intent(this, MainActivity.class);
+        restart.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        startActivity(restart);
+        finish();
     }
 
     private String settingsGroupTitleFor(String key) {
@@ -1110,6 +1264,7 @@ screenHeader.setVisibility(View.GONE);
                 }
                 if ("useAndroidDreamForCharging".equals(key)) return getString(R.string.settings_activity_text_066);
                 if ("settingsButtonAlwaysVisible".equals(key)) return getString(R.string.settings_activity_text_141);
+        if ("resetAllSettings".equals(key)) return getString(R.string.settings_activity_text_011);
                 if ("nightModeEnabled".equals(key) || "nightModeStartHour".equals(key)
                         || "nightModeEndHour".equals(key)) return getString(R.string.settings_activity_text_142);
                 if ("batteryProtectionEnabled".equals(key)
@@ -1205,7 +1360,6 @@ screenHeader.setVisibility(View.GONE);
                             && getString(R.string.settings_activity_text_134).equals(groupTitle));
         } else if (currentSettingsGroup.getChildCount() > 1
                 && !"idleWaitSeconds".equals(key)
-                && !"nightModeStartHour".equals(key)
                 && !"nightModeEndHour".equals(key)) {
             View divider = new View(this);
             divider.setBackgroundColor(Color.rgb(54, 78, 102));
@@ -1220,8 +1374,13 @@ screenHeader.setVisibility(View.GONE);
         card.setOrientation(LinearLayout.VERTICAL);
         card.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         card.setTextDirection(View.TEXT_DIRECTION_RTL);
-        card.setPadding(dp(7), "idleWaitSeconds".equals(key) ? dp(5) : dp(12),
-                dp(7), dp(14));
+        int cardTopPadding = "idleWaitSeconds".equals(key) ? dp(2)
+                : ("nightModeEndHour".equals(key) ? dp(2)
+                : "nightModeStartHour".equals(key) ? dp(8) : dp(12));
+        int cardBottomPadding = "autoStartOnIdle".equals(key) ? dp(7)
+                : (("nightModeStartHour".equals(key) || "nightModeEndHour".equals(key))
+                ? dp(4) : dp(14));
+        card.setPadding(dp(7), cardTopPadding, dp(7), cardBottomPadding);
         card.setClipChildren(false);
         card.setClipToPadding(false);
         card.setBackgroundColor(Color.TRANSPARENT);
@@ -1601,7 +1760,7 @@ screenHeader.setVisibility(View.GONE);
                 prefs.edit().putBoolean("autoStartOverlayPermissionPending", false).apply();
                 LockScreenMonitorService.sync(this);
                 if (checked) {
-                    openingSystemSettingsForAutoStart = getBool("autoStartOnCharge", false);
+                    openingSystemSettingsForAutoStart = true;
                     try {
                         startActivity(new Intent(Settings.ACTION_DREAM_SETTINGS));
                     } catch (Throwable ignored) {
@@ -1929,6 +2088,12 @@ screenHeader.setVisibility(View.GONE);
                 dialPreview.setColors(ON_SURFACE, CARD_SURFACE);
                 dialPreview.setDialStyle(values[i]);
                 int previewDiameter = 60;
+                if ("numbers_only".equals(values[i])) {
+                    previewContent.setClipChildren(false);
+                    previewContent.setClipToPadding(false);
+                    dialPreview.setScaleX(1.5f);
+                    dialPreview.setScaleY(1.5f);
+                }
                 previewContent.addView(dialPreview,
                         new LinearLayout.LayoutParams(dp(previewDiameter),
                                 dp(previewDiameter)));
@@ -2480,11 +2645,24 @@ screenHeader.setVisibility(View.GONE);
     }
 
     private void syncAndroidDreamChargeSetting() {
-        if (!getBool("useAndroidDreamForCharging", false)
-                || !getBool("autoStartOnCharge", false)
-                || AndroidDreamSettings.isReadyForCharging(this)) return;
-        prefs.edit().putBoolean("autoStartOnCharge", false).apply();
-        if (autoStartOnChargeToggle != null) autoStartOnChargeToggle.setChecked(false);
+        if (!getBool("useAndroidDreamForCharging", false)) return;
+
+        // The app's charging switch mirrors the Android-owned Dream selection:
+        // false when this Dream is not selected/enabled for sleep-on-charging,
+        // true as soon as the user has completed that selection in Android.
+        boolean androidDreamReady = AndroidDreamSettings.isReadyForCharging(this);
+        boolean currentAutoStart = getBool("autoStartOnCharge", false);
+        if (androidDreamReady == currentAutoStart) {
+            if (autoStartOnChargeToggle != null) {
+                autoStartOnChargeToggle.setChecked(androidDreamReady);
+            }
+            return;
+        }
+
+        prefs.edit().putBoolean("autoStartOnCharge", androidDreamReady).apply();
+        if (autoStartOnChargeToggle != null) {
+            autoStartOnChargeToggle.setChecked(androidDreamReady);
+        }
         LockScreenMonitorService.sync(this);
         NightScreenApplication.syncChargerReceiver(this);
     }
@@ -2715,6 +2893,7 @@ screenHeader.setVisibility(View.GONE);
                                        String[] names, String[] values, String key) {
         LinearLayout card = addSettingCard(parent, label, key);
         LinearLayout header = (LinearLayout) card.getChildAt(0);
+        card.setGravity(Gravity.RIGHT);
         header.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         header.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         if (header.getChildCount() > 1) header.removeViewAt(header.getChildCount() - 1);
@@ -2731,6 +2910,24 @@ screenHeader.setVisibility(View.GONE);
         textParams.weight = 0f;
         textParams.rightMargin = 0;
         textBlock.setLayoutParams(textParams);
+        LinearLayout.LayoutParams compactHeaderParams =
+                new LinearLayout.LayoutParams(-2, -2);
+        compactHeaderParams.gravity = Gravity.RIGHT;
+        header.setLayoutParams(compactHeaderParams);
+        if ("nightModeStartHour".equals(key)) {
+            TextView hourHeading = textView(
+                    getString(R.string.settings_activity_text_289), 15, ACCENT);
+            hourHeading.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD));
+            hourHeading.setIncludeFontPadding(false);
+            hourHeading.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+            hourHeading.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
+            hourHeading.setTextDirection(View.TEXT_DIRECTION_RTL);
+            LinearLayout.LayoutParams hourHeadingParams =
+                    new LinearLayout.LayoutParams(-2, dp(24));
+            hourHeadingParams.gravity = Gravity.RIGHT;
+            hourHeadingParams.bottomMargin = dp(3);
+            card.addView(hourHeading, 0, hourHeadingParams);
+        }
 
         int selected = selectedIndex(key, values);
         Spinner spinner = new Spinner(this);
@@ -3242,6 +3439,16 @@ screenHeader.setVisibility(View.GONE);
                 check.lineTo(cx + dp(6), cy - dp(5));
                 canvas.drawPath(check, paint);
             }
+        }
+    }
+
+    private int systemBarDimension(String resourceName, int fallbackPx) {
+        int resourceId = getResources().getIdentifier(resourceName, "dimen", "android");
+        if (resourceId == 0) return fallbackPx;
+        try {
+            return Math.max(0, getResources().getDimensionPixelSize(resourceId));
+        } catch (Throwable ignored) {
+            return fallbackPx;
         }
     }
 
