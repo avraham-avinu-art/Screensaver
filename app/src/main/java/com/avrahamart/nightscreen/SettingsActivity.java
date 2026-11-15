@@ -2324,103 +2324,17 @@ screenTitle.setText(getString(R.string.settings_activity_text_001));
     }
 
     private String iconForSetting(String key) {
-        switch (key) {
-            case "showHebrew":
-            case "dateDisplayMode":
-            case "hebrewDateFormat":
-                return "hebrew-date";
-            case "showGregorian":
-            case "gregorianDateFormat":
-                return "gregorian-date";
-            case "timeFormat":
-                return "progress-time-digital";
-            case "showPlayer":
-            case "playerDisplayMode":
-                return "media-toggle";
-            case "screenSaverDuration":
-                return "activity-history";
-            case "preventLockWhileActive":
-                return "power-off";
-            case "autoStartOnCharge":
-            case "useAndroidDreamForCharging":
-                return "android-charge";
-            case "autoStartOnlyWhenLocked":
-            case "autoStartOnDeviceLock":
-                return "lock-play";
-            case "preventAutoStartDuringUse":
-                return "app-block";
-            case "pauseWhenExcludedAppActive":
-                return "apps-pause";
-            case "autoStartOnBoot":
-                return "power";
-            case "autoStartOnWake":
-                return "screen-wake";
-            case "continueOnLockScreen":
-                return "shield";
-            case "noShutdownWhileCharging":
-                return "phone-charging";
-            case "screenBackgroundColor":
-                return "palette";
-            case "backgroundStyle":
-                return "layers";
-            case "screenBrightness":
-                return "sun-dim";
-            case "fontColor":
-                return "paint-roller";
-            case "fontWeight":
-                return "bold";
-            case "fontFamily":
-                return "font-family";
-            case "clockDateSize":
-                return "clock-size";
-            case "clockDisplayMode":
-                return "clock";
-            case "clockDialStyle":
-                return "clock-dial";
-            case "clockTextAlignment":
-            case "playerTextAlignment":
-                return "text-alignment";
-            case "clockDatePosition":
-                return "position-arrows";
-            case "clockHorizontalOffset":
-            case "playerHorizontalOffset":
-                return "horizontal-arrows";
-            case "showPlayerOnlyAtStart":
-                return "circle-play";
-            case "showDetails":
-                return "artist";
-            case "playerControlsDisplayMode":
-                return "progress-time-digital";
-            case "chargingBatteryDisplayMode":
-            case "batteryProtectionThreshold":
-                return "battery-percent";
-            case "playerSize":
-                return "player-size-resize";
-            case "playerPosition":
-                return "panel-bottom";
-            case "frameEnabled":
-                return "frame-dashed";
-            case "frameUseAlbumArt":
-                return "album-art";
-            case "frameColor":
-                return "pipette";
-            case "frameWidth":
-                return "border-width";
-            case "frameRadius":
-                return "corners";
-            case "nightModeEnabled":
-                return "moon";
-            case "nightModeStartHour":
-                return "clock-start";
-            case "nightModeEndHour":
-                return "clock-end";
-            case "batteryProtectionEnabled":
-                return "battery-shield";
-            case "settingsButtonAlwaysVisible":
-                return "settings";
-            default:
-                return "settings";
+        // Each persisted setting key has exactly one independently drawn vector resource.
+        StringBuilder iconName = new StringBuilder("setting-");
+        for (int i = 0; i < key.length(); i++) {
+            char character = key.charAt(i);
+            if (Character.isUpperCase(character)) {
+                iconName.append('-').append(Character.toLowerCase(character));
+            } else {
+                iconName.append(character);
+            }
         }
+        return iconName.toString();
     }
 
     private View makeIconGlyph(String iconName, int tint) {
@@ -2431,6 +2345,9 @@ screenTitle.setText(getString(R.string.settings_activity_text_001));
         } else {
             String resourceName = "icon_" + iconName.replace('-', '_');
             resourceId = getResources().getIdentifier(resourceName, "drawable", getPackageName());
+            if (resourceId == 0 && iconName.startsWith("setting-")) {
+                throw new IllegalStateException("Missing dedicated setting icon: " + resourceName);
+            }
             if (resourceId == 0) resourceId = R.drawable.icon_settings;
         }
         android.widget.ImageView image = new android.widget.ImageView(this);
