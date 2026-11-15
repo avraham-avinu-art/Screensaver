@@ -956,8 +956,11 @@ screenHeader.setVisibility(View.GONE);
             try {
                 Intent launcherIntent = new Intent(Intent.ACTION_MAIN);
                 launcherIntent.addCategory(Intent.CATEGORY_LAUNCHER);
+                // Launcher activities are commonly declared with MAIN + LAUNCHER
+                // but without CATEGORY_DEFAULT. MATCH_DEFAULT_ONLY therefore hides
+                // many installed apps from this picker.
                 List<ResolveInfo> launchActivities =
-                        pm.queryIntentActivities(launcherIntent, PackageManager.MATCH_DEFAULT_ONLY);
+                        pm.queryIntentActivities(launcherIntent, 0);
                 Set<String> includedPackages = new HashSet<>();
                 for (ResolveInfo launchActivity : launchActivities) {
                     if (dismissed.get() || launchActivity.activityInfo == null
