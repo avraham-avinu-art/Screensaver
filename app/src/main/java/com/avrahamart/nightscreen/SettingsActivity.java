@@ -143,6 +143,9 @@ public class SettingsActivity extends Activity {
             }
         }
 
+        final int stableTopInset = initialTopInset;
+        final int stableBottomInset = initialBottomInset;
+
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
@@ -157,8 +160,8 @@ public class SettingsActivity extends Activity {
                 android.graphics.Insets systemBars = insets.getInsetsIgnoringVisibility(
                         android.view.WindowInsets.Type.statusBars()
                                 | android.view.WindowInsets.Type.navigationBars());
-                view.setPadding(dp(10), dp(2) + Math.max(initialTopInset, systemBars.top),
-                        dp(10), Math.max(initialBottomInset, systemBars.bottom));
+                view.setPadding(dp(10), dp(2) + Math.max(stableTopInset, systemBars.top),
+                        dp(10), Math.max(stableBottomInset, systemBars.bottom));
                 // Prevent the ScrollView and its children from applying the
                 // same system-bar insets a second time.
                 android.view.WindowInsets.Builder builder =
