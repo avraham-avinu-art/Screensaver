@@ -57,7 +57,6 @@ import java.util.HashSet;
 import java.util.Collections;
 
 public class MainActivity extends Activity {
-    private static final long PLAYER_START_WINDOW_MS = 6_000L;
     private static final int SCREEN_TIMEOUT_PROFILE_RELEASE_RESTARTS = 1;
     private static final int SCREEN_TIMEOUT_PROFILE_ELAPSED_DURING_HOLD = 2;
     private static final double SCREEN_TIMEOUT_EARLY_OFF_THRESHOLD = 0.40;
@@ -75,8 +74,6 @@ public class MainActivity extends Activity {
             "com.avrahamart.nightscreen.EXTRA_OPENED_BY_TRACK_CHANGE";
     public static final String EXTRA_OPENED_BY_IDLE =
             "com.avrahamart.nightscreen.EXTRA_OPENED_BY_IDLE";
-    public static final String EXTRA_TRACK_CHANGE_WAKE_SECONDS =
-            "com.avrahamart.nightscreen.EXTRA_TRACK_CHANGE_WAKE_SECONDS";
     public static final String ACTION_FINISH_FROM_TILE =
             "com.screensaver.action.FINISH_FROM_TILE";
     private static volatile boolean mainActivityResumed = false;
@@ -2131,8 +2128,9 @@ public class MainActivity extends Activity {
         Intent launchIntent = getIntent();
         if (launchIntent != null
                 && launchIntent.getBooleanExtra(EXTRA_OPENED_BY_TRACK_CHANGE, false)) {
-            int seconds = launchIntent.getIntExtra(EXTRA_TRACK_CHANGE_WAKE_SECONDS, 10);
-            long durationMs = Math.max(1, Math.min(60, seconds)) * 1000L;
+            int seconds = PlayerStartDuration.normalize(
+                    getInt("playerStartDurationSeconds", 6));
+            long durationMs = seconds * 1000L;
             if (restartCountdown || activityDeadlineElapsedRealtime <= 0L) {
                 activityDeadlineElapsedRealtime = SystemClock.elapsedRealtime() + durationMs;
             }
@@ -3375,15 +3373,20 @@ public class MainActivity extends Activity {
 
     
 
+    private long getPlayerStartWindowMs() {
+        return PlayerStartDuration.millis(getInt("playerStartDurationSeconds", 6));
+    }
+
     private void observeTrackForPlayerIntro(String trackIdentity,
                                             boolean playbackActive,
                                             long positionMs) {
+        long playerStartWindowMs = getPlayerStartWindowMs();
         boolean firstObservedTrack = lastObservedTrackIdentity == null;
         boolean trackChanged = !firstObservedTrack
                 && !trackIdentity.equals(lastObservedTrackIdentity);
         boolean repeatedOrRestartedTrack = !firstObservedTrack && !trackChanged
-                && lastObservedTrackPositionMs > PLAYER_START_WINDOW_MS
-                && positionMs < PLAYER_START_WINDOW_MS
+                && lastObservedTrackPositionMs > playerStartWindowMs
+                && positionMs < playerStartWindowMs
                 && lastObservedTrackPositionMs - positionMs > 5_000L;
         boolean playbackJustStarted = playbackActive && !lastPlaybackWasActive;
         boolean introOnly = getBool("showPlayerOnlyAtStart", false);
@@ -3398,13 +3401,13 @@ public class MainActivity extends Activity {
             playerIntroWindowDeadlineElapsedRealtime = 0L;
         } else if (playbackActive && (trackChanged || repeatedOrRestartedTrack)) {
             // This includes manual/automatic track changes and repeat/restart of the same track.
-            startPlayerIntroWindow(PLAYER_START_WINDOW_MS);
+            startPlayerIntroWindow(playerStartWindowMs);
         } else if (playbackActive
                 && (firstObservedTrack || playbackJustStarted || introOnlyJustEnabled)
-                && positionMs < PLAYER_START_WINDOW_MS) {
+                && positionMs < playerStartWindowMs) {
             // On first observation, playback start, or enabling this option during a song's
             // first six seconds, show only the portion of that six-second window remaining.
-            startPlayerIntroWindow(PLAYER_START_WINDOW_MS - Math.max(0L, positionMs));
+            startPlayerIntroWindow(playerStartWindowMs - Math.max(0L, positionMs));
         }
 
         if (!"start".equals(controlsMode)) {
@@ -3414,9 +3417,9 @@ public class MainActivity extends Activity {
         } else if (playbackActive
                 && (trackChanged || repeatedOrRestartedTrack
                 || firstObservedTrack || playbackJustStarted || controlsModeJustEnabled)) {
-            if (positionMs < PLAYER_START_WINDOW_MS) {
+            if (positionMs < playerStartWindowMs) {
                 startPlayerControlsIntroWindow(
-                        PLAYER_START_WINDOW_MS - Math.max(0L, positionMs));
+                        playerStartWindowMs - Math.max(0L, positionMs));
             } else {
                 handler.removeCallbacks(hidePlayerControlsIntroWindowRunnable);
                 playerControlsIntroWindowVisible = false;
