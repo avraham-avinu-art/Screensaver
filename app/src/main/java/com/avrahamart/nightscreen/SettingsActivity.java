@@ -615,22 +615,9 @@ screenTitle.setText("הגדרות");
 
     private void addExcludedAppsPicker(LinearLayout parent) {
         LinearLayout card = parent;
-        TextView description = textView(
-                "אפשר לבחור אפליקציות שבהן שומר מסך לא יופעל אוטומטית.",
-                14, MUTED);
-        description.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        description.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
-        description.setTextDirection(View.TEXT_DIRECTION_RTL);
-        description.setLineSpacing(dp(3), 1f);
-        LinearLayout.LayoutParams descriptionParams =
-                new LinearLayout.LayoutParams(-1, -2);
-        descriptionParams.rightMargin = dp(42);
-        descriptionParams.leftMargin = dp(7);
-        card.addView(description, descriptionParams);
         Button choose = makeActionButton("בחירת אפליקציות");
         LinearLayout.LayoutParams buttonParams = new LinearLayout.LayoutParams(-2, dp(42));
         buttonParams.gravity = Gravity.CENTER_HORIZONTAL;
-        buttonParams.topMargin = dp(8);
         card.addView(choose, buttonParams);
         choose.setOnClickListener(v -> {
             if (!hasUsageAccess()) {
