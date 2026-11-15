@@ -618,8 +618,8 @@ public final class ScreensaverDisplayView extends LinearLayout {
         int effectiveClockSize = effectiveClockDateSize(fontFamily, clockDateSize);
         boolean analogClock = "analog".equals(getString("clockDisplayMode", "digital"));
         String analogDialStyle = getString("clockDialStyle", "classic");
-        float analogSizeMultiplier = "numbers_only".equals(analogDialStyle)
-                ? 2.85f : 2.25f;
+        // Keep the actual clock diameter identical across all dial styles.
+        float analogSizeMultiplier = 2.25f;
         int analogClockDiameter = Math.max(dp(170),
                 dp(Math.round(effectiveClockSize * analogSizeMultiplier)));
         if (analogClockView != null) {

@@ -2318,25 +2318,13 @@ screenHeader.setVisibility(View.GONE);
                 AnalogClockView dialPreview = new AnalogClockView(this);
                 dialPreview.setTime(10, 10);
                 dialPreview.setColors(ON_SURFACE, CARD_SURFACE);
-                boolean enlargedNumbersPreview = "numbers_only".equals(values[i]);
                 dialPreview.setDialStyle(values[i]);
-                int previewDiameter = enlargedNumbersPreview ? 90 : 60;
-                if (enlargedNumbersPreview) {
-                    previewContent.setClipChildren(false);
-                    previewContent.setClipToPadding(false);
-                }
+                // Keep the three dial-style previews at the same diameter.
                 previewContent.addView(dialPreview,
-                        new LinearLayout.LayoutParams(dp(previewDiameter),
-                                dp(previewDiameter)));
+                        new LinearLayout.LayoutParams(dp(60), dp(60)));
 
                 option.setGravity(Gravity.CENTER);
                 option.setTextSize(12);
-                // Only the caption under the enlarged numbers-only dial was
-                // too low. Lift that caption without moving the dial or
-                // changing either of the other two previews.
-                if (enlargedNumbersPreview) {
-                    option.setTranslationY(-dp(12));
-                }
                 previewContent.addView(option,
                         new LinearLayout.LayoutParams(-1, dp(22)));
                 tile.addView(previewContent, new FrameLayout.LayoutParams(-1, -1));

@@ -66,14 +66,6 @@ public final class AnalogClockView extends View {
                 Color.green(faceColor), Color.blue(faceColor)));
         canvas.drawCircle(cx, cy, radius, paint);
 
-        if ("numbers_only".equals(dialStyle)) {
-            paint.setStyle(Paint.Style.STROKE);
-            paint.setStrokeCap(Paint.Cap.ROUND);
-            paint.setStrokeWidth(dp(1.35f));
-            paint.setColor(withAlpha(accentColor, 205));
-            canvas.drawCircle(cx, cy, radius, paint);
-        }
-
         boolean showLines = "lines_only".equals(dialStyle)
                 || "lines_numbers".equals(dialStyle);
         boolean showNumbers = "numbers_only".equals(dialStyle)
