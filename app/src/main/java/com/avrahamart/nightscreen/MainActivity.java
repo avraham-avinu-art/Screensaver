@@ -602,7 +602,7 @@ public class MainActivity extends Activity {
         root.setGravity(Gravity.CENTER_HORIZONTAL);
         int initialScreenBackground = getInt("screenBackgroundColor", Color.BLACK);
         root.setBackgroundColor(initialScreenBackground);
-        root.setPadding(dp(10), 0, dp(10), dp(4));
+        root.setPadding(0, 0, 0, dp(4));
 
         FrameLayout stage = new FrameLayout(this);
         stageView = stage;
@@ -638,6 +638,8 @@ public class MainActivity extends Activity {
         clockBlockView = clockBlock;
         clockBlock.setOrientation(LinearLayout.VERTICAL);
         clockBlock.setGravity(Gravity.CENTER_HORIZONTAL);
+        clockBlock.setClipChildren(false);
+        clockBlock.setClipToPadding(false);
 
         int initialClockSize = getInt("clockDateSize", 96);
         int initialClockHeight = Math.max(dp(62), dp(initialClockSize));
@@ -736,7 +738,7 @@ public class MainActivity extends Activity {
             if (mediaMirror != null && mediaMirror.getLayoutParams() instanceof LinearLayout.LayoutParams) {
                 LinearLayout.LayoutParams mirrorParams =
                         (LinearLayout.LayoutParams) mediaMirror.getLayoutParams();
-                mirrorParams.width = Math.min(dp(760), Math.max(dp(1), w - dp(20)));
+                mirrorParams.width = Math.min(dp(760), Math.max(dp(1), w));
                 mediaMirror.setLayoutParams(mirrorParams);
                 updatePlayerTextColumnWidth();
             }
@@ -775,11 +777,11 @@ public class MainActivity extends Activity {
             cp.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
             float clockOffset = Math.max(-1f, Math.min(1f,
                     getInt("clockHorizontalOffset", 0) / 20f));
-            int clockContentWidth = clockBlock.getWidth() > 0
-                    ? clockBlock.getWidth() : clockBlock.getMeasuredWidth();
-            float clockMaxOffset = Math.max(0f,
-                    (stage.getWidth() - clockContentWidth) / 2f);
-            clockBlock.setTranslationX(clockOffset * clockMaxOffset);
+            // The outer clockBlock intentionally spans the full screen to keep
+            // its content column centered. Move its visible children together,
+            // using their actual content width rather than the full-width parent.
+            clockBlock.setTranslationX(0f);
+            translateCenteredChildrenToOffset(clockBlock, stage.getWidth(), clockOffset);
             if ("upper".equals(clockPos)) {
                 // Place the center of the clock line at exactly one quarter of the
                 // screen height, independent of the clock/date block's total height.
@@ -795,11 +797,12 @@ public class MainActivity extends Activity {
             FrameLayout.LayoutParams mp = (FrameLayout.LayoutParams) mediaHolder.getLayoutParams();
             float playerOffset = Math.max(-1f, Math.min(1f,
                     getInt("playerHorizontalOffset", 0) / 20f));
-            int playerContentWidth = mediaHolder.getWidth() > 0
-                    ? mediaHolder.getWidth() : mediaHolder.getMeasuredWidth();
-            float playerMaxOffset = Math.max(0f,
-                    (stage.getWidth() - playerContentWidth) / 2f);
-            mediaHolder.setTranslationX(playerOffset * playerMaxOffset);
+            // mediaHolder also spans the full screen. Its visible player rows
+            // are centered inside mediaMirror, so translate those rows as one group.
+            mediaHolder.setTranslationX(0f);
+            if (mediaMirror != null) {
+                translateCenteredChildrenToOffset(mediaMirror, stage.getWidth(), playerOffset);
+            }
             if ("bottom".equals(playerPos)) {
                 // Let FrameLayout anchor the entire holder to the real bottom.
                 // This avoids the first-layout race where measured height is still stale
@@ -818,6 +821,35 @@ public class MainActivity extends Activity {
             }
             mediaHolder.setLayoutParams(mp);
         } catch (Throwable ignored) {}
+    }
+
+    private void translateCenteredChildrenToOffset(
+            ViewGroup container, int availableWidth, float offsetFraction) {
+        if (container == null || availableWidth <= 0) return;
+
+        int widestChild = 0;
+        for (int i = 0; i < container.getChildCount(); i++) {
+            View child = container.getChildAt(i);
+            if (child.getVisibility() != View.VISIBLE) continue;
+            int childWidth = Math.max(child.getWidth(), child.getMeasuredWidth());
+            ViewGroup.LayoutParams params = child.getLayoutParams();
+            if (params != null && params.width > 0) {
+                childWidth = Math.max(childWidth, params.width);
+            }
+            widestChild = Math.max(widestChild, childWidth);
+        }
+
+        // At +/-100%, the widest visible row reaches the exact screen edge.
+        float maxOffset = Math.max(0f, (availableWidth - widestChild) / 2f);
+        float translation = Math.max(-1f, Math.min(1f, offsetFraction)) * maxOffset;
+        for (int i = 0; i < container.getChildCount(); i++) {
+            View child = container.getChildAt(i);
+            if (child.getVisibility() == View.VISIBLE) {
+                child.setTranslationX(translation);
+            } else {
+                child.setTranslationX(0f);
+            }
+        }
     }
 
     private void buildMediaSetup(LinearLayout root) {
@@ -876,6 +908,8 @@ public class MainActivity extends Activity {
         mediaMirror.setGravity(Gravity.TOP | Gravity.CENTER_HORIZONTAL);
         mediaMirror.setPadding(0, 0, 0, 0);
         mediaMirror.setBackgroundColor(Color.TRANSPARENT);
+        mediaMirror.setClipChildren(false);
+        mediaMirror.setClipToPadding(false);
         mediaMirror.setVisibility(View.GONE);
 
         // The reference player is intentionally clean: the position row is
@@ -983,7 +1017,8 @@ public class MainActivity extends Activity {
         playerTextColumnParams.gravity = Gravity.CENTER_HORIZONTAL;
         mediaMirror.addView(playerTextColumn, playerTextColumnParams);
 
-        LinearLayout.LayoutParams progressParams = new LinearLayout.LayoutParams(-1, dp(28));
+        LinearLayout.LayoutParams progressParams = new LinearLayout.LayoutParams(-2, dp(28));
+        progressParams.gravity = Gravity.CENTER_HORIZONTAL;
         progressParams.topMargin = dp(0);
         mediaMirror.addView(mediaProgressRow, progressParams);
 
@@ -1025,7 +1060,7 @@ public class MainActivity extends Activity {
         LinearLayout.LayoutParams mirrorParams =
                 new LinearLayout.LayoutParams(
                         Math.min(dp(760), Math.max(dp(1),
-                                getResources().getDisplayMetrics().widthPixels - dp(20))),
+                                getResources().getDisplayMetrics().widthPixels)),
                         LinearLayout.LayoutParams.WRAP_CONTENT);
         mirrorParams.gravity = Gravity.CENTER_HORIZONTAL;
         mirrorParams.topMargin = dp(28);
