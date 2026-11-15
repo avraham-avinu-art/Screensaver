@@ -781,7 +781,7 @@ public class MainActivity extends Activity {
             // its content column centered. Move its visible children together,
             // using their actual content width rather than the full-width parent.
             clockBlock.setTranslationX(0f);
-            translateCenteredChildrenToOffset(clockBlock, stage.getWidth(), clockOffset);
+            translateCenteredChildrenToOffset((ViewGroup) clockBlock, stage.getWidth(), clockOffset);
             if ("upper".equals(clockPos)) {
                 // Place the center of the clock line at exactly one quarter of the
                 // screen height, independent of the clock/date block's total height.
