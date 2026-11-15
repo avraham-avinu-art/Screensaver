@@ -21,6 +21,8 @@ final class MonitorSettingsSnapshot {
     final boolean useAndroidDreamForCharging;
     final boolean autoStartOnlyWhenLocked;
     final boolean preventAutoStartDuringUse;
+    final boolean preventAutoStartForSelectedApps;
+    final Set<String> excludedForegroundPackages;
     final boolean wakeOnTrackChange;
     final boolean showPlayer;
     final int trackChangeWakeSeconds;
@@ -35,6 +37,13 @@ final class MonitorSettingsSnapshot {
                 data.getBoolean("useAndroidDreamForCharging", false);
         autoStartOnlyWhenLocked = data.getBoolean("autoStartOnlyWhenLocked", false);
         preventAutoStartDuringUse = data.getBoolean("preventAutoStartDuringUse", false);
+        preventAutoStartForSelectedApps =
+                data.getBoolean("pauseWhenExcludedAppActive", false);
+        ArrayList<String> selectedApps =
+                data.getStringArrayList("excludedForegroundPackages");
+        excludedForegroundPackages = selectedApps == null
+                ? Collections.emptySet()
+                : Collections.unmodifiableSet(new HashSet<>(selectedApps));
         wakeOnTrackChange = data.getBoolean("wakeOnTrackChange", false);
         showPlayer = data.getBoolean("showPlayer", false);
         trackChangeWakeSeconds = data.getInt("trackChangeWakeSeconds", 5);
@@ -64,6 +73,13 @@ final class MonitorSettingsSnapshot {
                         prefs.getBoolean("autoStartOnlyWhenLocked", false));
                 data.putBoolean("preventAutoStartDuringUse",
                         prefs.getBoolean("preventAutoStartDuringUse", false));
+                data.putBoolean("pauseWhenExcludedAppActive",
+                        prefs.getBoolean("pauseWhenExcludedAppActive", false));
+                Set<String> selectedApps = prefs.getStringSet(
+                        "excludedForegroundPackages", Collections.emptySet());
+                data.putStringArrayList("excludedForegroundPackages",
+                        new ArrayList<>(selectedApps == null
+                                ? Collections.emptySet() : selectedApps));
                 data.putBoolean("wakeOnTrackChange",
                         prefs.getBoolean("wakeOnTrackChange", false));
                 data.putBoolean("showPlayer", prefs.getBoolean("showPlayer", false));
