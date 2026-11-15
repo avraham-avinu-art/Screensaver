@@ -87,10 +87,6 @@ private LinearLayout clockDateCard;
     private LinearLayout currentCard;
 
 
-
-
-
-
     private TextView screenTitle;
     private TextView screenSubtitle;
     private ScrollView settingsScroll;
@@ -404,10 +400,6 @@ screenHeader.setVisibility(View.GONE);
         clockDateCard = null;
         playerFrameCard = null;
         activityCapabilityNotice = null;
-
-
-
-
 
 
         switch (category) {
@@ -2652,12 +2644,7 @@ screenHeader.setVisibility(View.GONE);
         return false;
     }
 
-    
-    
-    
-    @Override
-    
-    
+
     private Button makeActionButton(String text) {
         Button button = new Button(this);
         button.setText(text);
