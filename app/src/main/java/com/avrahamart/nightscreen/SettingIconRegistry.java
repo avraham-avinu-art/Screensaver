@@ -1,9 +1,8 @@
 package com.avrahamart.nightscreen;
 
 /**
- * Restores the icon mapping that existed before the blanket icon replacement.
- * Only settings that previously fell back to the generic settings glyph use
- * their own newly drawn setting-specific vector.
+ * Maintains a one-to-one mapping between each internal setting and its
+ * dedicated, setting-specific vector drawable.
  */
 final class SettingIconRegistry {
     private static final String[] KEYS = {
@@ -82,7 +81,7 @@ final class SettingIconRegistry {
             case "autoStartOnIdle": return "setting-auto-start-idle";
             case "wakeOnTrackChange": return "setting-track-change-wake";
             case "idleWaitSeconds": return "setting-idle-wait-duration";
-            case "autoStartOnlyWhenLocked": return "lock-play";
+            case "autoStartOnlyWhenLocked": return "setting-only-when-locked";
             case "noShutdownWhileCharging": return "phone-charging";
             case "showDetails": return "artist";
             case "frameEnabled": return "frame-dashed";
@@ -90,8 +89,8 @@ final class SettingIconRegistry {
             case "nightModeEnabled": return "setting-night-mode-enabled";
             case "batteryProtectionEnabled": return "setting-battery-protection-enabled";
             case "useAndroidDreamForCharging": return "setting-use-android-dream-for-charging";
-            case "pauseWhenExcludedAppActive": return "activity-history";
-            case "preventAutoStartDuringUse": return "activity-history";
+            case "pauseWhenExcludedAppActive": return "setting-pause-on-excluded-app";
+            case "preventAutoStartDuringUse": return "setting-prevent-autostart-during-use";
             case "settingsButtonAlwaysVisible": return "setting-settings-button-always-visible";
             case "hebrewDateFormat": return "setting-hebrew-date-format";
             case "gregorianDateFormat": return "setting-gregorian-date-format";
@@ -103,7 +102,7 @@ final class SettingIconRegistry {
             case "clockDialStyle": return "clock-dial";
             case "clockTextAlignment": return "setting-clock-text-alignment";
             case "clockDatePosition": return "position-arrows";
-            case "screenSaverDuration": return "activity-history";
+            case "screenSaverDuration": return "setting-screensaver-duration";
             case "chargingBatteryDisplayMode": return "battery-medium";
             case "backgroundStyle": return "setting-background-style";
             case "playerDisplayMode": return "media-toggle";

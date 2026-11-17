@@ -1174,13 +1174,6 @@ screenHeader.setVisibility(View.GONE);
         title.setIncludeFontPadding(false);
         titleBlock.addView(title, new LinearLayout.LayoutParams(-1, -2));
 
-        TextView subtitle = textView(
-                getString(R.string.settings_activity_text_315), 14, MUTED);
-        subtitle.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        subtitle.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
-        subtitle.setIncludeFontPadding(false);
-        titleBlock.addView(subtitle, new LinearLayout.LayoutParams(-1, -2));
-
         LinearLayout.LayoutParams titleBlockParams =
                 new LinearLayout.LayoutParams(0, -2, 1f);
         titleBlockParams.rightMargin = dp(1);
@@ -2038,11 +2031,8 @@ screenHeader.setVisibility(View.GONE);
         sectionTitleTextParams.rightMargin = dp(7);
         sectionTitleRow.addView(sectionTitle, sectionTitleTextParams);
 
-        FrameLayout sectionTitleIcon = new FrameLayout(this);
-        sectionTitleIcon.setBackground(roundOutline(ICON_SURFACE, dp(10), CARD_OUTLINE));
-        View sectionTitleGlyph = makeIconGlyph("setting-night-mode-hours", ACCENT);
-        sectionTitleIcon.addView(sectionTitleGlyph,
-                new FrameLayout.LayoutParams(dp(22), dp(22), Gravity.CENTER));
+        FrameLayout sectionTitleIcon = makeIconBadge(
+                "setting-night-mode-hours", getString(R.string.settings_activity_text_289));
         sectionTitleRow.addView(sectionTitleIcon,
                 new LinearLayout.LayoutParams(dp(30), dp(30)));
 
@@ -3115,7 +3105,15 @@ screenHeader.setVisibility(View.GONE);
     }
 
     private FrameLayout makeSettingIconBadge(String settingKey, String settingLabel) {
-        String iconName = SettingIconRegistry.iconNameForKey(settingKey);
+        return makeIconBadge(SettingIconRegistry.iconNameForKey(settingKey), settingLabel);
+    }
+
+    /**
+     * Shared badge renderer for ordinary setting rows and nested section headings.
+     * Keeping one implementation guarantees identical 30dp frames, corner radius,
+     * tint, glyph sizing and centering throughout the settings screen.
+     */
+    private FrameLayout makeIconBadge(String iconName, String accessibilityLabel) {
         FrameLayout badge = new FrameLayout(this);
         badge.setBackground(roundOutline(ICON_SURFACE, dp(10), CARD_OUTLINE));
 
@@ -3131,7 +3129,7 @@ screenHeader.setVisibility(View.GONE);
         FrameLayout.LayoutParams graphicParams =
                 new FrameLayout.LayoutParams(glyphSize, glyphSize, Gravity.CENTER);
         badge.addView(graphic, graphicParams);
-        graphic.setContentDescription(settingLabel);
+        graphic.setContentDescription(accessibilityLabel);
         return badge;
     }
 
