@@ -1446,8 +1446,10 @@ screenHeader.setVisibility(View.GONE);
         int cardTopPadding = "idleWaitSeconds".equals(key) ? dp(2) : dp(12);
         int cardBottomPadding = "autoStartOnIdle".equals(key) ? dp(7) : dp(14);
         int leftHorizontalPadding = settingHasToggle(key) ? dp(7) : dp(25);
-        int rightHorizontalPadding = dp(12);
-        if (settingHasToggle(key)) rightHorizontalPadding = dp(7);
+        // Keep the physical right edge identical in every settings card.
+        // The 5dp icon margin then gives every setting icon the same 12dp
+        // distance from the outer card frame, with no per-card icon shifts.
+        int rightHorizontalPadding = dp(7);
         card.setPadding(leftHorizontalPadding, cardTopPadding,
                 rightHorizontalPadding, cardBottomPadding);
         card.setClipChildren(false);
