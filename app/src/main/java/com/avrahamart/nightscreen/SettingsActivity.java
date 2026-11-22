@@ -1869,7 +1869,10 @@ screenHeader.setVisibility(View.GONE);
             LinearLayout card, String label, String[] names, String[] values,
             String key, int hourLabelWidth) {
         final int selectedPosition = selectedIndex(key, values);
-        final int visibleWidth = spinnerVisibleWidthForOption(names[selectedPosition]);
+        // The two night-mode hour selectors use a slightly shorter closed
+        // control; keep enough room for the displayed hour and chevron.
+        final int visibleWidth = Math.max(dp(108),
+                spinnerVisibleWidthForOption(names[selectedPosition]) - dp(12));
         final int dropdownWidth = dropdownWidthForOptions(names);
 
         LinearLayout row = new LinearLayout(this);
@@ -1878,7 +1881,9 @@ screenHeader.setVisibility(View.GONE);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         row.setTextDirection(View.TEXT_DIRECTION_RTL);
-        row.setGravity(Gravity.CENTER_VERTICAL);
+        // Anchor the complete selector-and-label group to the physical right.
+        // With this LTR child order, the selector sits immediately left of its label.
+        row.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
 
         Spinner spinner = new Spinner(this);
         spinner.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
@@ -2027,6 +2032,10 @@ screenHeader.setVisibility(View.GONE);
             seekBar.setProgressBackgroundTintList(ColorStateList.valueOf(TRACK));
         }
         LinearLayout.LayoutParams seekParams = new LinearLayout.LayoutParams(0, dp(46), 1f);
+        // Add the same extra 10dp horizontal inset to the two horizontal-offset
+        // sliders only; the rest of this adjustment row remains unchanged.
+        seekParams.leftMargin = dp(10);
+        seekParams.rightMargin = dp(10);
         adjustmentRow.addView(seekBar, seekParams);
 
         TextView right = textView(getString(R.string.settings_activity_text_237), 14, MUTED);
