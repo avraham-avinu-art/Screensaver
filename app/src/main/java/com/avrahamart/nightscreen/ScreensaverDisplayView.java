@@ -12,7 +12,6 @@ import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
-import android.media.MediaMetadata;
 import android.os.BatteryManager;
 import android.os.Build;
 import android.text.Layout;
@@ -1224,6 +1223,8 @@ public final class ScreensaverDisplayView extends LinearLayout {
 
     public void updateClock() {
         if (timeText == null || gregorianText == null || hebrewText == null) return;
+        now.setTimeZone(java.util.TimeZone.getDefault());
+        numericDateFormat.setTimeZone(now.getTimeZone());
         now.setTimeInMillis(System.currentTimeMillis());
         String formattedTime = numericTime();
         if (!formattedTime.contentEquals(timeText.getText())) {

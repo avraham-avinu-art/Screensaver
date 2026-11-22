@@ -1,7 +1,6 @@
 package com.avrahamart.nightscreen;
 
 import android.app.Activity;
-import android.animation.ObjectAnimator;
 import android.app.NotificationManager;
 import android.app.admin.DevicePolicyManager;
 import android.content.SharedPreferences;
@@ -9,17 +8,14 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.IntentFilter;
 import android.database.ContentObserver;
-import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.Drawable;
 import android.text.Layout;
-import android.text.TextUtils;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Color;
-import android.graphics.Typeface;
 import android.media.AudioManager;
 import android.media.MediaMetadata;
 import android.media.session.MediaController;
@@ -36,7 +32,6 @@ import android.view.Gravity;
 import android.view.KeyEvent;
 import android.provider.Settings;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.SeekBar;
@@ -45,16 +40,9 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 
-import com.kosherjava.zmanim.hebrewcalendar.HebrewDateFormatter;
-import com.kosherjava.zmanim.hebrewcalendar.JewishDate;
 
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.Collections;
 
 public class MainActivity extends Activity {
     private static final int SCREEN_TIMEOUT_PROFILE_RELEASE_RESTARTS = 1;
@@ -99,7 +87,7 @@ public class MainActivity extends Activity {
     private long screenTimeoutAtHoldReleaseMs = -1L;
     private ContentObserver screenOffTimeoutObserver;
     private boolean screenOffTimeoutObserverRegistered = false;
-    private boolean openedByCharger = false;
+
     private boolean bottomSwipeCandidate = false;
     private boolean bottomSwipeDragging = false;
     private boolean bottomSwipeDismissAnimating = false;
@@ -132,16 +120,6 @@ public class MainActivity extends Activity {
                     || Intent.ACTION_TIME_CHANGED.equals(action)
                     || Intent.ACTION_DATE_CHANGED.equals(action)
                     || Intent.ACTION_TIMEZONE_CHANGED.equals(action)) {
-                if (Intent.ACTION_TIME_CHANGED.equals(action)
-                        || Intent.ACTION_DATE_CHANGED.equals(action)
-                        || Intent.ACTION_TIMEZONE_CHANGED.equals(action)) {
-                    lastFormattedHebrewDateKey = null;
-                }
-                if (Intent.ACTION_TIMEZONE_CHANGED.equals(action)) {
-                    java.util.TimeZone deviceTimeZone = java.util.TimeZone.getDefault();
-                    now.setTimeZone(deviceTimeZone);
-                    numericDateFormat.setTimeZone(deviceTimeZone);
-                }
                 updateClock();
                 scheduleNextClockUpdate();
             } else if (Intent.ACTION_SCREEN_OFF.equals(action)) {
@@ -169,18 +147,18 @@ public class MainActivity extends Activity {
             }
         }
     };
-    private final Calendar now = Calendar.getInstance();
-    private final SimpleDateFormat numericDateFormat =
-            new SimpleDateFormat("dd.MM.yyyy", Locale.US);
 
-    private TextView timeText;
-    private AnalogClockView analogClockView;
-    private LinearLayout clockTextColumn;
-    private View screenRootView;
-    private BatteryChargeIndicatorView chargingBatteryView;
 
-    private TextView gregorianText;
-    private TextView hebrewText;
+
+
+
+
+
+
+
+
+
+
     private final int dateTextColor = Color.WHITE;
     private SharedPreferences prefs;
     private ImageView settingsButton;
@@ -208,10 +186,10 @@ public class MainActivity extends Activity {
     private TextView mediaTotalText;
     private LinearLayout mediaProgressRow;
     private SeekBar mediaSeekBar;
-    private MediaController lastKnownMediaController;
-    private ObjectAnimator titleMarqueeAnimator;
-    private ObjectAnimator artistMarqueeAnimator;
-    private int mediaProgressBaseWidth;
+
+
+
+
     private String lastTitle = "";
     private String lastArtist = "";
     private String lastObservedTrackIdentity = null;
@@ -298,8 +276,8 @@ public class MainActivity extends Activity {
             handler.postDelayed(this, 1000L);
         }
     };
-    private String lastFormattedHebrewDateKey = null;
-    private String lastFormattedHebrewDateFormat;
+
+
 
     private void startClockUpdates() {
         handler.removeCallbacks(clockUpdateRunnable);
@@ -395,7 +373,6 @@ public class MainActivity extends Activity {
 
     private void applyChargingLaunchFlags(Intent intent) {
         if (intent == null || !intent.getBooleanExtra(EXTRA_OPENED_BY_CHARGER, false)) return;
-        openedByCharger = true;
         if (Build.VERSION.SDK_INT >= 27) {
             setTurnScreenOn(true);
         }
@@ -612,16 +589,9 @@ public class MainActivity extends Activity {
                 });
 
         // Both activation paths now use this single shared visual component.
-        screenRootView = displayView;
         stageView = displayView.stageView;
         clockBlockView = displayView.clockBlockView;
         mediaHolderView = displayView.mediaHolderView;
-        timeText = displayView.timeText;
-        analogClockView = displayView.analogClockView;
-        clockTextColumn = displayView.clockTextColumn;
-        chargingBatteryView = displayView.chargingBatteryView;
-        gregorianText = displayView.gregorianText;
-        hebrewText = displayView.hebrewText;
         settingsButton = displayView.settingsButton;
         settingsButtonHitArea = displayView.settingsButtonHitArea;
         mediaMirror = displayView.mediaMirror;
@@ -637,7 +607,6 @@ public class MainActivity extends Activity {
         mediaPlayPause = displayView.mediaPlayPause;
         mediaPrev = displayView.mediaPrev;
         mediaNext = displayView.mediaNext;
-        mediaProgressBaseWidth = displayView.mediaProgressBaseWidth;
 
         setContentView(displayView);
         displayView.post(() -> {
@@ -652,201 +621,10 @@ public class MainActivity extends Activity {
         if (displayView != null) displayView.updateScreenPositions();
     }
 
-    private void translateCenteredChildrenToOffset(
-            ViewGroup container, int availableWidth, float offsetFraction) {
-        if (container == null || availableWidth <= 0) return;
 
-        int widestChild = 0;
-        for (int i = 0; i < container.getChildCount(); i++) {
-            View child = container.getChildAt(i);
-            if (child.getVisibility() != View.VISIBLE) continue;
-            int childWidth = Math.max(child.getWidth(), child.getMeasuredWidth());
-            ViewGroup.LayoutParams params = child.getLayoutParams();
-            if (params != null && params.width > 0) {
-                childWidth = Math.max(childWidth, params.width);
-            }
-            widestChild = Math.max(widestChild, childWidth);
-        }
-
-        // At +/-100%, the widest visible row reaches the exact screen edge.
-        float maxOffset = Math.max(0f, (availableWidth - widestChild) / 2f);
-        float translation = Math.max(-1f, Math.min(1f, offsetFraction)) * maxOffset;
-        for (int i = 0; i < container.getChildCount(); i++) {
-            View child = container.getChildAt(i);
-            if (child.getVisibility() == View.VISIBLE) {
-                child.setTranslationX(translation);
-            } else {
-                child.setTranslationX(0f);
-            }
-        }
-    }
 
     
-    private void buildSystemMediaMirror(LinearLayout root) {
-        mediaMirror = new LinearLayout(this);
-        mediaMirror.setOrientation(LinearLayout.VERTICAL);
-        mediaMirror.setGravity(Gravity.TOP | Gravity.CENTER_HORIZONTAL);
-        mediaMirror.setPadding(0, 0, 0, 0);
-        mediaMirror.setBackgroundColor(Color.TRANSPARENT);
-        mediaMirror.setClipChildren(false);
-        mediaMirror.setClipToPadding(false);
-        mediaMirror.setVisibility(View.GONE);
 
-        // The reference player is intentionally clean: the position row is
-        // the first visible element and the three controls are widely spaced.
-        mediaTitle = textView("", 17, Color.WHITE);
-        mediaTitle.setVisibility(View.VISIBLE);
-        mediaTitle.setGravity(Gravity.CENTER);
-        mediaTitle.setSingleLine(true);
-        mediaTitle.setTextDirection(View.TEXT_DIRECTION_FIRST_STRONG_RTL);
-        mediaTitle.setIncludeFontPadding(true);
-        mediaTitle.addOnLayoutChangeListener((view, left, top, right, bottom,
-                                              oldLeft, oldTop, oldRight, oldBottom) -> {
-            if ((right - left) != (oldRight - oldLeft)) {
-                mediaTitle.post(() -> updateTitleMarqueeIfNeeded());
-            }
-        });
-        mediaDetails = textView("", 17, Color.rgb(175, 175, 175));
-        mediaDetails.setVisibility(View.INVISIBLE);
-        mediaDetails.setGravity(Gravity.CENTER);
-        mediaDetails.setSingleLine(true);
-        mediaDetails.setTextDirection(View.TEXT_DIRECTION_FIRST_STRONG_RTL);
-        mediaDetails.setIncludeFontPadding(true);
-        mediaDetails.addOnLayoutChangeListener((view, left, top, right, bottom,
-                                                oldLeft, oldTop, oldRight, oldBottom) -> {
-            if ((right - left) != (oldRight - oldLeft)) {
-                mediaDetails.post(() -> updateArtistMarqueeIfNeeded());
-            }
-        });
-        mediaProgressText = textView("", 12, Color.WHITE);
-        mediaProgressText.setVisibility(View.GONE);
-
-        mediaProgressRow = new LinearLayout(this);
-        mediaProgressRow.setOrientation(LinearLayout.HORIZONTAL);
-        mediaProgressRow.setGravity(Gravity.CENTER_VERTICAL | Gravity.CENTER_HORIZONTAL);
-        mediaProgressRow.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-        mediaProgressRow.setPadding(dp(4), 0, dp(4), 0);
-        mediaProgressRow.setVisibility(View.GONE);
-
-        mediaCurrentText = textView("0:00", 12, Color.WHITE);
-        mediaCurrentText.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
-        mediaCurrentText.setSingleLine(true);
-        mediaCurrentText.setIncludeFontPadding(false);
-        LinearLayout.LayoutParams currentParams =
-                new LinearLayout.LayoutParams(dp(48), dp(32));
-        currentParams.rightMargin = dp(4);
-        mediaProgressRow.addView(mediaCurrentText, currentParams);
-
-        mediaSeekBar = new SeekBar(this);
-        mediaSeekBar.setVisibility(View.GONE);
-        mediaSeekBar.setPadding(dp(7), 0, dp(7), 0);
-        mediaSeekBar.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-        mediaSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                if (fromUser && mediaController != null) {
-                    PlaybackState st = mediaController.getPlaybackState();
-                    if (st != null && mediaController.getMetadata() != null) {
-                        long duration = mediaController.getMetadata()
-                                .getLong(MediaMetadata.METADATA_KEY_DURATION);
-                        if (duration > 0) {
-                            mediaController.getTransportControls().seekTo(
-                                    (duration * progress) / 1000L);
-                        }
-                    }
-                }
-            }
-            @Override public void onStartTrackingTouch(SeekBar seekBar) {}
-            @Override public void onStopTrackingTouch(SeekBar seekBar) {}
-        });
-
-        // The user requested the progress line to be 50% shorter than the previous version.
-        int lineWidth = Math.max(
-                dp(120),
-                Math.round(getResources().getDisplayMetrics().widthPixels * 0.36f));
-        mediaProgressBaseWidth = lineWidth;
-        mediaProgressRow.addView(mediaSeekBar,
-                new LinearLayout.LayoutParams(lineWidth, dp(32)));
-
-        mediaTotalText = textView("0:00", 12, Color.WHITE);
-        mediaTotalText.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        mediaTotalText.setSingleLine(true);
-        mediaTotalText.setIncludeFontPadding(false);
-        LinearLayout.LayoutParams totalParams =
-                new LinearLayout.LayoutParams(dp(48), dp(32));
-        totalParams.leftMargin = dp(4);
-        mediaProgressRow.addView(mediaTotalText, totalParams);
-
-        // Artist first and song title immediately below it. Both rows share one
-        // content-width column so their selected alignment is relative to each other.
-        playerTextColumn = new LinearLayout(this);
-        playerTextColumn.setOrientation(LinearLayout.VERTICAL);
-        playerTextColumn.setGravity(Gravity.TOP | Gravity.CENTER_HORIZONTAL);
-        playerTextColumn.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-        playerTextColumn.setClipChildren(false);
-        playerTextColumn.setClipToPadding(false);
-
-        LinearLayout.LayoutParams detailsParams = new LinearLayout.LayoutParams(-1, dp(30));
-        playerTextColumn.addView(mediaDetails, detailsParams);
-
-        LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(-1, dp(30));
-        titleParams.topMargin = dp(0);
-        playerTextColumn.addView(mediaTitle, titleParams);
-
-        LinearLayout.LayoutParams playerTextColumnParams =
-                new LinearLayout.LayoutParams(-2, -2);
-        playerTextColumnParams.gravity = Gravity.CENTER_HORIZONTAL;
-        mediaMirror.addView(playerTextColumn, playerTextColumnParams);
-
-        LinearLayout.LayoutParams progressParams = new LinearLayout.LayoutParams(-2, dp(28));
-        progressParams.gravity = Gravity.CENTER_HORIZONTAL;
-        progressParams.topMargin = dp(0);
-        mediaMirror.addView(mediaProgressRow, progressParams);
-
-        FrameLayout controls = new FrameLayout(this);
-        mediaControlsHolder = controls;
-        controls.setPadding(0, 0, 0, 0);
-        controls.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-
-        int buttonSize = dp(44);
-        int controlWidth = Math.max(
-                dp(180),
-                Math.round(getResources().getDisplayMetrics().widthPixels * 0.44f));
-        LinearLayout.LayoutParams controlAreaParams =
-                new LinearLayout.LayoutParams(controlWidth, dp(44));
-        controlAreaParams.gravity = Gravity.CENTER_HORIZONTAL;
-        controlAreaParams.topMargin = dp(-5);
-
-        // Physical order: Next on the left, Play/Pause in the center, Previous on the right.
-        mediaNext = mediaIconButton(R.drawable.media_next, getString(R.string.main_activity_text_005));
-        mediaNext.setOnClickListener(v -> sendPrevious());
-        FrameLayout.LayoutParams nextParams =
-                new FrameLayout.LayoutParams(buttonSize, buttonSize, Gravity.LEFT | Gravity.CENTER_VERTICAL);
-        controls.addView(mediaNext, nextParams);
-
-        mediaPlayPause = mediaIconButton(R.drawable.media_play, getString(R.string.main_activity_text_006));
-        mediaPlayPause.setOnClickListener(v -> sendPlayPause());
-        FrameLayout.LayoutParams playParams =
-                new FrameLayout.LayoutParams(buttonSize, buttonSize, Gravity.CENTER);
-        controls.addView(mediaPlayPause, playParams);
-
-        mediaPrev = mediaIconButton(R.drawable.media_previous, getString(R.string.main_activity_text_007));
-        mediaPrev.setOnClickListener(v -> sendNext());
-        FrameLayout.LayoutParams prevParams =
-                new FrameLayout.LayoutParams(buttonSize, buttonSize, Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        controls.addView(mediaPrev, prevParams);
-
-        mediaMirror.addView(controls, controlAreaParams);
-
-        LinearLayout.LayoutParams mirrorParams =
-                new LinearLayout.LayoutParams(
-                        Math.min(dp(760), Math.max(dp(1),
-                                getResources().getDisplayMetrics().widthPixels)),
-                        LinearLayout.LayoutParams.WRAP_CONTENT);
-        mirrorParams.gravity = Gravity.CENTER_HORIZONTAL;
-        mirrorParams.topMargin = dp(28);
-        mirrorParams.bottomMargin = 0;
-        root.addView(mediaMirror, mirrorParams);
-    }
 
     private void initSettings() {
         if (prefs == null) {
@@ -1116,63 +894,16 @@ public class MainActivity extends Activity {
         }
     }
 
-    private int measuredLineHeight(TextView view, String sampleText,
-                                   int extraSpaceDp, int minimumHeightDp) {
-        if (view == null) return dp(minimumHeightDp);
 
-        android.graphics.Paint paint = view.getPaint();
-        android.graphics.Paint.FontMetrics metrics = paint.getFontMetrics();
 
-        // Exclude excess font padding; visible glyph bounds below still protect custom fonts.
-        int lineMetricsHeight = Math.round(metrics.descent - metrics.ascent);
 
-        // Also inspect a representative sample and the current text, including Hebrew
-        // characters and digits, in case visible outlines extend beyond font metrics.
-        android.graphics.Rect bounds = new android.graphics.Rect();
-        int visibleGlyphHeight = 0;
-        if (sampleText != null && !sampleText.isEmpty()) {
-            paint.getTextBounds(sampleText, 0, sampleText.length(), bounds);
-            visibleGlyphHeight = Math.max(visibleGlyphHeight, bounds.height());
-        }
-        CharSequence currentText = view.getText();
-        if (currentText != null && currentText.length() > 0) {
-            paint.getTextBounds(currentText.toString(), 0, currentText.length(), bounds);
-            visibleGlyphHeight = Math.max(visibleGlyphHeight, bounds.height());
-        }
-
-        int measured = Math.max(lineMetricsHeight, visibleGlyphHeight) + dp(extraSpaceDp);
-        return Math.max(dp(minimumHeightDp), measured);
-    }
-
-    private int blendWithBlack(int color, float factor) {
-        float f = Math.max(0f, Math.min(1f, factor));
-        return Color.rgb(
-                Math.round(Color.red(color) * f),
-                Math.round(Color.green(color) * f),
-                Math.round(Color.blue(color) * f));
-    }
 
     private String formatMs(long ms) {
         long t = Math.max(0, ms / 1000);
         return String.format(Locale.US, "%d:%02d", t / 60, t % 60);
     }
 
-    private Typeface loadCustomTypeface(String fileName) {
-        Typeface fallback = Typeface.create("sans-serif", Typeface.NORMAL);
-        if (fileName == null || fileName.isEmpty()
-                || fileName.contains("/") || fileName.contains("\\")
-                || !(fileName.toLowerCase(Locale.US).endsWith(".ttf")
-                     || fileName.toLowerCase(Locale.US).endsWith(".otf"))) {
-            return fallback;
-        }
 
-        try {
-            return Typeface.createFromAsset(getAssets(), "fonts/" + fileName);
-        } catch (Exception ignored) {
-            // Keep the screensaver readable if an asset is unexpectedly missing.
-            return fallback;
-        }
-    }
 
     private int horizontalGravityForTextMode(String mode) {
         if ("right".equals(mode)) return Gravity.RIGHT;
@@ -1180,36 +911,11 @@ public class MainActivity extends Activity {
         return Gravity.CENTER_HORIZONTAL;
     }
 
-    private void applyHorizontalTextGravity(TextView view, int horizontalGravity) {
-        if (view == null) return;
-        int verticalGravity = view.getGravity() & Gravity.VERTICAL_GRAVITY_MASK;
-        if (verticalGravity == 0) verticalGravity = Gravity.CENTER_VERTICAL;
-        // Explicit textAlignment values override gravity. Force gravity-based
-        // alignment so the selected left/center/right option is actually applied.
-        view.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
-        view.setGravity(horizontalGravity | verticalGravity);
-    }
 
-    private int playerTextHorizontalGravity() {
-        return horizontalGravityForTextMode(getString("playerTextAlignment", "center"));
-    }
 
-    private int measuredTextColumnWidth(TextView[] rows, int maxWidth) {
-        float widest = 0f;
-        for (TextView row : rows) {
-            if (row == null || row.getVisibility() != View.VISIBLE) continue;
-            CharSequence value = row.getText();
-            if (value == null || value.length() == 0) continue;
-            float measured = row.getPaint().measureText(value, 0, value.length());
-            // Leave a symmetric 32dp alignment gutter around the widest row.
-            // This makes all rows, including the widest one, visibly respond to
-            // left/center/right without moving the centered text column itself.
-            measured += row.getPaddingLeft() + row.getPaddingRight() + dp(32);
-            widest = Math.max(widest, measured);
-        }
-        return Math.max(dp(1), Math.min(Math.max(dp(1), maxWidth),
-                (int) Math.ceil(widest)));
-    }
+
+
+
 
     private void updateClockTextColumnWidth() {
         if (displayView != null) displayView.updateClockTextColumnWidth();
@@ -1231,22 +937,11 @@ public class MainActivity extends Activity {
         }
     }
 
-    private int dateClockGapDp(int clockSize) {
-        // Used only for the initial layout before the selected font has been measured.
-        return -8;
-    }
 
-    private int visualGapDp(int clockSize) {
-        return 20;
-    }
 
-    private int visualGapMarginPx(TextView upper, int upperHeight, String upperSample,
-                                  TextView lower, int lowerHeight, String lowerSample,
-                                  int desiredGapPx) {
-        int upperBottomInset = glyphBottomInsetPx(upper, upperHeight, upperSample);
-        int lowerTopInset = glyphTopInsetPx(lower, lowerHeight, lowerSample);
-        return desiredGapPx - upperBottomInset - lowerTopInset;
-    }
+
+
+
 
     private int glyphTopInsetPx(TextView view, int rowHeight, String fallbackText) {
         if (view == null) return 0;
@@ -1278,101 +973,17 @@ public class MainActivity extends Activity {
         return Math.round(rowHeight - (baseline + bounds.bottom));
     }
 
-    private float dateTextSizeForClockPreset(int clockSize) {
-        // Date rows are always 26% of the effective clock size.
-        return clockSize * 0.26f;
-    }
 
-    private int dateRowHeightForClockPreset(int clockSize) {
-        // Let measured glyph metrics determine the line height; this is only a fallback minimum.
-        return Math.max(dp(24), dp(Math.round(clockSize * 0.30f)));
-    }
 
-    private int effectiveFontWeightForFamily(String fontFamily, int requestedWeight) {
-        // Haim FB Black is intrinsically heavier than the other faces; lower it by two
-        // weight grades, clamping at the lightest available setting.
-        if ("custom:fmhaimblack.ttf".equals(fontFamily)) {
-            return Math.max(-1, requestedWeight - 2);
-        }
-        return requestedWeight;
-    }
 
-    private int effectiveClockDateSize(String fontFamily, int requestedSize) {
-        // Normador and Stam Ashkenaz render materially smaller; promote them one preset
-        // for every weight without modifying the user's stored size preference.
-        if (!"custom:DL Normador.TTF".equals(fontFamily)
-                && !"custom:Ashkenazi-Stam.ttf".equals(fontFamily)) {
-            return requestedSize;
-        }
-        switch (requestedSize) {
-            case 60: return 72;
-            case 72: return 84;
-            case 84: return 96;
-            case 96: return 108;
-            case 108: return 120;
-            default: return 120;
-        }
-    }
 
-    private void applyFontWeightToTextView(TextView view, int weight,
-                                           String fontFamily, int requestedWeight) {
-        if (view == null) return;
-        Paint paint = view.getPaint();
 
-        if ("custom:fmhaimblack.ttf".equals(fontFamily)) {
-            // Haim FB Black is intrinsically very heavy. Use a lighter requested typeface
-            // and erode the outer edge of the white glyphs against the black saver surface.
-            paint.setStyle(Paint.Style.FILL);
-            paint.setStrokeWidth(0f);
-            if (view instanceof ClockDateTextView) {
-                float[] erosionByWeight = {2.0f, 1.6f, 1.15f, 0.7f};
-                int index = Math.max(0, Math.min(3, requestedWeight + 1));
-                ((ClockDateTextView) view).setEdgeErosionDp(erosionByWeight[index]);
-            }
-            view.invalidate();
-            return;
-        }
 
-        if (view instanceof ClockDateTextView) {
-            ((ClockDateTextView) view).setEdgeErosionDp(0f);
-        }
-        if (weight == 1 || weight == 2) {
-            paint.setStyle(Paint.Style.FILL_AND_STROKE);
-            float density = getResources().getDisplayMetrics().density;
-            boolean apolloBlack = "custom:DL ApolloBlack.ttf".equals(fontFamily);
-            float strokeDp;
-            if (apolloBlack) {
-                // This face needs a wider visible difference between medium and bold.
-                strokeDp = weight == 1 ? 0.75f : 1.30f;
-            } else {
-                strokeDp = weight == 1 ? 0.42f : 0.90f;
-            }
-            paint.setStrokeWidth(density * strokeDp);
-        } else {
-            paint.setStyle(Paint.Style.FILL);
-            paint.setStrokeWidth(0f);
-        }
-        view.invalidate();
-    }
 
-    private boolean isBatteryProtectionNeeded() {
-        int threshold = Math.max(1, Math.min(50,
-                getInt("batteryProtectionThreshold", 20)));
-        try {
-            Intent battery = registerReceiver(null,
-                    new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
-            if (battery == null) return false;
-            int level = battery.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
-            int scale = battery.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
-            int plugged = battery.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0);
-            if (level < 0 || scale <= 0 || plugged != 0) return false;
-            int percent = Math.max(0, Math.min(100,
-                    Math.round(level * 100f / scale)));
-            return percent <= threshold;
-        } catch (Throwable ignored) {
-            return false;
-        }
-    }
+
+
+
+
 
     
     private int getScreenBackgroundColor() {
@@ -1390,63 +1001,9 @@ public class MainActivity extends Activity {
                 Math.round(Color.blue(from) * (1f - f) + Color.blue(to) * f));
     }
 
-    private Drawable createScreenBackgroundDrawable() {
-        int base = getScreenBackgroundColor();
-        String style = getString("backgroundStyle", "solid");
-        if ("solid".equals(style)) {
-            return new android.graphics.drawable.ColorDrawable(base);
-        }
-        if ("gradient".equals(style)) {
-            return new GradientDrawable(GradientDrawable.Orientation.TL_BR,
-                    new int[]{
-                            mixColor(base, Color.rgb(47, 89, 132), 0.52f),
-                            mixColor(base, Color.rgb(20, 36, 56), 0.30f),
-                            mixColor(base, Color.rgb(5, 12, 22), 0.68f)
-                    });
-        }
-        if ("glow".equals(style)) {
-            GradientDrawable glow = new GradientDrawable(
-                    GradientDrawable.Orientation.TOP_BOTTOM,
-                    new int[]{
-                            mixColor(base, Color.rgb(52, 112, 169), 0.78f),
-                            mixColor(base, Color.rgb(25, 56, 88), 0.44f),
-                            base
-                    });
-            glow.setGradientType(GradientDrawable.RADIAL_GRADIENT);
-            glow.setGradientRadius(dp(Math.max(250, Math.round(Math.max(
-                    getResources().getDisplayMetrics().widthPixels,
-                    getResources().getDisplayMetrics().heightPixels) * 0.78f))));
-            glow.setGradientCenter(0.5f, 0.42f);
-            return glow;
-        }
-        if ("vignette".equals(style)) {
-            GradientDrawable vignette = new GradientDrawable(
-                    GradientDrawable.Orientation.TL_BR,
-                    new int[]{
-                            base,
-                            mixColor(base, Color.BLACK, 0.62f),
-                            Color.BLACK
-                    });
-            vignette.setGradientType(GradientDrawable.RADIAL_GRADIENT);
-            vignette.setGradientRadius(dp(Math.max(250, Math.round(Math.max(
-                    getResources().getDisplayMetrics().widthPixels,
-                    getResources().getDisplayMetrics().heightPixels) * 0.66f))));
-            vignette.setGradientCenter(0.5f, 0.45f);
-            return vignette;
-        }
-        return new android.graphics.drawable.ColorDrawable(base);
-    }
 
-    private boolean isAutomaticNightModeActive() {
-        if (!getBool("nightModeEnabled", false)) return false;
-        int start = Math.max(0, Math.min(23, getInt("nightModeStartHour", 22)));
-        int end = Math.max(0, Math.min(23, getInt("nightModeEndHour", 7)));
-        if (start == end) return false;
-        Calendar current = Calendar.getInstance();
-        int hour = current.get(Calendar.HOUR_OF_DAY);
-        if (start < end) return hour >= start && hour < end;
-        return hour >= start || hour < end;
-    }
+
+
 
     private void applyScreenAppearance() {
         if (displayView != null) displayView.applyScreenAppearance(getWindow());
@@ -2193,68 +1750,13 @@ public class MainActivity extends Activity {
         if (displayView != null) displayView.updateClock();
     }
 
-    private String formattedGregorianDateValue() {
-        String pattern = getString("gregorianDateFormat", "dd.MM.yyyy");
-        if ("dd.MM.yyyy".equals(pattern)) {
-            numericDateFormat.setTimeZone(now.getTimeZone());
-            return numericDateFormat.format(now.getTime());
-        }
-        Locale formatLocale = getString(R.string.main_activity_text_011).equals(pattern)
-                ? new Locale("he", "IL") : Locale.US;
-        SimpleDateFormat formatter = new SimpleDateFormat(pattern, formatLocale);
-        formatter.setTimeZone(now.getTimeZone());
-        return formatter.format(now.getTime());
-    }
 
-    private String formatHebrewDate(String rawDate, String format) {
-        String normalized = rawDate
-                .replace(getString(R.string.main_activity_text_012), getString(R.string.main_activity_text_013))
-                .replace(getString(R.string.main_activity_text_014), getString(R.string.main_activity_text_013))
-                .replace(getString(R.string.main_activity_text_015), getString(R.string.main_activity_text_013))
-                .replace("\u05F3", "'")
-                .replace("\u05F4", "\"")
-                .replace("’", "'")
-                .replace("”", "\"")
-                .replace("“", "\"");
-        int firstSpace = normalized.indexOf(' ');
-        int lastSpace = normalized.lastIndexOf(' ');
-        if (firstSpace <= 0 || lastSpace <= firstSpace) return normalized;
-        String day = normalized.substring(0, firstSpace);
-        String month = normalized.substring(firstSpace + 1, lastSpace);
-        String year = normalized.substring(lastSpace + 1);
-        if ("monthBet".equals(format) || "monthBetYearArticle".equals(format)) {
-            month = getString(R.string.main_activity_text_016) + month;
-        }
-        if ("yearArticle".equals(format) || "monthBetYearArticle".equals(format)) {
-            year = getString(R.string.main_activity_text_017) + year;
-        }
-        return day + " " + month + " " + year;
-    }
 
-    private String numericTime() {
-        boolean use24Hour = "24".equals(getString("timeFormat", "24"));
-        int hourOfDay = now.get(Calendar.HOUR_OF_DAY);
-        int minute = now.get(Calendar.MINUTE);
-        if (use24Hour) {
-            return String.format(Locale.US, "%d:%02d", hourOfDay, minute);
-        }
-        int hour = hourOfDay % 12;
-        if (hour == 0) hour = 12;
-        String period = hourOfDay < 12 ? getString(R.string.main_activity_text_018) : getString(R.string.main_activity_text_019);
-        return String.format(Locale.US, "%d:%02d", hour, minute) + period;
-    }
 
-    private String hebrewWeekday() {
-        switch (now.get(Calendar.DAY_OF_WEEK)) {
-            case Calendar.SUNDAY: return getString(R.string.main_activity_text_020);
-            case Calendar.MONDAY: return getString(R.string.main_activity_text_021);
-            case Calendar.TUESDAY: return getString(R.string.main_activity_text_022);
-            case Calendar.WEDNESDAY: return getString(R.string.main_activity_text_023);
-            case Calendar.THURSDAY: return getString(R.string.main_activity_text_024);
-            case Calendar.FRIDAY: return getString(R.string.main_activity_text_025);
-            default: return getString(R.string.main_activity_text_026);
-        }
-    }
+
+
+
+
 
     private void registerActiveSessionsListener() {
         if (Build.VERSION.SDK_INT < 21) return;
@@ -2317,10 +1819,10 @@ public class MainActivity extends Activity {
             if (!hasNotificationAccess()) {
                 detachMediaController();
                 hideMediaMirror();
-                showMediaSetup();
+                
                 return;
             }
-            hideMediaSetup();
+            
 
             if (mediaSessionManager == null) {
                 mediaSessionManager = (MediaSessionManager)
@@ -2365,8 +1867,7 @@ public class MainActivity extends Activity {
                 return;
             }
 
-            lastKnownMediaController = selected;
-            if (mediaController == null ||
+                if (mediaController == null ||
                     !mediaController.getSessionToken().equals(selected.getSessionToken())) {
                 attachMediaController(selected);
             }
@@ -2375,7 +1876,7 @@ public class MainActivity extends Activity {
         } catch (SecurityException ignored) {
             detachMediaController();
             hideMediaMirror();
-            showMediaSetup();
+            
         } catch (Throwable ignored) {
             hideMediaMirror();
         }
@@ -2458,8 +1959,7 @@ public class MainActivity extends Activity {
 
             @Override public void onSessionDestroyed() {
                 runOnUiThread(() -> {
-                    lastKnownMediaController = mediaController;
-                    detachMediaController();
+                                detachMediaController();
                     hideMediaMirror();
                 });
             }
@@ -2894,13 +2394,9 @@ public class MainActivity extends Activity {
         }
     }
 
-    private void showMediaSetup() {
-        // Do not show permission prompts on the saver screen.
-        hideMediaSetup();
-    }
 
-    private void hideMediaSetup() {
-    }
+
+
 
     
     private void updateAlbumArtwork(MediaMetadata metadata) {
@@ -3064,82 +2560,11 @@ public class MainActivity extends Activity {
         return v;
     }
 
-    private ClockDateTextView clockDateTextView(String text, float size, int color) {
-        ClockDateTextView view = new ClockDateTextView(this);
-        view.setText(text);
-        view.setTextSize(size);
-        view.setTextColor(color);
-        view.setTextDirection(View.TEXT_DIRECTION_RTL);
-        view.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        return view;
-    }
+
 
     
 
-    private final class ClockDateTextView extends TextView {
-        private float edgeErosionPx;
 
-        ClockDateTextView(Context context) {
-            super(context);
-            setIncludeFontPadding(false);
-        }
-
-        void setEdgeErosionDp(float erosionDp) {
-            float density = getResources().getDisplayMetrics().density;
-            edgeErosionPx = Math.max(0f, erosionDp) * density;
-            invalidate();
-        }
-
-        @Override protected void onDraw(Canvas canvas) {
-            super.onDraw(canvas);
-            if (edgeErosionPx <= 0f) return;
-            Layout layout = getLayout();
-            if (layout == null) return;
-
-            Paint paint = getPaint();
-            int oldColor = paint.getColor();
-            Paint.Style oldStyle = paint.getStyle();
-            float oldStrokeWidth = paint.getStrokeWidth();
-            Paint.Join oldJoin = paint.getStrokeJoin();
-            Paint.Cap oldCap = paint.getStrokeCap();
-            android.graphics.Shader oldShader = paint.getShader();
-            android.graphics.PathEffect oldPathEffect = paint.getPathEffect();
-
-            int extendedTop = getExtendedPaddingTop();
-            int extendedBottom = getExtendedPaddingBottom();
-            int availableHeight = Math.max(0, getHeight() - extendedTop - extendedBottom);
-            int verticalGravity = getGravity() & Gravity.VERTICAL_GRAVITY_MASK;
-            int verticalOffset = 0;
-            if (verticalGravity == Gravity.CENTER_VERTICAL) {
-                verticalOffset = (availableHeight - layout.getHeight()) / 2;
-            } else if (verticalGravity == Gravity.BOTTOM) {
-                verticalOffset = availableHeight - layout.getHeight();
-            }
-
-            canvas.save();
-            canvas.clipRect(getCompoundPaddingLeft(), extendedTop,
-                    getWidth() - getCompoundPaddingRight(), getHeight() - extendedBottom);
-            canvas.translate(getCompoundPaddingLeft() - getScrollX(),
-                    extendedTop + verticalOffset - getScrollY());
-            paint.setColor(Color.BLACK);
-            paint.setShader(null);
-            paint.setPathEffect(null);
-            paint.setStyle(Paint.Style.STROKE);
-            paint.setStrokeJoin(Paint.Join.ROUND);
-            paint.setStrokeCap(Paint.Cap.ROUND);
-            paint.setStrokeWidth(edgeErosionPx);
-            layout.draw(canvas);
-            canvas.restore();
-
-            paint.setColor(oldColor);
-            paint.setStyle(oldStyle);
-            paint.setStrokeWidth(oldStrokeWidth);
-            paint.setStrokeJoin(oldJoin);
-            paint.setStrokeCap(oldCap);
-            paint.setShader(oldShader);
-            paint.setPathEffect(oldPathEffect);
-        }
-    }
 
     private TextView textView(String text, float size, int color) {
         TextView v = new TextView(this);

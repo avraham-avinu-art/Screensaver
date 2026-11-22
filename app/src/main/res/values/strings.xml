@@ -505,12 +505,6 @@
 פתח בהגדרות Android את "תצוגה מעל אפליקציות אחרות"</string>
     <string name="settings_activity_text_284" formatted="false">משך הצגה בתחילת שיר</string>
     <string name="settings_activity_text_285" formatted="false">מגדיר את משך הזמן בהגדרות הבאות- הצגת הנגן בתחילת שיר, הצגת פקדי הנגן בתחילת שיר, והדלקת המסך במעבר שיר בזמן טעינה</string>
-
-    <string name="permissions_activity_text_047" formatted="false">שירות נגישות לזיהוי חוסר פעילות</string>
-    <string name="permissions_activity_text_048" formatted="false">השירות מזהה נגיעות במסך ומעברים בין חלונות כדי להפעיל את שומר המסך לאחר פרק הזמן שנבחר, ורק כאשר מסך הבית נמצא בחזית. הוא אינו קורא תוכן של חלונות ואינו מבצע פעולות במכשיר.</string>
-    <string name="permissions_activity_text_049" formatted="false">פעיל</string>
-    <string name="permissions_activity_text_050" formatted="false">לא פעיל</string>
-    <string name="permissions_activity_text_051" formatted="false">פתיחת הגדרות נגישות</string>
     <string name="permission_sync_text_007" formatted="false">ההגדרה הפעלה האוטומטית בחוסר פעילות כובתה מפני שחסרה הרשאת נתוני שימוש או הרשאת תצוגה מעל אפליקציות</string>
     <string name="permission_sync_text_008" formatted="false">ההגדרה הדלקה במעבר שיר כובתה מפני שחסרה גישה להתראות או הרשאת תצוגה מעל אפליקציות</string>
 
