@@ -1445,13 +1445,10 @@ screenHeader.setVisibility(View.GONE);
         card.setTextDirection(View.TEXT_DIRECTION_RTL);
         int cardTopPadding = "idleWaitSeconds".equals(key) ? dp(2) : dp(12);
         int cardBottomPadding = "autoStartOnIdle".equals(key) ? dp(7) : dp(14);
-        int leftHorizontalPadding = settingHasToggle(key) ? dp(7) : dp(25);
-        // Keep the physical right edge identical in every settings card.
-        // The 5dp icon margin then gives every setting icon the same 12dp
-        // distance from the outer card frame, with no per-card icon shifts.
-        int rightHorizontalPadding = dp(7);
-        card.setPadding(leftHorizontalPadding, cardTopPadding,
-                rightHorizontalPadding, cardBottomPadding);
+        // Keep the card content area symmetric. This is important for
+        // segmented selectors, color palettes and sliders, whose controls
+        // must keep exactly the same inset from the left and right frame.
+        card.setPadding(dp(7), cardTopPadding, dp(7), cardBottomPadding);
         card.setClipChildren(false);
         card.setClipToPadding(false);
         card.setBackgroundColor(Color.TRANSPARENT);
@@ -1467,6 +1464,10 @@ screenHeader.setVisibility(View.GONE);
         header.setGravity(Gravity.CENTER_VERTICAL);
         header.setClipChildren(false);
         header.setClipToPadding(false);
+        // For rows without a switch, move only the text block's far-left
+        // boundary inward by 18dp (7dp card inset + 18dp = 25dp).
+        // The setting icon stays on its shared 12dp right-side inset.
+        if (!settingHasToggle(key)) header.setPadding(dp(18), 0, 0, 0);
 
         LinearLayout textBlock = new LinearLayout(this);
         textBlock.setOrientation(LinearLayout.VERTICAL);
