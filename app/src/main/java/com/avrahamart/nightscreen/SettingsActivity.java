@@ -2007,7 +2007,9 @@ screenHeader.setVisibility(View.GONE);
         adjustmentRow.setOrientation(LinearLayout.HORIZONTAL);
         adjustmentRow.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         adjustmentRow.setGravity(Gravity.CENTER_VERTICAL);
-        adjustmentRow.setPadding(dp(8), 0, dp(8), 0);
+        // Inset the complete horizontal-offset control as one unit:
+        // both direction labels and the SeekBar move inward by an extra 10dp.
+        adjustmentRow.setPadding(dp(18), 0, dp(18), 0);
         adjustmentRow.setClipChildren(false);
         adjustmentRow.setClipToPadding(false);
 
@@ -2032,10 +2034,6 @@ screenHeader.setVisibility(View.GONE);
             seekBar.setProgressBackgroundTintList(ColorStateList.valueOf(TRACK));
         }
         LinearLayout.LayoutParams seekParams = new LinearLayout.LayoutParams(0, dp(46), 1f);
-        // Add the same extra 10dp horizontal inset to the two horizontal-offset
-        // sliders only; the rest of this adjustment row remains unchanged.
-        seekParams.leftMargin = dp(10);
-        seekParams.rightMargin = dp(10);
         adjustmentRow.addView(seekBar, seekParams);
 
         TextView right = textView(getString(R.string.settings_activity_text_237), 14, MUTED);
