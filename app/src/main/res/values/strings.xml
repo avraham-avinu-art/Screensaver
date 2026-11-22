@@ -298,86 +298,33 @@
     <string name="permissions_activity_text_044" formatted="false">הרשאת מנהל המכשיר בוטלה בהצלחה</string>
     <string name="permissions_activity_text_045" formatted="false">Android עדיין מדווח שההרשאה פעילה.\nאפשר להשלים את הביטול דרך הגדרות האבטחה</string>
     <string name="permissions_activity_text_046" formatted="false">פתח הגדרות &gt; אבטחה &gt; אפליקציות מנהל מכשיר &gt; שומר מסך, כדי לבטל את ההרשאה</string>
-    <!-- GuideActivity: full user guide sections -->
+
+    <!-- GuideActivity: concise user guide -->
     <string name="guide_activity_text_001" formatted="false">מדריך שימוש</string>
-    <string name="guide_activity_text_002" formatted="false">מדריך קצר לשימוש ולהגדרות שומר המסך.</string>
-    <string name="guide_activity_text_003" formatted="false">מה יש בשומר המסך</string>
-    <string name="guide_activity_text_004" formatted="false">שומר המסך מציג שעון ותאריך, ויכול להציג גם נגן מדיה ונתוני סוללה בזמן טעינה.\n\n</string>
-    <string name="guide_activity_text_005" formatted="false"></string>
-    <string name="guide_activity_text_006" formatted="false"></string>
-    <string name="guide_activity_text_007" formatted="false">המסך הראשי</string>
-    <string name="guide_activity_text_008" formatted="false">נגיעה באזור פנוי במסך מציגה את סמל ההגדרות לכשלוש שניות. הקש עליו כדי לפתוח את ההגדרות.\n\n</string>
-    <string name="guide_activity_text_009" formatted="false"></string>
-    <string name="guide_activity_text_010" formatted="false">כדי לצאת משומר המסך, </string>
-    <string name="guide_activity_text_011" formatted="false">החלק כלפי מעלה מהקצה התחתון של המסך.</string>
-    <string name="guide_activity_text_012" formatted="false">משך הפעילות ומסך הנעילה</string>
-    <string name="guide_activity_text_013" formatted="false">האפשרות „לפי המכשיר” משתמשת בזמן כיבוי המסך שקבע Android. בחירה בדקה או בחמש דקות מסיימת את שומר המסך בתום הזמן; כיבוי המסך עצמו תלוי גם בהגדרות המכשיר.\n</string>
-    <string name="guide_activity_text_014" formatted="false">האפשרות „ללא כיבוי” משאירה את השומר פעיל ומונעת כיבוי אוטומטי של המסך. כדי לעצור אותו, יש לצאת ממנו.\n</string>
-    <string name="guide_activity_text_015" formatted="false">עם הרשאת מנהל מכשיר, האפליקציה יכולה לבקש לנעול את המכשיר בסיום זמן הפעילות.\n\n</string>
-    <string name="guide_activity_text_016" formatted="false"></string>
-    <string name="guide_activity_text_017" formatted="false"></string>
-    <string name="guide_activity_text_018" formatted="false"></string>
-    <string name="guide_activity_text_019" formatted="false">אלו שתי אפשרויות שונות: „מניעת נעילה בזמן פעילות” מתייחסת לזמן שבו השומר מוצג; „המשך הצגה במסך נעילה” מתייחסת להצגתו לאחר שהמסך כבה והמכשיר ננעל. במכשירים ללא מסך נעילה רגיל, האפשרויות האלה עשויות לא להיות רלוונטיות.\n\n</string>
-    <string name="guide_activity_text_020" formatted="false"></string>
-    <string name="guide_activity_text_021" formatted="false"></string>
-    <string name="guide_activity_text_022" formatted="false"></string>
-    <string name="guide_activity_text_023" formatted="false">הפעלה אוטומטית</string>
-    <string name="guide_activity_text_024" formatted="false">אפשר להפעיל כמה מצבי הפעלה במקביל. בהפעלה בחוסר פעילות, ספירת הזמן מתחילה מרגע הפעלת האפשרות ונדרשת הרשאת גישה לנתוני שימוש.\n\n</string>
-    <string name="guide_activity_text_025" formatted="false"></string>
-    <string name="guide_activity_text_026" formatted="false"></string>
-    <string name="guide_activity_text_027" formatted="false"></string>
-    <string name="guide_activity_text_028" formatted="false"></string>
-    <string name="guide_activity_text_029" formatted="false"></string>
-    <string name="guide_activity_text_030" formatted="false"></string>
-    <string name="guide_activity_text_031" formatted="false">שעון ותאריך</string>
-    <string name="guide_activity_text_032" formatted="false"></string>
-    <string name="guide_activity_text_033" formatted="false">יום השבוע מופיע לפני התאריך הלועזי. אם מוצג רק התאריך העברי, יום השבוע מופיע לפניו.</string>
-    <string name="guide_activity_text_034" formatted="false"></string>
-    <string name="guide_activity_text_035" formatted="false"></string>
-    <string name="guide_activity_text_036" formatted="false"></string>
-    <string name="guide_activity_text_037" formatted="false"></string>
-    <string name="guide_activity_text_038" formatted="false">נגן מדיה</string>
-    <string name="guide_activity_text_039" formatted="false">הנגן מציג מדיה פעילה במכשיר. שם האמן ותמונת האלבום יוצגו רק אם אפליקציית הנגינה מספקת אותם.</string>
-    <string name="guide_activity_text_040" formatted="false"></string>
-    <string name="guide_activity_text_041" formatted="false"></string>
-    <string name="guide_activity_text_042" formatted="false"></string>
-    <string name="guide_activity_text_043" formatted="false"></string>
-    <string name="guide_activity_text_044" formatted="false"></string>
-    <string name="guide_activity_text_045" formatted="false"></string>
-    <string name="guide_activity_text_046" formatted="false">מראה ועיצוב</string>
-    <string name="guide_activity_text_047" formatted="false"></string>
-    <string name="guide_activity_text_048" formatted="false"></string>
-    <string name="guide_activity_text_049" formatted="false"></string>
-    <string name="guide_activity_text_050" formatted="false"></string>
-    <string name="guide_activity_text_051" formatted="false"></string>
-    <string name="guide_activity_text_052" formatted="false"></string>
-    <string name="guide_activity_text_053" formatted="false">שומר מסך בזמן טעינה</string>
-    <string name="guide_activity_text_054" formatted="false">„הפעלה אוטומטית בטעינה” מפעילה את השומר בחיבור המטען; „ללא כיבוי בטעינה” משאירה אותו פעיל בזמן הטעינה. אפשר גם לבחור בשומר המסך של האפליקציה בהגדרות Android ולהגדיר הפעלה בזמן טעינה.\n\n</string>
-    <string name="guide_activity_text_055" formatted="false"></string>
-    <string name="guide_activity_text_056" formatted="false"></string>
-    <string name="guide_activity_text_057" formatted="false"></string>
-    <string name="guide_activity_text_058" formatted="false"></string>
-    <string name="guide_activity_text_059" formatted="false">ניהול הרשאות</string>
-    <string name="guide_activity_text_060" formatted="false">במסך הזה אפשר לבדוק אילו הרשאות פעילות ולעבור להגדרות Android כדי לשנות אותן.\n\n</string>
-    <string name="guide_activity_text_061" formatted="false"></string>
-    <string name="guide_activity_text_062" formatted="false"></string>
-    <string name="guide_activity_text_063" formatted="false"></string>
-    <string name="guide_activity_text_064" formatted="false"></string>
-    <string name="guide_activity_text_065" formatted="false">אם מבטלים הרשאה שנדרשת להגדרה מסוימת, ההגדרה התלויה בה תכובה אוטומטית.</string>
-    <string name="guide_activity_text_066" formatted="false"></string>
-    <string name="guide_activity_text_067" formatted="false"></string>
-    <string name="guide_activity_text_068" formatted="false"></string>
-    <string name="guide_activity_text_069" formatted="false"></string>
-    <string name="guide_activity_text_070" formatted="false"></string>
-    <string name="guide_activity_text_071" formatted="false"></string>
-    <string name="guide_activity_text_072" formatted="false"></string>
-    <string name="guide_activity_text_073" formatted="false">פתרון תקלות</string>
-    <string name="guide_activity_text_074" formatted="false">הנגן לא מופיע? בדוק שהוא מופעל ושהרשאת הגישה להתראות פעילה.\n</string>
-    <string name="guide_activity_text_075" formatted="false">הפעלה אוטומטית לא פועלת? בדוק שהאירוע המתאים מופעל ושההרשאות הנדרשות פעילות.\n</string>
-    <string name="guide_activity_text_076" formatted="false">שומר המסך הסתיים אבל המסך נשאר דולק? בדוק את זמן כיבוי המסך בהגדרות Android ואת הרשאת מנהל המכשיר.</string>
-    <string name="guide_activity_text_077" formatted="false"></string>
-    <string name="guide_activity_text_078" formatted="false"></string>
-    <string name="guide_activity_text_079" formatted="false"></string>
+    <string name="guide_activity_text_002" formatted="false">הסבר קצר על השימוש והאפשרויות החשובות.</string>
+    <string name="guide_activity_text_003" formatted="false">המסך הראשי</string>
+    <string name="guide_activity_text_004" formatted="false">נגיעה באזור פנוי מציגה את סמל ההגדרות למשך כ־3 שניות. הקשה עליו פותחת את ההגדרות. ליציאה, החליקו כלפי מעלה מהקצה התחתון. אפשר להגדיר שהסמל יישאר מוצג תמיד.</string>
+    <string name="guide_activity_text_005" formatted="false">זמן הפעילות ומסך הנעילה</string>
+    <string name="guide_activity_text_006" formatted="false">„לפי המכשיר” משתמש בזמן כיבוי המסך שהוגדר ב־Android. בחירה בדקה או בחמש דקות קובעת לכמה זמן יוצג שומר המסך; כיבוי המסך עצמו תלוי גם בהגדרות המכשיר. „ללא כיבוי” משאיר את השומר ואת המסך פעילים עד שיוצאים ממנו.\n\n„מניעת נעילה בזמן פעילות” מונעת ממסך הנעילה להופיע מעל השומר בזמן שהוא מוצג. „המשך הצגה במסך נעילה” מאפשר לשומר להישאר פעיל לאחר כיבוי המסך בסיום הזמן ולהופיע שוב כשהמסך נדלק. הרשאת מנהל מכשיר נדרשת רק אם רוצים שהאפליקציה תנעל את המכשיר בעצמה.</string>
+    <string name="guide_activity_text_007" formatted="false">הפעלה אוטומטית</string>
+    <string name="guide_activity_text_008" formatted="false">אפשר להפעיל כמה דרכי הפעלה במקביל: בנעילת המכשיר, בהדלקתו, בהתעוררות ממצב שינה ובחיבור לטעינה. „הפעלה בחוסר פעילות” מפעילה את השומר לאחר הזמן שנבחר ללא פעילות ש־Android מזהה. הספירה מתחילה בהפעלת האפשרות ומתאפסת כשמזוהה פעילות. אפשרות זו דורשת גישה לנתוני שימוש.</string>
+    <string name="guide_activity_text_009" formatted="false">סינון הפעלה אוטומטית</string>
+    <string name="guide_activity_text_010" formatted="false">„רק כשהמכשיר נעול” מגבילה את כל ההפעלות האוטומטיות למצב נעול. „מניעת הפעלה בזמן שימוש” חוסמת הפעלה כשאפליקציה אחרת פעילה. „מניעה באפליקציות מסוימות” חוסמת רק באפליקציות שבחרתם. המסננים משפיעים על הפעלה אוטומטית בלבד, ולא על הפעלה ידנית. לבחירת אפליקציות, פתחו את הרשימה, סמנו את הרצויות ולחצו על שמירה.</string>
+    <string name="guide_activity_text_011" formatted="false">שעון ותאריך</string>
+    <string name="guide_activity_text_012" formatted="false">אפשר להציג כל אחד משני התאריכים בנפרד, לשנות את תבניתם ולבחור שעון דיגיטלי או אנלוגי. יום השבוע מופיע לפני התאריך הלועזי; כאשר מוצג רק התאריך העברי, הוא מופיע לפניו.</string>
+    <string name="guide_activity_text_013" formatted="false">נגן מדיה</string>
+    <string name="guide_activity_text_014" formatted="false">הנגן מציג מדיה פעילה במכשיר. אפשר להציג אותו תמיד או רק בתחילת שיר; את פקדי הנגן אפשר להגדיר בנפרד. משך ההצגה נקבע ב„משך הצגה בתחילת שיר”. שם האמן ותמונת האלבום יופיעו רק אם אפליקציית הנגינה מספקת אותם. נדרשת הרשאת גישה להתראות.</string>
+    <string name="guide_activity_text_015" formatted="false">טעינה ומצבי סוללה</string>
+    <string name="guide_activity_text_016" formatted="false">„הפעלה אוטומטית בטעינה” מפעילה את השומר בחיבור המטען. „ללא כיבוי בטעינה” אינה מפעילה אותו בעצמה, אלא משאירה את השומר ואת המסך פעילים כל עוד המכשיר בטעינה. תצוגת הסוללה מופיעה רק בזמן טעינה. „הדלקה במעבר שיר” מעירה את המסך במעבר שיר בזמן טעינה, כאשר נגן פעיל וההרשאות הנדרשות זמינות.\n\nאפשר גם להשתמש בשומר המסך המובנה של Android. במקרה כזה יש לבחור את שומר המסך של האפליקציה בהגדרות Android ולהגדיר הפעלה בזמן טעינה.</string>
+    <string name="guide_activity_text_017" formatted="false">מראה, בהירות ומצב לילה</string>
+    <string name="guide_activity_text_018" formatted="false">אפשר לבחור צבע וסגנון רקע, גופן וצבע טקסט. בהירות „לפי המכשיר” עוקבת אחר Android; בחירה באחוזים משפיעה על שומר המסך בלבד. מצב לילה מפחית את בהירות השומר בשעות שנבחרו, גם בטווח שחוצה חצות. הגנה על הסוללה מגבילה את הבהירות כשהמכשיר אינו בטעינה והסוללה מגיעה לסף שנבחר. האפשרויות האלה אינן משנות את בהירות המכשיר.</string>
+    <string name="guide_activity_text_019" formatted="false">הרשאות</string>
+    <string name="guide_activity_text_020" formatted="false">גישה להתראות נדרשת לנגן ולזיהוי מעבר שיר. גישה לנתוני שימוש נדרשת להפעלה בחוסר פעילות ולזיהוי אפליקציות פעילות לצורך סינון. תצוגה מעל אפליקציות נדרשת להפעלה אוטומטית כשהאפליקציה ברקע. הרשאת מנהל מכשיר נדרשת רק לנעילה יזומה של המכשיר בסיום הפעילות. ביטול הרשאה שנדרשת לאפשרות פעילה יכבה את אותה אפשרות.</string>
+    <string name="guide_activity_text_021" formatted="false">אפשרויות נוספות</string>
+    <string name="guide_activity_text_022" formatted="false">ההתראה הקבועה מאפשרת להשהות ולחדש את כל ההפעלות האוטומטיות בלי לשנות את ההגדרות. „איפוס ההגדרות” מחזיר את הגדרות האפליקציה לברירת המחדל בלבד; הרשאות והגדרות Android אינן משתנות.</string>
+    <string name="guide_activity_text_023" formatted="false">פתרון תקלות</string>
+    <string name="guide_activity_text_024" formatted="false">הנגן לא מופיע? ודאו שיש מדיה פעילה, שהצגת הנגן מופעלת ושהרשאת הגישה להתראות ניתנה. הפעלה אוטומטית לא מתבצעת? בדקו שהאירוע המתאים מופעל, שההרשאות ניתנו ושההפעלה לא הושהתה בהתראה. המסך נשאר דולק בזמן טעינה? בדקו אם „ללא כיבוי בטעינה” מופעל.</string>
+    <!-- GuideActivity: full user guide sections -->
     <!-- AutoStartNotificationController: persistent service notification -->
     <string name="auto_start_notification_text_001" formatted="false">שירות ההפעלה האוטומטית פעיל</string>
     <string name="auto_start_notification_text_002" formatted="false">ניתן להשהות זמנית את ההפעלה האוטומטית בלי לשנות את ההגדרות</string>
@@ -459,8 +406,4 @@
     <string name="settings_activity_text_314" formatted="false">מחזיר את הגדרות האפליקציה לברירת המחדל.\nהרשאות התלויות בהגדרות Android אינן משתנות</string>
 
     <string name="settings_activity_text_316" formatted="false">איפוס</string>
-    <string name="guide_activity_text_080" formatted="false">הגדרות מתקדמות</string>
-    <string name="guide_activity_text_081" formatted="false">מסנני ההפעלה קובעים מתי לדלג על הפעלה אוטומטית, למשל בזמן שימוש באפליקציות או כשהמכשיר אינו נעול. הם אינם חוסמים הפעלה ידנית.\n\nההתראה הקבועה מאפשרת להשהות ולחדש את ההפעלה האוטומטית בלי לשנות את ההגדרות. איפוס ההגדרות מחזיר את הגדרות האפליקציה לברירת המחדל, בלי לשנות הרשאות או הגדרות של Android.</string>
-    <string name="guide_activity_text_082" formatted="false">עוד אפשרויות שימושיות</string>
-    <string name="guide_activity_text_083" formatted="false">• מצב לילה אוטומטי - מעמעם את המסך בשעות שבחרת.\n• הגנה על הסוללה - מפחיתה את בהירות המסך כשהסוללה יורדת מתחת לאחוז שקבעת, כל עוד המכשיר לא בטעינה.\n• הצגה בתחילת שיר - משך הזמן שבחרת משמש להצגת הנגן ופקדיו בתחילת שיר, וגם להדלקת המסך במעבר שיר בזמן טעינה.\n• סמל ההגדרות - אפשר להשאיר אותו מוצג תמיד או להציג אותו רק אחרי נגיעה במסך.\n• השהיית ההפעלה האוטומטית - אפשר להשהות את ההפעלה האוטומטית מתוך ההתראה הקבועה ולחדש אותה משם.\n• איפוס ההגדרות - מחזיר את ההגדרות באפליקציה לברירת המחדל, בלי לשנות הרשאות או הגדרות מערכת של Android.</string>
 </resources>
