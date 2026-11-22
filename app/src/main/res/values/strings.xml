@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="screen_lock_admin_description" formatted="false">מאפשר לשומר מסך לכבות את המסך ולנעול את המכשיר בתום זמן הפעילות שנבחר.
-ללא הרשאה זו, כיבוי המסך והנעילה נשארים לפי הגדרות המכשיר</string>
+    <string name="screen_lock_admin_description" formatted="false">מאפשר לשומר מסך לכבות את המסך ולנעול את המכשיר בתום זמן הפעילות שנבחר.\nללא הרשאה זו, כיבוי המסך והנעילה נשארים לפי הגדרות המכשיר</string>
 
     <!-- SettingsActivity user-facing text -->
     <string name="settings_activity_text_001" formatted="false">הגדרות</string>
@@ -171,8 +170,7 @@
     <string name="settings_activity_text_168" formatted="false">התאמת בהירות התצוגה של שומר המסך</string>
     <string name="settings_activity_text_169" formatted="false">בחירת סוג הגופן שיוצג במסך</string>
     <string name="settings_activity_text_170" formatted="false">בחירת צבע הגופנים והפריטים המופיעים במסך</string>
-    <string name="settings_activity_text_171" formatted="false">תצוגה קבועה של סמל ההגדרות.
-ללא הפעלת הגדרה זו הסמל מוסתר, ומוצג בכל פעם רק למשך מספר שניות לאחר נגיעה במסך</string>
+    <string name="settings_activity_text_171" formatted="false">תצוגה קבועה של סמל ההגדרות.\nללא הפעלת הגדרה זו הסמל מוסתר, ומוצג בכל פעם רק למשך מספר שניות לאחר נגיעה במסך</string>
     <string name="settings_activity_text_172" formatted="false">הצגת נגן המערכת בזמן שהוא פועל</string>
     <string name="settings_activity_text_173" formatted="false">הצגת הנגן רק בתחילת כל שיר</string>
     <string name="settings_activity_text_174" formatted="false">כשמופיע בפרטי השיר את שם האמן, הצגת שם האמן מעל שם השיר</string>
@@ -186,8 +184,7 @@
     <string name="settings_activity_text_182" formatted="false">השעה שבה מצב לילה אוטומטי מסתיים</string>
     <string name="settings_activity_text_183" formatted="false">בחירת תצוגת שעה של 12 או 24 שעות</string>
     <string name="settings_activity_text_184" formatted="false">הפחתת בהירות המסך באופן אוטומטי כשהסוללה יורדת מתחת לסף שנבחר</string>
-    <string name="settings_activity_text_185" formatted="false">קובע מה יפעיל את ההפעלה אוטומטית של השומר מסך בזמן טעינה.
-במסלול הרגיל מופעל ישירות על ידי האפליקציה, ובמסלול החלופי מופעל על ידי הגדרת שומר המסך של Android</string>
+    <string name="settings_activity_text_185" formatted="false">קובע מה יפעיל את ההפעלה אוטומטית של השומר מסך בזמן טעינה.\nבמסלול הרגיל מופעל ישירות על ידי האפליקציה, ובמסלול החלופי מופעל על ידי הגדרת שומר המסך של Android</string>
     <string name="settings_activity_text_186" formatted="false">מתחת לאחוז הסוללה שנבחר תופעל הפחתת בהירות, כל עוד המכשיר אינו בטעינה</string>
     <string name="settings_activity_text_187" formatted="false">בחירת גודל התצוגה של הנגן</string>
     <string name="settings_activity_text_188" formatted="false">בחירת מיקום הצגת הנגן במסך</string>
@@ -197,8 +194,7 @@
     <string name="settings_activity_text_192" formatted="false">בחירת עובי קו המסגרת</string>
     <string name="settings_activity_text_193" formatted="false">בחירת מידת עיגול פינות המסגרת</string>
     <string name="settings_activity_text_228" formatted="false">הגדרות שומר המסך של Android אינן זמינות במכשיר זה</string>
-    <string name="settings_activity_text_230" formatted="false">לא היה ניתן לפתוח את הגדרות שומר המסך של Android.
-פתח בעצמך בהגדרות, תבחר שם את שומר מסך והגדר הפעלה בזמן טעינה</string>
+    <string name="settings_activity_text_230" formatted="false">לא היה ניתן לפתוח את הגדרות שומר המסך של Android.\nפתח בעצמך בהגדרות, תבחר שם את שומר מסך והגדר הפעלה בזמן טעינה</string>
     <string name="settings_activity_text_231" formatted="false">כדי לאפשר הפעלה אוטומטית לאחר אתחול או התעוררות, יש לאפשר לשומר מסך הצגה מעל אפליקציות אחרות</string>
     <string name="settings_activity_text_232" formatted="false">כדי לזהות איזה אפליקציה פעילה במסך, יש לאפשר לשומר מסך "הרשאת גישה לנתוני שימוש"</string>
     <string name="settings_activity_text_233" formatted="false">איפוס לברירת מחדל</string>
@@ -207,27 +203,22 @@
     <string name="settings_activity_text_236" formatted="false">שמאלה</string>
     <string name="settings_activity_text_237" formatted="false">ימינה</string>
     <string name="settings_activity_text_238" formatted="false">לא זוהה שקיים במכשיר מסך נעילה. ולכן ההגדרות שקשורות למסך הנעילה עשויות שלא להיות רלוונטיות למכשיר זה</string>
-    <string name="settings_activity_text_239" formatted="false">זוהתה במכשיר תמיכה ב־Android Automotive.
-בחלק ממערכות המולטימדיה אין מסך נעילה רגיל, ולכן הגדרות הקשורות לנעילה עשויות להיות לא רלוונטיות</string>
-    <string name="settings_activity_text_240" formatted="false">לא ניתן לזהות את הגדרת זמן כיבוי המסך שמוגדר במכשיר.
-בסיום זמן הפעילות השומר מסך ייסגר, אך כיבוי המסך נשאר תלוי בהגדרות המכשיר</string>
+    <string name="settings_activity_text_239" formatted="false">זוהתה במכשיר תמיכה ב־Android Automotive.\nבחלק ממערכות המולטימדיה אין מסך נעילה רגיל, ולכן הגדרות הקשורות לנעילה עשויות להיות לא רלוונטיות</string>
+    <string name="settings_activity_text_240" formatted="false">לא ניתן לזהות את הגדרת זמן כיבוי המסך שמוגדר במכשיר.\nבסיום זמן הפעילות השומר מסך ייסגר, אך כיבוי המסך נשאר תלוי בהגדרות המכשיר</string>
     <string name="settings_activity_text_241" formatted="false">לא זוהה במכשיר כיבוי מסך אוטומטי. ולכן בבחירת זמן מסך מוקצב, השומר מסך ייסגר בתום הזמן, אך המסך עצמו עשוי להישאר דולק</string>
-    <string name="settings_activity_text_242" formatted="false">זמן כיבוי המסך שמוגדר במכשיר ארוך מזמן הפעילות שבחרת.
-ולכן בסיום הפעילות השומר מסך ייסגר, אך המסך ישאר פועל לפי הגדרות המכשיר</string>
+    <string name="settings_activity_text_242" formatted="false">זמן כיבוי המסך שמוגדר במכשיר ארוך מזמן הפעילות שבחרת.\nולכן בסיום הפעילות השומר מסך ייסגר, אך המסך ישאר פועל לפי הגדרות המכשיר</string>
     <string name="settings_activity_text_243" formatted="false">בחירת צבע מותאם אישית</string>
     <string name="settings_activity_text_245" formatted="false">גוון</string>
     <string name="settings_activity_text_246" formatted="false">רוויה</string>
     <string name="settings_activity_text_247" formatted="false">בהירות</string>
     <string name="settings_activity_text_248" formatted="false">ההפעלה האוטומטית יכולה לפעול, אך ההתראה המתמשכת לא תופיע במגירת ההתראות ללא הרשאת התראות</string>
-    <string name="settings_activity_text_249" formatted="false">כדי לאפשר את הצגת הנגן, צריך לאפשר לשומר מסך גישה להתראות.
-במסך הבא בחר את "שומר מסך" והפעל את ההרשאה</string>
+    <string name="settings_activity_text_249" formatted="false">כדי לאפשר את הצגת הנגן, צריך לאפשר לשומר מסך גישה להתראות.\nבמסך הבא בחר את "שומר מסך" והפעל את ההרשאה</string>
     <string name="settings_activity_text_250" formatted="false">ההגדרה הצגת הנגן נשארה כבויה מפני שלא ניתנה הרשאת גישה להתראות</string>
     <string name="settings_activity_text_251" formatted="false">כדי לאפשר הפעלה אוטומטית בטעינה, בחר במסך הבא את "שומר מסך" ואפשר "תצוגה מעל אפליקציות אחרות"</string>
     <string name="settings_activity_text_252" formatted="false">ההגדרה הפעלה אוטומטית בטעינה נשארה כבויה מפני שלא ניתנה הרשאת "תצוגה מעל אפליקציות אחרות"</string>
     <string name="settings_activity_text_253" formatted="false">כדי לאפשר הפעלה אוטומטית בנעילה, אפשר במסך הבא לשומר מסך את ההרשאה "תצוגה מעל אפליקציות אחרות"</string>
     <string name="settings_activity_text_254" formatted="false">ההגדרה הפעלה האוטומטית בנעילת המכשיר נשארה כבויה מפני שלא ניתנה הרשאת "תצוגה מעל אפליקציות אחרות"</string>
-    <string name="settings_activity_text_264" formatted="false">לא ניתן לפתוח את הגדרת ההרשאה.
-פתח בהגדרות Android את "תצוגה מעל אפליקציות אחרות"</string>
+    <string name="settings_activity_text_264" formatted="false">לא ניתן לפתוח את הגדרת ההרשאה.\nפתח בהגדרות Android את "תצוגה מעל אפליקציות אחרות"</string>
     <string name="settings_activity_text_265" formatted="false">לא ניתן לפתוח את הגדרות ההתראות במכשיר</string>
     <!-- MainActivity: screen display, media player, and lifecycle messages -->
     <string name="main_activity_text_001" formatted="false">לחץ שוב על חזרה כדי לצאת</string>
@@ -259,8 +250,7 @@
     <string name="main_activity_text_029" formatted="false">אמן לא ידוע</string>
     <string name="main_activity_text_030" formatted="false">לא ידוע</string>
     <string name="main_activity_text_031" formatted="false">השהה</string>
-    <string name="main_activity_text_032" formatted="false">שומר מסך
-</string>
+    <string name="main_activity_text_032" formatted="false">שומר מסך\n</string>
     <!-- PermissionsActivity: permission cards, prompts, and status messages -->
     <string name="permissions_activity_text_001" formatted="false">ניהול הרשאות</string>
     <string name="permissions_activity_text_002" formatted="false">הרשאות הנדרשות לפעילות האפליקציה</string>
@@ -268,8 +258,7 @@
     <string name="permissions_activity_text_004" formatted="false">ההרשאה נדרשת כדי להציג את נגן המערכת, ולצורך כך יש לאפשר גישה להתראות</string>
     <string name="permissions_activity_text_005" formatted="false">הפעל הרשאת גישה להתראות</string>
     <string name="permissions_activity_text_006" formatted="false">כדי לשנות או לבטל את ההרשאה, שנה במסך הבא את הרשאת גישת להתראות של השומר מסך</string>
-    <string name="permissions_activity_text_007" formatted="false">כדי לאפשר את הצגת הנגן, צריך לאפשר לשומר מסך גישה להתראות.
-במסך הבא בחר את "שומר מסך" והפעל את ההרשאה</string>
+    <string name="permissions_activity_text_007" formatted="false">כדי לאפשר את הצגת הנגן, צריך לאפשר לשומר מסך גישה להתראות.\nבמסך הבא בחר את "שומר מסך" והפעל את ההרשאה</string>
     <string name="permissions_activity_text_008" formatted="false">הרשאת גישה לנתוני שימוש</string>
     <string name="permissions_activity_text_009" formatted="false">נדרשת לזיהוי אינטראקציות של המשתמש ואפליקציות שנמצאות בחזית. ההרשאה משמשת להפעלה בחוסר פעילות ולמניעת הפעלה אוטומטית בזמן שימוש.</string>
     <string name="permissions_activity_text_010" formatted="false">הפעל הרשאת גישה לנתוני שימוש</string>
@@ -281,8 +270,7 @@
     <string name="permissions_activity_text_016" formatted="false">כדי לשנות או לבטל את ההרשאה, שנה במסך הבא את הגדרת התצוגה מעל אפליקציות אחרות של השומר מסך</string>
     <string name="permissions_activity_text_017" formatted="false">כדי לאפשר הפעלה אוטומטית, בחר במסך הבא את "שומר מסך" ואפשר "תצוגה מעל אפליקציות אחרות"</string>
     <string name="permissions_activity_text_018" formatted="false">הרשאת מנהל מכשיר</string>
-    <string name="permissions_activity_text_019" formatted="false">ההרשאה מאפשרת לאפליקציה לכבות את המסך ולנעול את המכשיר בעצמה בתום זמן הפעילות שנבחר.
-ללא הרשאה זו, כיבוי המסך ונעילת המכשיר נשארים לפי הגדרות המכשיר</string>
+    <string name="permissions_activity_text_019" formatted="false">ההרשאה מאפשרת לאפליקציה לכבות את המסך ולנעול את המכשיר בעצמה בתום זמן הפעילות שנבחר.\nללא הרשאה זו, כיבוי המסך ונעילת המכשיר נשארים לפי הגדרות המכשיר</string>
     <string name="permissions_activity_text_020" formatted="false">הפעל הרשאת מנהל מכשיר</string>
     <string name="permissions_activity_text_021" formatted="false">כדי לאפשר את נעילת המכשיר בסיום זמן הפעילות, אשר במסך הבא את הרשאת מנהל המכשיר</string>
     <string name="permissions_activity_text_022" formatted="false">ההרשאה ניתנה - גישה להתראות פעילה</string>
@@ -297,8 +285,7 @@
     <string name="permissions_activity_text_031" formatted="false">בטל הרשאת מנהל מכשיר</string>
     <string name="permissions_activity_text_032" formatted="false">לא ניתן לפתוח את הגדרות ההתראות במכשיר</string>
     <string name="permissions_activity_text_033" formatted="false">לא ניתן לפתוח את הגדרות הגישה לנתוני שימוש במכשיר</string>
-    <string name="permissions_activity_text_034" formatted="false">לא ניתן לפתוח את הגדרת ההרשאה.
-פתח בהגדרות Android את "תצוגה מעל אפליקציות אחרות"</string>
+    <string name="permissions_activity_text_034" formatted="false">לא ניתן לפתוח את הגדרת ההרשאה.\nפתח בהגדרות Android את "תצוגה מעל אפליקציות אחרות"</string>
     <string name="permissions_activity_text_035" formatted="false">לא ניתן לפתוח את בקשת הרשאת מנהל המכשיר</string>
     <string name="permissions_activity_text_036" formatted="false">ביטול הרשאת מנהל מכשיר</string>
     <string name="permissions_activity_text_037" formatted="false">האם לבטל את ההרשאת מנהל מכשיר של השומר מסך?</string>
@@ -306,13 +293,10 @@
     <string name="permissions_activity_text_039" formatted="false">בטל הרשאה</string>
     <string name="permissions_activity_text_040" formatted="false">מבטל הרשאה…</string>
     <string name="permissions_activity_text_041" formatted="false">בקשת ביטול ההרשאה נשלחה ל־Android</string>
-    <string name="permissions_activity_text_042" formatted="false">Android לא איפשר לבטל את ההרשאה מתוך האפליקציה.
-פתח את הגדרות האבטחה להמשך ידני</string>
-    <string name="permissions_activity_text_043" formatted="false">לא ניתן להשלים את ביטול ההרשאה כרגע.
-פתח את הגדרות האבטחה להמשך ידני</string>
+    <string name="permissions_activity_text_042" formatted="false">Android לא איפשר לבטל את ההרשאה מתוך האפליקציה.\nפתח את הגדרות האבטחה להמשך ידני</string>
+    <string name="permissions_activity_text_043" formatted="false">לא ניתן להשלים את ביטול ההרשאה כרגע.\nפתח את הגדרות האבטחה להמשך ידני</string>
     <string name="permissions_activity_text_044" formatted="false">הרשאת מנהל המכשיר בוטלה בהצלחה</string>
-    <string name="permissions_activity_text_045" formatted="false">Android עדיין מדווח שההרשאה פעילה.
-אפשר להשלים את הביטול דרך הגדרות האבטחה</string>
+    <string name="permissions_activity_text_045" formatted="false">Android עדיין מדווח שההרשאה פעילה.\nאפשר להשלים את הביטול דרך הגדרות האבטחה</string>
     <string name="permissions_activity_text_046" formatted="false">פתח הגדרות &gt; אבטחה &gt; אפליקציות מנהל מכשיר &gt; שומר מסך, כדי לבטל את ההרשאה</string>
     <!-- GuideActivity: full user guide sections -->
     <string name="guide_activity_text_001" formatted="false">מדריך שימוש</string>
@@ -488,16 +472,14 @@
     <string name="settings_activity_text_273" formatted="false">מפעילה את שומר המסך לאחר שלא זוהתה אינטראקציה של המשתמש לפי אירועי השימוש של Android במשך הזמן שנבחר. ההפעלה אינה מוגבלת למסך הבית, אך רמת הדיווח עשויה להשתנות בין מכשירים ואפליקציות.</string>
     <string name="settings_activity_text_274" formatted="false">הפעלת ההגדרה מחייבת הצגת נגן מדיה פעיל והרשאת גישה להתראות</string>
     <string name="settings_activity_text_275" formatted="false">משך הזמן ללא אינטראקציה של המשתמש לפני הפעלת שומר המסך.</string>
-    <string name="settings_activity_text_276" formatted="false">ההפעלה דרך הגדרות Android עדיין אינה פעילה.
-פתח את הגדרות שומר המסך של Android, הפעל אותו, בחר בשומר המסך של האפליקציה והגדר הפעלה בזמן טעינה</string>
+    <string name="settings_activity_text_276" formatted="false">ההפעלה דרך הגדרות Android עדיין אינה פעילה.\nפתח את הגדרות שומר המסך של Android, הפעל אותו, בחר בשומר המסך של האפליקציה והגדר הפעלה בזמן טעינה</string>
     <string name="settings_activity_text_277" formatted="false">כדי להדליק את ההגדרה, יש להפעיל תחילה גם את ההגדרה הצגת נגן המדיה</string>
     <string name="settings_activity_text_278" formatted="false">כדי לאפשר זיהוי מעבר שיר, יש לאפשר תחילה את ההרשאת גישה להתראות</string>
     <string name="settings_activity_text_279" formatted="false">כדי להפעיל שומר מסך בחוסר פעילות, יש לאפשר גישה לנתוני שימוש ותצוגה מעל אפליקציות אחרות.</string>
     <string name="settings_activity_text_280" formatted="false">חיפוש אפליקציה</string>
     <string name="settings_activity_text_281" formatted="false">לא נמצאו אפליקציות מתאימות</string>
     <string name="settings_activity_text_282" formatted="false">כדי לאפשר הפעלה אוטומטית כשהאפליקציה ברקע, יש לאפשר לשומר מסך הרשאת תצוגה מעל אפליקציות</string>
-    <string name="settings_activity_text_283" formatted="false">לא ניתן לפתוח את הגדרות ההרשאה.
-פתח בהגדרות Android את "תצוגה מעל אפליקציות אחרות"</string>
+    <string name="settings_activity_text_283" formatted="false">לא ניתן לפתוח את הגדרות ההרשאה.\nפתח בהגדרות Android את "תצוגה מעל אפליקציות אחרות"</string>
     <string name="settings_activity_text_284" formatted="false">משך הצגה בתחילת שיר</string>
     <string name="settings_activity_text_285" formatted="false">מגדיר את משך הזמן בהגדרות הבאות- הצגת הנגן בתחילת שיר, הצגת פקדי הנגן בתחילת שיר, והדלקת המסך במעבר שיר בזמן טעינה</string>
     <string name="permission_sync_text_007" formatted="false">ההגדרה הפעלה האוטומטית בחוסר פעילות כובתה מפני שחסרה הרשאת נתוני שימוש או הרשאת תצוגה מעל אפליקציות</string>
@@ -531,8 +513,7 @@
     <string name="settings_activity_text_311" formatted="false">50%</string>
     <string name="settings_activity_text_312" formatted="false">75%</string>
     <string name="settings_activity_text_313" formatted="false">100%</string>
-    <string name="settings_activity_text_314" formatted="false">מחזיר את הגדרות האפליקציה לברירת המחדל.
-הרשאות התלויות בהגדרות Android אינן משתנות</string>
+    <string name="settings_activity_text_314" formatted="false">מחזיר את הגדרות האפליקציה לברירת המחדל.\nהרשאות התלויות בהגדרות Android אינן משתנות</string>
 
     <string name="settings_activity_text_316" formatted="false">איפוס</string>
     <string name="guide_activity_text_080" formatted="false">הגדרות מתקדמות והגבלות הפעלה אוטומטית</string>
