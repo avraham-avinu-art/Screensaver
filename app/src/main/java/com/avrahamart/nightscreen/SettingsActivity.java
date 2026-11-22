@@ -2084,7 +2084,9 @@ screenHeader.setVisibility(View.GONE);
         tiles.setGravity(Gravity.CENTER_VERTICAL);
         tiles.setClipChildren(false);
         tiles.setClipToPadding(false);
-        tiles.setPadding(dp(1), 0, dp(1), 0);
+        // Add the requested extra 10dp inset to segmented choice controls only.
+        // Keep both horizontal sides identical; sliders and other controls are untouched.
+        tiles.setPadding(dp(11), 0, dp(11), 0);
 
         final TextView[] options = new TextView[names.length];
         final FrameLayout[] optionTiles = new FrameLayout[names.length];
