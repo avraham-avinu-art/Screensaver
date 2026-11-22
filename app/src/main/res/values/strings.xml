@@ -311,13 +311,13 @@
     <string name="guide_activity_text_010" formatted="false">כדי לצאת משומר המסך, </string>
     <string name="guide_activity_text_011" formatted="false">החלק כלפי מעלה מהקצה התחתון של המסך.</string>
     <string name="guide_activity_text_012" formatted="false">משך הפעילות ומסך הנעילה</string>
-    <string name="guide_activity_text_013" formatted="false">„לפי המכשיר” מסתמך על זמן כיבוי המסך של Android. בחירה בדקה או בחמש דקות מסיימת את שומר המסך בתום הזמן; כיבוי המסך עצמו תלוי גם בהגדרות המכשיר.\n</string>
-    <string name="guide_activity_text_014" formatted="false">„ללא כיבוי” משאירה את השומר פעיל ומונעת כיבוי אוטומטי של המסך. כדי לעצור אותו, יש לצאת ממנו.\n</string>
+    <string name="guide_activity_text_013" formatted="false">האפשרות „לפי המכשיר” משתמשת בזמן כיבוי המסך שקבע Android. בחירה בדקה או בחמש דקות מסיימת את שומר המסך בתום הזמן; כיבוי המסך עצמו תלוי גם בהגדרות המכשיר.\n</string>
+    <string name="guide_activity_text_014" formatted="false">האפשרות „ללא כיבוי” משאירה את השומר פעיל ומונעת כיבוי אוטומטי של המסך. כדי לעצור אותו, יש לצאת ממנו.\n</string>
     <string name="guide_activity_text_015" formatted="false">עם הרשאת מנהל מכשיר, האפליקציה יכולה לבקש לנעול את המכשיר בסיום זמן הפעילות.\n\n</string>
     <string name="guide_activity_text_016" formatted="false"></string>
     <string name="guide_activity_text_017" formatted="false"></string>
     <string name="guide_activity_text_018" formatted="false"></string>
-    <string name="guide_activity_text_019" formatted="false">מניעת נעילה בזמן פעילות והמשך הצגה במסך נעילה מטפלות במצבים שונים: בזמן הצגת השומר, ולאחר שהמסך כבה והמכשיר ננעל. במכשירים ללא מסך נעילה רגיל, האפשרויות האלה עשויות לא להיות רלוונטיות.\n\n</string>
+    <string name="guide_activity_text_019" formatted="false">אלו שתי אפשרויות שונות: „מניעת נעילה בזמן פעילות” מתייחסת לזמן שבו השומר מוצג; „המשך הצגה במסך נעילה” מתייחסת להצגתו לאחר שהמסך כבה והמכשיר ננעל. במכשירים ללא מסך נעילה רגיל, האפשרויות האלה עשויות לא להיות רלוונטיות.\n\n</string>
     <string name="guide_activity_text_020" formatted="false"></string>
     <string name="guide_activity_text_021" formatted="false"></string>
     <string name="guide_activity_text_022" formatted="false"></string>
