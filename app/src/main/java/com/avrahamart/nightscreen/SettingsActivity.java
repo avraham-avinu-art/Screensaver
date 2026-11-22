@@ -1952,9 +1952,9 @@ screenHeader.setVisibility(View.GONE);
 
         LinearLayout.LayoutParams rowParams =
                 new LinearLayout.LayoutParams(-1, dp(42));
-        // The containing card already has 7dp side padding; add 5dp here
-        // so both controls sit 12dp from the outer frame like other settings.
-        rowParams.rightMargin = dp(5);
+        // Align both rows with the section title text, beneath it,
+        // rather than extending to the right edge of the card.
+        rowParams.rightMargin = dp(42);
         rowParams.leftMargin = dp(5);
         card.addView(row, rowParams);
 
