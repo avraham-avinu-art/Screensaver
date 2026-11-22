@@ -1445,9 +1445,11 @@ screenHeader.setVisibility(View.GONE);
         card.setTextDirection(View.TEXT_DIRECTION_RTL);
         int cardTopPadding = "idleWaitSeconds".equals(key) ? dp(2) : dp(12);
         int cardBottomPadding = "autoStartOnIdle".equals(key) ? dp(7) : dp(14);
-        int horizontalPadding = settingHasToggle(key) ? dp(7) : dp(12);
-        card.setPadding(horizontalPadding, cardTopPadding,
-                horizontalPadding, cardBottomPadding);
+        int leftHorizontalPadding = settingHasToggle(key) ? dp(7) : dp(25);
+        int rightHorizontalPadding = dp(12);
+        if (settingHasToggle(key)) rightHorizontalPadding = dp(7);
+        card.setPadding(leftHorizontalPadding, cardTopPadding,
+                rightHorizontalPadding, cardBottomPadding);
         card.setClipChildren(false);
         card.setClipToPadding(false);
         card.setBackgroundColor(Color.TRANSPARENT);
@@ -1804,8 +1806,10 @@ screenHeader.setVisibility(View.GONE);
         divider.setBackgroundColor(Color.rgb(54, 78, 102));
         LinearLayout.LayoutParams dividerParams =
                 new LinearLayout.LayoutParams(-1, dp(1));
-        dividerParams.leftMargin = dp(13);
-        dividerParams.rightMargin = dp(13);
+        // The card itself already adds 7dp on each side; keep the inner
+        // divider 13dp from the outer frame, like the other group separators.
+        dividerParams.leftMargin = dp(6);
+        dividerParams.rightMargin = dp(6);
         // Keep the same breathing room above separators as the other setting rows.
         dividerParams.topMargin = dp(9);
         dividerParams.bottomMargin = dp(8);
@@ -1836,8 +1840,10 @@ screenHeader.setVisibility(View.GONE);
         LinearLayout.LayoutParams titleRowParams =
                 new LinearLayout.LayoutParams(-1, dp(30));
         titleRowParams.bottomMargin = dp(8);
-        titleRowParams.leftMargin = dp(13);
-        titleRowParams.rightMargin = dp(13);
+        // Match the ordinary setting header: 7dp card inset on the left,
+        // and 7dp + 5dp icon margin on the right.
+        titleRowParams.leftMargin = 0;
+        titleRowParams.rightMargin = dp(5);
         card.addView(sectionTitleRow, titleRowParams);
 
         Paint hourLabelPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -1864,10 +1870,11 @@ screenHeader.setVisibility(View.GONE);
         final int dropdownWidth = dropdownWidthForOptions(names);
 
         LinearLayout row = new LinearLayout(this);
-        // In RTL order, keep the label at its existing right edge and place
-        // the selector immediately to its left instead of at the far end.
+        // Use an explicit physical order for both rows: selector on the left,
+        // label on the right. This stays identical in RTL screens and groups.
         row.setOrientation(LinearLayout.HORIZONTAL);
-        row.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        row.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+        row.setTextDirection(View.TEXT_DIRECTION_RTL);
         row.setGravity(Gravity.CENTER_VERTICAL);
 
         Spinner spinner = new Spinner(this);
@@ -1930,13 +1937,17 @@ screenHeader.setVisibility(View.GONE);
         // The label remains anchored to the same right edge as before.
         // Its left margin is the small gap to the selector beside it.
         labelParams.leftMargin = dp(9);
-        row.addView(rowLabel, labelParams);
+        // LTR container with selector first places the selector physically
+        // left and the RTL label physically right, for both start and end rows.
         row.addView(spinnerContainer, spinnerParams);
+        row.addView(rowLabel, labelParams);
 
         LinearLayout.LayoutParams rowParams =
                 new LinearLayout.LayoutParams(-1, dp(42));
-        rowParams.rightMargin = dp(13);
-        rowParams.leftMargin = dp(13);
+        // The containing card already has 7dp side padding; add 5dp here
+        // so both controls sit 12dp from the outer frame like other settings.
+        rowParams.rightMargin = dp(5);
+        rowParams.leftMargin = dp(5);
         card.addView(row, rowParams);
 
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
