@@ -87,13 +87,10 @@ public final class GuideActivity extends Activity {
         sections.setPadding(0, dp(2), 0, dp(8));
 
         addSection(sections, getString(R.string.guide_activity_text_003),
-                getString(R.string.guide_activity_text_004) +
-                getString(R.string.guide_activity_text_005) +
-                getString(R.string.guide_activity_text_006));
+                getString(R.string.guide_activity_text_004));
 
         addSection(sections, getString(R.string.guide_activity_text_007),
                 getString(R.string.guide_activity_text_008) +
-                getString(R.string.guide_activity_text_009) +
                 getString(R.string.guide_activity_text_010) +
                 getString(R.string.guide_activity_text_011));
 
@@ -101,84 +98,31 @@ public final class GuideActivity extends Activity {
                 getString(R.string.guide_activity_text_013) +
                 getString(R.string.guide_activity_text_014) +
                 getString(R.string.guide_activity_text_015) +
-                getString(R.string.guide_activity_text_016) +
-                getString(R.string.guide_activity_text_017) +
-                getString(R.string.guide_activity_text_018) +
-                getString(R.string.guide_activity_text_019) +
-                getString(R.string.guide_activity_text_020) +
-                getString(R.string.guide_activity_text_021) +
-                getString(R.string.guide_activity_text_022));
+                getString(R.string.guide_activity_text_019));
 
         addSection(sections, getString(R.string.guide_activity_text_023),
-                getString(R.string.guide_activity_text_024) +
-                getString(R.string.guide_activity_text_025) +
-                getString(R.string.guide_activity_text_026) +
-                getString(R.string.guide_activity_text_027) +
-                getString(R.string.guide_activity_text_028) +
-                getString(R.string.guide_activity_text_029) +
-                getString(R.string.guide_activity_text_030));
+                getString(R.string.guide_activity_text_024));
 
         addSection(sections, getString(R.string.guide_activity_text_080),
                 getString(R.string.guide_activity_text_081));
 
         addSection(sections, getString(R.string.guide_activity_text_031),
-                getString(R.string.guide_activity_text_032) +
-                getString(R.string.guide_activity_text_033) +
-                getString(R.string.guide_activity_text_034) +
-                getString(R.string.guide_activity_text_035) +
-                getString(R.string.guide_activity_text_036) +
-                getString(R.string.guide_activity_text_037));
+                getString(R.string.guide_activity_text_033));
 
         addSection(sections, getString(R.string.guide_activity_text_038),
-                getString(R.string.guide_activity_text_039) +
-                getString(R.string.guide_activity_text_040) +
-                getString(R.string.guide_activity_text_041) +
-                getString(R.string.guide_activity_text_042) +
-                getString(R.string.guide_activity_text_043) +
-                getString(R.string.guide_activity_text_044) +
-                getString(R.string.guide_activity_text_045));
-
-        addSection(sections, getString(R.string.guide_activity_text_046),
-                getString(R.string.guide_activity_text_047) +
-                getString(R.string.guide_activity_text_048) +
-                getString(R.string.guide_activity_text_049) +
-                getString(R.string.guide_activity_text_050) +
-                getString(R.string.guide_activity_text_051) +
-                getString(R.string.guide_activity_text_052));
+                getString(R.string.guide_activity_text_039));
 
         addSection(sections, getString(R.string.guide_activity_text_053),
-                getString(R.string.guide_activity_text_054) +
-                getString(R.string.guide_activity_text_055) +
-                getString(R.string.guide_activity_text_056) +
-                getString(R.string.guide_activity_text_057) +
-                getString(R.string.guide_activity_text_058));
+                getString(R.string.guide_activity_text_054));
 
         addSection(sections, getString(R.string.guide_activity_text_059),
                 getString(R.string.guide_activity_text_060) +
-                getString(R.string.guide_activity_text_061) +
-                getString(R.string.guide_activity_text_062) +
-                getString(R.string.guide_activity_text_063) +
-                getString(R.string.guide_activity_text_064) +
                 getString(R.string.guide_activity_text_065));
-
-        addSection(sections, getString(R.string.guide_activity_text_066),
-                getString(R.string.guide_activity_text_067) +
-                getString(R.string.guide_activity_text_068) +
-                getString(R.string.guide_activity_text_069) +
-                getString(R.string.guide_activity_text_070) +
-                getString(R.string.guide_activity_text_071) +
-                getString(R.string.guide_activity_text_072));
-
-        addSection(sections, getString(R.string.guide_activity_text_082),
-                getString(R.string.guide_activity_text_083));
 
         addSection(sections, getString(R.string.guide_activity_text_073),
                 getString(R.string.guide_activity_text_074) +
                 getString(R.string.guide_activity_text_075) +
-                getString(R.string.guide_activity_text_076) +
-                getString(R.string.guide_activity_text_077) +
-                getString(R.string.guide_activity_text_078) +
-                getString(R.string.guide_activity_text_079));
+                getString(R.string.guide_activity_text_076));
 
         scroll.addView(sections, new ScrollView.LayoutParams(-1, -2));
         root.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1f));
