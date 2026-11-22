@@ -905,11 +905,7 @@ public class MainActivity extends Activity {
 
 
 
-    private int horizontalGravityForTextMode(String mode) {
-        if ("right".equals(mode)) return Gravity.RIGHT;
-        if ("left".equals(mode)) return Gravity.LEFT;
-        return Gravity.CENTER_HORIZONTAL;
-    }
+
 
 
 
@@ -943,35 +939,9 @@ public class MainActivity extends Activity {
 
 
 
-    private int glyphTopInsetPx(TextView view, int rowHeight, String fallbackText) {
-        if (view == null) return 0;
-        android.graphics.Paint paint = view.getPaint();
-        android.graphics.Paint.FontMetricsInt metrics = paint.getFontMetricsInt();
-        int lineHeight = metrics.descent - metrics.ascent;
-        float baseline = (rowHeight - lineHeight) / 2f - metrics.ascent;
 
-        android.graphics.Rect bounds = new android.graphics.Rect();
-        CharSequence current = view.getText();
-        String text = current == null || current.length() == 0
-                ? fallbackText : current.toString();
-        paint.getTextBounds(text, 0, text.length(), bounds);
-        return Math.round(baseline + bounds.top);
-    }
 
-    private int glyphBottomInsetPx(TextView view, int rowHeight, String fallbackText) {
-        if (view == null) return 0;
-        android.graphics.Paint paint = view.getPaint();
-        android.graphics.Paint.FontMetricsInt metrics = paint.getFontMetricsInt();
-        int lineHeight = metrics.descent - metrics.ascent;
-        float baseline = (rowHeight - lineHeight) / 2f - metrics.ascent;
 
-        android.graphics.Rect bounds = new android.graphics.Rect();
-        CharSequence current = view.getText();
-        String text = current == null || current.length() == 0
-                ? fallbackText : current.toString();
-        paint.getTextBounds(text, 0, text.length(), bounds);
-        return Math.round(rowHeight - (baseline + bounds.bottom));
-    }
 
 
 
@@ -986,20 +956,12 @@ public class MainActivity extends Activity {
 
 
     
-    private int getScreenBackgroundColor() {
-        return getInt("screenBackgroundColor", Color.BLACK);
-    }
+
 
     
     
     
-    private int mixColor(int from, int to, float amount) {
-        float f = Math.max(0f, Math.min(1f, amount));
-        return Color.rgb(
-                Math.round(Color.red(from) * (1f - f) + Color.red(to) * f),
-                Math.round(Color.green(from) * (1f - f) + Color.green(to) * f),
-                Math.round(Color.blue(from) * (1f - f) + Color.blue(to) * f));
-    }
+
 
 
 
@@ -2547,18 +2509,7 @@ public class MainActivity extends Activity {
     }
 
     
-    private ImageView mediaIconButton(int drawableRes, String description) {
-        ImageView v = new ImageView(this);
-        v.setImageResource(drawableRes);
-        v.setScaleType(ImageView.ScaleType.CENTER);
-        v.setContentDescription(description);
-        v.setClickable(true);
-        v.setFocusable(true);
-        v.setBackgroundColor(Color.TRANSPARENT);
-        v.setPadding(0, 0, 0, 0);
-        v.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-        return v;
-    }
+
 
 
 
