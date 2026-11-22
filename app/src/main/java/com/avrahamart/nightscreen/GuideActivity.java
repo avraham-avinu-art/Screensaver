@@ -205,11 +205,8 @@ public final class GuideActivity extends Activity {
 
         View divider = new View(this);
         divider.setBackgroundColor(OUTLINE);
-        // Use a short, standard divider under the heading instead of a
-        // full-width line across the guide card.
         LinearLayout.LayoutParams dividerParams =
-                new LinearLayout.LayoutParams(dp(40), dp(1));
-        dividerParams.gravity = Gravity.RIGHT;
+                new LinearLayout.LayoutParams(-1, dp(1));
         dividerParams.bottomMargin = dp(9);
         card.addView(divider, dividerParams);
 
