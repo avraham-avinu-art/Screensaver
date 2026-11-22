@@ -52,7 +52,6 @@ public final class ScreensaverDreamService extends DreamService {
     private String lastPlayerControlsDisplayMode = "on";
     private long currentMediaDurationMs;
     private boolean lastPlaybackActive;
-    private boolean lastControlsIntroOnly;
 
     private final Runnable tick = new Runnable() {
         @Override public void run() {

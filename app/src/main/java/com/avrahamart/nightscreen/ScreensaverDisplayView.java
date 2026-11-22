@@ -79,7 +79,6 @@ public final class ScreensaverDisplayView extends LinearLayout {
     final ImageView mediaNext;
 
     int mediaProgressBaseWidth;
-    private Bitmap currentAlbumArt;
     private final Calendar now = Calendar.getInstance();
     private final SimpleDateFormat numericDateFormat =
             new SimpleDateFormat("dd.MM.yyyy", Locale.US);
@@ -364,7 +363,6 @@ public final class ScreensaverDisplayView extends LinearLayout {
     }
 
     public void setMediaArtwork(Bitmap artwork, boolean active) {
-        currentAlbumArt = artwork;
         applyMediaFrame(active, artwork);
     }
 
