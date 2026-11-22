@@ -1,6 +1,7 @@
 package com.avrahamart.nightscreen;
 
 import android.app.Activity;
+import android.app.admin.DevicePolicyManager;
 import android.app.AlertDialog;
 import android.app.AppOpsManager;
 import android.app.NotificationManager;
@@ -17,11 +18,6 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
-import android.text.style.StyleSpan;
-import android.text.style.RelativeSizeSpan;
-import android.text.style.ForegroundColorSpan;
-import android.text.Spanned;
-import android.text.SpannableStringBuilder;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Build;
 import android.os.Bundle;
@@ -1323,7 +1319,7 @@ screenHeader.setVisibility(View.GONE);
                 }
                 if ("useAndroidDreamForCharging".equals(key)) return getString(R.string.settings_activity_text_066);
                 if ("settingsButtonAlwaysVisible".equals(key)) return getString(R.string.settings_activity_text_141);
-        if ("resetAllSettings".equals(key)) return getString(R.string.settings_activity_text_011);
+        if ("resetAllSettings".equals(key)) return getString(R.string.settings_activity_text_316);
                 if ("nightModeEnabled".equals(key)
                         || "nightModeStartHour".equals(key)
                         || "nightModeEndHour".equals(key)) {
@@ -1342,8 +1338,7 @@ screenHeader.setVisibility(View.GONE);
         }
     }
 
-    private void addSettingsGroupHeading(LinearLayout group, String label,
-                                         boolean showActivityInfo) {
+    private void addSettingsGroupHeading(LinearLayout group, String label) {
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
@@ -1358,19 +1353,6 @@ screenHeader.setVisibility(View.GONE);
         heading.setPadding(0, 0, dp(7), 0);
         row.addView(heading, new LinearLayout.LayoutParams(0, dp(26), 1f));
 
-        if (showActivityInfo) {
-            FrameLayout infoButton = new FrameLayout(this);
-            infoButton.setContentDescription(getString(R.string.settings_activity_text_055));
-            infoButton.setClickable(true);
-            infoButton.setFocusable(true);
-            infoButton.setBackgroundColor(Color.TRANSPARENT);
-            View glyph = makeIconGlyph("message-circle-question", ACCENT);
-            infoButton.addView(glyph,
-                    new FrameLayout.LayoutParams(dp(28), dp(28), Gravity.CENTER));
-            infoButton.setOnClickListener(v -> showActivityTimeHelpDialog());
-            row.addView(infoButton, new LinearLayout.LayoutParams(dp(36), dp(30)));
-        }
-
         LinearLayout.LayoutParams headingParams =
                 new LinearLayout.LayoutParams(-1, dp(26));
         headingParams.topMargin = dp(15);
@@ -1379,7 +1361,6 @@ screenHeader.setVisibility(View.GONE);
         headingParams.rightMargin = dp(5);
         group.addView(row, headingParams);
 
-        // Match the heading rule to the separators between setting rows.
         View headingDivider = new View(this);
         headingDivider.setBackgroundColor(Color.rgb(54, 78, 102));
         LinearLayout.LayoutParams headingDividerParams =
@@ -1387,6 +1368,35 @@ screenHeader.setVisibility(View.GONE);
         headingDividerParams.leftMargin = dp(13);
         headingDividerParams.rightMargin = dp(13);
         group.addView(headingDivider, headingDividerParams);
+    }
+
+    private boolean settingHasToggle(String key) {
+        switch (key) {
+            case "showHebrew":
+            case "showGregorian":
+            case "preventLockWhileActive":
+            case "continueOnLockScreen":
+            case "autoStartOnDeviceLock":
+            case "autoStartOnBoot":
+            case "autoStartOnWake":
+            case "autoStartOnCharge":
+            case "autoStartOnIdle":
+            case "noShutdownWhileCharging":
+            case "wakeOnTrackChange":
+            case "showDetails":
+            case "frameEnabled":
+            case "frameUseAlbumArt":
+            case "nightModeEnabled":
+            case "batteryProtectionEnabled":
+            case "useAndroidDreamForCharging":
+            case "autoStartOnlyWhenLocked":
+            case "preventAutoStartDuringUse":
+            case "pauseWhenExcludedAppActive":
+            case "settingsButtonAlwaysVisible":
+                return true;
+            default:
+                return false;
+        }
     }
 
     private LinearLayout addSettingCard(LinearLayout parent, String label, String key) {
@@ -1417,9 +1427,7 @@ screenHeader.setVisibility(View.GONE);
             parent.addView(currentSettingsGroup, groupParams);
             currentSettingsGroupParent = parent;
             currentSettingsGroupTitle = groupTitle;
-            addSettingsGroupHeading(currentSettingsGroup, groupTitle,
-                    currentCategory == CATEGORY_ACTIVITY
-                            && getString(R.string.settings_activity_text_134).equals(groupTitle));
+            addSettingsGroupHeading(currentSettingsGroup, groupTitle);
         } else if (currentSettingsGroup.getChildCount() > 1
                 && !"idleWaitSeconds".equals(key)) {
             View divider = new View(this);
@@ -1437,7 +1445,9 @@ screenHeader.setVisibility(View.GONE);
         card.setTextDirection(View.TEXT_DIRECTION_RTL);
         int cardTopPadding = "idleWaitSeconds".equals(key) ? dp(2) : dp(12);
         int cardBottomPadding = "autoStartOnIdle".equals(key) ? dp(7) : dp(14);
-        card.setPadding(dp(7), cardTopPadding, dp(7), cardBottomPadding);
+        int horizontalPadding = settingHasToggle(key) ? dp(7) : dp(12);
+        card.setPadding(horizontalPadding, cardTopPadding,
+                horizontalPadding, cardBottomPadding);
         card.setClipChildren(false);
         card.setClipToPadding(false);
         card.setBackgroundColor(Color.TRANSPARENT);
@@ -1555,219 +1565,6 @@ screenHeader.setVisibility(View.GONE);
     }
 
     
-    private void showActivityTimeHelpDialog() {
-        String help =
-                getString(R.string.settings_activity_text_194)
-                + getString(R.string.settings_activity_text_195)
-                + getString(R.string.settings_activity_text_196)
-                + getString(R.string.settings_activity_text_197)
-                + getString(R.string.settings_activity_text_198)
-                + getString(R.string.settings_activity_text_199)
-                + getString(R.string.settings_activity_text_200)
-                + getString(R.string.settings_activity_text_201)
-                + getString(R.string.settings_activity_text_202)
-                + getString(R.string.settings_activity_text_203)
-                + getString(R.string.settings_activity_text_204)
-                + getString(R.string.settings_activity_text_205)
-                + getString(R.string.settings_activity_text_206)
-                + getString(R.string.settings_activity_text_207)
-                + getString(R.string.settings_activity_text_208)
-                + getString(R.string.settings_activity_text_209)
-                + getString(R.string.settings_activity_text_210)
-                + getString(R.string.settings_activity_text_211)
-                + getString(R.string.settings_activity_text_212)
-                + getString(R.string.settings_activity_text_213)
-                + getString(R.string.settings_activity_text_214)
-                + getString(R.string.settings_activity_text_215)
-                + getString(R.string.settings_activity_text_216)
-                + getString(R.string.settings_activity_text_217)                + getString(R.string.settings_activity_text_218)
-                + getString(R.string.settings_activity_text_219)
-                + getString(R.string.settings_activity_text_220)
-                + getString(R.string.settings_activity_text_221);
-
-        AlertDialog dialog = new AlertDialog.Builder(this).create();
-
-        LinearLayout panel = new LinearLayout(this);
-        panel.setOrientation(LinearLayout.VERTICAL);
-        panel.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        panel.setTextDirection(View.TEXT_DIRECTION_RTL);
-        panel.setPadding(dp(18), dp(14), dp(18), dp(13));
-        panel.setBackground(roundOutline(CARD_SURFACE, dp(22), CARD_OUTLINE));
-        if (Build.VERSION.SDK_INT >= 21) panel.setElevation(dp(3));
-
-        // The heading and help text scroll as one. The close X stays fixed and accessible.
-        FrameLayout scrollViewport = new FrameLayout(this);
-        ScrollView scroll = new ScrollView(this);
-        scroll.setFillViewport(false);
-        scroll.setVerticalScrollBarEnabled(false);
-        scroll.setOverScrollMode(View.OVER_SCROLL_IF_CONTENT_SCROLLS);
-        scroll.setClipToPadding(false);
-        scrollViewport.addView(scroll, new FrameLayout.LayoutParams(-1, -1));
-
-        LinearLayout scrollContent = new LinearLayout(this);
-        scrollContent.setOrientation(LinearLayout.VERTICAL);
-        scrollContent.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        scrollContent.setTextDirection(View.TEXT_DIRECTION_RTL);
-        scrollContent.setPadding(0, 0, 0, dp(4));
-
-        LinearLayout heading = new LinearLayout(this);
-        heading.setOrientation(LinearLayout.HORIZONTAL);
-        heading.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        heading.setGravity(Gravity.CENTER_VERTICAL);
-        // Reserve the physical upper-left corner for the fixed close button.
-        heading.setPadding(dp(40), 0, 0, 0);
-
-        FrameLayout helpIconShell = new FrameLayout(this);
-        helpIconShell.setBackgroundColor(Color.TRANSPARENT);
-        View helpIcon = makeIconGlyph("message-circle-question", ACCENT);
-        helpIconShell.addView(helpIcon,
-                new FrameLayout.LayoutParams(dp(32), dp(32), Gravity.CENTER));
-        heading.addView(helpIconShell, new LinearLayout.LayoutParams(dp(46), dp(46)));
-
-        LinearLayout titleBlock = new LinearLayout(this);
-        titleBlock.setOrientation(LinearLayout.VERTICAL);
-        titleBlock.setGravity(Gravity.CENTER_VERTICAL);
-        // Extra spacing between the icon and title block.
-        titleBlock.setPadding(0, 0, 0, 0);
-
-        TextView title = textView(getString(R.string.settings_activity_text_134), 20, ON_SURFACE);
-        title.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-        title.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        title.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
-        title.setIncludeFontPadding(false);
-        titleBlock.addView(title, new LinearLayout.LayoutParams(-1, -2));
-
-        TextView subtitle = textView(getString(R.string.settings_activity_text_222), 14, MUTED);
-        subtitle.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        subtitle.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
-        subtitle.setIncludeFontPadding(false);
-        subtitle.setPadding(0, 0, 0, 0);
-        titleBlock.addView(subtitle, new LinearLayout.LayoutParams(-1, -2));
-        LinearLayout.LayoutParams titleBlockParams =
-                new LinearLayout.LayoutParams(0, -2, 1f);
-        // Add spacing at the physical side next to the icon (the heading is RTL).
-        titleBlockParams.rightMargin = dp(1);
-        heading.addView(titleBlock, titleBlockParams);
-        scrollContent.addView(heading, new LinearLayout.LayoutParams(-1, -2));
-
-        View divider = new View(this);
-        divider.setBackgroundColor(CARD_OUTLINE);
-        LinearLayout.LayoutParams dividerParams = new LinearLayout.LayoutParams(-1, dp(1));
-        dividerParams.topMargin = dp(9);
-        dividerParams.bottomMargin = dp(10);
-        scrollContent.addView(divider, dividerParams);
-
-        TextView message = textView("", 15, ON_SURFACE);
-        message.setGravity(Gravity.RIGHT | Gravity.TOP);
-        message.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
-        message.setTextDirection(View.TEXT_DIRECTION_RTL);
-        message.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
-        message.setLineSpacing(dp(3), 1.0f);
-        message.setPadding(dp(2), dp(2), dp(2), dp(4));
-
-        SpannableStringBuilder styledHelp = new SpannableStringBuilder();
-        String[] lines = help.split("\n", -1);
-        for (int i = 0; i < lines.length; i++) {
-            String line = lines[i];
-            int lineStart = styledHelp.length();
-            styledHelp.append(line);
-            int lineEnd = styledHelp.length();
-
-            boolean sectionHeading =
-                    line.equals(getString(R.string.settings_activity_text_223))
-                    || line.equals(getString(R.string.settings_activity_text_061))
-                    || line.equals(getString(R.string.settings_activity_text_224))
-                    || line.equals(getString(R.string.settings_activity_text_063))
-                    || line.equals(getString(R.string.settings_activity_text_064))
-                    || line.equals(getString(R.string.settings_activity_text_065))
-                    || line.equals(getString(R.string.settings_activity_text_225));
-
-            if (sectionHeading) {
-                styledHelp.setSpan(new ForegroundColorSpan(ACCENT), lineStart, lineEnd,
-                        Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                styledHelp.setSpan(new StyleSpan(Typeface.BOLD), lineStart, lineEnd,
-                        Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                styledHelp.setSpan(new RelativeSizeSpan(1.04f), lineStart, lineEnd,
-                        Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-            } else if (line.startsWith("•")) {
-                styledHelp.setSpan(new ForegroundColorSpan(ACCENT), lineStart, lineStart + 1,
-                        Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-            }
-
-            if (i < lines.length - 1) {
-                int newlineStart = styledHelp.length();
-                styledHelp.append('\n');
-                if (line.isEmpty()) {
-                    styledHelp.setSpan(new RelativeSizeSpan(0.55f), newlineStart, newlineStart + 1,
-                            Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                }
-            }
-        }
-        message.setText(styledHelp);
-        scrollContent.addView(message, new LinearLayout.LayoutParams(-1, -2));
-
-        Button close = new Button(this);
-        close.setText(getString(R.string.settings_activity_text_226));
-        close.setAllCaps(false);
-        close.setTextSize(15);
-        close.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-        close.setTextColor(Color.rgb(7, 31, 49));
-        close.setMinWidth(0);
-        close.setMinHeight(0);
-        close.setPadding(dp(28), 0, dp(28), 0);
-        close.setBackground(pillBackground(ACCENT, dp(22)));
-        LinearLayout.LayoutParams closeParams =
-                new LinearLayout.LayoutParams(dp(124), dp(44));
-        closeParams.gravity = Gravity.CENTER_HORIZONTAL;
-        closeParams.topMargin = dp(12);
-        scrollContent.addView(close, closeParams);
-        close.setOnClickListener(v -> dialog.dismiss());
-
-        scroll.addView(scrollContent, new ScrollView.LayoutParams(-1, -2));
-
-        FrameLayout closeX = new FrameLayout(this);
-        closeX.setContentDescription(getString(R.string.settings_activity_text_227));
-        closeX.setBackgroundColor(Color.TRANSPARENT);
-        closeX.setClickable(true);
-        closeX.setFocusable(true);
-        closeX.setPadding(0, 0, 0, 0);
-        closeX.setForegroundGravity(Gravity.CENTER);
-        if (Build.VERSION.SDK_INT >= 21) closeX.setElevation(dp(4));
-        View closeXGlyph = makeIconGlyph("close-circle", ACCENT);
-        FrameLayout.LayoutParams closeGlyphParams =
-                new FrameLayout.LayoutParams(dp(34), dp(34), Gravity.CENTER);
-        closeGlyphParams.gravity = Gravity.CENTER;
-        closeX.addView(closeXGlyph, closeGlyphParams);
-        closeX.setOnClickListener(v -> dialog.dismiss());
-        FrameLayout.LayoutParams closeXParams =
-                new FrameLayout.LayoutParams(dp(34), dp(34), Gravity.LEFT | Gravity.TOP);
-        scrollViewport.addView(closeX, closeXParams);
-
-        // Keep the outer dialog height unchanged: the old fixed close button occupied 56dp.
-        int maxBodyHeight = Math.max(dp(150),
-                Math.min(dp(430), getResources().getDisplayMetrics().heightPixels - dp(265)));
-        int scrollViewportHeight = maxBodyHeight + dp(56);
-        panel.addView(scrollViewport, new LinearLayout.LayoutParams(-1, scrollViewportHeight));
-
-        dialog.setView(panel);
-        dialog.setCancelable(true);
-        dialog.setCanceledOnTouchOutside(true);
-        dialog.show();
-
-        Window window = dialog.getWindow();
-        if (window != null) {
-            window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-            window.addFlags(android.view.WindowManager.LayoutParams.FLAG_DIM_BEHIND);
-            android.util.DisplayMetrics metrics = getResources().getDisplayMetrics();
-            android.view.WindowManager.LayoutParams params = window.getAttributes();
-            params.width = Math.min(dp(520), metrics.widthPixels - dp(28));
-            params.height = android.view.WindowManager.LayoutParams.WRAP_CONTENT;
-            params.gravity = Gravity.CENTER;
-            params.dimAmount = 0.62f;
-            window.setAttributes(params);
-        }
-    }
-
     private LinearLayout addCheck(
             LinearLayout parent, String label, String key, boolean defaultValue) {
         LinearLayout card = addSettingCard(parent, label, key);
@@ -2039,6 +1836,8 @@ screenHeader.setVisibility(View.GONE);
         LinearLayout.LayoutParams titleRowParams =
                 new LinearLayout.LayoutParams(-1, dp(30));
         titleRowParams.bottomMargin = dp(8);
+        titleRowParams.leftMargin = dp(13);
+        titleRowParams.rightMargin = dp(13);
         card.addView(sectionTitleRow, titleRowParams);
 
         Paint hourLabelPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -2136,8 +1935,8 @@ screenHeader.setVisibility(View.GONE);
 
         LinearLayout.LayoutParams rowParams =
                 new LinearLayout.LayoutParams(-1, dp(42));
-        rowParams.rightMargin = dp(42);
-        rowParams.leftMargin = dp(5);
+        rowParams.rightMargin = dp(13);
+        rowParams.leftMargin = dp(13);
         card.addView(row, rowParams);
 
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
@@ -2472,6 +2271,17 @@ screenHeader.setVisibility(View.GONE);
         updateDeviceCapabilityNotice();
     }
 
+    private boolean isScreenLockAdminActive() {
+        try {
+            DevicePolicyManager manager = (DevicePolicyManager)
+                    getSystemService(Context.DEVICE_POLICY_SERVICE);
+            ComponentName admin = new ComponentName(this, ScreenLockAdminReceiver.class);
+            return manager != null && manager.isAdminActive(admin);
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
     private void updateDeviceCapabilityNotice() {
         if (activityCapabilityNotice == null) return;
 
@@ -2488,8 +2298,11 @@ screenHeader.setVisibility(View.GONE);
             notices.add(getString(R.string.settings_activity_text_239));
         }
 
+        // This warning only applies when the app cannot lock the device itself.
+        boolean screenLockAdminActive = isScreenLockAdminActive();
         String duration = getString("screenSaverDuration", "device");
-        if ("1".equals(duration) || "5".equals(duration)) {
+        if (!screenLockAdminActive
+                && ("1".equals(duration) || "5".equals(duration))) {
             long timeoutMs = -1L;
             try {
                 timeoutMs = Settings.System.getLong(

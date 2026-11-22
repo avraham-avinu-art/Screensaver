@@ -6,8 +6,6 @@ import android.app.usage.UsageStatsManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
-import android.content.pm.ResolveInfo;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
@@ -15,24 +13,22 @@ import android.os.PowerManager;
 import android.os.SystemClock;
 import android.provider.Settings;
 
-import java.util.HashMap;
-import java.util.Map;
-
-/** Uses foreground-app events only; it never observes taps, gestures or window contents. */
+/**
+ * Starts the screensaver after Android reports no user interaction for the selected period.
+ * Uses UsageStats events and Usage Access; it does not require an AccessibilityService.
+ */
 final class IdleScreensaverMonitor {
     private static final long POLL_INTERVAL_MS = 2_000L;
-    private static final long EVENT_LOOKBACK_MS = 24L * 60L * 60L * 1000L;
+    private static final long QUERY_OVERLAP_MS = 1_000L;
     private static final long LAUNCH_RETRY_COOLDOWN_MS = 10_000L;
 
     private final Context context;
     private final Handler handler = new Handler(Looper.getMainLooper());
-    private final Map<String, Map<String, Long>> resumedActivities = new HashMap<>();
     private final Runnable pollRunnable = this::poll;
 
     private UsageStatsManager usageStatsManager;
-    private String launcherPackage;
-    private String foregroundPackage;
     private long lastUsageQueryWallTime;
+    private long lastUserActivityWallTime;
     private long idleSinceElapsed = -1L;
     private long lastLaunchAttemptElapsed;
     private boolean running;
@@ -46,24 +42,18 @@ final class IdleScreensaverMonitor {
         if (running || !hasUsageAccess()) return;
         usageStatsManager = (UsageStatsManager)
                 context.getSystemService(Context.USAGE_STATS_SERVICE);
-        launcherPackage = resolveLauncherPackage();
-        if (usageStatsManager == null || launcherPackage == null) return;
+        if (usageStatsManager == null) return;
 
         running = true;
-        resumedActivities.clear();
-        foregroundPackage = null;
-        idleSinceElapsed = -1L;
         launchPending = false;
-
         long nowWall = System.currentTimeMillis();
-        long bootTime = Math.max(0L, nowWall - SystemClock.elapsedRealtime());
-        long begin = Math.max(bootTime, nowWall - EVENT_LOOKBACK_MS);
-        if (!readUsageEvents(begin, nowWall)) {
-            running = false;
-            return;
-        }
+        long nowElapsed = SystemClock.elapsedRealtime();
+
+        // Enabling or restarting starts a full new wait. Earlier inactivity is not counted.
         lastUsageQueryWallTime = nowWall;
-        updateForegroundState(nowWall, true);
+        lastUserActivityWallTime = nowWall;
+        idleSinceElapsed = nowElapsed;
+
         handler.removeCallbacks(pollRunnable);
         handler.postDelayed(pollRunnable, POLL_INTERVAL_MS);
     }
@@ -71,10 +61,9 @@ final class IdleScreensaverMonitor {
     void stop() {
         running = false;
         handler.removeCallbacks(pollRunnable);
-        resumedActivities.clear();
-        foregroundPackage = null;
         idleSinceElapsed = -1L;
         launchPending = false;
+        usageStatsManager = null;
     }
 
     private void poll() {
@@ -86,118 +75,67 @@ final class IdleScreensaverMonitor {
         }
 
         long nowWall = System.currentTimeMillis();
-        long bootTime = Math.max(0L, nowWall - SystemClock.elapsedRealtime());
-        long begin = Math.max(bootTime, Math.max(0L, lastUsageQueryWallTime - 1_000L));
+        long begin = Math.max(0L, lastUsageQueryWallTime - QUERY_OVERLAP_MS);
         if (nowWall > begin && readUsageEvents(begin, nowWall)) {
             lastUsageQueryWallTime = nowWall;
-            updateForegroundState(nowWall, false);
             maybeLaunchFromIdle(prefs);
         }
-        handler.postDelayed(pollRunnable, POLL_INTERVAL_MS);
+        if (running) handler.postDelayed(pollRunnable, POLL_INTERVAL_MS);
     }
 
     private boolean readUsageEvents(long begin, long end) {
         try {
             UsageEvents events = usageStatsManager.queryEvents(begin, end);
             if (events == null) return false;
+
             UsageEvents.Event event = new UsageEvents.Event();
             while (events.hasNextEvent()) {
                 events.getNextEvent(event);
-                String packageName = event.getPackageName();
-                if (packageName == null || packageName.isEmpty()) continue;
-
                 int type = event.getEventType();
-                boolean resumed = type == UsageEvents.Event.MOVE_TO_FOREGROUND
+
+                boolean activityResumed = type == UsageEvents.Event.MOVE_TO_FOREGROUND
                         || (Build.VERSION.SDK_INT >= 29
                         && type == UsageEvents.Event.ACTIVITY_RESUMED);
-                boolean paused = type == UsageEvents.Event.MOVE_TO_BACKGROUND
-                        || (Build.VERSION.SDK_INT >= 29
-                        && (type == UsageEvents.Event.ACTIVITY_PAUSED
-                        || type == UsageEvents.Event.ACTIVITY_STOPPED));
-                if (!resumed && !paused) continue;
+                boolean userInteraction = type == UsageEvents.Event.USER_INTERACTION;
+                boolean screenBecameInteractive = Build.VERSION.SDK_INT >= 28
+                        && type == UsageEvents.Event.SCREEN_INTERACTIVE;
 
-                String className = event.getClassName();
-                if (className == null || className.isEmpty()) className = "*";
-                long timestamp = event.getTimeStamp();
-
-                if (resumed) {
-                    Map<String, Long> activities = resumedActivities.get(packageName);
-                    if (activities == null) {
-                        activities = new HashMap<>();
-                        resumedActivities.put(packageName, activities);
-                    }
-                    activities.put(className, timestamp);
-                } else {
-                    Map<String, Long> activities = resumedActivities.get(packageName);
-                    if (activities != null) {
-                        if ("*".equals(className)
-                                || type == UsageEvents.Event.MOVE_TO_BACKGROUND) {
-                            activities.clear();
-                        } else {
-                            activities.remove(className);
-                        }
-                        if (activities.isEmpty()) resumedActivities.remove(packageName);
-                    }
+                if (activityResumed || userInteraction || screenBecameInteractive) {
+                    recordUserActivity(event.getTimeStamp(), end);
                 }
             }
             return true;
         } catch (Throwable error) {
             android.util.Log.w("NightScreenIdle",
-                    "Unable to read foreground application events.", error);
+                    "Unable to read user interaction events.", error);
             return false;
         }
     }
 
-    private void updateForegroundState(long nowWall, boolean firstSnapshot) {
-        String topPackage = null;
-        long topTimestamp = Long.MIN_VALUE;
-        for (Map.Entry<String, Map<String, Long>> packageEntry : resumedActivities.entrySet()) {
-            for (Long timestamp : packageEntry.getValue().values()) {
-                if (timestamp != null && timestamp > topTimestamp) {
-                    topTimestamp = timestamp;
-                    topPackage = packageEntry.getKey();
-                }
-            }
-        }
-        if (topPackage == null) {
-            foregroundPackage = null;
-            idleSinceElapsed = -1L;
-            launchPending = false;
-            return;
-        }
+    private void recordUserActivity(long eventWallTime, long nowWallTime) {
+        if (eventWallTime <= lastUserActivityWallTime) return;
 
-        if (!topPackage.equals(foregroundPackage)) {
-            foregroundPackage = topPackage;
-            if (launcherPackage.equals(topPackage)) {
-                long elapsedNow = SystemClock.elapsedRealtime();
-                if (firstSnapshot) {
-                    // Opt-in starts a fresh wait; time before enabling is not counted.
-                    idleSinceElapsed = elapsedNow;
-                } else {
-                    long foregroundAge = Math.max(0L, nowWall - topTimestamp);
-                    idleSinceElapsed = Math.max(0L, elapsedNow - foregroundAge);
-                }
-            } else {
-                idleSinceElapsed = -1L;
-                launchPending = false;
-            }
-        }
+        lastUserActivityWallTime = eventWallTime;
+        long ageMs = Math.max(0L, nowWallTime - eventWallTime);
+        idleSinceElapsed = Math.max(0L, SystemClock.elapsedRealtime() - ageMs);
+        launchPending = false;
     }
 
     private void maybeLaunchFromIdle(SharedPreferences prefs) {
-        if (!running || launchPending || idleSinceElapsed < 0L
-                || !launcherPackage.equals(foregroundPackage)) return;
-        PowerManager power = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+        if (!running || launchPending || idleSinceElapsed < 0L) return;
+        PowerManager power =
+                (PowerManager) context.getSystemService(Context.POWER_SERVICE);
         if (power == null || !power.isInteractive()) return;
 
         int seconds = Math.max(30, Math.min(600, prefs.getInt("idleWaitSeconds", 30)));
         long requiredMs = seconds * 1_000L;
         long elapsed = SystemClock.elapsedRealtime() - idleSinceElapsed;
         if (!shouldLaunch(prefs.getBoolean("autoStartOnIdle", false),
-                true, power.isInteractive(), elapsed, requiredMs)) return;
+                power.isInteractive(), elapsed, requiredMs)) return;
 
         long nowElapsed = SystemClock.elapsedRealtime();
         if (nowElapsed - lastLaunchAttemptElapsed < LAUNCH_RETRY_COOLDOWN_MS) return;
+
         MonitorSettingsSnapshot snapshot = MonitorSettingsSnapshot.read(context);
         if (snapshot == null || !snapshot.autoStartOnIdle
                 || !AutoStartConditions.canActivate(context, snapshot)) return;
@@ -207,7 +145,9 @@ final class IdleScreensaverMonitor {
         launchPending = true;
         lastLaunchAttemptElapsed = nowElapsed;
         idleSinceElapsed = nowElapsed;
+        lastUserActivityWallTime = System.currentTimeMillis();
         MonitorSettingsSnapshot.setSuppressNextDeviceLockScreenOff(context, true);
+
         Intent launch = new Intent(context, MainActivity.class);
         launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
                 | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
@@ -218,14 +158,13 @@ final class IdleScreensaverMonitor {
             launchPending = false;
             MonitorSettingsSnapshot.setSuppressNextDeviceLockScreenOff(context, false);
             android.util.Log.w("NightScreenIdle",
-                    "Android blocked the foreground-app idle screensaver launch.", error);
+                    "Android blocked the user-idle screensaver launch.", error);
         }
     }
 
-    static boolean shouldLaunch(boolean enabled, boolean launcherForeground,
-                                boolean screenInteractive, long idleElapsedMs,
-                                long requiredIdleMs) {
-        return enabled && launcherForeground && screenInteractive
+    static boolean shouldLaunch(boolean enabled, boolean screenInteractive,
+                                long idleElapsedMs, long requiredIdleMs) {
+        return enabled && screenInteractive
                 && requiredIdleMs > 0L && idleElapsedMs >= requiredIdleMs;
     }
 
@@ -239,19 +178,6 @@ final class IdleScreensaverMonitor {
                     == AppOpsManager.MODE_ALLOWED;
         } catch (Throwable ignored) {
             return false;
-        }
-    }
-
-    private String resolveLauncherPackage() {
-        try {
-            Intent home = new Intent(Intent.ACTION_MAIN);
-            home.addCategory(Intent.CATEGORY_HOME);
-            ResolveInfo result = context.getPackageManager()
-                    .resolveActivity(home, PackageManager.MATCH_DEFAULT_ONLY);
-            return result == null || result.activityInfo == null
-                    ? null : result.activityInfo.packageName;
-        } catch (Throwable ignored) {
-            return null;
         }
     }
 }

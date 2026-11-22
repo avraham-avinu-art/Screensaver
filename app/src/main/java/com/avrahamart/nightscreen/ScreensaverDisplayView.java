@@ -86,6 +86,7 @@ public final class ScreensaverDisplayView extends LinearLayout {
             new SimpleDateFormat("dd.MM.yyyy", Locale.US);
     private String lastFormattedHebrewDateKey;
     private String lastFormattedHebrewDateFormat;
+    private String cachedHebrewDateValue = "";
     private ObjectAnimator titleMarqueeAnimator;
     private ObjectAnimator artistMarqueeAnimator;
     private final android.os.Handler handler =
@@ -1233,8 +1234,12 @@ public final class ScreensaverDisplayView extends LinearLayout {
         }
         updateChargingBatteryDisplay();
 
-        String formattedGregorianDate = hebrewWeekday() + " "
-                + formattedGregorianDateValue();
+        boolean showGregorian = getBool("showGregorian", true);
+        boolean showHebrew = getBool("showHebrew", true);
+
+        String formattedGregorianDate = showGregorian
+                ? hebrewWeekday() + " " + formattedGregorianDateValue()
+                : "";
         if (!formattedGregorianDate.contentEquals(gregorianText.getText())) {
             gregorianText.setText(formattedGregorianDate);
         }
@@ -1251,16 +1256,22 @@ public final class ScreensaverDisplayView extends LinearLayout {
                 formatter.setHebrewFormat(true);
                 formatter.setUseGershGershayim(true);
                 formatter.setUseLongHebrewYears(false);
-                String formattedHebrewDate = formatHebrewDate(
+                cachedHebrewDateValue = formatHebrewDate(
                         formatter.format(jewishDate), selectedHebrewDateFormat);
-                if (!formattedHebrewDate.contentEquals(hebrewText.getText())) {
-                    hebrewText.setText(formattedHebrewDate);
-                }
             } catch (Throwable t) {
-                hebrewText.setText("");
+                cachedHebrewDateValue = "";
             }
             lastFormattedHebrewDateKey = hebrewDateKey;
             lastFormattedHebrewDateFormat = selectedHebrewDateFormat;
+        }
+
+        String formattedHebrewDate = cachedHebrewDateValue;
+        if (showHebrew && !showGregorian && !formattedHebrewDate.isEmpty()) {
+            formattedHebrewDate = hebrewWeekday() + " " + formattedHebrewDate;
+        }
+        if (!showHebrew) formattedHebrewDate = "";
+        if (!formattedHebrewDate.contentEquals(hebrewText.getText())) {
+            hebrewText.setText(formattedHebrewDate);
         }
         updateClockTextColumnWidth();
     }

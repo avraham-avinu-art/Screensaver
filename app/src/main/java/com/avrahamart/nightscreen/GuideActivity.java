@@ -118,6 +118,9 @@ public final class GuideActivity extends Activity {
                 getString(R.string.guide_activity_text_029) +
                 getString(R.string.guide_activity_text_030));
 
+        addSection(sections, getString(R.string.guide_activity_text_080),
+                getString(R.string.guide_activity_text_081));
+
         addSection(sections, getString(R.string.guide_activity_text_031),
                 getString(R.string.guide_activity_text_032) +
                 getString(R.string.guide_activity_text_033) +
@@ -165,6 +168,9 @@ public final class GuideActivity extends Activity {
                 getString(R.string.guide_activity_text_070) +
                 getString(R.string.guide_activity_text_071) +
                 getString(R.string.guide_activity_text_072));
+
+        addSection(sections, getString(R.string.guide_activity_text_082),
+                getString(R.string.guide_activity_text_083));
 
         addSection(sections, getString(R.string.guide_activity_text_073),
                 getString(R.string.guide_activity_text_074) +
