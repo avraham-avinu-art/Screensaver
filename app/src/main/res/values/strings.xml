@@ -331,7 +331,7 @@
     <string name="guide_activity_text_030" formatted="false">בחר רק את אפשרויות ההפעלה שאתה צריך, וודא שההרשאות הדרושות להן פעילות.</string>
     <string name="guide_activity_text_031" formatted="false">שעון ותאריך</string>
     <string name="guide_activity_text_032" formatted="false">כאן אפשר לבחור אם להציג את התאריך העברי, את התאריך הלועזי או את שניהם. אפשר גם לבחור את צורת ההצגה של כל תאריך.\n\n</string>
-    <string name="guide_activity_text_033" formatted="false">יום השבוע מופיע לפני התאריך הלועזי. אם בחרת להציג רק תאריך עברי, הוא יופיע לפני התאריך העברי.\n\n</string>
+    <string name="guide_activity_text_033" formatted="false">יום השבוע מופיע לפני התאריך הלועזי. אם בחרת להציג רק את התאריך העברי, יום השבוע יופיע לפניו.\n\n</string>
     <string name="guide_activity_text_034" formatted="false">• גודל - בחר את הגודל שנוח לך: קטן, בינוני, רגיל, גדול או ענק.\n</string>
     <string name="guide_activity_text_035" formatted="false">• עובי הגופן - אפשר לבחור גופן דק, רגיל, מודגש או עבה.\n</string>
     <string name="guide_activity_text_036" formatted="false">• מיקום - אפשר להציג את השעון בראש המסך, ברבע העליון או במרכז.\n</string>
